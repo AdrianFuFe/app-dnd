@@ -25,7 +25,7 @@ describe('validateContentDataDirectory', () => {
 		const result = validateContentDataDirectory(dataDirectoryPath);
 
 		expect(result.issues).toHaveLength(0);
-		expect(result.validFiles).toHaveLength(3);
+		expect(result.validFiles).toHaveLength(8);
 	});
 
 	it('reports unsupported content types', () => {
@@ -37,7 +37,7 @@ describe('validateContentDataDirectory', () => {
 			JSON.stringify({
 				schemaVersion: 1,
 				source: 'user-private',
-				contentType: 'species',
+				contentType: 'feat',
 				items: []
 			})
 		);
@@ -45,7 +45,7 @@ describe('validateContentDataDirectory', () => {
 		const result = validateContentDataDirectory(tempDirectoryPath);
 
 		expect(result.issues).toHaveLength(1);
-		expect(result.issues[0]?.message).toContain('Unsupported contentType "species"');
+		expect(result.issues[0]?.message).toContain('Unsupported contentType "feat"');
 	});
 
 	it('reports malformed JSON files', () => {
@@ -58,5 +58,41 @@ describe('validateContentDataDirectory', () => {
 
 		expect(result.issues).toHaveLength(1);
 		expect(result.issues[0]?.message).toContain('Expected property name or');
+	});
+
+	it('reports missing spell references from subclasses', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'spells.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'spell',
+				items: []
+			})
+		);
+		writeFileSync(
+			path.join(srdDirectoryPath, 'subclasses.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'subclass',
+				items: [
+					{
+						slug: 'subclase-prueba',
+						name: 'Subclase de Prueba',
+						classSlug: 'clerigo',
+						grantedSpellsByLevel: [{ level: 1, spellSlugs: ['bless'] }]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(1);
+		expect(result.issues[0]?.message).toContain('Unknown spell slug "bless"');
 	});
 });

@@ -9,8 +9,14 @@ const subclassFeatureSchema = z.object({
 	mechanics: contentBaseFieldsSchema.shape.mechanics
 });
 
+const grantedSpellsByLevelSchema = z.object({
+	level: z.number().int().min(1).max(20),
+	spellSlugs: z.array(z.string().trim().min(1)).min(1)
+});
+
 export const subclassItemSchema = contentBaseFieldsSchema.extend({
 	classSlug: z.string().trim().min(1),
+	grantedSpellsByLevel: z.array(grantedSpellsByLevelSchema).default([]),
 	features: z.array(subclassFeatureSchema).default([])
 });
 

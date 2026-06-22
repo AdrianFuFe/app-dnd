@@ -9,6 +9,14 @@ export interface ValidatedContentFile {
 	itemCount: number;
 }
 
+interface CatalogReferenceItem {
+	slug: string;
+	grantedSpellsByLevel?: Array<{
+		level: number;
+		spellSlugs: string[];
+	}>;
+}
+
 export interface ContentValidationIssue {
 	filePath: string;
 	message: string;
@@ -43,6 +51,7 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 		skippedFiles: [],
 		issues: []
 	};
+	const validItemsByContentType = new Map<string, CatalogReferenceItem[]>();
 
 	for (const filePath of allFiles) {
 		if (path.extname(filePath) !== '.json') {
@@ -91,10 +100,32 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 				contentType: validationResult.data.contentType,
 				itemCount: validationResult.data.items.length
 			});
+			validItemsByContentType.set(
+				validationResult.data.contentType,
+				validationResult.data.items as CatalogReferenceItem[]
+			);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : 'Unknown validation error';
 
 			result.issues.push({ filePath, message });
+		}
+	}
+
+	const spellSlugs = new Set(
+		(validItemsByContentType.get('spell') ?? []).map((item) => item.slug)
+	);
+	const subclasses = validItemsByContentType.get('subclass') ?? [];
+
+	for (const subclass of subclasses) {
+		for (const spellGroup of subclass.grantedSpellsByLevel ?? []) {
+			for (const spellSlug of spellGroup.spellSlugs) {
+				if (!spellSlugs.has(spellSlug)) {
+					result.issues.push({
+						filePath: path.join(dataDirectoryPath, 'srd-5-1', 'subclasses.json'),
+						message: `Unknown spell slug "${spellSlug}" referenced by subclass "${subclass.slug}" at level ${spellGroup.level}`
+					});
+				}
+			}
 		}
 	}
 

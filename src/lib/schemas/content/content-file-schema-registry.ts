@@ -1,5 +1,7 @@
 import type { ZodType } from 'zod';
 import { backgroundFileSchema } from './background.schema.ts';
+import { characterClassFileSchema } from './character-class.schema.ts';
+import { speciesFileSchema } from './species.schema.ts';
 import { spellFileSchema } from './spell.schema.ts';
 import { subclassFileSchema } from './subclass.schema.ts';
 
@@ -10,6 +12,8 @@ export interface ContentFileSchemaResult {
 
 export const contentFileSchemaRegistry = {
 	background: backgroundFileSchema,
+	'character-class': characterClassFileSchema,
+	species: speciesFileSchema,
 	spell: spellFileSchema,
 	subclass: subclassFileSchema
 } satisfies Record<string, ZodType<ContentFileSchemaResult>>;

@@ -1,0 +1,64 @@
+{
+	"schemaVersion": 1,
+	"source": "srd-5-1",
+	"contentType": "subclass",
+	"items": [
+		{
+			"slug": "life-domain",
+			"name": "Life Domain",
+			"summary": "Dominio clerical centrado en curacion, vitalidad y proteccion de la vida.",
+			"description": "Seed inicial derivado de reglas basicas oficiales. Mantener la redaccion mecanica breve y ampliar solo tras validar el modelo del catalogo.",
+			"classSlug": "clerigo",
+			"visibility": "public",
+			"grantedSpellsByLevel": [
+				{ "level": 1, "spellSlugs": ["bless", "cure-wounds"] },
+				{ "level": 3, "spellSlugs": ["lesser-restoration", "spiritual-weapon"] },
+				{ "level": 5, "spellSlugs": ["beacon-of-hope", "revivify"] },
+				{ "level": 7, "spellSlugs": ["death-ward", "guardian-of-faith"] },
+				{ "level": 9, "spellSlugs": ["mass-cure-wounds", "raise-dead"] }
+			],
+			"mechanics": [
+				{ "type": "proficiency", "proficiencyType": "armor", "value": "heavy-armor" },
+				{ "type": "feature", "featureId": "bonus-proficiency" },
+				{ "type": "feature", "featureId": "disciple-of-life" },
+				{ "type": "feature", "featureId": "preserve-life" }
+			],
+			"features": [
+				{
+					"level": 1,
+					"name": "Bonus Proficiency",
+					"summary": "Ganas competencia con armadura pesada.",
+					"mechanics": [
+						{
+							"type": "proficiency",
+							"proficiencyType": "armor",
+							"value": "heavy-armor"
+						}
+					]
+				},
+				{
+					"level": 1,
+					"name": "Disciple of Life",
+					"summary": "Tus conjuros de curacion recuperan puntos de golpe adicionales.",
+					"mechanics": [
+						{
+							"type": "note",
+							"text": "When you use a spell of 1st level or higher to restore hit points, add 2 + the spell level."
+						}
+					]
+				},
+				{
+					"level": 2,
+					"name": "Channel Divinity: Preserve Life",
+					"summary": "Canalizas energia curativa para repartir puntos de golpe entre criaturas cercanas.",
+					"mechanics": [
+						{
+							"type": "note",
+							"text": "Restore hit points equal to five times your cleric level, divided among creatures within 30 feet, up to half their maximum hit points."
+						}
+					]
+				}
+			]
+		}
+	]
+}

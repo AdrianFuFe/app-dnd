@@ -1,0 +1,117 @@
+{
+	"schemaVersion": 1,
+	"source": "srd-5-1",
+	"contentType": "character-class",
+	"items": [
+		{
+			"slug": "guerrero",
+			"name": "Guerrero",
+			"summary": "Clase marcial versatil enfocada en armas, armaduras y resistencia.",
+			"description": "Seed inicial basada en la documentacion SRD del proyecto. Conviene contrastar la redaccion final con la fuente oficial antes de poblar mas niveles y opciones.",
+			"hitDie": 10,
+			"primaryAbilities": ["strength", "dexterity"],
+			"savingThrowProficiencies": ["strength", "constitution"],
+			"armorProficiencies": ["all-armor", "shields"],
+			"weaponProficiencies": ["simple-weapons", "martial-weapons"],
+			"toolProficiencies": [],
+			"skillChoices": {
+				"count": 2,
+				"options": [
+					"acrobatics",
+					"animal-handling",
+					"athletics",
+					"history",
+					"insight",
+					"intimidation",
+					"perception",
+					"survival"
+				]
+			},
+			"startingEquipment": [
+				"chain-mail",
+				"martial-weapon-and-shield-or-two-martial-weapons",
+				"light-crossbow-and-20-bolts-or-two-handaxes",
+				"dungeoneers-pack-or-explorers-pack"
+			],
+			"spellcastingAbility": null,
+			"visibility": "public",
+			"progression": [{ "level": 1, "features": ["fighting-style", "second-wind"] }],
+			"mechanics": [
+				{ "type": "proficiency", "proficiencyType": "armor", "value": "all-armor" },
+				{ "type": "proficiency", "proficiencyType": "armor", "value": "shields" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "simple-weapons" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "martial-weapons" },
+				{ "type": "proficiency", "proficiencyType": "saving_throw", "value": "strength" },
+				{
+					"type": "proficiency",
+					"proficiencyType": "saving_throw",
+					"value": "constitution"
+				},
+				{
+					"type": "choose_proficiency",
+					"proficiencyType": "skill",
+					"count": 2,
+					"options": [
+						"acrobatics",
+						"animal-handling",
+						"athletics",
+						"history",
+						"insight",
+						"intimidation",
+						"perception",
+						"survival"
+					]
+				},
+				{ "type": "feature", "featureId": "fighting-style" },
+				{ "type": "feature", "featureId": "second-wind" }
+			]
+		},
+		{
+			"slug": "clerigo",
+			"name": "Clerigo",
+			"summary": "Clase divina que combina magia de apoyo, curacion y presencia marcial basica.",
+			"description": "Seed inicial basada en reglas basicas oficiales. La preparacion completa de conjuros y dominios se modelara de forma incremental.",
+			"hitDie": 8,
+			"primaryAbilities": ["wisdom"],
+			"savingThrowProficiencies": ["wisdom", "charisma"],
+			"armorProficiencies": ["light-armor", "medium-armor", "shields"],
+			"weaponProficiencies": ["simple-weapons"],
+			"toolProficiencies": [],
+			"skillChoices": {
+				"count": 2,
+				"options": ["history", "insight", "medicine", "persuasion", "religion"]
+			},
+			"startingEquipment": [
+				"mace-or-warhammer-if-proficient",
+				"scale-mail-or-leather-armor-or-chain-mail-if-proficient",
+				"light-crossbow-and-20-bolts-or-any-simple-weapon",
+				"priests-pack-or-explorers-pack",
+				"shield",
+				"holy-symbol"
+			],
+			"spellcastingAbility": "wisdom",
+			"visibility": "public",
+			"progression": [
+				{ "level": 1, "features": ["spellcasting", "divine-domain"] },
+				{ "level": 2, "features": ["channel-divinity", "divine-domain-feature"] }
+			],
+			"mechanics": [
+				{ "type": "proficiency", "proficiencyType": "armor", "value": "light-armor" },
+				{ "type": "proficiency", "proficiencyType": "armor", "value": "medium-armor" },
+				{ "type": "proficiency", "proficiencyType": "armor", "value": "shields" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "simple-weapons" },
+				{ "type": "proficiency", "proficiencyType": "saving_throw", "value": "wisdom" },
+				{ "type": "proficiency", "proficiencyType": "saving_throw", "value": "charisma" },
+				{
+					"type": "choose_proficiency",
+					"proficiencyType": "skill",
+					"count": 2,
+					"options": ["history", "insight", "medicine", "persuasion", "religion"]
+				},
+				{ "type": "feature", "featureId": "spellcasting" },
+				{ "type": "feature", "featureId": "divine-domain" },
+				{ "type": "feature", "featureId": "channel-divinity" }
+			]
+		}
+	]
+}
