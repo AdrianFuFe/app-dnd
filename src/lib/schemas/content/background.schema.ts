@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { contentBaseFieldsSchema, contentFileBaseSchema } from './common-content.schema';
+import { contentBaseFieldsSchema, contentFileBaseSchema } from './common-content.schema.ts';
 
 export const backgroundItemSchema = contentBaseFieldsSchema.extend({
 	skillProficiencies: z.array(z.string().trim().min(1)).default([]),

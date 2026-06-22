@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { gameMechanicsSchema } from './game-mechanics.schema';
+import { gameMechanicsSchema } from './game-mechanics.schema.ts';
 
 export const contentSourceSchema = z.enum(['srd-5-1', 'srd-5-2', 'user-private', 'homebrew']);
 

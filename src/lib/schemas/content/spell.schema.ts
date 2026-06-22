@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { contentBaseFieldsSchema, contentFileBaseSchema } from './common-content.schema';
+import { contentBaseFieldsSchema, contentFileBaseSchema } from './common-content.schema.ts';
 
 export const spellItemSchema = contentBaseFieldsSchema.extend({
 	level: z.number().int().min(0).max(9),

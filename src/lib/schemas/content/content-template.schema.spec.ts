@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { backgroundFileSchema } from './background.schema';
-import { spellFileSchema } from './spell.schema';
-import { subclassFileSchema } from './subclass.schema';
+import { backgroundFileSchema } from './background.schema.ts';
+import { spellFileSchema } from './spell.schema.ts';
+import { subclassFileSchema } from './subclass.schema.ts';
 
 function readJsonFile<T>(relativePath: string): T {
 	const filePath = path.resolve(process.cwd(), relativePath);
