@@ -1,0 +1,11 @@
+-- Iteration 0 draft only.
+-- This file intentionally documents the planned RLS policy set without
+-- enabling a working Supabase setup yet.
+--
+-- Planned policy rules:
+--   profiles: users manage only their own row
+--   characters: users manage only their own characters
+--   child tables: ownership checks resolve through characters.user_id = auth.uid()
+--
+-- Implementation target:
+--   Iteration 1

@@ -1,0 +1,16 @@
+-- Iteration 0 draft only.
+-- This file intentionally documents the planned initial schema without
+-- enabling a working Supabase setup yet.
+--
+-- Planned tables:
+--   profiles
+--   characters
+--   character_stats
+--   character_combat_stats
+--   character_inventory_items
+--   character_attacks
+--   character_spells
+--   character_notes
+--
+-- Implementation target:
+--   Iteration 1
