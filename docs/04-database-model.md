@@ -4,7 +4,12 @@
 
 This document captures the initial relational model without enabling a working Supabase integration yet.
 
-Implementation is planned for Iteration 1.
+Implementation is intentionally split in stages:
+
+- character tables remain the first editable user data slice
+- content catalog and permission tables will be introduced before deeper character automation
+
+The detailed future content model is documented in `docs/rules/06_MODELO_DATOS_CONTENIDO_Y_PERMISOS.md`.
 
 ## Core Tables
 
@@ -12,6 +17,7 @@ Implementation is planned for Iteration 1.
 
 - `id uuid primary key references auth.users(id) on delete cascade`
 - `display_name text`
+- `global_role text default 'user'`
 - `created_at timestamptz`
 - `updated_at timestamptz`
 
@@ -20,6 +26,11 @@ Implementation is planned for Iteration 1.
 - `id uuid primary key`
 - `user_id uuid references auth.users(id) on delete cascade`
 - `name text not null`
+- `species_id uuid nullable references species(id)`
+- `subspecies_id uuid nullable references subspecies(id)`
+- `class_id uuid nullable references character_classes(id)`
+- `subclass_id uuid nullable references subclasses(id)`
+- `background_id uuid nullable references backgrounds(id)`
 - `race text`
 - `subrace text`
 - `class_name text`
@@ -29,6 +40,29 @@ Implementation is planned for Iteration 1.
 - `story text`
 - `created_at timestamptz`
 - `updated_at timestamptz`
+
+The free-text identity fields remain useful during the MVP as a compatibility layer while reusable catalog entities are introduced.
+
+## Planned Content Tables
+
+These are not part of the first working schema yet, but they now belong to the target model:
+
+- `content_sources`
+- `species`
+- `subspecies`
+- `character_classes`
+- `class_features`
+- `subclasses`
+- `subclass_features`
+- `backgrounds`
+- `spells`
+
+The recommended order is:
+
+1. add `content_sources`
+2. add core content tables
+3. relate `characters` to those content tables
+4. add advanced permissions later
 
 ### `character_stats`
 
@@ -109,12 +143,15 @@ Implementation is planned for Iteration 1.
 - users can only access their own `profiles` row
 - users can only access their own `characters`
 - child tables must resolve ownership through the parent `characters.user_id = auth.uid()`
-- no public policies by default
+- SRD/system content should be readable by authenticated users but not editable from the normal UI
+- manual/private content should be owner-scoped by default
+- no broad public write policies by default
 
 ## Deferred Tables
 
 Planned for later iterations:
 
+- `content_permissions`
 - `campaigns`
 - `campaign_members`
 - `campaign_sessions`
