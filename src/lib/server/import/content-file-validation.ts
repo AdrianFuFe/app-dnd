@@ -11,6 +11,10 @@ export interface ValidatedContentFile {
 
 interface CatalogReferenceItem {
 	slug: string;
+	classSlug?: string;
+	classSlugs?: string[];
+	speciesSlug?: string;
+	subspeciesSlugs?: string[];
 	grantedSpellsByLevel?: Array<{
 		level: number;
 		spellSlugs: string[];
@@ -114,7 +118,59 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 	const spellSlugs = new Set(
 		(validItemsByContentType.get('spell') ?? []).map((item) => item.slug)
 	);
+	const classSlugs = new Set(
+		(validItemsByContentType.get('character-class') ?? []).map((item) => item.slug)
+	);
+	const speciesSlugs = new Set(
+		(validItemsByContentType.get('species') ?? []).map((item) => item.slug)
+	);
+	const subspeciesSlugs = new Set(
+		(validItemsByContentType.get('subspecies') ?? []).map((item) => item.slug)
+	);
 	const subclasses = validItemsByContentType.get('subclass') ?? [];
+	const speciesItems = validItemsByContentType.get('species') ?? [];
+	const subspeciesItems = validItemsByContentType.get('subspecies') ?? [];
+	const spells = validItemsByContentType.get('spell') ?? [];
+
+	for (const subclass of subclasses) {
+		if (subclass.classSlug && !classSlugs.has(subclass.classSlug)) {
+			result.issues.push({
+				filePath: path.join(dataDirectoryPath, 'srd-5-1', 'subclasses.json'),
+				message: `Unknown class slug "${subclass.classSlug}" referenced by subclass "${subclass.slug}"`
+			});
+		}
+	}
+
+	for (const spell of spells) {
+		for (const classSlug of spell.classSlugs ?? []) {
+			if (!classSlugs.has(classSlug)) {
+				result.issues.push({
+					filePath: path.join(dataDirectoryPath, 'srd-5-1', 'spells.json'),
+					message: `Unknown class slug "${classSlug}" referenced by spell "${spell.slug}"`
+				});
+			}
+		}
+	}
+
+	for (const species of speciesItems) {
+		for (const subspeciesSlug of species.subspeciesSlugs ?? []) {
+			if (!subspeciesSlugs.has(subspeciesSlug)) {
+				result.issues.push({
+					filePath: path.join(dataDirectoryPath, 'srd-5-1', 'species.json'),
+					message: `Unknown subspecies slug "${subspeciesSlug}" referenced by species "${species.slug}"`
+				});
+			}
+		}
+	}
+
+	for (const subspecies of subspeciesItems) {
+		if (subspecies.speciesSlug && !speciesSlugs.has(subspecies.speciesSlug)) {
+			result.issues.push({
+				filePath: path.join(dataDirectoryPath, 'srd-5-1', 'subspecies.json'),
+				message: `Unknown species slug "${subspecies.speciesSlug}" referenced by subspecies "${subspecies.slug}"`
+			});
+		}
+	}
 
 	for (const subclass of subclasses) {
 		for (const spellGroup of subclass.grantedSpellsByLevel ?? []) {

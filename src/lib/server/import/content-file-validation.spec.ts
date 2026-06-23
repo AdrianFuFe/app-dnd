@@ -25,7 +25,7 @@ describe('validateContentDataDirectory', () => {
 		const result = validateContentDataDirectory(dataDirectoryPath);
 
 		expect(result.issues).toHaveLength(0);
-		expect(result.validFiles).toHaveLength(8);
+		expect(result.validFiles).toHaveLength(9);
 	});
 
 	it('reports unsupported content types', () => {
@@ -65,6 +65,23 @@ describe('validateContentDataDirectory', () => {
 		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
 		mkdirSync(srdDirectoryPath, { recursive: true });
 		writeFileSync(
+			path.join(srdDirectoryPath, 'classes.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'character-class',
+				items: [
+					{
+						slug: 'clerigo',
+						name: 'Clerigo',
+						hitDie: 8,
+						primaryAbilities: ['wisdom'],
+						savingThrowProficiencies: ['wisdom', 'charisma']
+					}
+				]
+			})
+		);
+		writeFileSync(
 			path.join(srdDirectoryPath, 'spells.json'),
 			JSON.stringify({
 				schemaVersion: 1,
@@ -94,5 +111,148 @@ describe('validateContentDataDirectory', () => {
 
 		expect(result.issues).toHaveLength(1);
 		expect(result.issues[0]?.message).toContain('Unknown spell slug "bless"');
+	});
+
+	it('reports missing class references from subclasses', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'classes.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'character-class',
+				items: []
+			})
+		);
+		writeFileSync(
+			path.join(srdDirectoryPath, 'subclasses.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'subclass',
+				items: [
+					{
+						slug: 'subclase-prueba',
+						name: 'Subclase de Prueba',
+						classSlug: 'clerigo',
+						grantedSpellsByLevel: []
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(1);
+		expect(result.issues[0]?.message).toContain('Unknown class slug "clerigo"');
+	});
+
+	it('reports missing class references from spells', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'classes.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'character-class',
+				items: []
+			})
+		);
+		writeFileSync(
+			path.join(srdDirectoryPath, 'spells.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'spell',
+				items: [
+					{
+						slug: 'bless',
+						name: 'Bless',
+						level: 1,
+						school: 'enchantment',
+						classSlugs: ['clerigo']
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(1);
+		expect(result.issues[0]?.message).toContain('Unknown class slug "clerigo"');
+	});
+
+	it('reports missing subspecies references from species', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'species.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'species',
+				items: [
+					{
+						slug: 'elfo',
+						name: 'Elfo',
+						subspeciesSlugs: ['high-elf']
+					}
+				]
+			})
+		);
+		writeFileSync(
+			path.join(srdDirectoryPath, 'subspecies.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'subspecies',
+				items: []
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(1);
+		expect(result.issues[0]?.message).toContain('Unknown subspecies slug "high-elf"');
+	});
+
+	it('reports missing species references from subspecies', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'species.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'species',
+				items: []
+			})
+		);
+		writeFileSync(
+			path.join(srdDirectoryPath, 'subspecies.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'subspecies',
+				items: [
+					{
+						slug: 'high-elf',
+						name: 'High Elf',
+						speciesSlug: 'elfo'
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(1);
+		expect(result.issues[0]?.message).toContain('Unknown species slug "elfo"');
 	});
 });

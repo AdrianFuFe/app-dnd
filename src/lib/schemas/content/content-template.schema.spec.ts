@@ -5,6 +5,7 @@ import { backgroundFileSchema } from './background.schema.ts';
 import { characterClassFileSchema } from './character-class.schema.ts';
 import { speciesFileSchema } from './species.schema.ts';
 import { spellFileSchema } from './spell.schema.ts';
+import { subspeciesFileSchema } from './subspecies.schema.ts';
 import { subclassFileSchema } from './subclass.schema.ts';
 
 function readJsonFile<T>(relativePath: string): T {
@@ -52,8 +53,20 @@ describe('content templates', () => {
 
 		const parsed = speciesFileSchema.parse(file);
 
+		expect(parsed.items).toHaveLength(2);
+		expect(parsed.items[0]?.slug).toBe('elfo');
+		expect(parsed.items[0]?.subspeciesSlugs).toEqual(['high-elf']);
+		expect(parsed.items[1]?.slug).toBe('humano');
+	});
+
+	it('validates the SRD subspecies starter file', () => {
+		const file = readJsonFile<unknown>('data/srd-5-1/subspecies.json');
+
+		const parsed = subspeciesFileSchema.parse(file);
+
 		expect(parsed.items).toHaveLength(1);
-		expect(parsed.items[0]?.slug).toBe('humano');
+		expect(parsed.items[0]?.slug).toBe('high-elf');
+		expect(parsed.items[0]?.speciesSlug).toBe('elfo');
 	});
 
 	it('validates the SRD classes starter file', () => {
@@ -195,6 +208,24 @@ describe('content schema examples', () => {
 		});
 
 		expect(parsed.items[0]?.slug).toBe('humano');
+	});
+
+	it('accepts a valid subspecies entry', () => {
+		const parsed = subspeciesFileSchema.parse({
+			schemaVersion: 1,
+			source: 'srd-5-1',
+			contentType: 'subspecies',
+			items: [
+				{
+					slug: 'high-elf',
+					name: 'High Elf',
+					speciesSlug: 'elfo',
+					mechanics: [{ type: 'ability_bonus', ability: 'intelligence', value: 1 }]
+				}
+			]
+		});
+
+		expect(parsed.items[0]?.speciesSlug).toBe('elfo');
 	});
 
 	it('accepts a valid character class entry', () => {

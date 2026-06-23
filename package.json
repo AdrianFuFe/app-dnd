@@ -15,7 +15,8 @@
 		"test:unit": "vitest",
 		"test": "pnpm test:unit run && pnpm test:e2e",
 		"test:e2e": "playwright test",
-		"validate:content": "node --experimental-strip-types scripts/validate-content.ts"
+		"validate:content": "node --experimental-strip-types scripts/validate-content.ts",
+		"generate:content-seed-sql": "node --experimental-strip-types scripts/generate-content-seed-sql.ts"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
@@ -45,6 +46,7 @@
 		"vitest-browser-svelte": "^2.1.1"
 	},
 	"dependencies": {
+		"@supabase/supabase-js": "^2.108.2",
 		"zod": "^4.4.3"
 	}
 }

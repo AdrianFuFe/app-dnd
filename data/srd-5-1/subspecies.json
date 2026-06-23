@@ -1,0 +1,24 @@
+{
+	"schemaVersion": 1,
+	"source": "srd-5-1",
+	"contentType": "subspecies",
+	"items": [
+		{
+			"slug": "high-elf",
+			"name": "High Elf",
+			"summary": "Subespecie elfica con entrenamiento adicional y aptitud magica.",
+			"description": "Seed inicial para validar la relacion species-subspecies dentro del catalogo. El contenido detallado puede ampliarse mas adelante.",
+			"speciesSlug": "elfo",
+			"visibility": "public",
+			"mechanics": [
+				{ "type": "ability_bonus", "ability": "intelligence", "value": 1 },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "longsword" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "shortsword" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "shortbow" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "longbow" },
+				{ "type": "choose_language", "count": 1 },
+				{ "type": "note", "text": "Gain one wizard cantrip of your choice." }
+			]
+		}
+	]
+}

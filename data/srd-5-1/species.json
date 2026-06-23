@@ -4,6 +4,29 @@
 	"contentType": "species",
 	"items": [
 		{
+			"slug": "elfo",
+			"name": "Elfo",
+			"summary": "Especie agil y perceptiva, asociada con sentidos agudos y entrenamiento natural.",
+			"description": "Seed inicial para validar el eje species-subspecies del catalogo. La modelizacion completa de rasgos puede ampliarse mas adelante.",
+			"size": "medium",
+			"baseSpeed": 30,
+			"languages": ["comun", "elfico"],
+			"subspeciesSlugs": ["high-elf"],
+			"visibility": "public",
+			"mechanics": [
+				{ "type": "ability_bonus", "ability": "dexterity", "value": 2 },
+				{ "type": "speed", "value": 30 },
+				{ "type": "darkvision", "range": 60 },
+				{ "type": "language", "mode": "fixed", "language": "comun" },
+				{ "type": "language", "mode": "fixed", "language": "elfico" },
+				{ "type": "proficiency", "proficiencyType": "skill", "value": "perception" },
+				{
+					"type": "note",
+					"text": "Advantage on saving throws against being charmed, and magic cannot put you to sleep."
+				}
+			]
+		},
+		{
 			"slug": "humano",
 			"name": "Humano",
 			"summary": "Versatil y adaptable, con mejoras generales de caracteristica.",
