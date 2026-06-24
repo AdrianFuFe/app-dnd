@@ -74,3 +74,9 @@ data/
 - unit tests for content schemas and file validation should live close to content types and schemas
 - component tests only when components have meaningful behavior
 - Playwright e2e for end-to-end flows, starting with home availability
+
+## Context Strategy
+
+- broad project docs remain the source of truth
+- `docs/context/` provides short task-oriented slices for low-token working sessions
+- prompts under `prompts/` should reference `docs/context/00_INDEX.md` first

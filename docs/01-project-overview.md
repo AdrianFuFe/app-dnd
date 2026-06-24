@@ -2,9 +2,9 @@
 
 ## Purpose
 
-`app-dnd` is a SvelteKit application for managing DnD characters, and later campaigns and shared session information.
+`app-dnd` is a SvelteKit application for managing DnD characters, reusable SRD-backed content, and later campaigns and shared session information.
 
-The initial objective is to build a stable and scalable base before adding authentication, persistence, and richer game mechanics.
+The initial objective is to build a stable and scalable base around Supabase-backed data ownership, authentication, and richer game mechanics.
 
 ## Current Scope
 
@@ -34,3 +34,7 @@ Iteration 0 focuses on project hygiene and architecture preparation:
 - avoid unnecessary dependencies
 - keep routes and components small
 - prepare server-side validation and RLS before real data flows
+
+## Working Context
+
+To reduce token usage during iterative development, use the focused context slices under `docs/context/` instead of loading the full documentation set by default.

@@ -11,7 +11,7 @@ The app should evolve around a stable content system before deep character autom
 
 ## Immediate Goals
 
-- users can access the app and, in a later iteration, authenticate with Supabase Auth
+- users can access the app and authenticate with Supabase Auth
 - each user can create and manage only their own characters
 - the project can represent reusable SRD content as structured data
 - the project can represent private manual content owned by a user

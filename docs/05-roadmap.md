@@ -36,10 +36,15 @@
 
 - integrate catalog content into character creation and editing
 - keep free-text fallbacks during the transition
-- start basic auth and protected app flows where needed
+- complete basic auth and protected app flows with Supabase Auth
 
 ## Iteration 6
 
 - advanced permissions and sharing
 - campaign-aware visibility
 - future campaign and companion features
+
+## Cross-Cutting Workflow
+
+- maintain focused context slices under `docs/context/`
+- favor small tasks with proportional validation to reduce token waste
