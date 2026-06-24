@@ -1,7 +1,20 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { ensureProfileForSession } = vi.hoisted(() => ({
+	ensureProfileForSession: vi.fn()
+}));
+
+vi.mock('$lib/server/profiles/sync', () => ({
+	ensureProfileForSession
+}));
+
 import { load } from './+layout.server';
 
 describe('/app auth guard', () => {
+	beforeEach(() => {
+		ensureProfileForSession.mockReset().mockResolvedValue(undefined);
+	});
+
 	it('redirects unauthenticated users to login with their original path', async () => {
 		await expect(
 			load({
@@ -18,16 +31,21 @@ describe('/app auth guard', () => {
 
 	it('allows authenticated users into /app', async () => {
 		const session = { user: { id: 'user-1' } };
+		const supabase = {};
 
 		await expect(
 			load({
 				locals: {
-					session
+					session,
+					supabase
 				},
 				url: new URL('https://example.com/app')
 			} as never)
 		).resolves.toEqual({
 			session
 		});
+
+		expect(ensureProfileForSession).toHaveBeenCalledOnce();
+		expect(ensureProfileForSession).toHaveBeenCalledWith(supabase, session);
 	});
 });
