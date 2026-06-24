@@ -1,13 +1,16 @@
 <script lang="ts">
 	import type { CharacterCreateFormValues } from '$lib/domain/characters/character-form';
+	import type { CharacterCreationCatalog } from '$lib/types/content/character-catalog';
 
 	type CharacterFieldErrors = Partial<Record<keyof CharacterCreateFormValues, string[]>>;
 
 	let {
+		catalog,
 		values,
 		errors = {},
 		formError
 	}: {
+		catalog: CharacterCreationCatalog;
 		values: CharacterCreateFormValues;
 		errors?: CharacterFieldErrors;
 		formError?: string;
@@ -34,6 +37,21 @@
 	function firstError(field: keyof CharacterCreateFormValues): string | undefined {
 		return errors[field]?.[0];
 	}
+
+	function selectedSpeciesSummary(speciesId: string): string | undefined {
+		return catalog.speciesOptions.find((option) => option.id === speciesId)?.summary ?? undefined;
+	}
+
+	function selectedClassDetails(classId: string): string | undefined {
+		const option = catalog.classOptions.find((entry) => entry.id === classId);
+
+		if (!option) {
+			return undefined;
+		}
+
+		const hitDie = `Hit die d${option.hitDie}`;
+		return option.summary ? `${hitDie}. ${option.summary}` : hitDie;
+	}
 </script>
 
 <form method="POST" class="space-y-8">
@@ -47,7 +65,8 @@
 		<div class="space-y-1">
 			<h2 class="text-xl font-semibold text-stone-900">Identity</h2>
 			<p class="text-sm text-stone-600">
-				Start with the editable MVP fields. Catalog-linked selectors can layer in later.
+				Use structured catalog selections for species and class while the rest of the MVP
+				stays lightweight and editable.
 			</p>
 		</div>
 
@@ -67,13 +86,16 @@
 			</label>
 
 			<label class="block">
-				<span class="mb-1 block text-sm font-medium text-stone-700">Race</span>
-				<input
-					class="block w-full rounded-lg border-stone-300"
-					type="text"
-					name="race"
-					value={values.race}
-				/>
+				<span class="mb-1 block text-sm font-medium text-stone-700">Species</span>
+				<select class="block w-full rounded-lg border-stone-300" name="speciesId" value={values.speciesId}>
+					<option value="">Select a species</option>
+					{#each catalog.speciesOptions as option}
+						<option value={option.id}>{option.name}</option>
+					{/each}
+				</select>
+				{#if selectedSpeciesSummary(values.speciesId)}
+					<p class="mt-1 text-sm text-stone-500">{selectedSpeciesSummary(values.speciesId)}</p>
+				{/if}
 			</label>
 
 			<label class="block">
@@ -88,12 +110,15 @@
 
 			<label class="block">
 				<span class="mb-1 block text-sm font-medium text-stone-700">Class</span>
-				<input
-					class="block w-full rounded-lg border-stone-300"
-					type="text"
-					name="className"
-					value={values.className}
-				/>
+				<select class="block w-full rounded-lg border-stone-300" name="classId" value={values.classId}>
+					<option value="">Select a class</option>
+					{#each catalog.classOptions as option}
+						<option value={option.id}>{option.name}</option>
+					{/each}
+				</select>
+				{#if selectedClassDetails(values.classId)}
+					<p class="mt-1 text-sm text-stone-500">{selectedClassDetails(values.classId)}</p>
+				{/if}
 			</label>
 
 			<label class="block">

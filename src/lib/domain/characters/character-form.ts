@@ -2,8 +2,10 @@ import type { CharacterCreateInput } from '$lib/types/domain/character';
 
 export const characterCreateFormFieldNames = [
 	'name',
+	'speciesId',
 	'race',
 	'subrace',
+	'classId',
 	'className',
 	'subclass',
 	'level',
@@ -41,8 +43,10 @@ export function createCharacterFormValues(
 ): CharacterCreateFormValues {
 	return {
 		name: toFormString(source.name),
+		speciesId: toFormString(source.speciesId),
 		race: toFormString(source.race),
 		subrace: toFormString(source.subrace),
+		classId: toFormString(source.classId),
 		className: toFormString(source.className),
 		subclass: toFormString(source.subclass),
 		level: toFormString(source.level),

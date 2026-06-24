@@ -12,6 +12,7 @@ describe('createCharacterFormValues', () => {
 		});
 
 		expect(values.name).toBe('Rhea');
+		expect(values.speciesId).toBe('');
 		expect(values.level).toBe('4');
 		expect(values.strength).toBe('12');
 		expect(values.maxHp).toBe('27');
@@ -40,6 +41,8 @@ describe('createCharacterFormValuesFromInput', () => {
 		});
 
 		expect(values.name).toBe('New Character');
+		expect(values.speciesId).toBe('');
+		expect(values.classId).toBe('');
 		expect(values.level).toBe('1');
 		expect(values.race).toBe('');
 		expect(values.story).toBe('');

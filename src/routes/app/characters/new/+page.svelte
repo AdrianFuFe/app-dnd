@@ -20,6 +20,7 @@
 	</section>
 
 	<CharacterCreateForm
+		catalog={data.catalog}
 		values={form?.values ?? data.values}
 		errors={form?.fieldErrors}
 		formError={form?.formError}

@@ -6,11 +6,20 @@ import {
 	createCharacterFormValues
 } from '$lib/domain/characters/character-form';
 import { characterCreateInputSchema } from '$lib/schemas/characters/character.schema';
+import {
+	listCharacterCreationCatalog,
+	resolveCharacterCreationCatalogSelections
+} from '$lib/server/repositories/catalog';
 import { createCharacter } from '$lib/server/repositories/characters';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ locals }) => {
+	const catalog = locals.supabase
+		? await listCharacterCreationCatalog(locals.supabase)
+		: { speciesOptions: [], classOptions: [] };
+
 	return {
-		values: createCharacterFormValuesFromInput(createDefaultCharacterInput())
+		values: createCharacterFormValuesFromInput(createDefaultCharacterInput()),
+		catalog
 	};
 };
 
@@ -41,17 +50,35 @@ export const actions: Actions = {
 		}
 
 		try {
+			const catalogSelection = await resolveCharacterCreationCatalogSelections(locals.supabase, {
+				speciesId: parsed.data.speciesId,
+				classId: parsed.data.classId
+			});
+
 			const character = await createCharacter(
 				locals.supabase,
 				locals.session.user.id,
-				parsed.data
+				{
+					...parsed.data,
+					speciesId: catalogSelection.speciesId,
+					race: catalogSelection.race,
+					classId: catalogSelection.classId,
+					className: catalogSelection.className
+				}
 			);
 			const createdName = encodeURIComponent(character.name);
 
 			throw redirect(303, `/app/characters?created=${createdName}`);
-		} catch {
-			return fail(500, {
-				formError: 'The character could not be saved. Please try again.',
+		} catch (error) {
+			const isSelectionError =
+				error instanceof Error && error.message.startsWith('Please choose a valid');
+			const formError =
+				error instanceof Error && isSelectionError
+					? error.message
+					: 'The character could not be saved. Please try again.';
+
+			return fail(isSelectionError ? 400 : 500, {
+				formError,
 				fieldErrors: {},
 				values
 			});
