@@ -11,6 +11,207 @@ export type JsonValue = JsonPrimitive | JsonObject | JsonArray;
 export interface Database {
 	public: {
 		Tables: {
+			character_combat_stats: {
+				Row: {
+					character_id: string;
+					max_hp: number;
+					current_hp: number;
+					temporary_hp: number;
+					armor_class: number;
+					initiative: number;
+					speed: number;
+					hit_dice: string | null;
+				};
+				Insert: {
+					character_id: string;
+					max_hp?: number;
+					current_hp?: number;
+					temporary_hp?: number;
+					armor_class?: number;
+					initiative?: number;
+					speed?: number;
+					hit_dice?: string | null;
+				};
+				Update: {
+					character_id?: string;
+					max_hp?: number;
+					current_hp?: number;
+					temporary_hp?: number;
+					armor_class?: number;
+					initiative?: number;
+					speed?: number;
+					hit_dice?: string | null;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'character_combat_stats_character_id_fkey';
+						columns: ['character_id'];
+						isOneToOne: true;
+						referencedRelation: 'characters';
+						referencedColumns: ['id'];
+					}
+				];
+			};
+			character_stats: {
+				Row: {
+					character_id: string;
+					strength: number;
+					dexterity: number;
+					constitution: number;
+					intelligence: number;
+					wisdom: number;
+					charisma: number;
+				};
+				Insert: {
+					character_id: string;
+					strength?: number;
+					dexterity?: number;
+					constitution?: number;
+					intelligence?: number;
+					wisdom?: number;
+					charisma?: number;
+				};
+				Update: {
+					character_id?: string;
+					strength?: number;
+					dexterity?: number;
+					constitution?: number;
+					intelligence?: number;
+					wisdom?: number;
+					charisma?: number;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'character_stats_character_id_fkey';
+						columns: ['character_id'];
+						isOneToOne: true;
+						referencedRelation: 'characters';
+						referencedColumns: ['id'];
+					}
+				];
+			};
+			character_text_sections: {
+				Row: {
+					character_id: string;
+					attacks: string | null;
+					spells: string | null;
+					inventory: string | null;
+					notes: string | null;
+				};
+				Insert: {
+					character_id: string;
+					attacks?: string | null;
+					spells?: string | null;
+					inventory?: string | null;
+					notes?: string | null;
+				};
+				Update: {
+					character_id?: string;
+					attacks?: string | null;
+					spells?: string | null;
+					inventory?: string | null;
+					notes?: string | null;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'character_text_sections_character_id_fkey';
+						columns: ['character_id'];
+						isOneToOne: true;
+						referencedRelation: 'characters';
+						referencedColumns: ['id'];
+					}
+				];
+			};
+			characters: {
+				Row: {
+					id: string;
+					user_id: string;
+					species_id: string | null;
+					subspecies_id: string | null;
+					class_id: string | null;
+					subclass_id: string | null;
+					background_id: string | null;
+					name: string;
+					race: string | null;
+					subrace: string | null;
+					class_name: string | null;
+					subclass: string | null;
+					level: number;
+					background: string | null;
+					story: string | null;
+					created_at: string;
+					updated_at: string;
+				};
+				Insert: {
+					id?: string;
+					user_id: string;
+					species_id?: string | null;
+					subspecies_id?: string | null;
+					class_id?: string | null;
+					subclass_id?: string | null;
+					background_id?: string | null;
+					name: string;
+					race?: string | null;
+					subrace?: string | null;
+					class_name?: string | null;
+					subclass?: string | null;
+					level?: number;
+					background?: string | null;
+					story?: string | null;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Update: {
+					id?: string;
+					user_id?: string;
+					species_id?: string | null;
+					subspecies_id?: string | null;
+					class_id?: string | null;
+					subclass_id?: string | null;
+					background_id?: string | null;
+					name?: string;
+					race?: string | null;
+					subrace?: string | null;
+					class_name?: string | null;
+					subclass?: string | null;
+					level?: number;
+					background?: string | null;
+					story?: string | null;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Relationships: [];
+			};
+			content_sources: {
+				Row: {
+					id: string;
+					code: string;
+					name: string;
+					license: string | null;
+					attribution: string | null;
+					is_system_source: boolean;
+					created_at: string;
+				};
+				Insert: {
+					id?: string;
+					code: string;
+					name: string;
+					license?: string | null;
+					attribution?: string | null;
+					is_system_source?: boolean;
+					created_at?: string;
+				};
+				Update: {
+					id?: string;
+					code?: string;
+					name?: string;
+					license?: string | null;
+					attribution?: string | null;
+					is_system_source?: boolean;
+					created_at?: string;
+				};
+				Relationships: [];
+			};
 			profiles: {
 				Row: {
 					id: string;

@@ -7,7 +7,8 @@ This document captures the initial relational model without enabling a working S
 Implementation is intentionally split in stages:
 
 - character tables remain the first editable user data slice
-- content catalog and permission tables will be introduced before deeper character automation
+- the initial SQL now includes the first catalog and permission foundations needed for character references
+- deeper character automation still stays incremental
 
 The detailed future content model is documented in `docs/rules/06_MODELO_DATOS_CONTENIDO_Y_PERMISOS.md`.
 
@@ -43,21 +44,19 @@ The detailed future content model is documented in `docs/rules/06_MODELO_DATOS_C
 
 The free-text identity fields remain useful during the MVP as a compatibility layer while reusable catalog entities are introduced.
 
-## Planned Content Tables
+## Current Content Tables
 
-These are not part of the first working schema yet, but they now belong to the target model:
+These now belong to the initial working schema:
 
 - `content_sources`
 - `species`
 - `subspecies`
 - `character_classes`
-- `class_features`
 - `subclasses`
-- `subclass_features`
 - `backgrounds`
 - `spells`
 
-The recommended order is:
+The implementation order remains:
 
 1. add `content_sources`
 2. add core content tables
@@ -77,13 +76,23 @@ The recommended order is:
 ### `character_combat_stats`
 
 - `character_id uuid primary key references characters(id) on delete cascade`
-- `max_hp integer default 1 check >= 0`
-- `current_hp integer default 1 check >= 0`
+- `max_hp integer default 1 check >= 1`
+- `current_hp integer default 1 check >= 0 and <= max_hp`
 - `temporary_hp integer default 0 check >= 0`
 - `armor_class integer default 10 check >= 0`
 - `initiative integer default 0`
 - `speed integer default 30 check >= 0`
 - `hit_dice text`
+
+### `character_text_sections`
+
+- `character_id uuid primary key references characters(id) on delete cascade`
+- `attacks text`
+- `spells text`
+- `inventory text`
+- `notes text`
+
+This table is the first persistence step for the free-text character sections already modeled in the MVP form schema. More structured child tables can still replace or complement these fields later.
 
 ### `character_inventory_items`
 

@@ -208,3 +208,25 @@ create table if not exists character_stats (
 		charisma between 1 and 30
 	)
 );
+
+create table if not exists character_combat_stats (
+	character_id uuid primary key references characters (id) on delete cascade,
+	max_hp integer not null default 1 check (max_hp >= 1),
+	current_hp integer not null default 1 check (
+		current_hp >= 0
+		and current_hp <= max_hp
+	),
+	temporary_hp integer not null default 0 check (temporary_hp >= 0),
+	armor_class integer not null default 10 check (armor_class >= 0),
+	initiative integer not null default 0,
+	speed integer not null default 30 check (speed >= 0),
+	hit_dice text
+);
+
+create table if not exists character_text_sections (
+	character_id uuid primary key references characters (id) on delete cascade,
+	attacks text,
+	spells text,
+	inventory text,
+	notes text
+);

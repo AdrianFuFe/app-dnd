@@ -2,6 +2,7 @@
 -- Intended for the first Supabase integration pass.
 
 alter table profiles enable row level security;
+alter table content_sources enable row level security;
 alter table species enable row level security;
 alter table subspecies enable row level security;
 alter table character_classes enable row level security;
@@ -10,6 +11,14 @@ alter table backgrounds enable row level security;
 alter table spells enable row level security;
 alter table characters enable row level security;
 alter table character_stats enable row level security;
+alter table character_combat_stats enable row level security;
+alter table character_text_sections enable row level security;
+
+create policy "content_sources_select_authenticated"
+on content_sources
+for select
+to authenticated
+using (true);
 
 create policy "profiles_select_own"
 on profiles
@@ -284,6 +293,100 @@ with check (
 		select 1
 		from characters
 		where characters.id = character_stats.character_id
+			and characters.user_id = auth.uid()
+	)
+);
+
+create policy "character_combat_stats_select_own"
+on character_combat_stats
+for select
+to authenticated
+using (
+	exists (
+		select 1
+		from characters
+		where characters.id = character_combat_stats.character_id
+			and characters.user_id = auth.uid()
+	)
+);
+
+create policy "character_combat_stats_insert_own"
+on character_combat_stats
+for insert
+to authenticated
+with check (
+	exists (
+		select 1
+		from characters
+		where characters.id = character_combat_stats.character_id
+			and characters.user_id = auth.uid()
+	)
+);
+
+create policy "character_combat_stats_update_own"
+on character_combat_stats
+for update
+to authenticated
+using (
+	exists (
+		select 1
+		from characters
+		where characters.id = character_combat_stats.character_id
+			and characters.user_id = auth.uid()
+	)
+)
+with check (
+	exists (
+		select 1
+		from characters
+		where characters.id = character_combat_stats.character_id
+			and characters.user_id = auth.uid()
+	)
+);
+
+create policy "character_text_sections_select_own"
+on character_text_sections
+for select
+to authenticated
+using (
+	exists (
+		select 1
+		from characters
+		where characters.id = character_text_sections.character_id
+			and characters.user_id = auth.uid()
+	)
+);
+
+create policy "character_text_sections_insert_own"
+on character_text_sections
+for insert
+to authenticated
+with check (
+	exists (
+		select 1
+		from characters
+		where characters.id = character_text_sections.character_id
+			and characters.user_id = auth.uid()
+	)
+);
+
+create policy "character_text_sections_update_own"
+on character_text_sections
+for update
+to authenticated
+using (
+	exists (
+		select 1
+		from characters
+		where characters.id = character_text_sections.character_id
+			and characters.user_id = auth.uid()
+	)
+)
+with check (
+	exists (
+		select 1
+		from characters
+		where characters.id = character_text_sections.character_id
 			and characters.user_id = auth.uid()
 	)
 );
