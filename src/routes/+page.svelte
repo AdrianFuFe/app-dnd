@@ -21,23 +21,33 @@
 			</p>
 		</div>
 
-		<div class="flex flex-wrap gap-3">
-			<a
-				class="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-700"
-				href={resolve('/auth/register')}
-			>
-				Create account
-			</a>
-			<a
-				class="rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-900 transition hover:border-stone-400"
-				href={resolve('/auth/login')}
-			>
-				Login
-			</a>
-		</div>
-
 		{#if data.session}
-			<p class="text-sm text-emerald-700">You already have an active session.</p>
+			<div class="space-y-3">
+				<p class="text-sm text-emerald-700">
+					You are signed in as {data.session.user.email ?? data.session.user.id}.
+				</p>
+				<a
+					class="inline-flex rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-700"
+					href={resolve('/app')}
+				>
+					Go to app
+				</a>
+			</div>
+		{:else}
+			<div class="flex flex-wrap gap-3">
+				<a
+					class="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-700"
+					href={resolve('/auth/register')}
+				>
+					Create account
+				</a>
+				<a
+					class="rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-900 transition hover:border-stone-400"
+					href={resolve('/auth/login')}
+				>
+					Login
+				</a>
+			</div>
 		{/if}
 	</div>
 </div>
