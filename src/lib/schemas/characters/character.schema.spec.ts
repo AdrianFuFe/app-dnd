@@ -1,0 +1,126 @@
+import { describe, expect, it } from 'vitest';
+import {
+	abilityNames,
+	characterCombatStatsSchema,
+	characterCreateInputSchema
+} from './character.schema.ts';
+
+describe('characterCreateInputSchema', () => {
+	it('parses a valid MVP character payload', () => {
+		const result = characterCreateInputSchema.parse({
+			name: 'Talia Stormstep',
+			level: '3',
+			race: 'Elf',
+			subrace: 'High Elf',
+			className: 'Wizard',
+			subclass: 'Evocation',
+			background: 'Sage',
+			story: 'An apprentice archivist turned adventurer.',
+			strength: '8',
+			dexterity: '14',
+			constitution: '13',
+			intelligence: '16',
+			wisdom: '12',
+			charisma: '10',
+			maxHp: '20',
+			currentHp: '18',
+			temporaryHp: '0',
+			armorClass: '13',
+			initiative: '2',
+			speed: '30',
+			hitDice: '3d6',
+			attacks: 'Quarterstaff +4 to hit, 1d6 bludgeoning',
+			spells: 'Magic Missile, Shield, Detect Magic',
+			inventory: 'Spellbook, component pouch, bedroll',
+			notes: 'Looking for traces of a lost tower.'
+		});
+
+		expect(result.level).toBe(3);
+		expect(result.intelligence).toBe(16);
+		expect(result.currentHp).toBe(18);
+		expect(result.spells).toContain('Shield');
+	});
+
+	it('normalizes blank optional fields to undefined', () => {
+		const result = characterCreateInputSchema.parse({
+			name: 'Bran',
+			level: 1,
+			race: ' ',
+			subrace: '',
+			className: '',
+			subclass: ' ',
+			background: '',
+			story: ' ',
+			strength: 10,
+			dexterity: 10,
+			constitution: 10,
+			intelligence: 10,
+			wisdom: 10,
+			charisma: 10,
+			maxHp: 1,
+			currentHp: 1,
+			temporaryHp: 0,
+			armorClass: 10,
+			initiative: 0,
+			speed: 30,
+			hitDice: '',
+			attacks: ' ',
+			spells: '',
+			inventory: '',
+			notes: ' '
+		});
+
+		expect(result.race).toBeUndefined();
+		expect(result.story).toBeUndefined();
+		expect(result.attacks).toBeUndefined();
+	});
+
+	it('rejects levels outside the 1 to 20 range', () => {
+		const result = characterCreateInputSchema.safeParse({
+			name: 'Invalid Hero',
+			level: 21,
+			strength: 10,
+			dexterity: 10,
+			constitution: 10,
+			intelligence: 10,
+			wisdom: 10,
+			charisma: 10,
+			maxHp: 1,
+			currentHp: 1,
+			temporaryHp: 0,
+			armorClass: 10,
+			initiative: 0,
+			speed: 30
+		});
+
+		expect(result.success).toBe(false);
+	});
+});
+
+describe('characterCombatStatsSchema', () => {
+	it('rejects current hp values above max hp', () => {
+		const result = characterCombatStatsSchema.safeParse({
+			maxHp: 12,
+			currentHp: 13,
+			temporaryHp: 0,
+			armorClass: 14,
+			initiative: 2,
+			speed: 30
+		});
+
+		expect(result.success).toBe(false);
+	});
+});
+
+describe('abilityNames', () => {
+	it('exposes the six core abilities in order', () => {
+		expect(abilityNames).toEqual([
+			'strength',
+			'dexterity',
+			'constitution',
+			'intelligence',
+			'wisdom',
+			'charisma'
+		]);
+	});
+});
