@@ -1,4 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import {
+	getE2EClassOption,
+	getE2ESpeciesOption,
+	isE2EMockSupabaseClient,
+	listE2ECatalog
+} from '$lib/server/e2e/mock-app';
 import type { Database } from '$lib/types/database/supabase';
 import type {
 	CharacterClassOption,
@@ -12,6 +18,10 @@ type CharacterClassRow = Database['public']['Tables']['character_classes']['Row'
 export async function listCharacterCreationCatalog(
 	supabase: SupabaseClient<Database>
 ): Promise<CharacterCreationCatalog> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		return listE2ECatalog();
+	}
+
 	const [speciesOptions, classOptions] = await Promise.all([
 		listSpeciesOptions(supabase),
 		listCharacterClassOptions(supabase)
@@ -35,6 +45,28 @@ export async function resolveCharacterCreationCatalogSelections(
 		classId?: string;
 		className?: string;
 	}> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		const species = selection.speciesId ? getE2ESpeciesOption(selection.speciesId) : undefined;
+		const characterClass = selection.classId
+			? getE2EClassOption(selection.classId)
+			: undefined;
+
+		if (selection.speciesId && !species) {
+			throw new Error('Please choose a valid species from the catalog.');
+		}
+
+		if (selection.classId && !characterClass) {
+			throw new Error('Please choose a valid class from the catalog.');
+		}
+
+		return {
+			speciesId: species?.id,
+			race: species?.name,
+			classId: characterClass?.id,
+			className: characterClass?.name
+		};
+	}
+
 	const [species, characterClass] = await Promise.all([
 		loadSelectedSpecies(supabase, selection.speciesId),
 		loadSelectedCharacterClass(supabase, selection.classId)

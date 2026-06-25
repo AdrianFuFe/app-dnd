@@ -1,5 +1,10 @@
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '$lib/types/database/supabase';
+import type {
+	CharacterClassOption,
+	CharacterCreationCatalog,
+	CharacterSpeciesOption
+} from '$lib/types/content/character-catalog';
 import type { CharacterCreateInput } from '$lib/types/domain/character';
 
 type E2EMockSupabaseClient = SupabaseClient<Database> & {
@@ -14,6 +19,12 @@ type E2ECharacterRecord = CharacterCreateInput & {
 
 const E2E_USER_ID = 'e2e-user-1';
 const E2E_USER_EMAIL = 'talia@example.test';
+const E2E_SPECIES_DWARF_ID = '11111111-1111-4111-8111-111111111111';
+const E2E_SPECIES_ELF_ID = '22222222-2222-4222-8222-222222222222';
+const E2E_SPECIES_HUMAN_ID = '33333333-3333-4333-8333-333333333333';
+const E2E_CLASS_CLERIC_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+const E2E_CLASS_FIGHTER_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+const E2E_CLASS_WIZARD_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 
 const initialCharacters: E2ECharacterRecord[] = [
 	{
@@ -21,8 +32,8 @@ const initialCharacters: E2ECharacterRecord[] = [
 		userId: E2E_USER_ID,
 		updatedAt: '2026-06-25T09:00:00.000Z',
 		name: 'Talia Stormstep',
-		speciesId: 'species-elf',
-		classId: 'class-wizard',
+		speciesId: E2E_SPECIES_ELF_ID,
+		classId: E2E_CLASS_WIZARD_ID,
 		race: 'Elf',
 		className: 'Wizard',
 		subclass: 'Evocation',
@@ -49,9 +60,62 @@ const initialCharacters: E2ECharacterRecord[] = [
 	}
 ];
 
-const state = {
-	characters: initialCharacters.map((character) => ({ ...character }))
+const e2eCatalog: CharacterCreationCatalog = {
+	speciesOptions: [
+		{
+			id: E2E_SPECIES_DWARF_ID,
+			slug: 'dwarf',
+			name: 'Dwarf',
+			summary: 'Steady travelers known for endurance and stonecraft.',
+			baseSpeed: 25
+		},
+		{
+			id: E2E_SPECIES_ELF_ID,
+			slug: 'elf',
+			name: 'Elf',
+			summary: 'Keen-sensed wanderers with long memories and precise grace.',
+			baseSpeed: 30
+		},
+		{
+			id: E2E_SPECIES_HUMAN_ID,
+			slug: 'human',
+			name: 'Human',
+			summary: 'Adaptable adventurers who thrive across every frontier.',
+			baseSpeed: 30
+		}
+	],
+	classOptions: [
+		{
+			id: E2E_CLASS_CLERIC_ID,
+			slug: 'cleric',
+			name: 'Cleric',
+			summary: 'Divine spellcasters who channel miracles into the fight.',
+			hitDie: 8
+		},
+		{
+			id: E2E_CLASS_FIGHTER_ID,
+			slug: 'fighter',
+			name: 'Fighter',
+			summary: 'Versatile martial experts built for discipline and steel.',
+			hitDie: 10
+		},
+		{
+			id: E2E_CLASS_WIZARD_ID,
+			slug: 'wizard',
+			name: 'Wizard',
+			summary: 'Arcane scholars who solve problems with preparation and power.',
+			hitDie: 6
+		}
+	]
 };
+
+const state = {
+	characters: [] as E2ECharacterRecord[],
+	nextCharacterSequence: 2,
+	nextUpdatedMinute: 0
+};
+
+resetE2EMockState();
 
 export function isE2EMockSupabaseClient(
 	value: unknown
@@ -100,6 +164,31 @@ export function getE2EMockSession(): Session {
 	} as Session;
 }
 
+export function resetE2EMockState() {
+	state.characters = initialCharacters.map((character) => ({ ...character }));
+	state.nextCharacterSequence = 2;
+	state.nextUpdatedMinute = 0;
+}
+
+export function listE2ECatalog(): CharacterCreationCatalog {
+	return {
+		speciesOptions: e2eCatalog.speciesOptions.map((option) => ({ ...option })),
+		classOptions: e2eCatalog.classOptions.map((option) => ({ ...option }))
+	};
+}
+
+export function getE2ESpeciesOption(
+	speciesId: string
+): CharacterSpeciesOption | undefined {
+	return e2eCatalog.speciesOptions.find((option) => option.id === speciesId);
+}
+
+export function getE2EClassOption(
+	classId: string
+): CharacterClassOption | undefined {
+	return e2eCatalog.classOptions.find((option) => option.id === classId);
+}
+
 export function listE2ECharactersForUser(userId: string) {
 	return state.characters
 		.filter((character) => character.userId === userId)
@@ -122,6 +211,46 @@ export function getE2ECharacterForUser(userId: string, characterId: string) {
 	return character ? { ...character } : null;
 }
 
+export function createE2ECharacterForUser(userId: string, input: CharacterCreateInput) {
+	const character: E2ECharacterRecord = {
+		id: `char-e2e-${state.nextCharacterSequence}`,
+		userId,
+		updatedAt: nextUpdatedAt(),
+		...input
+	};
+
+	state.nextCharacterSequence += 1;
+	state.characters.unshift(character);
+
+	return {
+		id: character.id,
+		name: character.name
+	};
+}
+
+export function updateE2ECharacterForUser(
+	userId: string,
+	characterId: string,
+	input: CharacterCreateInput
+) {
+	const character = state.characters.find(
+		(entry) => entry.userId === userId && entry.id === characterId
+	);
+
+	if (!character) {
+		return null;
+	}
+
+	Object.assign(character, input, {
+		updatedAt: nextUpdatedAt()
+	});
+
+	return {
+		id: character.id,
+		name: character.name
+	};
+}
+
 export function deleteE2ECharacterForUser(userId: string, characterId: string) {
 	const index = state.characters.findIndex(
 		(entry) => entry.userId === userId && entry.id === characterId
@@ -137,4 +266,10 @@ export function deleteE2ECharacterForUser(userId: string, characterId: string) {
 		id: deletedCharacter.id,
 		name: deletedCharacter.name
 	};
+}
+
+function nextUpdatedAt(): string {
+	const updatedAt = new Date(Date.UTC(2026, 5, 25, 9, state.nextUpdatedMinute, 0)).toISOString();
+	state.nextUpdatedMinute += 1;
+	return updatedAt;
 }

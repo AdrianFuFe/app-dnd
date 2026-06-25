@@ -1,9 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
+	createE2ECharacterForUser,
 	deleteE2ECharacterForUser,
 	getE2ECharacterForUser,
 	isE2EMockSupabaseClient,
-	listE2ECharactersForUser
+	listE2ECharactersForUser,
+	updateE2ECharacterForUser
 } from '$lib/server/e2e/mock-app';
 import type { Database } from '$lib/types/database/supabase';
 import type { CharacterCreateInput } from '$lib/types/domain/character';
@@ -61,6 +63,10 @@ export async function createCharacter(
 	userId: string,
 	input: CharacterCreateInput
 ): Promise<{ id: string; name: string }> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		return createE2ECharacterForUser(userId, input);
+	}
+
 	const characterInsert: CharactersInsert = {
 		user_id: userId,
 		...toCharacterRowFields(input)
@@ -199,6 +205,16 @@ export async function updateCharacter(
 	characterId: string,
 	input: CharacterCreateInput
 ): Promise<{ id: string; name: string }> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		const character = updateE2ECharacterForUser(userId, characterId, input);
+
+		if (!character) {
+			throw new Error(`Character ${characterId} was not found for user ${userId}`);
+		}
+
+		return character;
+	}
+
 	const { data: character, error: characterError } = await supabase
 		.from('characters')
 		.update(toCharacterRowFields(input))

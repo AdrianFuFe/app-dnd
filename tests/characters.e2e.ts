@@ -1,4 +1,71 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+
+test.beforeEach(async ({ request }) => {
+	const response = await request.post('/api/test/reset');
+	expect(response.ok()).toBeTruthy();
+});
+
+test('character create route saves a new draft and returns to the roster', async ({ page }) => {
+	await page.goto('/app/characters/new');
+
+	await expect(page).toHaveURL('/app/characters/new');
+	await expect(page.getByRole('heading', { name: 'Create your first draft.' })).toBeVisible();
+
+	await fillCharacterForm(page, {
+		name: 'Brakka Emberforge',
+		species: 'Dwarf',
+		className: 'Fighter',
+		subclass: 'Battle Master',
+		level: '4',
+		background: 'Guild Artisan',
+		story: 'A caravan guard learning to lead from the front.',
+		strength: '16',
+		constitution: '15',
+		maxHp: '34',
+		currentHp: '28',
+		armorClass: '17',
+		hitDice: '4d10',
+		attacks: 'Warhammer',
+		inventory: 'Smith tools'
+	});
+
+	await page.getByRole('button', { name: 'Create character' }).click();
+
+	await expect(page).toHaveURL('/app/characters?created=Brakka%20Emberforge');
+	await expect(page.getByText('Brakka Emberforge was created successfully.')).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Brakka Emberforge' })).toBeVisible();
+	await expect(page.getByText('Dwarf - Fighter', { exact: true })).toBeVisible();
+});
+
+test('character edit route updates an existing draft and returns to detail', async ({ page }) => {
+	await page.goto('/app/characters/char-e2e-1/edit');
+
+	await expect(page).toHaveURL('/app/characters/char-e2e-1/edit');
+	await expect(page.getByRole('heading', { name: 'Talia Stormstep' })).toBeVisible();
+
+	await fillCharacterForm(page, {
+		name: 'Talia Dawnweaver',
+		className: 'Cleric',
+		subclass: 'Light Domain',
+		background: 'Pilgrim',
+		story: 'Now follows a radiant omen across the coast.',
+		intelligence: '14',
+		wisdom: '16',
+		currentHp: '20',
+		spells: 'Guiding Bolt',
+		notes: 'Carries a lantern relic.'
+	});
+
+	await page.getByRole('button', { name: 'Save changes' }).click();
+
+	await expect(page).toHaveURL('/app/characters/char-e2e-1?updated=Talia%20Dawnweaver');
+	await expect(page.getByText('Talia Dawnweaver was updated successfully.')).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Talia Dawnweaver' })).toBeVisible();
+	await expect(page.getByText('Cleric', { exact: true })).toBeVisible();
+	await expect(page.getByText('Pilgrim', { exact: true })).toBeVisible();
+	await expect(page.getByText('Guiding Bolt', { exact: true })).toBeVisible();
+	await expect(page.getByText('Carries a lantern relic.', { exact: true })).toBeVisible();
+});
 
 test('character detail route supports deleting a draft', async ({ page }) => {
 	await page.goto('/app/characters');
@@ -19,3 +86,89 @@ test('character detail route supports deleting a draft', async ({ page }) => {
 	await expect(page.getByText('Talia Stormstep was deleted successfully.')).toBeVisible();
 	await expect(page.getByRole('heading', { name: 'No characters yet' })).toBeVisible();
 });
+
+async function fillCharacterForm(
+	page: Page,
+	overrides: Partial<{
+		name: string;
+		species: string;
+		subrace: string;
+		className: string;
+		subclass: string;
+		level: string;
+		background: string;
+		story: string;
+		strength: string;
+		dexterity: string;
+		constitution: string;
+		intelligence: string;
+		wisdom: string;
+		charisma: string;
+		maxHp: string;
+		currentHp: string;
+		temporaryHp: string;
+		armorClass: string;
+		initiative: string;
+		speed: string;
+		hitDice: string;
+		attacks: string;
+		spells: string;
+		inventory: string;
+		notes: string;
+	}> = {}
+) {
+	const values = {
+		name: 'Talia Stormstep',
+		species: 'Elf',
+		subrace: '',
+		className: 'Wizard',
+		subclass: 'Evocation',
+		level: '3',
+		background: 'Sage',
+		story: 'Archivist turned explorer.',
+		strength: '8',
+		dexterity: '14',
+		constitution: '13',
+		intelligence: '16',
+		wisdom: '12',
+		charisma: '10',
+		maxHp: '20',
+		currentHp: '18',
+		temporaryHp: '0',
+		armorClass: '13',
+		initiative: '2',
+		speed: '30',
+		hitDice: '3d6',
+		attacks: 'Quarterstaff',
+		spells: 'Magic Missile',
+		inventory: 'Spellbook',
+		notes: 'Tracks ley lines.',
+		...overrides
+	};
+
+	await page.locator('input[name="name"]').fill(values.name);
+	await page.locator('select[name="speciesId"]').selectOption({ label: values.species });
+	await page.locator('input[name="subrace"]').fill(values.subrace);
+	await page.locator('select[name="classId"]').selectOption({ label: values.className });
+	await page.locator('input[name="subclass"]').fill(values.subclass);
+	await page.locator('input[name="level"]').fill(values.level);
+	await page.locator('input[name="background"]').fill(values.background);
+	await page.locator('textarea[name="story"]').fill(values.story);
+	await page.locator('input[name="strength"]').fill(values.strength);
+	await page.locator('input[name="dexterity"]').fill(values.dexterity);
+	await page.locator('input[name="constitution"]').fill(values.constitution);
+	await page.locator('input[name="intelligence"]').fill(values.intelligence);
+	await page.locator('input[name="wisdom"]').fill(values.wisdom);
+	await page.locator('input[name="charisma"]').fill(values.charisma);
+	await page.locator('input[name="maxHp"]').fill(values.maxHp);
+	await page.locator('input[name="currentHp"]').fill(values.currentHp);
+	await page.locator('input[name="temporaryHp"]').fill(values.temporaryHp);
+	await page.locator('input[name="armorClass"]').fill(values.armorClass);
+	await page.locator('input[name="initiative"]').fill(values.initiative);
+	await page.locator('input[name="speed"]').fill(values.speed);
+	await page.locator('input[name="hitDice"]').fill(values.hitDice);
+	await page.locator('textarea[name="attacks"]').fill(values.attacks);
+	await page.locator('textarea[name="spells"]').fill(values.spells);
+	await page.locator('textarea[name="inventory"]').fill(values.inventory);
+	await page.locator('textarea[name="notes"]').fill(values.notes);
+}
