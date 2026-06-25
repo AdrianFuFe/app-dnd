@@ -14,6 +14,7 @@ test('character create route saves a new draft and returns to the roster', async
 	await fillCharacterForm(page, {
 		name: 'Brakka Emberforge',
 		species: 'Dwarf',
+		subspecies: '',
 		className: 'Fighter',
 		subclass: 'Battle Master',
 		level: '4',
@@ -48,6 +49,8 @@ test('character edit route updates an existing draft and returns to detail', asy
 		className: 'Cleric',
 		subclass: 'Light Domain',
 		background: 'Pilgrim',
+		species: 'Elf',
+		subspecies: 'High Elf',
 		story: 'Now follows a radiant omen across the coast.',
 		intelligence: '14',
 		wisdom: '16',
@@ -71,7 +74,9 @@ test('character detail route supports deleting a draft', async ({ page }) => {
 	await page.goto('/app/characters');
 
 	await expect(page).toHaveURL('/app/characters');
-	await expect(page.getByRole('heading', { name: 'Character management starts here.' })).toBeVisible();
+	await expect(
+		page.getByRole('heading', { name: 'Character management starts here.' })
+	).toBeVisible();
 	await expect(page.getByRole('heading', { name: 'Talia Stormstep' })).toBeVisible();
 
 	await page.getByRole('link', { name: 'View details' }).click();
@@ -92,7 +97,7 @@ async function fillCharacterForm(
 	overrides: Partial<{
 		name: string;
 		species: string;
-		subrace: string;
+		subspecies: string;
 		className: string;
 		subclass: string;
 		level: string;
@@ -120,7 +125,7 @@ async function fillCharacterForm(
 	const values = {
 		name: 'Talia Stormstep',
 		species: 'Elf',
-		subrace: '',
+		subspecies: 'High Elf',
 		className: 'Wizard',
 		subclass: 'Evocation',
 		level: '3',
@@ -148,11 +153,13 @@ async function fillCharacterForm(
 
 	await page.locator('input[name="name"]').fill(values.name);
 	await page.locator('select[name="speciesId"]').selectOption({ label: values.species });
-	await page.locator('input[name="subrace"]').fill(values.subrace);
+	await page
+		.locator('select[name="subspeciesId"]')
+		.selectOption(values.subspecies ? { label: values.subspecies } : { value: '' });
 	await page.locator('select[name="classId"]').selectOption({ label: values.className });
-	await page.locator('input[name="subclass"]').fill(values.subclass);
+	await page.locator('select[name="subclassId"]').selectOption({ label: values.subclass });
 	await page.locator('input[name="level"]').fill(values.level);
-	await page.locator('input[name="background"]').fill(values.background);
+	await page.locator('select[name="backgroundId"]').selectOption({ label: values.background });
 	await page.locator('textarea[name="story"]').fill(values.story);
 	await page.locator('input[name="strength"]').fill(values.strength);
 	await page.locator('input[name="dexterity"]').fill(values.dexterity);

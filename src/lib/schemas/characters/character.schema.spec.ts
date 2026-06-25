@@ -9,11 +9,16 @@ describe('characterCreateInputSchema', () => {
 	it('parses a valid MVP character payload', () => {
 		const result = characterCreateInputSchema.parse({
 			name: 'Talia Stormstep',
+			speciesId: '22222222-2222-4222-8222-222222222222',
+			subspeciesId: '44444444-4444-4444-8444-444444444444',
 			level: '3',
 			race: 'Elf',
 			subrace: 'High Elf',
+			classId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
 			className: 'Wizard',
+			subclassId: 'ffffffff-ffff-4fff-8fff-ffffffffffff',
 			subclass: 'Evocation',
+			backgroundId: '55555555-5555-4555-8555-555555555555',
 			background: 'Sage',
 			story: 'An apprentice archivist turned adventurer.',
 			strength: '8',
@@ -36,6 +41,8 @@ describe('characterCreateInputSchema', () => {
 		});
 
 		expect(result.level).toBe(3);
+		expect(result.subspeciesId).toBe('44444444-4444-4444-8444-444444444444');
+		expect(result.subclassId).toBe('ffffffff-ffff-4fff-8fff-ffffffffffff');
 		expect(result.intelligence).toBe(16);
 		expect(result.currentHp).toBe(18);
 		expect(result.spells).toContain('Shield');
@@ -44,11 +51,16 @@ describe('characterCreateInputSchema', () => {
 	it('normalizes blank optional fields to undefined', () => {
 		const result = characterCreateInputSchema.parse({
 			name: 'Bran',
+			speciesId: '',
+			subspeciesId: ' ',
 			level: 1,
 			race: ' ',
 			subrace: '',
+			classId: '',
+			subclassId: ' ',
 			className: '',
 			subclass: ' ',
+			backgroundId: '',
 			background: '',
 			story: ' ',
 			strength: 10,
@@ -71,6 +83,8 @@ describe('characterCreateInputSchema', () => {
 		});
 
 		expect(result.race).toBeUndefined();
+		expect(result.subspeciesId).toBeUndefined();
+		expect(result.subclassId).toBeUndefined();
 		expect(result.story).toBeUndefined();
 		expect(result.attacks).toBeUndefined();
 	});

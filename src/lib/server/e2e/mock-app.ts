@@ -1,9 +1,12 @@
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '$lib/types/database/supabase';
 import type {
+	CharacterBackgroundOption,
 	CharacterClassOption,
 	CharacterCreationCatalog,
-	CharacterSpeciesOption
+	CharacterSpeciesOption,
+	CharacterSubclassOption,
+	CharacterSubspeciesOption
 } from '$lib/types/content/character-catalog';
 import type { CharacterCreateInput } from '$lib/types/domain/character';
 
@@ -25,6 +28,13 @@ const E2E_SPECIES_HUMAN_ID = '33333333-3333-4333-8333-333333333333';
 const E2E_CLASS_CLERIC_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const E2E_CLASS_FIGHTER_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const E2E_CLASS_WIZARD_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+const E2E_SUBSPECIES_HIGH_ELF_ID = '44444444-4444-4444-8444-444444444444';
+const E2E_SUBCLASS_LIGHT_DOMAIN_ID = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+const E2E_SUBCLASS_BATTLE_MASTER_ID = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+const E2E_SUBCLASS_EVOCATION_ID = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+const E2E_BACKGROUND_SAGE_ID = '55555555-5555-4555-8555-555555555555';
+const E2E_BACKGROUND_GUILD_ARTISAN_ID = '66666666-6666-4666-8666-666666666666';
+const E2E_BACKGROUND_PILGRIM_ID = '77777777-7777-4777-8777-777777777777';
 
 const initialCharacters: E2ECharacterRecord[] = [
 	{
@@ -33,8 +43,12 @@ const initialCharacters: E2ECharacterRecord[] = [
 		updatedAt: '2026-06-25T09:00:00.000Z',
 		name: 'Talia Stormstep',
 		speciesId: E2E_SPECIES_ELF_ID,
+		subspeciesId: E2E_SUBSPECIES_HIGH_ELF_ID,
 		classId: E2E_CLASS_WIZARD_ID,
+		subclassId: E2E_SUBCLASS_EVOCATION_ID,
+		backgroundId: E2E_BACKGROUND_SAGE_ID,
 		race: 'Elf',
+		subrace: 'High Elf',
 		className: 'Wizard',
 		subclass: 'Evocation',
 		level: 3,
@@ -84,6 +98,15 @@ const e2eCatalog: CharacterCreationCatalog = {
 			baseSpeed: 30
 		}
 	],
+	subspeciesOptions: [
+		{
+			id: E2E_SUBSPECIES_HIGH_ELF_ID,
+			slug: 'high-elf',
+			speciesSlug: 'elf',
+			name: 'High Elf',
+			summary: 'Arcane-leaning elves with extra training and cantrip aptitude.'
+		}
+	],
 	classOptions: [
 		{
 			id: E2E_CLASS_CLERIC_ID,
@@ -105,6 +128,49 @@ const e2eCatalog: CharacterCreationCatalog = {
 			name: 'Wizard',
 			summary: 'Arcane scholars who solve problems with preparation and power.',
 			hitDie: 6
+		}
+	],
+	subclassOptions: [
+		{
+			id: E2E_SUBCLASS_LIGHT_DOMAIN_ID,
+			slug: 'light-domain',
+			classSlug: 'cleric',
+			name: 'Light Domain',
+			summary: 'A radiant divine path focused on fire, warding, and revelation.'
+		},
+		{
+			id: E2E_SUBCLASS_BATTLE_MASTER_ID,
+			slug: 'battle-master',
+			classSlug: 'fighter',
+			name: 'Battle Master',
+			summary: 'A tactical martial path built around maneuvers and battlefield control.'
+		},
+		{
+			id: E2E_SUBCLASS_EVOCATION_ID,
+			slug: 'school-of-evocation',
+			classSlug: 'wizard',
+			name: 'Evocation',
+			summary: 'Arcane specialists in shaping destructive elemental power.'
+		}
+	],
+	backgroundOptions: [
+		{
+			id: E2E_BACKGROUND_GUILD_ARTISAN_ID,
+			slug: 'guild-artisan',
+			name: 'Guild Artisan',
+			summary: 'Craft-focused wanderers with trade connections and practical discipline.'
+		},
+		{
+			id: E2E_BACKGROUND_PILGRIM_ID,
+			slug: 'pilgrim',
+			name: 'Pilgrim',
+			summary: 'Travelers defined by devotion, vows, and hard-earned road wisdom.'
+		},
+		{
+			id: E2E_BACKGROUND_SAGE_ID,
+			slug: 'sage',
+			name: 'Sage',
+			summary: 'Researchers and lorekeepers driven by study and dangerous questions.'
 		}
 	]
 };
@@ -185,7 +251,10 @@ export function resetE2EMockState() {
 export function listE2ECatalog(): CharacterCreationCatalog {
 	return {
 		speciesOptions: e2eCatalog.speciesOptions.map((option) => ({ ...option })),
-		classOptions: e2eCatalog.classOptions.map((option) => ({ ...option }))
+		subspeciesOptions: e2eCatalog.subspeciesOptions.map((option) => ({ ...option })),
+		classOptions: e2eCatalog.classOptions.map((option) => ({ ...option })),
+		subclassOptions: e2eCatalog.subclassOptions.map((option) => ({ ...option })),
+		backgroundOptions: e2eCatalog.backgroundOptions.map((option) => ({ ...option }))
 	};
 }
 
@@ -195,6 +264,22 @@ export function getE2ESpeciesOption(speciesId: string): CharacterSpeciesOption |
 
 export function getE2EClassOption(classId: string): CharacterClassOption | undefined {
 	return e2eCatalog.classOptions.find((option) => option.id === classId);
+}
+
+export function getE2ESubspeciesOption(
+	subspeciesId: string
+): CharacterSubspeciesOption | undefined {
+	return e2eCatalog.subspeciesOptions.find((option) => option.id === subspeciesId);
+}
+
+export function getE2ESubclassOption(subclassId: string): CharacterSubclassOption | undefined {
+	return e2eCatalog.subclassOptions.find((option) => option.id === subclassId);
+}
+
+export function getE2EBackgroundOption(
+	backgroundId: string
+): CharacterBackgroundOption | undefined {
+	return e2eCatalog.backgroundOptions.find((option) => option.id === backgroundId);
 }
 
 export function listE2ECharactersForUser(userId: string) {

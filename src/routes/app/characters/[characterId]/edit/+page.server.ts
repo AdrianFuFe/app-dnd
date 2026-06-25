@@ -68,7 +68,10 @@ export const actions: Actions = {
 				locals.supabase,
 				{
 					speciesId: parsed.data.speciesId,
-					classId: parsed.data.classId
+					subspeciesId: parsed.data.subspeciesId,
+					classId: parsed.data.classId,
+					subclassId: parsed.data.subclassId,
+					backgroundId: parsed.data.backgroundId
 				}
 			);
 
@@ -80,8 +83,14 @@ export const actions: Actions = {
 					...parsed.data,
 					speciesId: catalogSelection.speciesId,
 					race: catalogSelection.race,
+					subspeciesId: catalogSelection.subspeciesId,
+					subrace: catalogSelection.subrace,
 					classId: catalogSelection.classId,
-					className: catalogSelection.className
+					className: catalogSelection.className,
+					subclassId: catalogSelection.subclassId,
+					subclass: catalogSelection.subclass,
+					backgroundId: catalogSelection.backgroundId,
+					background: catalogSelection.background
 				}
 			);
 			const updatedName = encodeURIComponent(character.name);

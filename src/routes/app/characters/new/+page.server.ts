@@ -15,7 +15,13 @@ import { createCharacter } from '$lib/server/repositories/characters';
 export const load: PageServerLoad = async ({ locals }) => {
 	const catalog = locals.supabase
 		? await listCharacterCreationCatalog(locals.supabase)
-		: { speciesOptions: [], classOptions: [] };
+		: {
+				speciesOptions: [],
+				subspeciesOptions: [],
+				classOptions: [],
+				subclassOptions: [],
+				backgroundOptions: []
+			};
 
 	return {
 		values: createCharacterFormValuesFromInput(createDefaultCharacterInput()),
@@ -50,22 +56,30 @@ export const actions: Actions = {
 		}
 
 		try {
-			const catalogSelection = await resolveCharacterCreationCatalogSelections(locals.supabase, {
-				speciesId: parsed.data.speciesId,
-				classId: parsed.data.classId
-			});
-
-			const character = await createCharacter(
+			const catalogSelection = await resolveCharacterCreationCatalogSelections(
 				locals.supabase,
-				locals.session.user.id,
 				{
-					...parsed.data,
-					speciesId: catalogSelection.speciesId,
-					race: catalogSelection.race,
-					classId: catalogSelection.classId,
-					className: catalogSelection.className
+					speciesId: parsed.data.speciesId,
+					subspeciesId: parsed.data.subspeciesId,
+					classId: parsed.data.classId,
+					subclassId: parsed.data.subclassId,
+					backgroundId: parsed.data.backgroundId
 				}
 			);
+
+			const character = await createCharacter(locals.supabase, locals.session.user.id, {
+				...parsed.data,
+				speciesId: catalogSelection.speciesId,
+				race: catalogSelection.race,
+				subspeciesId: catalogSelection.subspeciesId,
+				subrace: catalogSelection.subrace,
+				classId: catalogSelection.classId,
+				className: catalogSelection.className,
+				subclassId: catalogSelection.subclassId,
+				subclass: catalogSelection.subclass,
+				backgroundId: catalogSelection.backgroundId,
+				background: catalogSelection.background
+			});
 			const createdName = encodeURIComponent(character.name);
 
 			throw redirect(303, `/app/characters?created=${createdName}`);
