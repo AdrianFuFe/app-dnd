@@ -1,0 +1,219 @@
+<script lang="ts">
+	import { resolve } from '$app/paths';
+	import { calculateAbilityModifier } from '$lib/domain/ability-modifier';
+	import type { PageData } from './$types';
+
+	let { data }: { data: PageData } = $props();
+
+	const abilityFields = [
+		{ key: 'strength', label: 'STR' },
+		{ key: 'dexterity', label: 'DEX' },
+		{ key: 'constitution', label: 'CON' },
+		{ key: 'intelligence', label: 'INT' },
+		{ key: 'wisdom', label: 'WIS' },
+		{ key: 'charisma', label: 'CHA' }
+	] as const;
+
+	function formatModifier(score: number): string {
+		const modifier = calculateAbilityModifier(score);
+		return modifier >= 0 ? `+${modifier}` : `${modifier}`;
+	}
+
+	function optionalText(value: string | undefined, fallback = 'Not provided yet.'): string {
+		return value?.trim() ? value : fallback;
+	}
+</script>
+
+<svelte:head>
+	<title>App DnD | {data.character.name}</title>
+</svelte:head>
+
+<div class="space-y-6">
+	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+		<div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+			<div>
+				<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
+					Character detail
+				</p>
+				<h1 class="mt-3 text-3xl font-semibold text-stone-900">{data.character.name}</h1>
+				<p class="mt-3 max-w-3xl text-base leading-7 text-stone-600">
+					Level {data.character.level}
+					{#if data.character.race}
+						{data.character.race}
+					{/if}
+					{#if data.character.className}
+						{data.character.className}
+					{/if}
+				</p>
+			</div>
+
+			<div class="flex flex-wrap gap-3">
+				<a
+					class="rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-900 transition hover:border-stone-400"
+					href={resolve('/app/characters')}
+				>
+					Back to characters
+				</a>
+				<a
+					class="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-700"
+					href={resolve(`/app/characters/${data.character.id}/edit`)}
+				>
+					Edit character
+				</a>
+			</div>
+		</div>
+
+		{#if data.updatedName}
+			<p
+				class="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800"
+			>
+				{data.updatedName} was updated successfully.
+			</p>
+		{/if}
+	</section>
+
+	<section class="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
+		<div class="space-y-4">
+			<article class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+				<h2 class="text-xl font-semibold text-stone-900">Identity</h2>
+				<div class="mt-6 grid gap-4 md:grid-cols-2">
+					<div>
+						<p class="text-sm font-medium text-stone-500">Species</p>
+						<p class="mt-1 text-base text-stone-900">
+							{data.character.race ?? 'Unspecified ancestry'}
+						</p>
+					</div>
+					<div>
+						<p class="text-sm font-medium text-stone-500">Subrace</p>
+						<p class="mt-1 text-base text-stone-900">
+							{optionalText(data.character.subrace)}
+						</p>
+					</div>
+					<div>
+						<p class="text-sm font-medium text-stone-500">Class</p>
+						<p class="mt-1 text-base text-stone-900">
+							{optionalText(data.character.className)}
+						</p>
+					</div>
+					<div>
+						<p class="text-sm font-medium text-stone-500">Subclass</p>
+						<p class="mt-1 text-base text-stone-900">
+							{optionalText(data.character.subclass)}
+						</p>
+					</div>
+					<div>
+						<p class="text-sm font-medium text-stone-500">Background</p>
+						<p class="mt-1 text-base text-stone-900">
+							{optionalText(data.character.background)}
+						</p>
+					</div>
+					<div>
+						<p class="text-sm font-medium text-stone-500">Last updated</p>
+						<p class="mt-1 text-base text-stone-900">
+							{new Date(data.character.updatedAt).toLocaleString()}
+						</p>
+					</div>
+				</div>
+
+				<div class="mt-6">
+					<p class="text-sm font-medium text-stone-500">Story</p>
+					<p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700">
+						{optionalText(data.character.story)}
+					</p>
+				</div>
+			</article>
+
+			<article class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+				<h2 class="text-xl font-semibold text-stone-900">Free-Text Sections</h2>
+				<div class="mt-6 grid gap-4 lg:grid-cols-2">
+					<div>
+						<p class="text-sm font-medium text-stone-500">Attacks</p>
+						<p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700">
+							{optionalText(data.character.attacks)}
+						</p>
+					</div>
+					<div>
+						<p class="text-sm font-medium text-stone-500">Spells</p>
+						<p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700">
+							{optionalText(data.character.spells)}
+						</p>
+					</div>
+					<div>
+						<p class="text-sm font-medium text-stone-500">Inventory</p>
+						<p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700">
+							{optionalText(data.character.inventory)}
+						</p>
+					</div>
+					<div>
+						<p class="text-sm font-medium text-stone-500">Notes</p>
+						<p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700">
+							{optionalText(data.character.notes)}
+						</p>
+					</div>
+				</div>
+			</article>
+		</div>
+
+		<div class="space-y-4">
+			<article class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+				<h2 class="text-xl font-semibold text-stone-900">Ability Scores</h2>
+				<div class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+					{#each abilityFields as field (field.key)}
+						<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+							<div class="flex items-center justify-between gap-3">
+								<p class="text-sm font-medium text-stone-500">{field.label}</p>
+								<p class="text-sm font-semibold text-stone-700">
+									{formatModifier(data.character[field.key])}
+								</p>
+							</div>
+							<p class="mt-2 text-2xl font-semibold text-stone-900">
+								{data.character[field.key]}
+							</p>
+						</div>
+					{/each}
+				</div>
+			</article>
+
+			<article class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+				<h2 class="text-xl font-semibold text-stone-900">Combat Snapshot</h2>
+				<div class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+					<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+						<p class="text-sm font-medium text-stone-500">Hit Points</p>
+						<p class="mt-2 text-lg font-semibold text-stone-900">
+							{data.character.currentHp} / {data.character.maxHp}
+						</p>
+						<p class="mt-1 text-sm text-stone-600">
+							Temp HP: {data.character.temporaryHp}
+						</p>
+					</div>
+					<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+						<p class="text-sm font-medium text-stone-500">Armor Class</p>
+						<p class="mt-2 text-2xl font-semibold text-stone-900">
+							{data.character.armorClass}
+						</p>
+					</div>
+					<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+						<p class="text-sm font-medium text-stone-500">Initiative</p>
+						<p class="mt-2 text-2xl font-semibold text-stone-900">
+							{data.character.initiative >= 0
+								? `+${data.character.initiative}`
+								: data.character.initiative}
+						</p>
+					</div>
+					<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+						<p class="text-sm font-medium text-stone-500">Speed</p>
+						<p class="mt-2 text-2xl font-semibold text-stone-900">
+							{data.character.speed}
+						</p>
+					</div>
+					<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+						<p class="text-sm font-medium text-stone-500">Hit Dice</p>
+						<p class="mt-2 text-lg font-semibold text-stone-900">
+							{optionalText(data.character.hitDice)}
+						</p>
+					</div>
+				</div>
+			</article>
+		</div>
+	</section>
+</div>

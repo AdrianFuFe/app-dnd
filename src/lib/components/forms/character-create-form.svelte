@@ -1,19 +1,28 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import type { CharacterCreateFormValues } from '$lib/domain/characters/character-form';
 	import type { CharacterCreationCatalog } from '$lib/types/content/character-catalog';
 
 	type CharacterFieldErrors = Partial<Record<keyof CharacterCreateFormValues, string[]>>;
+	type CharacterCancelHref = '/app/characters' | `/app/characters/${string}`;
 
 	let {
 		catalog,
 		values,
 		errors = {},
-		formError
+		formError,
+		submitLabel = 'Create character',
+		cancelHref = '/app/characters',
+		cancelLabel = 'Back to characters'
 	}: {
 		catalog: CharacterCreationCatalog;
 		values: CharacterCreateFormValues;
 		errors?: CharacterFieldErrors;
 		formError?: string;
+		submitLabel?: string;
+		cancelHref?: CharacterCancelHref;
+		cancelLabel?: string;
 	} = $props();
 
 	const abilityFields = [
@@ -39,7 +48,9 @@
 	}
 
 	function selectedSpeciesSummary(speciesId: string): string | undefined {
-		return catalog.speciesOptions.find((option) => option.id === speciesId)?.summary ?? undefined;
+		return (
+			catalog.speciesOptions.find((option) => option.id === speciesId)?.summary ?? undefined
+		);
 	}
 
 	function selectedClassDetails(classId: string): string | undefined {
@@ -87,14 +98,20 @@
 
 			<label class="block">
 				<span class="mb-1 block text-sm font-medium text-stone-700">Species</span>
-				<select class="block w-full rounded-lg border-stone-300" name="speciesId" value={values.speciesId}>
+				<select
+					class="block w-full rounded-lg border-stone-300"
+					name="speciesId"
+					value={values.speciesId}
+				>
 					<option value="">Select a species</option>
-					{#each catalog.speciesOptions as option}
+					{#each catalog.speciesOptions as option (option.id)}
 						<option value={option.id}>{option.name}</option>
 					{/each}
 				</select>
 				{#if selectedSpeciesSummary(values.speciesId)}
-					<p class="mt-1 text-sm text-stone-500">{selectedSpeciesSummary(values.speciesId)}</p>
+					<p class="mt-1 text-sm text-stone-500">
+						{selectedSpeciesSummary(values.speciesId)}
+					</p>
 				{/if}
 			</label>
 
@@ -110,14 +127,20 @@
 
 			<label class="block">
 				<span class="mb-1 block text-sm font-medium text-stone-700">Class</span>
-				<select class="block w-full rounded-lg border-stone-300" name="classId" value={values.classId}>
+				<select
+					class="block w-full rounded-lg border-stone-300"
+					name="classId"
+					value={values.classId}
+				>
 					<option value="">Select a class</option>
-					{#each catalog.classOptions as option}
+					{#each catalog.classOptions as option (option.id)}
 						<option value={option.id}>{option.name}</option>
 					{/each}
 				</select>
 				{#if selectedClassDetails(values.classId)}
-					<p class="mt-1 text-sm text-stone-500">{selectedClassDetails(values.classId)}</p>
+					<p class="mt-1 text-sm text-stone-500">
+						{selectedClassDetails(values.classId)}
+					</p>
 				{/if}
 			</label>
 
@@ -173,7 +196,7 @@
 		</div>
 
 		<div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-			{#each abilityFields as field}
+			{#each abilityFields as field (field.name)}
 				<label class="block">
 					<span class="mb-1 block text-sm font-medium text-stone-700">{field.label}</span>
 					<input
@@ -202,7 +225,7 @@
 		</div>
 
 		<div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-			{#each combatFields as field}
+			{#each combatFields as field (field.name)}
 				<label class="block">
 					<span class="mb-1 block text-sm font-medium text-stone-700">{field.label}</span>
 					<input
@@ -275,13 +298,14 @@
 			class="rounded-lg bg-stone-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-stone-700"
 			type="submit"
 		>
-			Create character
+			{submitLabel}
 		</button>
-		<a
+		<button
 			class="rounded-lg border border-stone-300 px-5 py-3 text-sm font-medium text-stone-900 transition hover:border-stone-400"
-			href="/app/characters"
+			type="button"
+			onclick={() => goto(resolve(cancelHref))}
 		>
-			Back to characters
-		</a>
+			{cancelLabel}
+		</button>
 	</div>
 </form>
