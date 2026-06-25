@@ -34,6 +34,7 @@ The required environment variables are:
 - `PUBLIC_SUPABASE_URL`
 - `PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY` for server-only admin or maintenance paths
+- `ADMIN_ALLOWLIST_EMAILS` for explicit admin elevation through local operator tooling
 - `APP_E2E` for automated end-to-end tests only
 
 More detail lives in [docs/09-environment-setup.md](/G:/dev/projects/app-dnd/docs/09-environment-setup.md).
@@ -75,6 +76,10 @@ The full verification notes live in [docs/10-runtime-integration-check.md](/G:/d
 - `pnpm test:e2e`: run Playwright against the in-memory E2E harness
 - `pnpm validate:content`: validate structured content inputs
 - `pnpm generate:content-seed-sql`: generate SQL seed output from content sources
+- `pnpm create:test-user -- --email tester@example.com --password secret123`: create a normal test user through the service-role admin API
+- `pnpm manage:user-role -- --email lead@example.com --role admin`: update a user's global role, with admin grants restricted by `ADMIN_ALLOWLIST_EMAILS`
+
+For admin and permission-level testing, see [docs/11-admin-and-test-user-workflow.md](/G:/dev/projects/app-dnd/docs/11-admin-and-test-user-workflow.md).
 
 ## Supabase Notes
 

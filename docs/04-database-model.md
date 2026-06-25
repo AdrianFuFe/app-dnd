@@ -172,8 +172,8 @@ Enforcement is intentionally split across two layers:
 The current boundary is deliberately conservative:
 
 - admin read and update overrides exist for content and character data
-- profile role assignment is not exposed through normal runtime flows yet
-- safe admin assignment and test-user workflows remain deferred to `S13 - Admin And Test User Workflow`
+- profile role assignment is not exposed through normal runtime flows
+- admin assignment and test-user setup are handled through explicit service-role operator scripts documented in `docs/11-admin-and-test-user-workflow.md`
 
 ## Deferred Tables
 

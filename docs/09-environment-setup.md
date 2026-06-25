@@ -18,6 +18,7 @@ These variables are currently used by the app:
 - `PUBLIC_SUPABASE_URL`: Supabase project URL for the active environment
 - `PUBLIC_SUPABASE_ANON_KEY`: browser-safe anon key for the active environment
 - `SUPABASE_SERVICE_ROLE_KEY`: optional for normal runtime today, but required for future server-only admin or maintenance tasks
+- `ADMIN_ALLOWLIST_EMAILS`: optional for normal runtime, but required before the local admin-assignment script can grant the `admin` role
 - `APP_E2E`: turns on the in-memory test harness when set to `true`
 
 ## Expected Local Files
@@ -27,6 +28,7 @@ For local development:
 1. copy `.env.example` to `.env`
 2. fill in the `dev` Supabase URL and anon key
 3. add the `dev` service-role key only if you are working on server-only tooling that needs it
+4. add `ADMIN_ALLOWLIST_EMAILS` only for the specific emails that are allowed to receive the `admin` role through local operator tooling
 
 For deployed production:
 

@@ -8,6 +8,7 @@ declare global {
 
 	namespace NodeJS {
 		interface ProcessEnv {
+			ADMIN_ALLOWLIST_EMAILS?: string;
 			APP_E2E?: 'true' | 'false';
 			PUBLIC_SUPABASE_ANON_KEY: string;
 			PUBLIC_SUPABASE_URL: string;
