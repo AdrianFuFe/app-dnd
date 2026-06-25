@@ -42,14 +42,24 @@ export type CharacterCombatStats = {
 	hitDice?: string;
 };
 
+export type CharacterInventoryItem = {
+	name: string;
+	quantity: number;
+	description?: string;
+	weight?: number;
+	value?: string;
+	isEquipped: boolean;
+};
+
 export type CharacterTextSections = {
 	attacks?: string;
 	spells?: string;
-	inventory?: string;
 	notes?: string;
 };
 
 export type CharacterCreateInput = CharacterIdentity &
 	CharacterAbilityScores &
 	CharacterCombatStats &
-	CharacterTextSections;
+	CharacterTextSections & {
+		inventoryItems: CharacterInventoryItem[];
+	};

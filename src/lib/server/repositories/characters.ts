@@ -8,13 +8,15 @@ import {
 	updateE2ECharacterForUser
 } from '$lib/server/e2e/mock-app';
 import type { Database } from '$lib/types/database/supabase';
-import type { CharacterCreateInput } from '$lib/types/domain/character';
+import type { CharacterCreateInput, CharacterInventoryItem } from '$lib/types/domain/character';
 
 type CharactersInsert = Database['public']['Tables']['characters']['Insert'];
 type CharacterStatsInsert = Database['public']['Tables']['character_stats']['Insert'];
 type CharacterCombatStatsInsert = Database['public']['Tables']['character_combat_stats']['Insert'];
 type CharacterTextSectionsInsert =
 	Database['public']['Tables']['character_text_sections']['Insert'];
+type CharacterInventoryItemInsert =
+	Database['public']['Tables']['character_inventory_items']['Insert'];
 
 export type CharacterListItem = {
 	id: string;
@@ -97,13 +99,15 @@ export async function createCharacter(
 		...toCharacterTextSectionsFields(input)
 	};
 
-	const [statsResult, combatResult, textResult] = await Promise.all([
+	const [statsResult, combatResult, textResult, inventoryResult] = await Promise.all([
 		supabase.from('character_stats').insert(statsInsert),
 		supabase.from('character_combat_stats').insert(combatStatsInsert),
-		supabase.from('character_text_sections').insert(textSectionsInsert)
+		supabase.from('character_text_sections').insert(textSectionsInsert),
+		insertCharacterInventoryItems(supabase, character.id, input.inventoryItems)
 	]);
 
-	const childError = statsResult.error ?? combatResult.error ?? textResult.error;
+	const childError =
+		statsResult.error ?? combatResult.error ?? textResult.error ?? inventoryResult.error;
 
 	if (childError) {
 		await supabase.from('characters').delete().eq('id', character.id).eq('user_id', userId);
@@ -139,7 +143,7 @@ export async function getCharacterForUser(
 		return null;
 	}
 
-	const [statsResult, combatResult, textResult] = await Promise.all([
+	const [statsResult, combatResult, textResult, inventoryResult] = await Promise.all([
 		supabase
 			.from('character_stats')
 			.select('strength, dexterity, constitution, intelligence, wisdom, charisma')
@@ -154,14 +158,37 @@ export async function getCharacterForUser(
 			.from('character_text_sections')
 			.select('attacks, spells, inventory, notes')
 			.eq('character_id', characterId)
-			.maybeSingle()
+			.maybeSingle(),
+		supabase
+			.from('character_inventory_items')
+			.select('name, quantity, description, weight, value, is_equipped')
+			.eq('character_id', characterId)
 	]);
 
-	const childError = statsResult.error ?? combatResult.error ?? textResult.error;
+	const childError =
+		statsResult.error ?? combatResult.error ?? textResult.error ?? inventoryResult.error;
 
-	if (childError || !statsResult.data || !combatResult.data || !textResult.data) {
+	if (
+		childError ||
+		!statsResult.data ||
+		!combatResult.data ||
+		!textResult.data ||
+		!inventoryResult.data
+	) {
 		throw new Error(`Failed to load character details for user ${userId}`);
 	}
+
+	const inventoryItems =
+		inventoryResult.data.length > 0
+			? inventoryResult.data.map((item) => ({
+					name: item.name,
+					quantity: item.quantity,
+					description: item.description ?? undefined,
+					weight: item.weight ?? undefined,
+					value: item.value ?? undefined,
+					isEquipped: item.is_equipped
+				}))
+			: parseLegacyInventoryItems(textResult.data.inventory);
 
 	return {
 		id: character.id,
@@ -191,9 +218,9 @@ export async function getCharacterForUser(
 		initiative: combatResult.data.initiative,
 		speed: combatResult.data.speed,
 		hitDice: combatResult.data.hit_dice ?? undefined,
+		inventoryItems,
 		attacks: textResult.data.attacks ?? undefined,
 		spells: textResult.data.spells ?? undefined,
-		inventory: textResult.data.inventory ?? undefined,
 		notes: textResult.data.notes ?? undefined,
 		updatedAt: character.updated_at
 	};
@@ -231,7 +258,7 @@ export async function updateCharacter(
 		throw new Error(`Character ${characterId} was not found for user ${userId}`);
 	}
 
-	const [statsResult, combatResult, textResult] = await Promise.all([
+	const [statsResult, combatResult, textResult, inventoryResult] = await Promise.all([
 		supabase
 			.from('character_stats')
 			.update(toCharacterStatsFields(input))
@@ -243,10 +270,12 @@ export async function updateCharacter(
 		supabase
 			.from('character_text_sections')
 			.update(toCharacterTextSectionsFields(input))
-			.eq('character_id', characterId)
+			.eq('character_id', characterId),
+		replaceCharacterInventoryItems(supabase, characterId, input.inventoryItems)
 	]);
 
-	const childError = statsResult.error ?? combatResult.error ?? textResult.error;
+	const childError =
+		statsResult.error ?? combatResult.error ?? textResult.error ?? inventoryResult.error;
 
 	if (childError) {
 		throw new Error(`Failed to update character details for user ${userId}`);
@@ -340,7 +369,82 @@ function toCharacterTextSectionsFields(
 	return {
 		attacks: input.attacks ?? null,
 		spells: input.spells ?? null,
-		inventory: input.inventory ?? null,
+		inventory: toLegacyInventoryText(input.inventoryItems),
 		notes: input.notes ?? null
 	};
+}
+
+async function insertCharacterInventoryItems(
+	supabase: SupabaseClient<Database>,
+	characterId: string,
+	items: CharacterInventoryItem[]
+) {
+	if (items.length === 0) {
+		return { error: null };
+	}
+
+	return supabase
+		.from('character_inventory_items')
+		.insert(items.map((item) => toCharacterInventoryItemInsert(characterId, item)));
+}
+
+async function replaceCharacterInventoryItems(
+	supabase: SupabaseClient<Database>,
+	characterId: string,
+	items: CharacterInventoryItem[]
+) {
+	const deleteResult = await supabase
+		.from('character_inventory_items')
+		.delete()
+		.eq('character_id', characterId);
+
+	if (deleteResult.error || items.length === 0) {
+		return deleteResult;
+	}
+
+	return insertCharacterInventoryItems(supabase, characterId, items);
+}
+
+function toCharacterInventoryItemInsert(
+	characterId: string,
+	item: CharacterInventoryItem
+): CharacterInventoryItemInsert {
+	return {
+		character_id: characterId,
+		name: item.name,
+		quantity: item.quantity,
+		description: item.description ?? null,
+		weight: item.weight ?? null,
+		value: item.value ?? null,
+		is_equipped: item.isEquipped
+	};
+}
+
+function toLegacyInventoryText(items: CharacterInventoryItem[]): string | null {
+	if (items.length === 0) {
+		return null;
+	}
+
+	return items
+		.map((item) => {
+			const base = item.quantity === 1 ? item.name : `${item.quantity} x ${item.name}`;
+			return item.isEquipped ? `${base} (equipped)` : base;
+		})
+		.join('\n');
+}
+
+function parseLegacyInventoryItems(value: string | null): CharacterInventoryItem[] {
+	if (!value?.trim()) {
+		return [];
+	}
+
+	return value
+		.split(/\r?\n|,/)
+		.map((item) => item.trim())
+		.filter((item) => item.length > 0)
+		.map((name) => ({
+			name,
+			quantity: 1,
+			isEquipped: false
+		}));
 }

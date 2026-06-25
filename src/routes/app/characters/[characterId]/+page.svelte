@@ -22,6 +22,17 @@
 	function optionalText(value: string | undefined, fallback = 'Not provided yet.'): string {
 		return value?.trim() ? value : fallback;
 	}
+
+	function formatInventoryMeta(
+		value: string | number | undefined,
+		suffix?: string
+	): string | undefined {
+		if (value === undefined || value === '') {
+			return undefined;
+		}
+
+		return suffix ? `${value} ${suffix}` : String(value);
+	}
 </script>
 
 <svelte:head>
@@ -72,7 +83,9 @@
 		{/if}
 
 		{#if form?.formError}
-			<p class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+			<p
+				class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"
+			>
 				{form.formError}
 			</p>
 		{/if}
@@ -145,6 +158,51 @@
 			</article>
 
 			<article class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+				<h2 class="text-xl font-semibold text-stone-900">Inventory</h2>
+				{#if data.character.inventoryItems.length === 0}
+					<p class="mt-6 text-sm leading-7 text-stone-600">
+						No inventory items recorded yet.
+					</p>
+				{:else}
+					<div class="mt-6 space-y-3">
+						{#each data.character.inventoryItems as item (`${item.name}-${item.quantity}`)}
+							<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4">
+								<div class="flex flex-wrap items-center gap-2">
+									<p class="text-base font-semibold text-stone-900">
+										{item.quantity > 1 ? `${item.quantity} x ` : ''}{item.name}
+									</p>
+									{#if item.isEquipped}
+										<span
+											class="rounded-full bg-stone-900 px-2 py-1 text-xs font-medium uppercase tracking-[0.16em] text-white"
+										>
+											Equipped
+										</span>
+									{/if}
+								</div>
+								{#if formatInventoryMeta(item.value) || formatInventoryMeta(item.weight, 'lb')}
+									<p class="mt-2 text-sm text-stone-600">
+										{[
+											formatInventoryMeta(item.value),
+											formatInventoryMeta(item.weight, 'lb')
+										]
+											.filter(Boolean)
+											.join(' | ')}
+									</p>
+								{/if}
+								{#if item.description}
+									<p
+										class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700"
+									>
+										{item.description}
+									</p>
+								{/if}
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</article>
+
+			<article class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
 				<h2 class="text-xl font-semibold text-stone-900">Free-Text Sections</h2>
 				<div class="mt-6 grid gap-4 lg:grid-cols-2">
 					<div>
@@ -157,12 +215,6 @@
 						<p class="text-sm font-medium text-stone-500">Spells</p>
 						<p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700">
 							{optionalText(data.character.spells)}
-						</p>
-					</div>
-					<div>
-						<p class="text-sm font-medium text-stone-500">Inventory</p>
-						<p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700">
-							{optionalText(data.character.inventory)}
 						</p>
 					</div>
 					<div>

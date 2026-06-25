@@ -15,6 +15,7 @@ export function createDefaultCharacterInput(): CharacterCreateInput {
 		temporaryHp: 0,
 		armorClass: 10,
 		initiative: 0,
-		speed: 30
+		speed: 30,
+		inventoryItems: []
 	};
 }

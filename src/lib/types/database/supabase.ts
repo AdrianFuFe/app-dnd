@@ -90,6 +90,53 @@ export interface Database {
 					}
 				];
 			};
+			character_inventory_items: {
+				Row: {
+					id: string;
+					character_id: string;
+					name: string;
+					quantity: number;
+					description: string | null;
+					weight: number | null;
+					value: string | null;
+					is_equipped: boolean;
+					created_at: string;
+					updated_at: string;
+				};
+				Insert: {
+					id?: string;
+					character_id: string;
+					name: string;
+					quantity?: number;
+					description?: string | null;
+					weight?: number | null;
+					value?: string | null;
+					is_equipped?: boolean;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Update: {
+					id?: string;
+					character_id?: string;
+					name?: string;
+					quantity?: number;
+					description?: string | null;
+					weight?: number | null;
+					value?: string | null;
+					is_equipped?: boolean;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'character_inventory_items_character_id_fkey';
+						columns: ['character_id'];
+						isOneToOne: false;
+						referencedRelation: 'characters';
+						referencedColumns: ['id'];
+					}
+				];
+			};
 			character_text_sections: {
 				Row: {
 					character_id: string;

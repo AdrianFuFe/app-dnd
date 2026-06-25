@@ -9,6 +9,14 @@
 
 	type CharacterFieldErrors = Partial<Record<keyof CharacterCreateFormValues, string[]>>;
 	type CharacterCancelHref = '/app/characters' | `/app/characters/${string}`;
+	type InventoryFormItem = {
+		name: string;
+		quantity: string;
+		description: string;
+		weight: string;
+		value: string;
+		isEquipped: boolean;
+	};
 
 	let {
 		catalog,
@@ -47,9 +55,11 @@
 	] as const;
 
 	let formValues = $state(createCharacterFormValues());
+	let inventoryItems = $state<InventoryFormItem[]>([]);
 
 	$effect(() => {
 		formValues = { ...values };
+		inventoryItems = parseInventoryItems(values.inventoryItems);
 	});
 
 	function firstError(field: keyof CharacterCreateFormValues): string | undefined {
@@ -131,6 +141,68 @@
 		}
 
 		formValues.classId = nextClassId;
+	}
+
+	function addInventoryItem() {
+		inventoryItems = [
+			...inventoryItems,
+			{
+				name: '',
+				quantity: '1',
+				description: '',
+				weight: '',
+				value: '',
+				isEquipped: false
+			}
+		];
+	}
+
+	function removeInventoryItem(index: number) {
+		inventoryItems = inventoryItems.filter((_, itemIndex) => itemIndex !== index);
+	}
+
+	function inventoryItemsFieldValue(): string {
+		return JSON.stringify(
+			inventoryItems.map((item) => ({
+				name: item.name,
+				quantity: item.quantity.trim().length > 0 ? Number(item.quantity) : 1,
+				description: item.description,
+				weight: item.weight.trim().length > 0 ? Number(item.weight) : undefined,
+				value: item.value,
+				isEquipped: item.isEquipped
+			}))
+		);
+	}
+
+	function parseInventoryItems(value: string): InventoryFormItem[] {
+		if (!value.trim()) {
+			return [];
+		}
+
+		try {
+			const parsed = JSON.parse(value);
+
+			if (!Array.isArray(parsed)) {
+				return [];
+			}
+
+			return parsed.map((item) => ({
+				name: typeof item?.name === 'string' ? item.name : '',
+				quantity:
+					typeof item?.quantity === 'number' || typeof item?.quantity === 'string'
+						? String(item.quantity)
+						: '1',
+				description: typeof item?.description === 'string' ? item.description : '',
+				weight:
+					typeof item?.weight === 'number' || typeof item?.weight === 'string'
+						? String(item.weight)
+						: '',
+				value: typeof item?.value === 'string' ? item.value : '',
+				isEquipped: item?.isEquipped === true
+			}));
+		} catch {
+			return [];
+		}
 	}
 </script>
 
@@ -381,10 +453,131 @@
 	</section>
 
 	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+		<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+			<div class="space-y-1">
+				<h2 class="text-xl font-semibold text-stone-900">Inventory</h2>
+				<p class="text-sm text-stone-600">
+					Track items as structured rows so editing stays clearer than one large notes
+					box.
+				</p>
+			</div>
+			<button
+				class="rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-900 transition hover:border-stone-400"
+				type="button"
+				onclick={addInventoryItem}
+			>
+				Add inventory item
+			</button>
+		</div>
+
+		<input type="hidden" name="inventoryItems" value={inventoryItemsFieldValue()} />
+
+		{#if firstError('inventoryItems')}
+			<p class="mt-4 text-sm text-red-700">{firstError('inventoryItems')}</p>
+		{/if}
+
+		{#if inventoryItems.length === 0}
+			<p
+				class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600"
+			>
+				No inventory items yet. Add the gear your character actually carries instead of
+				hiding it in a text blob.
+			</p>
+		{:else}
+			<div class="mt-6 space-y-4">
+				{#each inventoryItems as item, index (`${index}-${item.name}`)}
+					<div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+						<div class="flex items-center justify-between gap-3">
+							<p class="text-sm font-semibold text-stone-900">Item {index + 1}</p>
+							<button
+								class="text-sm font-medium text-rose-700 transition hover:text-rose-900"
+								type="button"
+								onclick={() => removeInventoryItem(index)}
+							>
+								Remove
+							</button>
+						</div>
+
+						<div class="mt-4 grid gap-4 lg:grid-cols-2">
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Item name</span
+								>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									type="text"
+									bind:value={item.name}
+								/>
+							</label>
+
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Quantity</span
+								>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									type="number"
+									min="0"
+									bind:value={item.quantity}
+								/>
+							</label>
+
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Value</span
+								>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									type="text"
+									bind:value={item.value}
+								/>
+							</label>
+
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Weight</span
+								>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									type="number"
+									min="0"
+									step="0.1"
+									bind:value={item.weight}
+								/>
+							</label>
+
+							<label class="block lg:col-span-2">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Description</span
+								>
+								<textarea
+									class="block min-h-24 w-full rounded-lg border-stone-300"
+									bind:value={item.description}></textarea>
+							</label>
+
+							<label class="inline-flex items-center gap-3">
+								<input
+									class="rounded border-stone-300 text-stone-900 focus:ring-stone-500"
+									type="checkbox"
+									bind:checked={item.isEquipped}
+								/>
+								<span class="text-sm font-medium text-stone-700"
+									>Currently equipped</span
+								>
+							</label>
+						</div>
+					</div>
+				{/each}
+			</div>
+		{/if}
+	</section>
+
+	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
 		<div class="space-y-1">
 			<h2 class="text-xl font-semibold text-stone-900">Free-Text Sections</h2>
 			<p class="text-sm text-stone-600">
-				These are stored as text for the MVP and can become richer data later.
+				Keep manual notes for attacks, spells, and general reminders while richer systems
+				are still incremental.
 			</p>
 		</div>
 
@@ -405,15 +598,7 @@
 					bind:value={formValues.spells}></textarea>
 			</label>
 
-			<label class="block">
-				<span class="mb-1 block text-sm font-medium text-stone-700">Inventory</span>
-				<textarea
-					class="block min-h-32 w-full rounded-lg border-stone-300"
-					name="inventory"
-					bind:value={formValues.inventory}></textarea>
-			</label>
-
-			<label class="block">
+			<label class="block lg:col-span-2">
 				<span class="mb-1 block text-sm font-medium text-stone-700">Notes</span>
 				<textarea
 					class="block min-h-32 w-full rounded-lg border-stone-300"

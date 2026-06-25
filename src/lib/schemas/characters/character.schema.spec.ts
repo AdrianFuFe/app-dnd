@@ -34,9 +34,16 @@ describe('characterCreateInputSchema', () => {
 			initiative: '2',
 			speed: '30',
 			hitDice: '3d6',
+			inventoryItems: JSON.stringify([
+				{
+					name: 'Spellbook',
+					quantity: 1,
+					description: 'Marked with field notes.',
+					isEquipped: false
+				}
+			]),
 			attacks: 'Quarterstaff +4 to hit, 1d6 bludgeoning',
 			spells: 'Magic Missile, Shield, Detect Magic',
-			inventory: 'Spellbook, component pouch, bedroll',
 			notes: 'Looking for traces of a lost tower.'
 		});
 
@@ -45,6 +52,7 @@ describe('characterCreateInputSchema', () => {
 		expect(result.subclassId).toBe('ffffffff-ffff-4fff-8fff-ffffffffffff');
 		expect(result.intelligence).toBe(16);
 		expect(result.currentHp).toBe(18);
+		expect(result.inventoryItems[0]?.name).toBe('Spellbook');
 		expect(result.spells).toContain('Shield');
 	});
 
@@ -76,9 +84,9 @@ describe('characterCreateInputSchema', () => {
 			initiative: 0,
 			speed: 30,
 			hitDice: '',
+			inventoryItems: '',
 			attacks: ' ',
 			spells: '',
-			inventory: '',
 			notes: ' '
 		});
 
@@ -86,6 +94,7 @@ describe('characterCreateInputSchema', () => {
 		expect(result.subspeciesId).toBeUndefined();
 		expect(result.subclassId).toBeUndefined();
 		expect(result.story).toBeUndefined();
+		expect(result.inventoryItems).toEqual([]);
 		expect(result.attacks).toBeUndefined();
 	});
 

@@ -27,7 +27,13 @@ test('character create route saves a new draft and returns to the roster', async
 		armorClass: '17',
 		hitDice: '4d10',
 		attacks: 'Warhammer',
-		inventory: 'Smith tools'
+		inventoryItems: [
+			{
+				name: 'Smith tools',
+				quantity: '1',
+				value: '15 gp'
+			}
+		]
 	});
 
 	await page.getByRole('button', { name: 'Create character' }).click();
@@ -55,6 +61,14 @@ test('character edit route updates an existing draft and returns to detail', asy
 		intelligence: '14',
 		wisdom: '16',
 		currentHp: '20',
+		inventoryItems: [
+			{
+				name: 'Lantern relic',
+				quantity: '1',
+				description: 'Burns with a warm dawn glow.',
+				isEquipped: true
+			}
+		],
 		spells: 'Guiding Bolt',
 		notes: 'Carries a lantern relic.'
 	});
@@ -66,6 +80,7 @@ test('character edit route updates an existing draft and returns to detail', asy
 	await expect(page.getByRole('heading', { name: 'Talia Dawnweaver' })).toBeVisible();
 	await expect(page.getByText('Cleric', { exact: true })).toBeVisible();
 	await expect(page.getByText('Pilgrim', { exact: true })).toBeVisible();
+	await expect(page.getByText('Lantern relic', { exact: true })).toBeVisible();
 	await expect(page.getByText('Guiding Bolt', { exact: true })).toBeVisible();
 	await expect(page.getByText('Carries a lantern relic.', { exact: true })).toBeVisible();
 });
@@ -118,7 +133,14 @@ async function fillCharacterForm(
 		hitDice: string;
 		attacks: string;
 		spells: string;
-		inventory: string;
+		inventoryItems: Array<{
+			name: string;
+			quantity?: string;
+			description?: string;
+			weight?: string;
+			value?: string;
+			isEquipped?: boolean;
+		}>;
 		notes: string;
 	}> = {}
 ) {
@@ -146,7 +168,12 @@ async function fillCharacterForm(
 		hitDice: '3d6',
 		attacks: 'Quarterstaff',
 		spells: 'Magic Missile',
-		inventory: 'Spellbook',
+		inventoryItems: [
+			{
+				name: 'Spellbook',
+				quantity: '1'
+			}
+		],
 		notes: 'Tracks ley lines.',
 		...overrides
 	};
@@ -176,6 +203,45 @@ async function fillCharacterForm(
 	await page.locator('input[name="hitDice"]').fill(values.hitDice);
 	await page.locator('textarea[name="attacks"]').fill(values.attacks);
 	await page.locator('textarea[name="spells"]').fill(values.spells);
-	await page.locator('textarea[name="inventory"]').fill(values.inventory);
 	await page.locator('textarea[name="notes"]').fill(values.notes);
+
+	let currentInventoryItemCount = await page.getByLabel('Item name').count();
+
+	while (currentInventoryItemCount > values.inventoryItems.length) {
+		await page.getByRole('button', { name: 'Remove' }).last().click();
+		currentInventoryItemCount -= 1;
+	}
+
+	while (currentInventoryItemCount < values.inventoryItems.length) {
+		await page.getByRole('button', { name: 'Add inventory item' }).click();
+		currentInventoryItemCount += 1;
+	}
+
+	for (let index = 0; index < values.inventoryItems.length; index += 1) {
+		const item = values.inventoryItems[index];
+		await page.getByLabel('Item name').nth(index).fill(item.name);
+		await page
+			.getByLabel('Quantity')
+			.nth(index)
+			.fill(item.quantity ?? '1');
+
+		await page
+			.getByLabel('Value')
+			.nth(index)
+			.fill(item.value ?? '');
+		await page
+			.getByLabel('Weight')
+			.nth(index)
+			.fill(item.weight ?? '');
+		await page
+			.getByLabel('Description')
+			.nth(index)
+			.fill(item.description ?? '');
+
+		if (item.isEquipped) {
+			await page.getByLabel('Currently equipped').nth(index).check();
+		} else {
+			await page.getByLabel('Currently equipped').nth(index).uncheck();
+		}
+	}
 }

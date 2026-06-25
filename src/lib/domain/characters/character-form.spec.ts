@@ -8,7 +8,8 @@ describe('createCharacterFormValues', () => {
 			level: 4,
 			strength: 12,
 			maxHp: 27,
-			temporaryHp: 0
+			temporaryHp: 0,
+			inventoryItems: [{ name: 'Rope', quantity: 1, isEquipped: false }]
 		});
 
 		expect(values.name).toBe('Rhea');
@@ -17,6 +18,7 @@ describe('createCharacterFormValues', () => {
 		expect(values.strength).toBe('12');
 		expect(values.maxHp).toBe('27');
 		expect(values.temporaryHp).toBe('0');
+		expect(values.inventoryItems).toBe('[{"name":"Rope","quantity":1,"isEquipped":false}]');
 		expect(values.notes).toBe('');
 	});
 });
@@ -37,7 +39,8 @@ describe('createCharacterFormValuesFromInput', () => {
 			temporaryHp: 0,
 			armorClass: 10,
 			initiative: 0,
-			speed: 30
+			speed: 30,
+			inventoryItems: []
 		});
 
 		expect(values.name).toBe('New Character');
@@ -46,6 +49,7 @@ describe('createCharacterFormValuesFromInput', () => {
 		expect(values.level).toBe('1');
 		expect(values.race).toBe('');
 		expect(values.story).toBe('');
+		expect(values.inventoryItems).toBe('[]');
 		expect(values.notes).toBe('');
 	});
 });

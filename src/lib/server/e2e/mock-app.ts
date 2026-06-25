@@ -67,9 +67,15 @@ const initialCharacters: E2ECharacterRecord[] = [
 		initiative: 2,
 		speed: 30,
 		hitDice: '3d6',
+		inventoryItems: [
+			{
+				name: 'Spellbook',
+				quantity: 1,
+				isEquipped: false
+			}
+		],
 		attacks: 'Quarterstaff',
 		spells: 'Magic Missile',
-		inventory: 'Spellbook',
 		notes: 'Tracks ley lines.'
 	}
 ];

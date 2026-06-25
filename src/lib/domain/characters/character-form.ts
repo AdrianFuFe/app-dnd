@@ -27,9 +27,9 @@ export const characterCreateFormFieldNames = [
 	'initiative',
 	'speed',
 	'hitDice',
+	'inventoryItems',
 	'attacks',
 	'spells',
-	'inventory',
 	'notes'
 ] as const;
 
@@ -37,9 +37,7 @@ export type CharacterCreateFormFieldName = (typeof characterCreateFormFieldNames
 
 export type CharacterCreateFormValues = Record<CharacterCreateFormFieldName, string>;
 
-type CharacterCreateFormValueSource = Partial<
-	Record<CharacterCreateFormFieldName, FormDataEntryValue | string | number | undefined>
->;
+type CharacterCreateFormValueSource = Partial<Record<CharacterCreateFormFieldName, unknown>>;
 
 export function createCharacterFormValues(
 	source: CharacterCreateFormValueSource = {}
@@ -71,9 +69,9 @@ export function createCharacterFormValues(
 		initiative: toFormString(source.initiative),
 		speed: toFormString(source.speed),
 		hitDice: toFormString(source.hitDice),
+		inventoryItems: toInventoryItemsFormString(source.inventoryItems),
 		attacks: toFormString(source.attacks),
 		spells: toFormString(source.spells),
-		inventory: toFormString(source.inventory),
 		notes: toFormString(source.notes)
 	};
 }
@@ -84,7 +82,7 @@ export function createCharacterFormValuesFromInput(
 	return createCharacterFormValues(input);
 }
 
-function toFormString(value: FormDataEntryValue | string | number | undefined): string {
+function toFormString(value: unknown): string {
 	if (typeof value === 'number') {
 		return String(value);
 	}
@@ -94,4 +92,16 @@ function toFormString(value: FormDataEntryValue | string | number | undefined): 
 	}
 
 	return '';
+}
+
+function toInventoryItemsFormString(value: unknown): string {
+	if (typeof value === 'string') {
+		return value;
+	}
+
+	if (Array.isArray(value)) {
+		return JSON.stringify(value);
+	}
+
+	return '[]';
 }

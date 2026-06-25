@@ -13,6 +13,7 @@ alter table characters enable row level security;
 alter table character_stats enable row level security;
 alter table character_combat_stats enable row level security;
 alter table character_text_sections enable row level security;
+alter table character_inventory_items enable row level security;
 
 create or replace function public.current_global_role()
 returns text
@@ -574,6 +575,78 @@ with check (
 		select 1
 		from characters
 		where characters.id = character_text_sections.character_id
+			and (
+				characters.user_id = auth.uid()
+				or public.has_global_role('admin')
+			)
+	)
+);
+
+create policy "character_inventory_items_select_own"
+on character_inventory_items
+for select
+to authenticated
+using (
+	exists (
+		select 1
+		from characters
+		where characters.id = character_inventory_items.character_id
+			and (
+				characters.user_id = auth.uid()
+				or public.has_global_role('admin')
+			)
+	)
+);
+
+create policy "character_inventory_items_insert_own"
+on character_inventory_items
+for insert
+to authenticated
+with check (
+	exists (
+		select 1
+		from characters
+		where characters.id = character_inventory_items.character_id
+			and characters.user_id = auth.uid()
+	)
+);
+
+create policy "character_inventory_items_update_own"
+on character_inventory_items
+for update
+to authenticated
+using (
+	exists (
+		select 1
+		from characters
+		where characters.id = character_inventory_items.character_id
+			and (
+				characters.user_id = auth.uid()
+				or public.has_global_role('admin')
+			)
+	)
+)
+with check (
+	exists (
+		select 1
+		from characters
+		where characters.id = character_inventory_items.character_id
+			and (
+				characters.user_id = auth.uid()
+				or public.has_global_role('admin')
+			)
+	)
+);
+
+create policy "character_inventory_items_delete_own"
+on character_inventory_items
+for delete
+to authenticated
+using (
+	exists (
+		select 1
+		from characters
+		where characters.id = character_inventory_items.character_id
 			and (
 				characters.user_id = auth.uid()
 				or public.has_global_role('admin')
