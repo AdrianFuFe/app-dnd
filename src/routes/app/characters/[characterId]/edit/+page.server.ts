@@ -1,4 +1,4 @@
-import { error, fail, redirect } from '@sveltejs/kit';
+import { error, fail, isRedirect, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import {
 	createCharacterFormValues,
@@ -88,6 +88,10 @@ export const actions: Actions = {
 
 			throw redirect(303, `/app/characters/${character.id}?updated=${updatedName}`);
 		} catch (caught) {
+			if (isRedirect(caught)) {
+				throw caught;
+			}
+
 			const isSelectionError =
 				caught instanceof Error && caught.message.startsWith('Please choose a valid');
 			const isMissingCharacter =

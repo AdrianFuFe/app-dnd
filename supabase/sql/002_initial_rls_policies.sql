@@ -250,6 +250,12 @@ to authenticated
 using (user_id = auth.uid())
 with check (user_id = auth.uid());
 
+create policy "characters_delete_own"
+on characters
+for delete
+to authenticated
+using (user_id = auth.uid());
+
 create policy "character_stats_select_own"
 on character_stats
 for select

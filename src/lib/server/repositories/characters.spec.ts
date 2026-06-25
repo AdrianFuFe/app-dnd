@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
 	createCharacter,
+	deleteCharacter,
 	getCharacterForUser,
 	listCharactersForUser,
 	updateCharacter
@@ -487,5 +488,50 @@ describe('updateCharacter', () => {
 				speed: 30
 			})
 		).rejects.toThrow('Character missing was not found for user user-1');
+	});
+});
+
+describe('deleteCharacter', () => {
+	it('deletes an owned character and returns the deleted identity', async () => {
+		const maybeSingle = vi.fn().mockResolvedValue({
+			data: {
+				id: 'char-1',
+				name: 'Talia Stormstep'
+			},
+			error: null
+		});
+		const select = vi.fn().mockReturnValue({ maybeSingle });
+		const eqUser = vi.fn().mockReturnValue({ select });
+		const eqId = vi.fn().mockReturnValue({ eq: eqUser });
+		const deleteRow = vi.fn().mockReturnValue({ eq: eqId });
+		const from = vi.fn().mockReturnValue({ delete: deleteRow });
+
+		const result = await deleteCharacter({ from } as never, 'user-1', 'char-1');
+
+		expect(result).toEqual({
+			id: 'char-1',
+			name: 'Talia Stormstep'
+		});
+		expect(from).toHaveBeenCalledWith('characters');
+		expect(deleteRow).toHaveBeenCalled();
+		expect(eqId).toHaveBeenCalledWith('id', 'char-1');
+		expect(eqUser).toHaveBeenCalledWith('user_id', 'user-1');
+		expect(select).toHaveBeenCalledWith('id, name');
+	});
+
+	it('throws when the character is not owned by the user', async () => {
+		const maybeSingle = vi.fn().mockResolvedValue({
+			data: null,
+			error: null
+		});
+		const select = vi.fn().mockReturnValue({ maybeSingle });
+		const eqUser = vi.fn().mockReturnValue({ select });
+		const eqId = vi.fn().mockReturnValue({ eq: eqUser });
+		const deleteRow = vi.fn().mockReturnValue({ eq: eqId });
+		const from = vi.fn().mockReturnValue({ delete: deleteRow });
+
+		await expect(deleteCharacter({ from } as never, 'user-1', 'missing')).rejects.toThrow(
+			'Character missing was not found for user user-1'
+		);
 	});
 });

@@ -48,6 +48,14 @@
 				{data.updatedName} was updated successfully.
 			</p>
 		{/if}
+
+		{#if data.deletedName}
+			<p
+				class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"
+			>
+				{data.deletedName} was deleted successfully.
+			</p>
+		{/if}
 	</section>
 
 	{#if data.characters.length === 0}

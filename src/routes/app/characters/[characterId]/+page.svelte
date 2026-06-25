@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { calculateAbilityModifier } from '$lib/domain/ability-modifier';
-	import type { PageData } from './$types';
+	import type { ActionData, PageData } from './$types';
 
-	let { data }: { data: PageData } = $props();
+	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	const abilityFields = [
 		{ key: 'strength', label: 'STR' },
@@ -70,6 +70,27 @@
 				{data.updatedName} was updated successfully.
 			</p>
 		{/if}
+
+		{#if form?.formError}
+			<p class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+				{form.formError}
+			</p>
+		{/if}
+
+		<div class="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4">
+			<p class="text-sm font-semibold text-rose-900">Delete draft</p>
+			<p class="mt-2 max-w-2xl text-sm leading-6 text-rose-800">
+				Remove this character draft and its current MVP slices from your private roster.
+			</p>
+			<form class="mt-4" method="POST" action="?/delete">
+				<button
+					class="rounded-lg bg-rose-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-800"
+					type="submit"
+				>
+					Delete character
+				</button>
+			</form>
+		</div>
 	</section>
 
 	<section class="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">

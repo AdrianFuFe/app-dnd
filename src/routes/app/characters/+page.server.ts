@@ -6,6 +6,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		return {
 			characters: [],
 			createdName: null,
+			deletedName: null,
 			updatedName: null
 		};
 	}
@@ -13,6 +14,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	return {
 		characters: await listCharactersForUser(locals.supabase, locals.session.user.id),
 		createdName: url.searchParams.get('created'),
+		deletedName: url.searchParams.get('deleted'),
 		updatedName: url.searchParams.get('updated')
 	};
 };

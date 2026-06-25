@@ -1,4 +1,4 @@
-import { fail, redirect } from '@sveltejs/kit';
+import { fail, isRedirect, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { createDefaultCharacterInput } from '$lib/domain/characters/default-character';
 import {
@@ -70,6 +70,10 @@ export const actions: Actions = {
 
 			throw redirect(303, `/app/characters?created=${createdName}`);
 		} catch (error) {
+			if (isRedirect(error)) {
+				throw error;
+			}
+
 			const isSelectionError =
 				error instanceof Error && error.message.startsWith('Please choose a valid');
 			const formError =

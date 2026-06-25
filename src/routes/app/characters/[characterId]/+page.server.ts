@@ -1,6 +1,6 @@
-import { error, redirect } from '@sveltejs/kit';
-import type { PageServerLoad } from './$types';
-import { getCharacterForUser } from '$lib/server/repositories/characters';
+import { error, fail, isRedirect, redirect } from '@sveltejs/kit';
+import type { Actions, PageServerLoad } from './$types';
+import { deleteCharacter, getCharacterForUser } from '$lib/server/repositories/characters';
 
 export const load: PageServerLoad = async ({ locals, params, url }) => {
 	if (!locals.session) {
@@ -25,4 +25,44 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 		character,
 		updatedName: url.searchParams.get('updated')
 	};
+};
+
+export const actions: Actions = {
+	delete: async ({ locals, params, url }) => {
+		if (!locals.session) {
+			throw redirect(302, `/auth/login?redirectTo=${encodeURIComponent(url.pathname)}`);
+		}
+
+		if (!locals.supabase) {
+			return fail(500, {
+				formError: 'Supabase is not configured yet.'
+			});
+		}
+
+		try {
+			const character = await deleteCharacter(
+				locals.supabase,
+				locals.session.user.id,
+				params.characterId
+			);
+			const deletedName = encodeURIComponent(character.name);
+
+			throw redirect(303, `/app/characters?deleted=${deletedName}`);
+		} catch (caught) {
+			if (isRedirect(caught)) {
+				throw caught;
+			}
+
+			const isMissingCharacter =
+				caught instanceof Error &&
+				caught.message ===
+					`Character ${params.characterId} was not found for user ${locals.session.user.id}`;
+
+			return fail(isMissingCharacter ? 404 : 500, {
+				formError: isMissingCharacter
+					? 'That character could not be found.'
+					: 'The character could not be deleted. Please try again.'
+			});
+		}
+	}
 };

@@ -1,4 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import {
+	deleteE2ECharacterForUser,
+	getE2ECharacterForUser,
+	isE2EMockSupabaseClient,
+	listE2ECharactersForUser
+} from '$lib/server/e2e/mock-app';
 import type { Database } from '$lib/types/database/supabase';
 import type { CharacterCreateInput } from '$lib/types/domain/character';
 
@@ -26,6 +32,10 @@ export async function listCharactersForUser(
 	supabase: SupabaseClient<Database>,
 	userId: string
 ): Promise<CharacterListItem[]> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		return listE2ECharactersForUser(userId);
+	}
+
 	const { data, error } = await supabase
 		.from('characters')
 		.select('id, name, level, race, class_name, updated_at')
@@ -102,6 +112,10 @@ export async function getCharacterForUser(
 	userId: string,
 	characterId: string
 ): Promise<CharacterDetail | null> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		return getE2ECharacterForUser(userId, characterId);
+	}
+
 	const { data: character, error: characterError } = await supabase
 		.from('characters')
 		.select(
@@ -220,6 +234,40 @@ export async function updateCharacter(
 
 	if (childError) {
 		throw new Error(`Failed to update character details for user ${userId}`);
+	}
+
+	return character;
+}
+
+export async function deleteCharacter(
+	supabase: SupabaseClient<Database>,
+	userId: string,
+	characterId: string
+): Promise<{ id: string; name: string }> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		const character = deleteE2ECharacterForUser(userId, characterId);
+
+		if (!character) {
+			throw new Error(`Character ${characterId} was not found for user ${userId}`);
+		}
+
+		return character;
+	}
+
+	const { data: character, error: characterError } = await supabase
+		.from('characters')
+		.delete()
+		.eq('id', characterId)
+		.eq('user_id', userId)
+		.select('id, name')
+		.maybeSingle();
+
+	if (characterError) {
+		throw new Error(`Failed to delete character ${characterId} for user ${userId}`);
+	}
+
+	if (!character) {
+		throw new Error(`Character ${characterId} was not found for user ${userId}`);
 	}
 
 	return character;
