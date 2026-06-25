@@ -8,6 +8,7 @@ declare global {
 
 	namespace NodeJS {
 		interface ProcessEnv {
+			APP_E2E?: 'true' | 'false';
 			PUBLIC_SUPABASE_ANON_KEY: string;
 			PUBLIC_SUPABASE_URL: string;
 			SUPABASE_SERVICE_ROLE_KEY?: string;

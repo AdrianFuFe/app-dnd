@@ -1,42 +1,57 @@
-# sv
+# app-dnd
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+`app-dnd` is a SvelteKit + Supabase project for managing D&D characters and related game content.
 
-## Creating a project
+## Stack
 
-If you're seeing this, you've probably already done this step. Congrats!
+- SvelteKit
+- TypeScript
+- pnpm
+- Tailwind CSS
+- Supabase
+- Vitest
+- Playwright
 
-```sh
-# create a new project
-npx sv create my-app
-```
+## Local Development
 
-To recreate this project with the same configuration:
+1. Install dependencies with `pnpm install`
+2. Copy `.env.example` to `.env`
+3. Fill in `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` from the dedicated `dev` Supabase project
+4. Run `pnpm dev`
 
-```sh
-# recreate this project
-pnpm dlx sv@0.16.1 create --template minimal --types ts --add prettier eslint vitest="usages:unit,component" playwright tailwindcss="plugins:forms" sveltekit-adapter="adapter:auto" --install pnpm app-dnd
-```
+Use a separate Supabase project for local development. Do not point local `.env` values at production.
 
-## Developing
+## Environment Model
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+The repo currently recognizes three practical runtime modes:
 
-```sh
-npm run dev
+- local development: real app code against the `dev` Supabase project
+- Playwright E2E: `APP_E2E=true`, which swaps Supabase access for the in-memory mock harness
+- production: real app code against the `prod` Supabase project
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+The required environment variables are:
 
-## Building
+- `PUBLIC_SUPABASE_URL`
+- `PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` for server-only admin or maintenance paths
+- `APP_E2E` for automated end-to-end tests only
 
-To create a production version of your app:
+More detail lives in [docs/09-environment-setup.md](/G:/dev/projects/app-dnd/docs/09-environment-setup.md).
 
-```sh
-npm run build
-```
+## Scripts
 
-You can preview the production build with `npm run preview`.
+- `pnpm dev`: start the local dev server
+- `pnpm build`: create a production build
+- `pnpm preview`: preview the production build locally
+- `pnpm check`: run Svelte and TypeScript checks
+- `pnpm lint`: run Prettier and ESLint
+- `pnpm test:unit`: run Vitest
+- `pnpm test:e2e`: run Playwright against the in-memory E2E harness
+- `pnpm validate:content`: validate structured content inputs
+- `pnpm generate:content-seed-sql`: generate SQL seed output from content sources
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+## Supabase Notes
+
+- Browser and request-scoped app access use the public Supabase URL and anon key
+- The service-role key is intentionally optional in today’s runtime because the current MVP flow does not require admin-only server actions on every request
+- Production secrets should be configured in the deployment platform, not committed to the repo
