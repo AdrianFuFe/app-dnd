@@ -24,6 +24,9 @@ declare global {
 			supabase: SupabaseRequestClient;
 		}
 		interface PageData {
+			authorization?:
+				| import('$lib/types/permissions/permissions').AuthorizationContext
+				| null;
 			session: SupabaseSession | null;
 		}
 		// interface PageState {}

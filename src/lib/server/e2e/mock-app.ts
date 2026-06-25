@@ -117,9 +117,7 @@ const state = {
 
 resetE2EMockState();
 
-export function isE2EMockSupabaseClient(
-	value: unknown
-): value is E2EMockSupabaseClient {
+export function isE2EMockSupabaseClient(value: unknown): value is E2EMockSupabaseClient {
 	return typeof value === 'object' && value !== null && '__appE2E' in value;
 }
 
@@ -132,7 +130,21 @@ export function createE2EMockSupabaseClient(): SupabaseClient<Database> {
 		from(table: string) {
 			if (table === 'profiles') {
 				return {
-					upsert: async () => ({ error: null })
+					upsert: async () => ({ error: null }),
+					select() {
+						return {
+							eq() {
+								return {
+									maybeSingle: async () => ({
+										data: {
+											global_role: 'user'
+										},
+										error: null
+									})
+								};
+							}
+						};
+					}
 				};
 			}
 
@@ -177,15 +189,11 @@ export function listE2ECatalog(): CharacterCreationCatalog {
 	};
 }
 
-export function getE2ESpeciesOption(
-	speciesId: string
-): CharacterSpeciesOption | undefined {
+export function getE2ESpeciesOption(speciesId: string): CharacterSpeciesOption | undefined {
 	return e2eCatalog.speciesOptions.find((option) => option.id === speciesId);
 }
 
-export function getE2EClassOption(
-	classId: string
-): CharacterClassOption | undefined {
+export function getE2EClassOption(classId: string): CharacterClassOption | undefined {
 	return e2eCatalog.classOptions.find((option) => option.id === classId);
 }
 

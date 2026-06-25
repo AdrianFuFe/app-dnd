@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { GLOBAL_ROLE_LABELS } from '$lib/types/permissions/permissions';
 
 	let {
 		data,
@@ -23,6 +24,11 @@
 				<p class="text-sm text-stone-600">
 					Signed in as {data.session?.user.email ?? data.session?.user.id}
 				</p>
+				{#if data.authorization}
+					<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">
+						Role: {GLOBAL_ROLE_LABELS[data.authorization.globalRole]}
+					</p>
+				{/if}
 			</div>
 
 			<div class="flex flex-col gap-3 lg:items-end">

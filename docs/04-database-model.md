@@ -149,12 +149,31 @@ This table is the first persistence step for the free-text character sections al
 ## Security Model
 
 - enable RLS on every app table
-- users can only access their own `profiles` row
-- users can only access their own `characters`
+- standard users can only access their own `profiles` row
+- standard users can only access their own `characters`
 - child tables must resolve ownership through the parent `characters.user_id = auth.uid()`
 - SRD/system content should be readable by authenticated users but not editable from the normal UI
 - manual/private content should be owner-scoped by default
 - no broad public write policies by default
+
+## Role Enforcement Foundation
+
+The repo now treats global roles as an explicit application contract instead of a passive column:
+
+- `user`: can manage their own characters and private content
+- `content_editor`: inherits `user` behavior and can edit shared non-system content
+- `admin`: inherits `content_editor` behavior and can read or update protected app data across users
+
+Enforcement is intentionally split across two layers:
+
+- SQL RLS in `supabase/sql/002_initial_rls_policies.sql` remains the persistence boundary
+- server-side route and action checks should use `src/lib/server/permissions/authorization.ts` before admin-only or editor-only behavior runs
+
+The current boundary is deliberately conservative:
+
+- admin read and update overrides exist for content and character data
+- profile role assignment is not exposed through normal runtime flows yet
+- safe admin assignment and test-user workflows remain deferred to `S13 - Admin And Test User Workflow`
 
 ## Deferred Tables
 
