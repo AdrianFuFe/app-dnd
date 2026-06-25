@@ -1,0 +1,63 @@
+{
+	"schemaVersion": 1,
+	"source": "srd-5-1",
+	"contentType": "background",
+	"items": [
+		{
+			"slug": "acolyte",
+			"name": "Acolyte",
+			"summary": "Trasfondo religioso centrado en estudio, rituales y apoyo de una comunidad de fe.",
+			"description": "Seed inicial del SRD para disponer de un trasfondo reutilizable en formularios y futuras pantallas de contenido.",
+			"skillProficiencies": ["insight", "religion"],
+			"toolProficiencies": [],
+			"languages": ["choose:any:2"],
+			"equipment": [
+				"holy-symbol",
+				"prayer-book-or-prayer-wheel",
+				"5-sticks-of-incense",
+				"vestments",
+				"common-clothes",
+				"belt-pouch-15-gp"
+			],
+			"featureName": "Shelter of the Faithful",
+			"visibility": "public",
+			"mechanics": [
+				{ "type": "proficiency", "proficiencyType": "skill", "value": "insight" },
+				{ "type": "proficiency", "proficiencyType": "skill", "value": "religion" },
+				{ "type": "choose_language", "count": 2 },
+				{
+					"type": "note",
+					"text": "Can receive healing and care at temples that share your faith, and may call on priests for modest assistance."
+				}
+			]
+		},
+		{
+			"slug": "soldier",
+			"name": "Soldier",
+			"summary": "Trasfondo marcial que aporta disciplina, experiencia militar y reconocimiento entre tropas.",
+			"description": "Seed inicial del SRD para representar competencias y rasgos sociales reutilizables.",
+			"skillProficiencies": ["athletics", "intimidation"],
+			"toolProficiencies": ["gaming-set", "vehicles-land"],
+			"languages": [],
+			"equipment": [
+				"insignia-of-rank",
+				"trophy-from-a-fallen-enemy",
+				"bone-dice-or-cards",
+				"common-clothes",
+				"belt-pouch-10-gp"
+			],
+			"featureName": "Military Rank",
+			"visibility": "public",
+			"mechanics": [
+				{ "type": "proficiency", "proficiencyType": "skill", "value": "athletics" },
+				{ "type": "proficiency", "proficiencyType": "skill", "value": "intimidation" },
+				{ "type": "proficiency", "proficiencyType": "tool", "value": "gaming-set" },
+				{ "type": "proficiency", "proficiencyType": "tool", "value": "vehicles-land" },
+				{
+					"type": "note",
+					"text": "Soldiers loyal to your former military organization still recognize your authority and influence."
+				}
+			]
+		}
+	]
+}

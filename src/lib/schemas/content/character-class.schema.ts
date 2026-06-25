@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { contentBaseFieldsSchema, contentFileBaseSchema } from './common-content.schema.ts';
+import { abilitySchema } from './game-mechanics.schema.ts';
 
 const skillChoiceSchema = z.object({
 	count: z.number().int().positive(),
@@ -20,7 +21,7 @@ export const characterClassItemSchema = contentBaseFieldsSchema.extend({
 	toolProficiencies: z.array(z.string().trim().min(1)).default([]),
 	skillChoices: skillChoiceSchema.optional(),
 	startingEquipment: z.array(z.string().trim().min(1)).default([]),
-	spellcastingAbility: z.string().trim().min(1).nullable().optional(),
+	spellcastingAbility: abilitySchema.nullable().optional(),
 	progression: z.array(levelProgressionSchema).default([])
 });
 

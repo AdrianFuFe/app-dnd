@@ -108,6 +108,7 @@
 					"count": 2,
 					"options": ["history", "insight", "medicine", "persuasion", "religion"]
 				},
+				{ "type": "spellcasting", "ability": "wisdom" },
 				{ "type": "feature", "featureId": "spellcasting" },
 				{ "type": "feature", "featureId": "divine-domain" },
 				{ "type": "feature", "featureId": "channel-divinity" }

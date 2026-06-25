@@ -57,6 +57,20 @@ interface SubclassItem {
 	mechanics?: unknown[];
 }
 
+interface BackgroundItem {
+	slug: string;
+	name: string;
+	skillProficiencies?: string[];
+	toolProficiencies?: string[];
+	languages?: string[];
+	equipment?: string[];
+	featureName?: string | null;
+	summary?: string | null;
+	description?: string | null;
+	visibility?: Visibility;
+	mechanics?: unknown[];
+}
+
 interface SpellItem {
 	slug: string;
 	name: string;
@@ -141,6 +155,7 @@ export function generateSrdCatalogSeedSql(): string {
 	);
 	const classesFile = readJsonFile<ContentFile<CharacterClassItem>>('data/srd-5-1/classes.json');
 	const subclassesFile = readJsonFile<ContentFile<SubclassItem>>('data/srd-5-1/subclasses.json');
+	const backgroundsFile = readJsonFile<ContentFile<BackgroundItem>>('data/srd-5-1/backgrounds.json');
 	const spellsFile = readJsonFile<ContentFile<SpellItem>>('data/srd-5-1/spells.json');
 
 	const sourceId = sourceIdSql('srd-5-1');
@@ -293,6 +308,44 @@ export function generateSrdCatalogSeedSql(): string {
 		)
 	);
 
+	const backgroundsSql = buildInsert(
+		'backgrounds',
+		[
+			'owner_user_id',
+			'source_id',
+			'visibility',
+			'slug',
+			'name',
+			'skill_proficiencies',
+			'tool_proficiencies',
+			'languages',
+			'equipment',
+			'feature_name',
+			'summary',
+			'description',
+			'mechanics',
+			'is_system_content'
+		],
+		backgroundsFile.items.map((item) =>
+			[
+				'null',
+				sourceId,
+				sqlVisibility(item.visibility),
+				sqlString(item.slug),
+				sqlString(item.name),
+				sqlTextArray(item.skillProficiencies),
+				sqlTextArray(item.toolProficiencies),
+				sqlTextArray(item.languages),
+				sqlTextArray(item.equipment),
+				sqlString(item.featureName ?? null),
+				sqlString(item.summary ?? null),
+				sqlString(item.description ?? null),
+				sqlJson(item.mechanics ?? []),
+				'true'
+			].join(', ')
+		)
+	);
+
 	const spellsSql = buildInsert(
 		'spells',
 		[
@@ -349,6 +402,7 @@ export function generateSrdCatalogSeedSql(): string {
 		subspeciesSql,
 		classesSql,
 		subclassesSql,
+		backgroundsSql,
 		spellsSql
 	].join('\n');
 }

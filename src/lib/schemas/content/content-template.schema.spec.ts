@@ -77,6 +77,21 @@ describe('content templates', () => {
 		expect(parsed.items).toHaveLength(2);
 		expect(parsed.items[0]?.slug).toBe('guerrero');
 		expect(parsed.items[1]?.slug).toBe('clerigo');
+		expect(parsed.items[1]?.spellcastingAbility).toBe('wisdom');
+		expect(parsed.items[1]?.mechanics).toContainEqual({
+			type: 'spellcasting',
+			ability: 'wisdom'
+		});
+	});
+
+	it('validates the SRD backgrounds starter file', () => {
+		const file = readJsonFile<unknown>('data/srd-5-1/backgrounds.json');
+
+		const parsed = backgroundFileSchema.parse(file);
+
+		expect(parsed.items).toHaveLength(2);
+		expect(parsed.items[0]?.slug).toBe('acolyte');
+		expect(parsed.items[1]?.slug).toBe('soldier');
 	});
 
 	it('validates the SRD spells starter file', () => {

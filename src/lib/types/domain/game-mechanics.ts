@@ -26,6 +26,7 @@ export type GameMechanic =
 	  }
 	| { type: 'resistance'; damageType: string }
 	| { type: 'spell_grant'; spellId: string; ability?: Ability }
+	| { type: 'spellcasting'; ability: Ability }
 	| { type: 'resource'; name: string; maxFormula: string; resetOn: RestType }
 	| { type: 'feature'; featureId: string }
 	| { type: 'note'; text: string };

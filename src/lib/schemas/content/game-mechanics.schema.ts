@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const abilitySchema = z.enum([
+export const abilitySchema = z.enum([
 	'strength',
 	'dexterity',
 	'constitution',
@@ -61,6 +61,10 @@ export const gameMechanicSchema = z.discriminatedUnion('type', [
 		type: z.literal('spell_grant'),
 		spellId: z.string().trim().min(1),
 		ability: abilitySchema.optional()
+	}),
+	z.object({
+		type: z.literal('spellcasting'),
+		ability: abilitySchema
 	}),
 	z.object({
 		type: z.literal('resource'),
