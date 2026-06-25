@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { authFormSchema } from '$lib/schemas/auth/auth-form.schema';
+import { getLiveSupabaseConfigurationMessage } from '$lib/server/runtime/integration';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (locals.session) {
@@ -12,7 +13,7 @@ export const actions: Actions = {
 	default: async ({ locals, request, url }) => {
 		if (!locals.supabase) {
 			return fail(500, {
-				error: 'Supabase is not configured yet.'
+				error: getLiveSupabaseConfigurationMessage(locals.runtime)
 			});
 		}
 

@@ -26,7 +26,7 @@ Use a separate Supabase project for local development. Do not point local `.env`
 The repo currently recognizes three practical runtime modes:
 
 - local development: real app code against the `dev` Supabase project
-- Playwright E2E: `APP_E2E=true`, which swaps Supabase access for the in-memory mock harness
+- Playwright E2E: `APP_E2E=true`, which swaps Supabase access for the in-memory mock harness and injects a fixed authenticated session
 - production: real app code against the `prod` Supabase project
 
 The required environment variables are:
@@ -37,6 +37,32 @@ The required environment variables are:
 - `APP_E2E` for automated end-to-end tests only
 
 More detail lives in [docs/09-environment-setup.md](/G:/dev/projects/app-dnd/docs/09-environment-setup.md).
+
+## Runtime Integration Check
+
+Today, these paths are real:
+
+- normal local development and production auth use real Supabase Auth
+- character and catalog reads/writes use the live Supabase database when `APP_E2E` is not `true`
+- profile sync writes a real `profiles` row on authenticated runtime requests
+
+These paths are mocked:
+
+- Playwright E2E uses an in-memory catalog, character store, and fixed session
+- `POST /api/test/reset` only exists in `APP_E2E=true` mode and resets the mock state
+
+To run the app against a live Supabase project without guessing:
+
+1. Copy `.env.example` to `.env`.
+2. Set `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` from your `dev` Supabase project.
+3. Apply the SQL files in [supabase/sql/README.md](/G:/dev/projects/app-dnd/supabase/sql/README.md).
+4. Seed the SRD catalog SQL if you changed the source JSON with `pnpm generate:content-seed-sql`.
+5. Start the app with `pnpm dev`.
+6. Register a user through `/auth/register` or sign in through `/auth/login`.
+
+`pnpm test:e2e` is not a live Supabase smoke test. It validates the app flow against the mock harness only.
+
+The full verification notes live in [docs/10-runtime-integration-check.md](/G:/dev/projects/app-dnd/docs/10-runtime-integration-check.md).
 
 ## Scripts
 

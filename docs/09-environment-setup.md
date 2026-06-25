@@ -37,11 +37,11 @@ For deployed production:
 ## Current Runtime Modes
 
 - normal local development: reads `.env` and talks to the `dev` Supabase project
-- Playwright E2E: uses `APP_E2E=true` and runs against the in-memory mock app instead of Supabase
+- Playwright E2E: uses `APP_E2E=true`, injects a fixed authenticated session, and runs against the in-memory mock app instead of Supabase
 - production: reads host-provided variables and talks to the `prod` Supabase project
 
 ## Notes
 
 - Missing `PUBLIC_SUPABASE_URL` or `PUBLIC_SUPABASE_ANON_KEY` prevents real Supabase access
 - `APP_E2E` is only for automated tests and should not be used as a local development shortcut
-- This block documents environment separation only; a deeper live-service verification pass belongs to `S10 - Runtime Integration Check`
+- This block documents environment separation only; the runtime verification details now live in `docs/10-runtime-integration-check.md`

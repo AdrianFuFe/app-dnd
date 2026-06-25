@@ -18,6 +18,7 @@ declare global {
 	namespace App {
 		// interface Error {}
 		interface Locals {
+			runtime: import('$lib/server/runtime/integration').RuntimeIntegrationStatus;
 			safeGetSession: () => Promise<SupabaseSession | null>;
 			session: SupabaseSession | null;
 			supabase: SupabaseRequestClient;
