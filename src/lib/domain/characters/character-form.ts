@@ -27,6 +27,7 @@ export const characterCreateFormFieldNames = [
 	'initiative',
 	'speed',
 	'hitDice',
+	'attackItems',
 	'inventoryItems',
 	'attacks',
 	'spells',
@@ -69,6 +70,7 @@ export function createCharacterFormValues(
 		initiative: toFormString(source.initiative),
 		speed: toFormString(source.speed),
 		hitDice: toFormString(source.hitDice),
+		attackItems: toStructuredItemsFormString(source.attackItems),
 		inventoryItems: toInventoryItemsFormString(source.inventoryItems),
 		attacks: toFormString(source.attacks),
 		spells: toFormString(source.spells),
@@ -95,6 +97,10 @@ function toFormString(value: unknown): string {
 }
 
 function toInventoryItemsFormString(value: unknown): string {
+	return toStructuredItemsFormString(value);
+}
+
+function toStructuredItemsFormString(value: unknown): string {
 	if (typeof value === 'string') {
 		return value;
 	}

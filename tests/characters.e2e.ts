@@ -26,7 +26,15 @@ test('character create route saves a new draft and returns to the roster', async
 		currentHp: '28',
 		armorClass: '17',
 		hitDice: '4d10',
-		attacks: 'Warhammer',
+		attackItems: [
+			{
+				name: 'Warhammer',
+				attackBonus: '+5',
+				damage: '1d10 + 3',
+				damageType: 'bludgeoning',
+				range: 'Melee'
+			}
+		],
 		inventoryItems: [
 			{
 				name: 'Smith tools',
@@ -61,6 +69,15 @@ test('character edit route updates an existing draft and returns to detail', asy
 		intelligence: '14',
 		wisdom: '16',
 		currentHp: '20',
+		attackItems: [
+			{
+				name: 'Radiant Mace',
+				attackBonus: '+5',
+				damage: '1d6 + 3',
+				damageType: 'radiant',
+				range: 'Melee'
+			}
+		],
 		inventoryItems: [
 			{
 				name: 'Lantern relic',
@@ -80,6 +97,7 @@ test('character edit route updates an existing draft and returns to detail', asy
 	await expect(page.getByRole('heading', { name: 'Talia Dawnweaver' })).toBeVisible();
 	await expect(page.getByText('Cleric', { exact: true })).toBeVisible();
 	await expect(page.getByText('Pilgrim', { exact: true })).toBeVisible();
+	await expect(page.getByText('Radiant Mace', { exact: true })).toBeVisible();
 	await expect(page.getByText('Lantern relic', { exact: true })).toBeVisible();
 	await expect(page.getByText('Guiding Bolt', { exact: true })).toBeVisible();
 	await expect(page.getByText('Carries a lantern relic.', { exact: true })).toBeVisible();
@@ -131,7 +149,14 @@ async function fillCharacterForm(
 		initiative: string;
 		speed: string;
 		hitDice: string;
-		attacks: string;
+		attackItems: Array<{
+			name: string;
+			attackBonus?: string;
+			damage?: string;
+			damageType?: string;
+			range?: string;
+			description?: string;
+		}>;
 		spells: string;
 		inventoryItems: Array<{
 			name: string;
@@ -166,7 +191,15 @@ async function fillCharacterForm(
 		initiative: '2',
 		speed: '30',
 		hitDice: '3d6',
-		attacks: 'Quarterstaff',
+		attackItems: [
+			{
+				name: 'Quarterstaff',
+				attackBonus: '+4',
+				damage: '1d6',
+				damageType: 'bludgeoning',
+				range: 'Melee'
+			}
+		],
 		spells: 'Magic Missile',
 		inventoryItems: [
 			{
@@ -179,12 +212,15 @@ async function fillCharacterForm(
 	};
 
 	await page.locator('input[name="name"]').fill(values.name);
-	await page.locator('select[name="speciesId"]').selectOption({ label: values.species });
-	await page
-		.locator('select[name="subspeciesId"]')
-		.selectOption(values.subspecies ? { label: values.subspecies } : { value: '' });
-	await page.locator('select[name="classId"]').selectOption({ label: values.className });
-	await page.locator('select[name="subclassId"]').selectOption({ label: values.subclass });
+	const speciesSelect = page.locator('select[name="speciesId"]');
+	const subspeciesSelect = page.locator('select[name="subspeciesId"]');
+	const classSelect = page.locator('select[name="classId"]');
+	const subclassSelect = page.locator('select[name="subclassId"]');
+
+	await speciesSelect.selectOption({ label: values.species });
+	await selectDependentOption(subspeciesSelect, values.subspecies);
+	await classSelect.selectOption({ label: values.className });
+	await selectDependentOption(subclassSelect, values.subclass);
 	await page.locator('input[name="level"]').fill(values.level);
 	await page.locator('select[name="backgroundId"]').selectOption({ label: values.background });
 	await page.locator('textarea[name="story"]').fill(values.story);
@@ -201,9 +237,45 @@ async function fillCharacterForm(
 	await page.locator('input[name="initiative"]').fill(values.initiative);
 	await page.locator('input[name="speed"]').fill(values.speed);
 	await page.locator('input[name="hitDice"]').fill(values.hitDice);
-	await page.locator('textarea[name="attacks"]').fill(values.attacks);
 	await page.locator('textarea[name="spells"]').fill(values.spells);
 	await page.locator('textarea[name="notes"]').fill(values.notes);
+
+	let currentAttackItemCount = await page.getByLabel('Attack name').count();
+
+	while (currentAttackItemCount > values.attackItems.length) {
+		await page.getByRole('button', { name: 'Remove' }).first().click();
+		currentAttackItemCount -= 1;
+	}
+
+	while (currentAttackItemCount < values.attackItems.length) {
+		await page.getByRole('button', { name: 'Add attack' }).click();
+		currentAttackItemCount += 1;
+	}
+
+	for (let index = 0; index < values.attackItems.length; index += 1) {
+		const item = values.attackItems[index];
+		await page.getByLabel('Attack name').nth(index).fill(item.name);
+		await page
+			.getByLabel('Attack bonus')
+			.nth(index)
+			.fill(item.attackBonus ?? '');
+		await page
+			.getByLabel('Damage')
+			.nth(index)
+			.fill(item.damage ?? '');
+		await page
+			.getByLabel('Damage type')
+			.nth(index)
+			.fill(item.damageType ?? '');
+		await page
+			.getByLabel('Range')
+			.nth(index)
+			.fill(item.range ?? '');
+		await page
+			.getByLabel('Description')
+			.nth(index)
+			.fill(item.description ?? '');
+	}
 
 	let currentInventoryItemCount = await page.getByLabel('Item name').count();
 
@@ -244,4 +316,20 @@ async function fillCharacterForm(
 			await page.getByLabel('Currently equipped').nth(index).uncheck();
 		}
 	}
+}
+
+async function selectDependentOption(select: ReturnType<Page['locator']>, label: string) {
+	if (!label) {
+		await select.selectOption({ value: '' });
+		return;
+	}
+
+	await expect
+		.poll(async () => {
+			const options = await select.locator('option').allTextContents();
+			return options.map((option) => option.trim());
+		})
+		.toContain(label);
+
+	await select.selectOption({ label });
 }

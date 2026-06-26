@@ -14,8 +14,8 @@
 		<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Edit character</p>
 		<h1 class="mt-3 text-3xl font-semibold text-stone-900">{data.characterName}</h1>
 		<p class="mt-3 max-w-3xl text-base leading-7 text-stone-600">
-			Update the same MVP identity, stats, combat, and structured inventory flow used during
-			creation, now anchored to this saved draft.
+			Update the same MVP identity, stats, combat, structured attacks, and structured
+			inventory flow used during creation, now anchored to this saved draft.
 		</p>
 	</section>
 

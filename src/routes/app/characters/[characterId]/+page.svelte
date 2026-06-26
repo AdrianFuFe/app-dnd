@@ -33,6 +33,10 @@
 
 		return suffix ? `${value} ${suffix}` : String(value);
 	}
+
+	function formatAttackMeta(values: Array<string | undefined>): string {
+		return values.filter((value) => value && value.trim().length > 0).join(' | ');
+	}
 </script>
 
 <svelte:head>
@@ -203,13 +207,45 @@
 			</article>
 
 			<article class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
-				<h2 class="text-xl font-semibold text-stone-900">Free-Text Sections</h2>
-				<div class="mt-6 grid gap-4 lg:grid-cols-2">
+				<h2 class="text-xl font-semibold text-stone-900">Attacks And Notes</h2>
+				<div class="mt-6 space-y-6">
 					<div>
 						<p class="text-sm font-medium text-stone-500">Attacks</p>
-						<p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700">
-							{optionalText(data.character.attacks)}
-						</p>
+						{#if data.character.attackItems.length === 0}
+							<p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700">
+								{optionalText(data.character.attacks)}
+							</p>
+						{:else}
+							<div class="mt-3 space-y-3">
+								{#each data.character.attackItems as attack (`${attack.name}-${attack.damage ?? ''}`)}
+									<div
+										class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4"
+									>
+										<p class="text-base font-semibold text-stone-900">
+											{attack.name}
+										</p>
+										{#if formatAttackMeta( [attack.attackBonus, attack.damageType ? `${attack.damage ?? ''} ${attack.damageType}`.trim() : attack.damage, attack.range] )}
+											<p class="mt-2 text-sm text-stone-600">
+												{formatAttackMeta([
+													attack.attackBonus,
+													attack.damageType
+														? `${attack.damage ?? ''} ${attack.damageType}`.trim()
+														: attack.damage,
+													attack.range
+												])}
+											</p>
+										{/if}
+										{#if attack.description}
+											<p
+												class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700"
+											>
+												{attack.description}
+											</p>
+										{/if}
+									</div>
+								{/each}
+							</div>
+						{/if}
 					</div>
 					<div>
 						<p class="text-sm font-medium text-stone-500">Spells</p>

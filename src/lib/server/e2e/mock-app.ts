@@ -67,6 +67,15 @@ const initialCharacters: E2ECharacterRecord[] = [
 		initiative: 2,
 		speed: 30,
 		hitDice: '3d6',
+		attackItems: [
+			{
+				name: 'Quarterstaff',
+				attackBonus: '+4',
+				damage: '1d6',
+				damageType: 'bludgeoning',
+				range: 'Melee'
+			}
+		],
 		inventoryItems: [
 			{
 				name: 'Spellbook',

@@ -78,6 +78,15 @@ export const characterInventoryItemSchema = z.object({
 	isEquipped: booleanSchema
 });
 
+export const characterAttackItemSchema = z.object({
+	name: requiredTextSchema,
+	attackBonus: optionalTextSchema,
+	damage: optionalTextSchema,
+	damageType: optionalTextSchema,
+	range: optionalTextSchema,
+	description: optionalTextSchema
+});
+
 export const characterInventoryItemsSchema = z.preprocess((value) => {
 	if (typeof value === 'string') {
 		const trimmed = value.trim();
@@ -99,6 +108,28 @@ export const characterInventoryItemsSchema = z.preprocess((value) => {
 
 	return value;
 }, z.array(characterInventoryItemSchema));
+
+export const characterAttackItemsSchema = z.preprocess((value) => {
+	if (typeof value === 'string') {
+		const trimmed = value.trim();
+
+		if (trimmed.length === 0) {
+			return [];
+		}
+
+		try {
+			return JSON.parse(trimmed);
+		} catch {
+			return value;
+		}
+	}
+
+	if (value === undefined || value === null) {
+		return [];
+	}
+
+	return value;
+}, z.array(characterAttackItemSchema));
 
 export const characterIdentitySchema = z.object({
 	name: requiredTextSchema,
@@ -128,6 +159,7 @@ export const characterCreateInputSchema = z
 		...characterAbilityScoresSchema.shape,
 		...characterCombatStatsShape,
 		...characterTextSectionsSchema.shape,
+		attackItems: characterAttackItemsSchema.default([]),
 		inventoryItems: characterInventoryItemsSchema.default([])
 	})
 	.refine(({ currentHp, maxHp }) => currentHp <= maxHp, {
@@ -140,6 +172,7 @@ export type CharacterIdentityInput = z.infer<typeof characterIdentitySchema>;
 export type CharacterAbilityScoresInput = z.infer<typeof characterAbilityScoresSchema>;
 export type CharacterCombatStatsInput = z.infer<typeof characterCombatStatsSchema>;
 export type CharacterInventoryItemInput = z.infer<typeof characterInventoryItemSchema>;
+export type CharacterAttackItemInput = z.infer<typeof characterAttackItemSchema>;
 export type CharacterTextSectionsInput = z.infer<typeof characterTextSectionsSchema>;
 
 export { abilityNames };

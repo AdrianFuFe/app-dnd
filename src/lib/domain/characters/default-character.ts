@@ -16,6 +16,7 @@ export function createDefaultCharacterInput(): CharacterCreateInput {
 		armorClass: 10,
 		initiative: 0,
 		speed: 30,
+		attackItems: [],
 		inventoryItems: []
 	};
 }

@@ -243,3 +243,16 @@ create table if not exists character_inventory_items (
 	created_at timestamptz not null default now(),
 	updated_at timestamptz not null default now()
 );
+
+create table if not exists character_attacks (
+	id uuid primary key default gen_random_uuid(),
+	character_id uuid not null references characters (id) on delete cascade,
+	name text not null,
+	attack_bonus text,
+	damage text,
+	damage_type text,
+	range text,
+	description text,
+	created_at timestamptz not null default now(),
+	updated_at timestamptz not null default now()
+);

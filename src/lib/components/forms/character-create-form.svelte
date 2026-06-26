@@ -17,6 +17,14 @@
 		value: string;
 		isEquipped: boolean;
 	};
+	type AttackFormItem = {
+		name: string;
+		attackBonus: string;
+		damage: string;
+		damageType: string;
+		range: string;
+		description: string;
+	};
 
 	let {
 		catalog,
@@ -55,10 +63,12 @@
 	] as const;
 
 	let formValues = $state(createCharacterFormValues());
+	let attackItems = $state<AttackFormItem[]>([]);
 	let inventoryItems = $state<InventoryFormItem[]>([]);
 
 	$effect(() => {
 		formValues = { ...values };
+		attackItems = parseAttackItems(values.attackItems, values.attacks);
 		inventoryItems = parseInventoryItems(values.inventoryItems);
 	});
 
@@ -161,6 +171,37 @@
 		inventoryItems = inventoryItems.filter((_, itemIndex) => itemIndex !== index);
 	}
 
+	function addAttackItem() {
+		attackItems = [
+			...attackItems,
+			{
+				name: '',
+				attackBonus: '',
+				damage: '',
+				damageType: '',
+				range: '',
+				description: ''
+			}
+		];
+	}
+
+	function removeAttackItem(index: number) {
+		attackItems = attackItems.filter((_, itemIndex) => itemIndex !== index);
+	}
+
+	function attackItemsFieldValue(): string {
+		return JSON.stringify(
+			attackItems.map((item) => ({
+				name: item.name,
+				attackBonus: item.attackBonus,
+				damage: item.damage,
+				damageType: item.damageType,
+				range: item.range,
+				description: item.description
+			}))
+		);
+	}
+
 	function inventoryItemsFieldValue(): string {
 		return JSON.stringify(
 			inventoryItems.map((item) => ({
@@ -172,6 +213,47 @@
 				isEquipped: item.isEquipped
 			}))
 		);
+	}
+
+	function parseAttackItems(value: string, fallbackText: string): AttackFormItem[] {
+		if (value.trim()) {
+			try {
+				const parsed = JSON.parse(value);
+
+				if (Array.isArray(parsed)) {
+					return parsed.map((item) => ({
+						name: typeof item?.name === 'string' ? item.name : '',
+						attackBonus: typeof item?.attackBonus === 'string' ? item.attackBonus : '',
+						damage: typeof item?.damage === 'string' ? item.damage : '',
+						damageType: typeof item?.damageType === 'string' ? item.damageType : '',
+						range: typeof item?.range === 'string' ? item.range : '',
+						description: typeof item?.description === 'string' ? item.description : ''
+					}));
+				}
+			} catch {
+				// Fall back to the legacy text mirror below.
+			}
+		}
+
+		return splitLegacyAttackEntries(fallbackText)
+			.map((item) => item.trim())
+			.filter((item) => item.length > 0)
+			.map((name) => ({
+				name,
+				attackBonus: '',
+				damage: '',
+				damageType: '',
+				range: '',
+				description: ''
+			}));
+	}
+
+	function splitLegacyAttackEntries(value: string): string[] {
+		if (value.includes('\n') || value.includes('\r')) {
+			return value.split(/\r?\n/);
+		}
+
+		return value.trim().length > 0 ? [value] : [];
 	}
 
 	function parseInventoryItems(value: string): InventoryFormItem[] {
@@ -455,6 +537,127 @@
 	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
 		<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
 			<div class="space-y-1">
+				<h2 class="text-xl font-semibold text-stone-900">Attacks</h2>
+				<p class="text-sm text-stone-600">
+					Track attacks as structured rows so names, bonuses, and damage do not disappear
+					into one text block.
+				</p>
+			</div>
+			<button
+				class="rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-900 transition hover:border-stone-400"
+				type="button"
+				onclick={addAttackItem}
+			>
+				Add attack
+			</button>
+		</div>
+
+		<input type="hidden" name="attackItems" value={attackItemsFieldValue()} />
+
+		{#if firstError('attackItems')}
+			<p class="mt-4 text-sm text-red-700">{firstError('attackItems')}</p>
+		{/if}
+
+		{#if attackItems.length === 0}
+			<p
+				class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600"
+			>
+				No attacks yet. Add the actions this character actually uses so combat details stay
+				scannable.
+			</p>
+		{:else}
+			<div class="mt-6 space-y-4">
+				{#each attackItems as item, index (`${index}-${item.name}`)}
+					<div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+						<div class="flex items-center justify-between gap-3">
+							<p class="text-sm font-semibold text-stone-900">Attack {index + 1}</p>
+							<button
+								class="text-sm font-medium text-rose-700 transition hover:text-rose-900"
+								type="button"
+								onclick={() => removeAttackItem(index)}
+							>
+								Remove
+							</button>
+						</div>
+
+						<div class="mt-4 grid gap-4 lg:grid-cols-2">
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Attack name</span
+								>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									type="text"
+									bind:value={item.name}
+								/>
+							</label>
+
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Attack bonus</span
+								>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									type="text"
+									placeholder="+5 to hit"
+									bind:value={item.attackBonus}
+								/>
+							</label>
+
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Damage</span
+								>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									type="text"
+									placeholder="1d8 + 3"
+									bind:value={item.damage}
+								/>
+							</label>
+
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Damage type</span
+								>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									type="text"
+									placeholder="slashing"
+									bind:value={item.damageType}
+								/>
+							</label>
+
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Range</span
+								>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									type="text"
+									placeholder="Melee or 20/60 ft."
+									bind:value={item.range}
+								/>
+							</label>
+
+							<label class="block lg:col-span-2">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Description</span
+								>
+								<textarea
+									class="block min-h-24 w-full rounded-lg border-stone-300"
+									bind:value={item.description}></textarea>
+							</label>
+						</div>
+					</div>
+				{/each}
+			</div>
+		{/if}
+	</section>
+
+	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+		<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+			<div class="space-y-1">
 				<h2 class="text-xl font-semibold text-stone-900">Inventory</h2>
 				<p class="text-sm text-stone-600">
 					Track items as structured rows so editing stays clearer than one large notes
@@ -574,22 +777,14 @@
 
 	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
 		<div class="space-y-1">
-			<h2 class="text-xl font-semibold text-stone-900">Free-Text Sections</h2>
+			<h2 class="text-xl font-semibold text-stone-900">Notes And Spell Tracking</h2>
 			<p class="text-sm text-stone-600">
-				Keep manual notes for attacks, spells, and general reminders while richer systems
-				are still incremental.
+				Spells and general notes still stay flexible while the structured sections continue
+				to expand incrementally.
 			</p>
 		</div>
 
-		<div class="mt-6 grid gap-4 lg:grid-cols-2">
-			<label class="block">
-				<span class="mb-1 block text-sm font-medium text-stone-700">Attacks</span>
-				<textarea
-					class="block min-h-32 w-full rounded-lg border-stone-300"
-					name="attacks"
-					bind:value={formValues.attacks}></textarea>
-			</label>
-
+		<div class="mt-6 grid gap-4">
 			<label class="block">
 				<span class="mb-1 block text-sm font-medium text-stone-700">Spells</span>
 				<textarea

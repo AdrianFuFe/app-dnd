@@ -8,13 +8,19 @@ import {
 	updateE2ECharacterForUser
 } from '$lib/server/e2e/mock-app';
 import type { Database } from '$lib/types/database/supabase';
-import type { CharacterCreateInput, CharacterInventoryItem } from '$lib/types/domain/character';
+import type {
+	CharacterAttackItem,
+	CharacterCreateInput,
+	CharacterInventoryItem
+} from '$lib/types/domain/character';
 
 type CharactersInsert = Database['public']['Tables']['characters']['Insert'];
 type CharacterStatsInsert = Database['public']['Tables']['character_stats']['Insert'];
 type CharacterCombatStatsInsert = Database['public']['Tables']['character_combat_stats']['Insert'];
 type CharacterTextSectionsInsert =
 	Database['public']['Tables']['character_text_sections']['Insert'];
+type CharacterAttackInsert = Database['public']['Tables']['character_attacks']['Insert'];
+type CharacterAttackRow = Database['public']['Tables']['character_attacks']['Row'];
 type CharacterInventoryItemInsert =
 	Database['public']['Tables']['character_inventory_items']['Insert'];
 
@@ -99,15 +105,21 @@ export async function createCharacter(
 		...toCharacterTextSectionsFields(input)
 	};
 
-	const [statsResult, combatResult, textResult, inventoryResult] = await Promise.all([
-		supabase.from('character_stats').insert(statsInsert),
-		supabase.from('character_combat_stats').insert(combatStatsInsert),
-		supabase.from('character_text_sections').insert(textSectionsInsert),
-		insertCharacterInventoryItems(supabase, character.id, input.inventoryItems)
-	]);
+	const [statsResult, combatResult, textResult, attacksResult, inventoryResult] =
+		await Promise.all([
+			supabase.from('character_stats').insert(statsInsert),
+			supabase.from('character_combat_stats').insert(combatStatsInsert),
+			supabase.from('character_text_sections').insert(textSectionsInsert),
+			insertCharacterAttackItems(supabase, character.id, input.attackItems),
+			insertCharacterInventoryItems(supabase, character.id, input.inventoryItems)
+		]);
 
 	const childError =
-		statsResult.error ?? combatResult.error ?? textResult.error ?? inventoryResult.error;
+		statsResult.error ??
+		combatResult.error ??
+		textResult.error ??
+		attacksResult.error ??
+		inventoryResult.error;
 
 	if (childError) {
 		await supabase.from('characters').delete().eq('id', character.id).eq('user_id', userId);
@@ -143,40 +155,64 @@ export async function getCharacterForUser(
 		return null;
 	}
 
-	const [statsResult, combatResult, textResult, inventoryResult] = await Promise.all([
-		supabase
-			.from('character_stats')
-			.select('strength, dexterity, constitution, intelligence, wisdom, charisma')
-			.eq('character_id', characterId)
-			.maybeSingle(),
-		supabase
-			.from('character_combat_stats')
-			.select('max_hp, current_hp, temporary_hp, armor_class, initiative, speed, hit_dice')
-			.eq('character_id', characterId)
-			.maybeSingle(),
-		supabase
-			.from('character_text_sections')
-			.select('attacks, spells, inventory, notes')
-			.eq('character_id', characterId)
-			.maybeSingle(),
-		supabase
-			.from('character_inventory_items')
-			.select('name, quantity, description, weight, value, is_equipped')
-			.eq('character_id', characterId)
-	]);
+	const [statsResult, combatResult, textResult, attacksResult, inventoryResult] =
+		await Promise.all([
+			supabase
+				.from('character_stats')
+				.select('strength, dexterity, constitution, intelligence, wisdom, charisma')
+				.eq('character_id', characterId)
+				.maybeSingle(),
+			supabase
+				.from('character_combat_stats')
+				.select(
+					'max_hp, current_hp, temporary_hp, armor_class, initiative, speed, hit_dice'
+				)
+				.eq('character_id', characterId)
+				.maybeSingle(),
+			supabase
+				.from('character_text_sections')
+				.select('attacks, spells, inventory, notes')
+				.eq('character_id', characterId)
+				.maybeSingle(),
+			supabase
+				.from('character_attacks')
+				.select('name, attack_bonus, damage, damage_type, range, description')
+				.eq('character_id', characterId),
+			supabase
+				.from('character_inventory_items')
+				.select('name, quantity, description, weight, value, is_equipped')
+				.eq('character_id', characterId)
+		]);
 
 	const childError =
-		statsResult.error ?? combatResult.error ?? textResult.error ?? inventoryResult.error;
+		statsResult.error ??
+		combatResult.error ??
+		textResult.error ??
+		attacksResult.error ??
+		inventoryResult.error;
 
 	if (
 		childError ||
 		!statsResult.data ||
 		!combatResult.data ||
 		!textResult.data ||
+		!attacksResult.data ||
 		!inventoryResult.data
 	) {
 		throw new Error(`Failed to load character details for user ${userId}`);
 	}
+
+	const attackItems =
+		attacksResult.data.length > 0
+			? attacksResult.data.map((item) => ({
+					name: item.name,
+					attackBonus: item.attack_bonus ?? undefined,
+					damage: item.damage ?? undefined,
+					damageType: item.damage_type ?? undefined,
+					range: item.range ?? undefined,
+					description: item.description ?? undefined
+				}))
+			: parseLegacyAttackItems(textResult.data.attacks);
 
 	const inventoryItems =
 		inventoryResult.data.length > 0
@@ -218,6 +254,7 @@ export async function getCharacterForUser(
 		initiative: combatResult.data.initiative,
 		speed: combatResult.data.speed,
 		hitDice: combatResult.data.hit_dice ?? undefined,
+		attackItems,
 		inventoryItems,
 		attacks: textResult.data.attacks ?? undefined,
 		spells: textResult.data.spells ?? undefined,
@@ -258,24 +295,30 @@ export async function updateCharacter(
 		throw new Error(`Character ${characterId} was not found for user ${userId}`);
 	}
 
-	const [statsResult, combatResult, textResult, inventoryResult] = await Promise.all([
-		supabase
-			.from('character_stats')
-			.update(toCharacterStatsFields(input))
-			.eq('character_id', characterId),
-		supabase
-			.from('character_combat_stats')
-			.update(toCharacterCombatStatsFields(input))
-			.eq('character_id', characterId),
-		supabase
-			.from('character_text_sections')
-			.update(toCharacterTextSectionsFields(input))
-			.eq('character_id', characterId),
-		replaceCharacterInventoryItems(supabase, characterId, input.inventoryItems)
-	]);
+	const [statsResult, combatResult, textResult, attacksResult, inventoryResult] =
+		await Promise.all([
+			supabase
+				.from('character_stats')
+				.update(toCharacterStatsFields(input))
+				.eq('character_id', characterId),
+			supabase
+				.from('character_combat_stats')
+				.update(toCharacterCombatStatsFields(input))
+				.eq('character_id', characterId),
+			supabase
+				.from('character_text_sections')
+				.update(toCharacterTextSectionsFields(input))
+				.eq('character_id', characterId),
+			replaceCharacterAttackItems(supabase, characterId, input.attackItems),
+			replaceCharacterInventoryItems(supabase, characterId, input.inventoryItems)
+		]);
 
 	const childError =
-		statsResult.error ?? combatResult.error ?? textResult.error ?? inventoryResult.error;
+		statsResult.error ??
+		combatResult.error ??
+		textResult.error ??
+		attacksResult.error ??
+		inventoryResult.error;
 
 	if (childError) {
 		throw new Error(`Failed to update character details for user ${userId}`);
@@ -367,10 +410,70 @@ function toCharacterTextSectionsFields(
 	input: CharacterCreateInput
 ): Omit<CharacterTextSectionsInsert, 'character_id'> {
 	return {
-		attacks: input.attacks ?? null,
+		attacks: toLegacyAttackText(input.attackItems, input.attacks),
 		spells: input.spells ?? null,
 		inventory: toLegacyInventoryText(input.inventoryItems),
 		notes: input.notes ?? null
+	};
+}
+
+async function insertCharacterAttackItems(
+	supabase: SupabaseClient<Database>,
+	characterId: string,
+	items: CharacterAttackItem[]
+) {
+	if (items.length === 0) {
+		return { error: null };
+	}
+
+	return supabase
+		.from('character_attacks')
+		.insert(items.map((item) => toCharacterAttackItemInsert(characterId, item)));
+}
+
+async function replaceCharacterAttackItems(
+	supabase: SupabaseClient<Database>,
+	characterId: string,
+	items: CharacterAttackItem[]
+) {
+	const { data: existingItems, error: selectError } = await supabase
+		.from('character_attacks')
+		.select('name, attack_bonus, damage, damage_type, range, description')
+		.eq('character_id', characterId);
+
+	if (selectError || !existingItems) {
+		return { error: selectError ?? new Error('Failed to load current character attacks') };
+	}
+
+	const deleteResult = await supabase
+		.from('character_attacks')
+		.delete()
+		.eq('character_id', characterId);
+
+	if (deleteResult.error || items.length === 0) {
+		return deleteResult;
+	}
+
+	const insertResult = await insertCharacterAttackItems(supabase, characterId, items);
+
+	if (!insertResult.error) {
+		return insertResult;
+	}
+
+	if (existingItems.length === 0) {
+		return insertResult;
+	}
+
+	const restoreResult = await supabase
+		.from('character_attacks')
+		.insert(
+			existingItems.map((item) =>
+				toCharacterAttackItemInsert(characterId, mapAttackRow(item))
+			)
+		);
+
+	return {
+		error: restoreResult.error ?? insertResult.error
 	};
 }
 
@@ -420,6 +523,47 @@ function toCharacterInventoryItemInsert(
 	};
 }
 
+function toCharacterAttackItemInsert(
+	characterId: string,
+	item: CharacterAttackItem
+): CharacterAttackInsert {
+	return {
+		character_id: characterId,
+		name: item.name,
+		attack_bonus: item.attackBonus ?? null,
+		damage: item.damage ?? null,
+		damage_type: item.damageType ?? null,
+		range: item.range ?? null,
+		description: item.description ?? null
+	};
+}
+
+function toLegacyAttackText(items: CharacterAttackItem[], fallback?: string): string | null {
+	if (items.length === 0) {
+		return fallback?.trim() ? fallback : null;
+	}
+
+	return items
+		.map((item) => {
+			const segments = [item.name];
+
+			if (item.attackBonus) {
+				segments.push(item.attackBonus);
+			}
+
+			if (item.damage) {
+				segments.push(item.damageType ? `${item.damage} ${item.damageType}` : item.damage);
+			}
+
+			if (item.range) {
+				segments.push(item.range);
+			}
+
+			return segments.join(' | ');
+		})
+		.join('\n');
+}
+
 function toLegacyInventoryText(items: CharacterInventoryItem[]): string | null {
 	if (items.length === 0) {
 		return null;
@@ -431,6 +575,43 @@ function toLegacyInventoryText(items: CharacterInventoryItem[]): string | null {
 			return item.isEquipped ? `${base} (equipped)` : base;
 		})
 		.join('\n');
+}
+
+function parseLegacyAttackItems(value: string | null): CharacterAttackItem[] {
+	if (!value?.trim()) {
+		return [];
+	}
+
+	return splitLegacyAttackEntries(value)
+		.map((item) => item.trim())
+		.filter((item) => item.length > 0)
+		.map((name) => ({
+			name
+		}));
+}
+
+function splitLegacyAttackEntries(value: string): string[] {
+	if (value.includes('\n') || value.includes('\r')) {
+		return value.split(/\r?\n/);
+	}
+
+	return [value];
+}
+
+function mapAttackRow(
+	item: Pick<
+		CharacterAttackRow,
+		'name' | 'attack_bonus' | 'damage' | 'damage_type' | 'range' | 'description'
+	>
+): CharacterAttackItem {
+	return {
+		name: item.name,
+		attackBonus: item.attack_bonus ?? undefined,
+		damage: item.damage ?? undefined,
+		damageType: item.damage_type ?? undefined,
+		range: item.range ?? undefined,
+		description: item.description ?? undefined
+	};
 }
 
 function parseLegacyInventoryItems(value: string | null): CharacterInventoryItem[] {

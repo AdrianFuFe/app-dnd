@@ -14,6 +14,7 @@ alter table character_stats enable row level security;
 alter table character_combat_stats enable row level security;
 alter table character_text_sections enable row level security;
 alter table character_inventory_items enable row level security;
+alter table character_attacks enable row level security;
 
 create or replace function public.current_global_role()
 returns text
@@ -647,6 +648,78 @@ using (
 		select 1
 		from characters
 		where characters.id = character_inventory_items.character_id
+			and (
+				characters.user_id = auth.uid()
+				or public.has_global_role('admin')
+			)
+	)
+);
+
+create policy "character_attacks_select_own"
+on character_attacks
+for select
+to authenticated
+using (
+	exists (
+		select 1
+		from characters
+		where characters.id = character_attacks.character_id
+			and (
+				characters.user_id = auth.uid()
+				or public.has_global_role('admin')
+			)
+	)
+);
+
+create policy "character_attacks_insert_own"
+on character_attacks
+for insert
+to authenticated
+with check (
+	exists (
+		select 1
+		from characters
+		where characters.id = character_attacks.character_id
+			and characters.user_id = auth.uid()
+	)
+);
+
+create policy "character_attacks_update_own"
+on character_attacks
+for update
+to authenticated
+using (
+	exists (
+		select 1
+		from characters
+		where characters.id = character_attacks.character_id
+			and (
+				characters.user_id = auth.uid()
+				or public.has_global_role('admin')
+			)
+	)
+)
+with check (
+	exists (
+		select 1
+		from characters
+		where characters.id = character_attacks.character_id
+			and (
+				characters.user_id = auth.uid()
+				or public.has_global_role('admin')
+			)
+	)
+);
+
+create policy "character_attacks_delete_own"
+on character_attacks
+for delete
+to authenticated
+using (
+	exists (
+		select 1
+		from characters
+		where characters.id = character_attacks.character_id
 			and (
 				characters.user_id = auth.uid()
 				or public.has_global_role('admin')

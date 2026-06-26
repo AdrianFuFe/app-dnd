@@ -47,7 +47,7 @@ describe('listCharactersForUser', () => {
 });
 
 describe('createCharacter', () => {
-	it('writes the character row, the three MVP child slices, and structured inventory items', async () => {
+	it('writes the structured child slices and structured inventory items', async () => {
 		const charactersSingle = vi.fn().mockResolvedValue({
 			data: {
 				id: 'char-1',
@@ -61,6 +61,7 @@ describe('createCharacter', () => {
 		const statsInsert = vi.fn().mockResolvedValue({ error: null });
 		const combatInsert = vi.fn().mockResolvedValue({ error: null });
 		const textInsert = vi.fn().mockResolvedValue({ error: null });
+		const attacksInsert = vi.fn().mockResolvedValue({ error: null });
 		const inventoryInsert = vi.fn().mockResolvedValue({ error: null });
 
 		const from = vi.fn((table: string) => {
@@ -85,6 +86,12 @@ describe('createCharacter', () => {
 			if (table === 'character_text_sections') {
 				return {
 					insert: textInsert
+				};
+			}
+
+			if (table === 'character_attacks') {
+				return {
+					insert: attacksInsert
 				};
 			}
 
@@ -116,6 +123,15 @@ describe('createCharacter', () => {
 			initiative: 2,
 			speed: 30,
 			hitDice: '3d6',
+			attackItems: [
+				{
+					name: 'Quarterstaff',
+					attackBonus: '+4',
+					damage: '1d6',
+					damageType: 'bludgeoning',
+					range: 'Melee'
+				}
+			],
 			inventoryItems: [
 				{
 					name: 'Spellbook',
@@ -156,10 +172,18 @@ describe('createCharacter', () => {
 		expect(textInsert).toHaveBeenCalledWith(
 			expect.objectContaining({
 				character_id: 'char-1',
+				attacks: 'Quarterstaff | +4 | 1d6 bludgeoning | Melee',
 				inventory: 'Spellbook',
 				spells: 'Magic Missile'
 			})
 		);
+		expect(attacksInsert).toHaveBeenCalledWith([
+			expect.objectContaining({
+				character_id: 'char-1',
+				name: 'Quarterstaff',
+				attack_bonus: '+4'
+			})
+		]);
 		expect(inventoryInsert).toHaveBeenCalledWith([
 			expect.objectContaining({
 				character_id: 'char-1',
@@ -201,6 +225,7 @@ describe('createCharacter', () => {
 			if (
 				table === 'character_combat_stats' ||
 				table === 'character_text_sections' ||
+				table === 'character_attacks' ||
 				table === 'character_inventory_items'
 			) {
 				return {
@@ -227,6 +252,7 @@ describe('createCharacter', () => {
 				armorClass: 10,
 				initiative: 0,
 				speed: 30,
+				attackItems: [],
 				inventoryItems: []
 			})
 		).rejects.toThrow('Failed to create character details for user user-1');
@@ -304,6 +330,21 @@ describe('getCharacterForUser', () => {
 		const textEq = vi.fn().mockReturnValue({ maybeSingle: textMaybeSingle });
 		const textSelect = vi.fn().mockReturnValue({ eq: textEq });
 
+		const attacksEq = vi.fn().mockResolvedValue({
+			data: [
+				{
+					name: 'Quarterstaff',
+					attack_bonus: '+4',
+					damage: '1d6',
+					damage_type: 'bludgeoning',
+					range: 'Melee',
+					description: null
+				}
+			],
+			error: null
+		});
+		const attacksSelect = vi.fn().mockReturnValue({ eq: attacksEq });
+
 		const inventoryEq = vi.fn().mockResolvedValue({
 			data: [
 				{
@@ -344,6 +385,12 @@ describe('getCharacterForUser', () => {
 				};
 			}
 
+			if (table === 'character_attacks') {
+				return {
+					select: attacksSelect
+				};
+			}
+
 			if (table === 'character_inventory_items') {
 				return {
 					select: inventorySelect
@@ -379,6 +426,15 @@ describe('getCharacterForUser', () => {
 			initiative: 2,
 			speed: 30,
 			hitDice: '3d6',
+			attackItems: [
+				{
+					name: 'Quarterstaff',
+					attackBonus: '+4',
+					damage: '1d6',
+					damageType: 'bludgeoning',
+					range: 'Melee'
+				}
+			],
 			inventoryItems: [
 				{
 					name: 'Spellbook',
@@ -462,6 +518,10 @@ describe('getCharacterForUser', () => {
 			data: [],
 			error: null
 		});
+		const attacksEq = vi.fn().mockResolvedValue({
+			data: [],
+			error: null
+		});
 
 		const from = vi.fn((table: string) => {
 			if (table === 'characters') {
@@ -480,6 +540,10 @@ describe('getCharacterForUser', () => {
 				return { select: vi.fn().mockReturnValue({ eq: textEq }) };
 			}
 
+			if (table === 'character_attacks') {
+				return { select: vi.fn().mockReturnValue({ eq: attacksEq }) };
+			}
+
 			if (table === 'character_inventory_items') {
 				return { select: vi.fn().mockReturnValue({ eq: inventoryEq }) };
 			}
@@ -489,9 +553,131 @@ describe('getCharacterForUser', () => {
 
 		const character = await getCharacterForUser({ from } as never, 'user-1', 'char-1');
 
+		expect(character?.attackItems).toEqual([]);
 		expect(character?.inventoryItems).toEqual([
 			{ name: 'Rope', quantity: 1, isEquipped: false },
 			{ name: 'Torch', quantity: 1, isEquipped: false }
+		]);
+	});
+
+	it('keeps a legacy comma-based attack note as one structured row', async () => {
+		const characterMaybeSingle = vi.fn().mockResolvedValue({
+			data: {
+				id: 'char-1',
+				name: 'Legacy Blade',
+				species_id: null,
+				subspecies_id: null,
+				class_id: null,
+				subclass_id: null,
+				background_id: null,
+				race: null,
+				subrace: null,
+				class_name: null,
+				subclass: null,
+				level: 1,
+				background: null,
+				story: null,
+				updated_at: '2026-06-24T10:00:00.000Z'
+			},
+			error: null
+		});
+		const characterEqUser = vi.fn().mockReturnValue({ maybeSingle: characterMaybeSingle });
+		const characterEqId = vi.fn().mockReturnValue({ eq: characterEqUser });
+		const characterSelect = vi.fn().mockReturnValue({ eq: characterEqId });
+
+		const from = vi.fn((table: string) => {
+			if (table === 'characters') {
+				return { select: characterSelect };
+			}
+
+			if (table === 'character_stats') {
+				return {
+					select: vi.fn().mockReturnValue({
+						eq: vi.fn().mockReturnValue({
+							maybeSingle: vi.fn().mockResolvedValue({
+								data: {
+									strength: 10,
+									dexterity: 10,
+									constitution: 10,
+									intelligence: 10,
+									wisdom: 10,
+									charisma: 10
+								},
+								error: null
+							})
+						})
+					})
+				};
+			}
+
+			if (table === 'character_combat_stats') {
+				return {
+					select: vi.fn().mockReturnValue({
+						eq: vi.fn().mockReturnValue({
+							maybeSingle: vi.fn().mockResolvedValue({
+								data: {
+									max_hp: 1,
+									current_hp: 1,
+									temporary_hp: 0,
+									armor_class: 10,
+									initiative: 0,
+									speed: 30,
+									hit_dice: null
+								},
+								error: null
+							})
+						})
+					})
+				};
+			}
+
+			if (table === 'character_text_sections') {
+				return {
+					select: vi.fn().mockReturnValue({
+						eq: vi.fn().mockReturnValue({
+							maybeSingle: vi.fn().mockResolvedValue({
+								data: {
+									attacks: 'Quarterstaff +4 to hit, 1d6 bludgeoning',
+									spells: null,
+									inventory: null,
+									notes: null
+								},
+								error: null
+							})
+						})
+					})
+				};
+			}
+
+			if (table === 'character_attacks') {
+				return {
+					select: vi.fn().mockReturnValue({
+						eq: vi.fn().mockResolvedValue({
+							data: [],
+							error: null
+						})
+					})
+				};
+			}
+
+			if (table === 'character_inventory_items') {
+				return {
+					select: vi.fn().mockReturnValue({
+						eq: vi.fn().mockResolvedValue({
+							data: [],
+							error: null
+						})
+					})
+				};
+			}
+
+			throw new Error(`Unexpected table ${table}`);
+		});
+
+		const character = await getCharacterForUser({ from } as never, 'user-1', 'char-1');
+
+		expect(character?.attackItems).toEqual([
+			{ name: 'Quarterstaff +4 to hit, 1d6 bludgeoning' }
 		]);
 	});
 
@@ -512,7 +698,7 @@ describe('getCharacterForUser', () => {
 });
 
 describe('updateCharacter', () => {
-	it('updates the parent row, MVP child slices, and structured inventory items', async () => {
+	it('updates the parent row, structured child slices, and structured inventory items', async () => {
 		const charactersMaybeSingle = vi.fn().mockResolvedValue({
 			data: {
 				id: 'char-1',
@@ -531,6 +717,23 @@ describe('updateCharacter', () => {
 		const combatUpdate = vi.fn().mockReturnValue({ eq: combatEq });
 		const textEq = vi.fn().mockResolvedValue({ error: null });
 		const textUpdate = vi.fn().mockReturnValue({ eq: textEq });
+		const attacksSelectEq = vi.fn().mockResolvedValue({
+			data: [
+				{
+					name: 'Quarterstaff',
+					attack_bonus: '+4',
+					damage: '1d6',
+					damage_type: 'bludgeoning',
+					range: 'Melee',
+					description: null
+				}
+			],
+			error: null
+		});
+		const attacksSelect = vi.fn().mockReturnValue({ eq: attacksSelectEq });
+		const attacksDeleteEq = vi.fn().mockResolvedValue({ error: null });
+		const attacksDelete = vi.fn().mockReturnValue({ eq: attacksDeleteEq });
+		const attacksInsert = vi.fn().mockResolvedValue({ error: null });
 		const inventoryDeleteEq = vi.fn().mockResolvedValue({ error: null });
 		const inventoryDelete = vi.fn().mockReturnValue({ eq: inventoryDeleteEq });
 		const inventoryInsert = vi.fn().mockResolvedValue({ error: null });
@@ -557,6 +760,14 @@ describe('updateCharacter', () => {
 			if (table === 'character_text_sections') {
 				return {
 					update: textUpdate
+				};
+			}
+
+			if (table === 'character_attacks') {
+				return {
+					select: attacksSelect,
+					delete: attacksDelete,
+					insert: attacksInsert
 				};
 			}
 
@@ -589,6 +800,15 @@ describe('updateCharacter', () => {
 			initiative: 2,
 			speed: 30,
 			hitDice: '4d6',
+			attackItems: [
+				{
+					name: 'Radiant Mace',
+					attackBonus: '+5',
+					damage: '1d6 + 3',
+					damageType: 'radiant',
+					range: 'Melee'
+				}
+			],
 			inventoryItems: [
 				{
 					name: 'Lantern',
@@ -625,10 +845,19 @@ describe('updateCharacter', () => {
 		);
 		expect(textUpdate).toHaveBeenCalledWith(
 			expect.objectContaining({
+				attacks: 'Radiant Mace | +5 | 1d6 + 3 radiant | Melee',
 				inventory: 'Lantern (equipped)',
 				spells: 'Magic Missile'
 			})
 		);
+		expect(attacksDeleteEq).toHaveBeenCalledWith('character_id', 'char-1');
+		expect(attacksInsert).toHaveBeenCalledWith([
+			expect.objectContaining({
+				character_id: 'char-1',
+				name: 'Radiant Mace',
+				damage_type: 'radiant'
+			})
+		]);
 		expect(inventoryDeleteEq).toHaveBeenCalledWith('character_id', 'char-1');
 		expect(inventoryInsert).toHaveBeenCalledWith([
 			expect.objectContaining({
@@ -666,9 +895,145 @@ describe('updateCharacter', () => {
 				armorClass: 10,
 				initiative: 0,
 				speed: 30,
+				attackItems: [],
 				inventoryItems: []
 			})
 		).rejects.toThrow('Character missing was not found for user user-1');
+	});
+
+	it('restores existing structured attacks when replacement insert fails', async () => {
+		const charactersMaybeSingle = vi.fn().mockResolvedValue({
+			data: {
+				id: 'char-1',
+				name: 'Talia Stormstep'
+			},
+			error: null
+		});
+		const charactersSelect = vi.fn().mockReturnValue({ maybeSingle: charactersMaybeSingle });
+		const charactersEqUser = vi.fn().mockReturnValue({ select: charactersSelect });
+		const charactersEqId = vi.fn().mockReturnValue({ eq: charactersEqUser });
+		const charactersUpdate = vi.fn().mockReturnValue({ eq: charactersEqId });
+
+		const existingAttackRows = [
+			{
+				name: 'Quarterstaff',
+				attack_bonus: '+4',
+				damage: '1d6',
+				damage_type: 'bludgeoning',
+				range: 'Melee',
+				description: null
+			}
+		];
+
+		const attacksSelectEq = vi.fn().mockResolvedValue({
+			data: existingAttackRows,
+			error: null
+		});
+		const attacksSelect = vi.fn().mockReturnValue({ eq: attacksSelectEq });
+		const attacksDeleteEq = vi.fn().mockResolvedValue({ error: null });
+		const attacksDelete = vi.fn().mockReturnValue({ eq: attacksDeleteEq });
+		const attacksInsert = vi
+			.fn()
+			.mockResolvedValueOnce({ error: new Error('insert failed') })
+			.mockResolvedValueOnce({ error: null });
+
+		const from = vi.fn((table: string) => {
+			if (table === 'characters') {
+				return {
+					update: charactersUpdate
+				};
+			}
+
+			if (table === 'character_stats') {
+				return {
+					update: vi
+						.fn()
+						.mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+				};
+			}
+
+			if (table === 'character_combat_stats') {
+				return {
+					update: vi
+						.fn()
+						.mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+				};
+			}
+
+			if (table === 'character_text_sections') {
+				return {
+					update: vi
+						.fn()
+						.mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
+				};
+			}
+
+			if (table === 'character_attacks') {
+				return {
+					select: attacksSelect,
+					delete: attacksDelete,
+					insert: attacksInsert
+				};
+			}
+
+			if (table === 'character_inventory_items') {
+				return {
+					delete: vi
+						.fn()
+						.mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+					insert: vi.fn().mockResolvedValue({ error: null })
+				};
+			}
+
+			throw new Error(`Unexpected table ${table}`);
+		});
+
+		await expect(
+			updateCharacter({ from } as never, 'user-1', 'char-1', {
+				name: 'Talia Stormstep',
+				race: 'Elf',
+				className: 'Wizard',
+				level: 4,
+				story: 'Now leading the expedition.',
+				strength: 8,
+				dexterity: 14,
+				constitution: 13,
+				intelligence: 17,
+				wisdom: 12,
+				charisma: 10,
+				maxHp: 24,
+				currentHp: 20,
+				temporaryHp: 3,
+				armorClass: 14,
+				initiative: 2,
+				speed: 30,
+				hitDice: '4d6',
+				attackItems: [
+					{
+						name: 'Radiant Mace',
+						attackBonus: '+5',
+						damage: '1d6 + 3',
+						damageType: 'radiant',
+						range: 'Melee'
+					}
+				],
+				inventoryItems: [],
+				spells: 'Magic Missile'
+			})
+		).rejects.toThrow('Failed to update character details for user user-1');
+
+		expect(attacksSelectEq).toHaveBeenCalledWith('character_id', 'char-1');
+		expect(attacksDeleteEq).toHaveBeenCalledWith('character_id', 'char-1');
+		expect(attacksInsert).toHaveBeenNthCalledWith(
+			2,
+			expect.arrayContaining([
+				expect.objectContaining({
+					character_id: 'char-1',
+					name: 'Quarterstaff',
+					attack_bonus: '+4'
+				})
+			])
+		);
 	});
 });
 

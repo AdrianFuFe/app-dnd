@@ -51,6 +51,15 @@ export type CharacterInventoryItem = {
 	isEquipped: boolean;
 };
 
+export type CharacterAttackItem = {
+	name: string;
+	attackBonus?: string;
+	damage?: string;
+	damageType?: string;
+	range?: string;
+	description?: string;
+};
+
 export type CharacterTextSections = {
 	attacks?: string;
 	spells?: string;
@@ -61,5 +70,6 @@ export type CharacterCreateInput = CharacterIdentity &
 	CharacterAbilityScores &
 	CharacterCombatStats &
 	CharacterTextSections & {
+		attackItems: CharacterAttackItem[];
 		inventoryItems: CharacterInventoryItem[];
 	};

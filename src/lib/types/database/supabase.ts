@@ -137,6 +137,53 @@ export interface Database {
 					}
 				];
 			};
+			character_attacks: {
+				Row: {
+					id: string;
+					character_id: string;
+					name: string;
+					attack_bonus: string | null;
+					damage: string | null;
+					damage_type: string | null;
+					range: string | null;
+					description: string | null;
+					created_at: string;
+					updated_at: string;
+				};
+				Insert: {
+					id?: string;
+					character_id: string;
+					name: string;
+					attack_bonus?: string | null;
+					damage?: string | null;
+					damage_type?: string | null;
+					range?: string | null;
+					description?: string | null;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Update: {
+					id?: string;
+					character_id?: string;
+					name?: string;
+					attack_bonus?: string | null;
+					damage?: string | null;
+					damage_type?: string | null;
+					range?: string | null;
+					description?: string | null;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'character_attacks_character_id_fkey';
+						columns: ['character_id'];
+						isOneToOne: false;
+						referencedRelation: 'characters';
+						referencedColumns: ['id'];
+					}
+				];
+			};
 			character_text_sections: {
 				Row: {
 					character_id: string;
