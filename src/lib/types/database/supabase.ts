@@ -184,6 +184,62 @@ export interface Database {
 					}
 				];
 			};
+			character_spells: {
+				Row: {
+					id: string;
+					character_id: string;
+					name: string;
+					level: number | null;
+					school: string | null;
+					casting_time: string | null;
+					range: string | null;
+					components: string | null;
+					duration: string | null;
+					description: string | null;
+					is_prepared: boolean;
+					created_at: string;
+					updated_at: string;
+				};
+				Insert: {
+					id?: string;
+					character_id: string;
+					name: string;
+					level?: number | null;
+					school?: string | null;
+					casting_time?: string | null;
+					range?: string | null;
+					components?: string | null;
+					duration?: string | null;
+					description?: string | null;
+					is_prepared?: boolean;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Update: {
+					id?: string;
+					character_id?: string;
+					name?: string;
+					level?: number | null;
+					school?: string | null;
+					casting_time?: string | null;
+					range?: string | null;
+					components?: string | null;
+					duration?: string | null;
+					description?: string | null;
+					is_prepared?: boolean;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'character_spells_character_id_fkey';
+						columns: ['character_id'];
+						isOneToOne: false;
+						referencedRelation: 'characters';
+						referencedColumns: ['id'];
+					}
+				];
+			};
 			character_text_sections: {
 				Row: {
 					character_id: string;

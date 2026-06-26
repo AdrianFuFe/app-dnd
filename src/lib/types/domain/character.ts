@@ -60,6 +60,18 @@ export type CharacterAttackItem = {
 	description?: string;
 };
 
+export type CharacterSpellItem = {
+	name: string;
+	level?: number;
+	school?: string;
+	castingTime?: string;
+	range?: string;
+	components?: string;
+	duration?: string;
+	description?: string;
+	isPrepared: boolean;
+};
+
 export type CharacterTextSections = {
 	attacks?: string;
 	spells?: string;
@@ -71,5 +83,6 @@ export type CharacterCreateInput = CharacterIdentity &
 	CharacterCombatStats &
 	CharacterTextSections & {
 		attackItems: CharacterAttackItem[];
+		spellItems: CharacterSpellItem[];
 		inventoryItems: CharacterInventoryItem[];
 	};

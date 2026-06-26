@@ -43,6 +43,15 @@ describe('characterCreateInputSchema', () => {
 					range: 'Melee'
 				}
 			]),
+			spellItems: JSON.stringify([
+				{
+					name: 'Magic Missile',
+					level: 1,
+					school: 'Evocation',
+					duration: 'Instantaneous',
+					isPrepared: true
+				}
+			]),
 			inventoryItems: JSON.stringify([
 				{
 					name: 'Spellbook',
@@ -62,6 +71,7 @@ describe('characterCreateInputSchema', () => {
 		expect(result.intelligence).toBe(16);
 		expect(result.currentHp).toBe(18);
 		expect(result.attackItems[0]?.damageType).toBe('bludgeoning');
+		expect(result.spellItems[0]?.school).toBe('Evocation');
 		expect(result.inventoryItems[0]?.name).toBe('Spellbook');
 		expect(result.spells).toContain('Shield');
 	});
@@ -95,6 +105,7 @@ describe('characterCreateInputSchema', () => {
 			speed: 30,
 			hitDice: '',
 			attackItems: '',
+			spellItems: '',
 			inventoryItems: '',
 			attacks: ' ',
 			spells: '',
@@ -106,6 +117,7 @@ describe('characterCreateInputSchema', () => {
 		expect(result.subclassId).toBeUndefined();
 		expect(result.story).toBeUndefined();
 		expect(result.attackItems).toEqual([]);
+		expect(result.spellItems).toEqual([]);
 		expect(result.inventoryItems).toEqual([]);
 		expect(result.attacks).toBeUndefined();
 	});

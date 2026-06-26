@@ -25,6 +25,17 @@
 		range: string;
 		description: string;
 	};
+	type SpellFormItem = {
+		name: string;
+		level: string;
+		school: string;
+		castingTime: string;
+		range: string;
+		components: string;
+		duration: string;
+		description: string;
+		isPrepared: boolean;
+	};
 
 	let {
 		catalog,
@@ -64,11 +75,13 @@
 
 	let formValues = $state(createCharacterFormValues());
 	let attackItems = $state<AttackFormItem[]>([]);
+	let spellItems = $state<SpellFormItem[]>([]);
 	let inventoryItems = $state<InventoryFormItem[]>([]);
 
 	$effect(() => {
 		formValues = { ...values };
 		attackItems = parseAttackItems(values.attackItems, values.attacks);
+		spellItems = parseSpellItems(values.spellItems, values.spells);
 		inventoryItems = parseInventoryItems(values.inventoryItems);
 	});
 
@@ -189,6 +202,27 @@
 		attackItems = attackItems.filter((_, itemIndex) => itemIndex !== index);
 	}
 
+	function addSpellItem() {
+		spellItems = [
+			...spellItems,
+			{
+				name: '',
+				level: '',
+				school: '',
+				castingTime: '',
+				range: '',
+				components: '',
+				duration: '',
+				description: '',
+				isPrepared: false
+			}
+		];
+	}
+
+	function removeSpellItem(index: number) {
+		spellItems = spellItems.filter((_, itemIndex) => itemIndex !== index);
+	}
+
 	function attackItemsFieldValue(): string {
 		return JSON.stringify(
 			attackItems.map((item) => ({
@@ -211,6 +245,22 @@
 				weight: item.weight.trim().length > 0 ? Number(item.weight) : undefined,
 				value: item.value,
 				isEquipped: item.isEquipped
+			}))
+		);
+	}
+
+	function spellItemsFieldValue(): string {
+		return JSON.stringify(
+			spellItems.map((item) => ({
+				name: item.name,
+				level: item.level.trim().length > 0 ? Number(item.level) : undefined,
+				school: item.school,
+				castingTime: item.castingTime,
+				range: item.range,
+				components: item.components,
+				duration: item.duration,
+				description: item.description,
+				isPrepared: item.isPrepared
 			}))
 		);
 	}
@@ -285,6 +335,49 @@
 		} catch {
 			return [];
 		}
+	}
+
+	function parseSpellItems(value: string, fallbackText: string): SpellFormItem[] {
+		if (value.trim()) {
+			try {
+				const parsed = JSON.parse(value);
+
+				if (Array.isArray(parsed)) {
+					return parsed.map((item) => ({
+						name: typeof item?.name === 'string' ? item.name : '',
+						level:
+							typeof item?.level === 'number' || typeof item?.level === 'string'
+								? String(item.level)
+								: '',
+						school: typeof item?.school === 'string' ? item.school : '',
+						castingTime: typeof item?.castingTime === 'string' ? item.castingTime : '',
+						range: typeof item?.range === 'string' ? item.range : '',
+						components: typeof item?.components === 'string' ? item.components : '',
+						duration: typeof item?.duration === 'string' ? item.duration : '',
+						description: typeof item?.description === 'string' ? item.description : '',
+						isPrepared: item?.isPrepared === true
+					}));
+				}
+			} catch {
+				// Fall back to the legacy text mirror below.
+			}
+		}
+
+		return fallbackText
+			.split(/\r?\n|,/)
+			.map((item) => item.trim())
+			.filter((item) => item.length > 0)
+			.map((name) => ({
+				name,
+				level: '',
+				school: '',
+				castingTime: '',
+				range: '',
+				components: '',
+				duration: '',
+				description: '',
+				isPrepared: false
+			}));
 	}
 </script>
 
@@ -658,6 +751,161 @@
 	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
 		<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
 			<div class="space-y-1">
+				<h2 class="text-xl font-semibold text-stone-900">Spells</h2>
+				<p class="text-sm text-stone-600">
+					Track spell names, levels, and prep status as rows so the character sheet stays
+					easier to scan than one long text block.
+				</p>
+			</div>
+			<button
+				class="rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-900 transition hover:border-stone-400"
+				type="button"
+				onclick={addSpellItem}
+			>
+				Add spell
+			</button>
+		</div>
+
+		<input type="hidden" name="spellItems" value={spellItemsFieldValue()} />
+
+		{#if firstError('spellItems')}
+			<p class="mt-4 text-sm text-red-700">{firstError('spellItems')}</p>
+		{/if}
+
+		{#if spellItems.length === 0}
+			<p
+				class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600"
+			>
+				No spells yet. Add only the spells this draft actually needs right now.
+			</p>
+		{:else}
+			<div class="mt-6 space-y-4">
+				{#each spellItems as item, index (`${index}-${item.name}`)}
+					<div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+						<div class="flex items-center justify-between gap-3">
+							<p class="text-sm font-semibold text-stone-900">Spell {index + 1}</p>
+							<button
+								class="text-sm font-medium text-rose-700 transition hover:text-rose-900"
+								type="button"
+								onclick={() => removeSpellItem(index)}
+							>
+								Remove
+							</button>
+						</div>
+
+						<div class="mt-4 grid gap-4 lg:grid-cols-2">
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Spell name</span
+								>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									type="text"
+									bind:value={item.name}
+								/>
+							</label>
+
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Level</span
+								>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									type="number"
+									min="0"
+									max="9"
+									placeholder="0 for cantrip"
+									bind:value={item.level}
+								/>
+							</label>
+
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>School</span
+								>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									type="text"
+									placeholder="Evocation"
+									bind:value={item.school}
+								/>
+							</label>
+
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Casting time</span
+								>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									type="text"
+									placeholder="1 action"
+									bind:value={item.castingTime}
+								/>
+							</label>
+
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Range</span
+								>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									type="text"
+									placeholder="120 ft."
+									bind:value={item.range}
+								/>
+							</label>
+
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Duration</span
+								>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									type="text"
+									placeholder="Instantaneous"
+									bind:value={item.duration}
+								/>
+							</label>
+
+							<label class="block lg:col-span-2">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Components</span
+								>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									type="text"
+									placeholder="V, S, M"
+									bind:value={item.components}
+								/>
+							</label>
+
+							<label class="block lg:col-span-2">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Description</span
+								>
+								<textarea
+									class="block min-h-24 w-full rounded-lg border-stone-300"
+									bind:value={item.description}></textarea>
+							</label>
+
+							<label class="inline-flex items-center gap-3">
+								<input
+									class="rounded border-stone-300 text-stone-900 focus:ring-stone-500"
+									type="checkbox"
+									bind:checked={item.isPrepared}
+								/>
+								<span class="text-sm font-medium text-stone-700">Prepared</span>
+							</label>
+						</div>
+					</div>
+				{/each}
+			</div>
+		{/if}
+	</section>
+
+	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+		<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+			<div class="space-y-1">
 				<h2 class="text-xl font-semibold text-stone-900">Inventory</h2>
 				<p class="text-sm text-stone-600">
 					Track items as structured rows so editing stays clearer than one large notes
@@ -777,22 +1025,14 @@
 
 	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
 		<div class="space-y-1">
-			<h2 class="text-xl font-semibold text-stone-900">Notes And Spell Tracking</h2>
+			<h2 class="text-xl font-semibold text-stone-900">Notes</h2>
 			<p class="text-sm text-stone-600">
-				Spells and general notes still stay flexible while the structured sections continue
-				to expand incrementally.
+				Keep freeform notes for anything that does not belong in the structured combat,
+				spell, or inventory sections yet.
 			</p>
 		</div>
 
 		<div class="mt-6 grid gap-4">
-			<label class="block">
-				<span class="mb-1 block text-sm font-medium text-stone-700">Spells</span>
-				<textarea
-					class="block min-h-32 w-full rounded-lg border-stone-300"
-					name="spells"
-					bind:value={formValues.spells}></textarea>
-			</label>
-
 			<label class="block lg:col-span-2">
 				<span class="mb-1 block text-sm font-medium text-stone-700">Notes</span>
 				<textarea

@@ -22,6 +22,7 @@ describe('createDefaultCharacterInput', () => {
 			initiative: 0,
 			speed: 30,
 			attackItems: [],
+			spellItems: [],
 			inventoryItems: []
 		});
 

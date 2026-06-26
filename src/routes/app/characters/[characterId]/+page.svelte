@@ -37,6 +37,10 @@
 	function formatAttackMeta(values: Array<string | undefined>): string {
 		return values.filter((value) => value && value.trim().length > 0).join(' | ');
 	}
+
+	function formatSpellMeta(values: Array<string | undefined>): string {
+		return values.filter((value) => value && value.trim().length > 0).join(' | ');
+	}
 </script>
 
 <svelte:head>
@@ -207,7 +211,7 @@
 			</article>
 
 			<article class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
-				<h2 class="text-xl font-semibold text-stone-900">Attacks And Notes</h2>
+				<h2 class="text-xl font-semibold text-stone-900">Attacks, Spells, And Notes</h2>
 				<div class="mt-6 space-y-6">
 					<div>
 						<p class="text-sm font-medium text-stone-500">Attacks</p>
@@ -249,9 +253,69 @@
 					</div>
 					<div>
 						<p class="text-sm font-medium text-stone-500">Spells</p>
-						<p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700">
-							{optionalText(data.character.spells)}
-						</p>
+						{#if data.character.spellItems.length === 0}
+							<p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700">
+								{optionalText(data.character.spells)}
+							</p>
+						{:else}
+							<div class="mt-3 space-y-3">
+								{#each data.character.spellItems as spell (`${spell.name}-${spell.level ?? ''}`)}
+									<div
+										class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4"
+									>
+										<div class="flex flex-wrap items-center gap-2">
+											<p class="text-base font-semibold text-stone-900">
+												{spell.name}
+											</p>
+											{#if spell.isPrepared}
+												<span
+													class="rounded-full bg-stone-900 px-2 py-1 text-xs font-medium uppercase tracking-[0.16em] text-white"
+												>
+													Prepared
+												</span>
+											{/if}
+										</div>
+										{#if formatSpellMeta([
+											spell.level !== undefined
+												? spell.level === 0
+													? 'Cantrip'
+													: `Level ${spell.level}`
+												: undefined,
+											spell.school,
+											spell.castingTime,
+											spell.range,
+											spell.duration
+										])}
+											<p class="mt-2 text-sm text-stone-600">
+												{formatSpellMeta([
+													spell.level !== undefined
+														? spell.level === 0
+															? 'Cantrip'
+															: `Level ${spell.level}`
+														: undefined,
+													spell.school,
+													spell.castingTime,
+													spell.range,
+													spell.duration
+												])}
+											</p>
+										{/if}
+										{#if spell.components}
+											<p class="mt-2 text-sm text-stone-600">
+												Components: {spell.components}
+											</p>
+										{/if}
+										{#if spell.description}
+											<p
+												class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700"
+											>
+												{spell.description}
+											</p>
+										{/if}
+									</div>
+								{/each}
+							</div>
+						{/if}
 					</div>
 					<div>
 						<p class="text-sm font-medium text-stone-500">Notes</p>

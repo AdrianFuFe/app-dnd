@@ -11,7 +11,8 @@ import type { Database } from '$lib/types/database/supabase';
 import type {
 	CharacterAttackItem,
 	CharacterCreateInput,
-	CharacterInventoryItem
+	CharacterInventoryItem,
+	CharacterSpellItem
 } from '$lib/types/domain/character';
 
 type CharactersInsert = Database['public']['Tables']['characters']['Insert'];
@@ -21,6 +22,8 @@ type CharacterTextSectionsInsert =
 	Database['public']['Tables']['character_text_sections']['Insert'];
 type CharacterAttackInsert = Database['public']['Tables']['character_attacks']['Insert'];
 type CharacterAttackRow = Database['public']['Tables']['character_attacks']['Row'];
+type CharacterSpellInsert = Database['public']['Tables']['character_spells']['Insert'];
+type CharacterSpellRow = Database['public']['Tables']['character_spells']['Row'];
 type CharacterInventoryItemInsert =
 	Database['public']['Tables']['character_inventory_items']['Insert'];
 
@@ -105,12 +108,13 @@ export async function createCharacter(
 		...toCharacterTextSectionsFields(input)
 	};
 
-	const [statsResult, combatResult, textResult, attacksResult, inventoryResult] =
+	const [statsResult, combatResult, textResult, attacksResult, spellsResult, inventoryResult] =
 		await Promise.all([
 			supabase.from('character_stats').insert(statsInsert),
 			supabase.from('character_combat_stats').insert(combatStatsInsert),
 			supabase.from('character_text_sections').insert(textSectionsInsert),
 			insertCharacterAttackItems(supabase, character.id, input.attackItems),
+			insertCharacterSpellItems(supabase, character.id, input.spellItems),
 			insertCharacterInventoryItems(supabase, character.id, input.inventoryItems)
 		]);
 
@@ -119,6 +123,7 @@ export async function createCharacter(
 		combatResult.error ??
 		textResult.error ??
 		attacksResult.error ??
+		spellsResult.error ??
 		inventoryResult.error;
 
 	if (childError) {
@@ -155,7 +160,7 @@ export async function getCharacterForUser(
 		return null;
 	}
 
-	const [statsResult, combatResult, textResult, attacksResult, inventoryResult] =
+	const [statsResult, combatResult, textResult, attacksResult, spellsResult, inventoryResult] =
 		await Promise.all([
 			supabase
 				.from('character_stats')
@@ -179,6 +184,12 @@ export async function getCharacterForUser(
 				.select('name, attack_bonus, damage, damage_type, range, description')
 				.eq('character_id', characterId),
 			supabase
+				.from('character_spells')
+				.select(
+					'name, level, school, casting_time, range, components, duration, description, is_prepared'
+				)
+				.eq('character_id', characterId),
+			supabase
 				.from('character_inventory_items')
 				.select('name, quantity, description, weight, value, is_equipped')
 				.eq('character_id', characterId)
@@ -189,6 +200,7 @@ export async function getCharacterForUser(
 		combatResult.error ??
 		textResult.error ??
 		attacksResult.error ??
+		spellsResult.error ??
 		inventoryResult.error;
 
 	if (
@@ -197,6 +209,7 @@ export async function getCharacterForUser(
 		!combatResult.data ||
 		!textResult.data ||
 		!attacksResult.data ||
+		!spellsResult.data ||
 		!inventoryResult.data
 	) {
 		throw new Error(`Failed to load character details for user ${userId}`);
@@ -225,6 +238,21 @@ export async function getCharacterForUser(
 					isEquipped: item.is_equipped
 				}))
 			: parseLegacyInventoryItems(textResult.data.inventory);
+
+	const spellItems =
+		spellsResult.data.length > 0
+			? spellsResult.data.map((item) => ({
+					name: item.name,
+					level: item.level ?? undefined,
+					school: item.school ?? undefined,
+					castingTime: item.casting_time ?? undefined,
+					range: item.range ?? undefined,
+					components: item.components ?? undefined,
+					duration: item.duration ?? undefined,
+					description: item.description ?? undefined,
+					isPrepared: item.is_prepared
+				}))
+			: parseLegacySpellItems(textResult.data.spells);
 
 	return {
 		id: character.id,
@@ -255,6 +283,7 @@ export async function getCharacterForUser(
 		speed: combatResult.data.speed,
 		hitDice: combatResult.data.hit_dice ?? undefined,
 		attackItems,
+		spellItems,
 		inventoryItems,
 		attacks: textResult.data.attacks ?? undefined,
 		spells: textResult.data.spells ?? undefined,
@@ -295,7 +324,7 @@ export async function updateCharacter(
 		throw new Error(`Character ${characterId} was not found for user ${userId}`);
 	}
 
-	const [statsResult, combatResult, textResult, attacksResult, inventoryResult] =
+	const [statsResult, combatResult, textResult, attacksResult, spellsResult, inventoryResult] =
 		await Promise.all([
 			supabase
 				.from('character_stats')
@@ -310,6 +339,7 @@ export async function updateCharacter(
 				.update(toCharacterTextSectionsFields(input))
 				.eq('character_id', characterId),
 			replaceCharacterAttackItems(supabase, characterId, input.attackItems),
+			replaceCharacterSpellItems(supabase, characterId, input.spellItems),
 			replaceCharacterInventoryItems(supabase, characterId, input.inventoryItems)
 		]);
 
@@ -318,6 +348,7 @@ export async function updateCharacter(
 		combatResult.error ??
 		textResult.error ??
 		attacksResult.error ??
+		spellsResult.error ??
 		inventoryResult.error;
 
 	if (childError) {
@@ -411,7 +442,7 @@ function toCharacterTextSectionsFields(
 ): Omit<CharacterTextSectionsInsert, 'character_id'> {
 	return {
 		attacks: toLegacyAttackText(input.attackItems, input.attacks),
-		spells: input.spells ?? null,
+		spells: toLegacySpellText(input.spellItems, input.spells),
 		inventory: toLegacyInventoryText(input.inventoryItems),
 		notes: input.notes ?? null
 	};
@@ -508,6 +539,68 @@ async function replaceCharacterInventoryItems(
 	return insertCharacterInventoryItems(supabase, characterId, items);
 }
 
+async function insertCharacterSpellItems(
+	supabase: SupabaseClient<Database>,
+	characterId: string,
+	items: CharacterSpellItem[]
+) {
+	if (items.length === 0) {
+		return { error: null };
+	}
+
+	return supabase
+		.from('character_spells')
+		.insert(items.map((item) => toCharacterSpellItemInsert(characterId, item)));
+}
+
+async function replaceCharacterSpellItems(
+	supabase: SupabaseClient<Database>,
+	characterId: string,
+	items: CharacterSpellItem[]
+) {
+	const { data: existingItems, error: selectError } = await supabase
+		.from('character_spells')
+		.select(
+			'name, level, school, casting_time, range, components, duration, description, is_prepared'
+		)
+		.eq('character_id', characterId);
+
+	if (selectError || !existingItems) {
+		return { error: selectError ?? new Error('Failed to load current character spells') };
+	}
+
+	const deleteResult = await supabase
+		.from('character_spells')
+		.delete()
+		.eq('character_id', characterId);
+
+	if (deleteResult.error || items.length === 0) {
+		return deleteResult;
+	}
+
+	const insertResult = await insertCharacterSpellItems(supabase, characterId, items);
+
+	if (!insertResult.error) {
+		return insertResult;
+	}
+
+	if (existingItems.length === 0) {
+		return insertResult;
+	}
+
+	const restoreResult = await supabase
+		.from('character_spells')
+		.insert(
+			existingItems.map((item) =>
+				toCharacterSpellItemInsert(characterId, mapSpellRow(item))
+			)
+		);
+
+	return {
+		error: restoreResult.error ?? insertResult.error
+	};
+}
+
 function toCharacterInventoryItemInsert(
 	characterId: string,
 	item: CharacterInventoryItem
@@ -535,6 +628,24 @@ function toCharacterAttackItemInsert(
 		damage_type: item.damageType ?? null,
 		range: item.range ?? null,
 		description: item.description ?? null
+	};
+}
+
+function toCharacterSpellItemInsert(
+	characterId: string,
+	item: CharacterSpellItem
+): CharacterSpellInsert {
+	return {
+		character_id: characterId,
+		name: item.name,
+		level: item.level ?? null,
+		school: item.school ?? null,
+		casting_time: item.castingTime ?? null,
+		range: item.range ?? null,
+		components: item.components ?? null,
+		duration: item.duration ?? null,
+		description: item.description ?? null,
+		is_prepared: item.isPrepared
 	};
 }
 
@@ -577,6 +688,32 @@ function toLegacyInventoryText(items: CharacterInventoryItem[]): string | null {
 		.join('\n');
 }
 
+function toLegacySpellText(items: CharacterSpellItem[], fallback?: string): string | null {
+	if (items.length === 0) {
+		return fallback?.trim() ? fallback : null;
+	}
+
+	return items
+		.map((item) => {
+			const segments = [item.name];
+
+			if (item.level !== undefined) {
+				segments.push(item.level === 0 ? 'Cantrip' : `Level ${item.level}`);
+			}
+
+			if (item.school) {
+				segments.push(item.school);
+			}
+
+			if (item.isPrepared) {
+				segments.push('Prepared');
+			}
+
+			return segments.join(' | ');
+		})
+		.join('\n');
+}
+
 function parseLegacyAttackItems(value: string | null): CharacterAttackItem[] {
 	if (!value?.trim()) {
 		return [];
@@ -587,6 +724,21 @@ function parseLegacyAttackItems(value: string | null): CharacterAttackItem[] {
 		.filter((item) => item.length > 0)
 		.map((name) => ({
 			name
+		}));
+}
+
+function parseLegacySpellItems(value: string | null): CharacterSpellItem[] {
+	if (!value?.trim()) {
+		return [];
+	}
+
+	return value
+		.split(/\r?\n|,/)
+		.map((item) => item.trim())
+		.filter((item) => item.length > 0)
+		.map((name) => ({
+			name,
+			isPrepared: false
 		}));
 }
 
@@ -611,6 +763,33 @@ function mapAttackRow(
 		damageType: item.damage_type ?? undefined,
 		range: item.range ?? undefined,
 		description: item.description ?? undefined
+	};
+}
+
+function mapSpellRow(
+	item: Pick<
+		CharacterSpellRow,
+		| 'name'
+		| 'level'
+		| 'school'
+		| 'casting_time'
+		| 'range'
+		| 'components'
+		| 'duration'
+		| 'description'
+		| 'is_prepared'
+	>
+): CharacterSpellItem {
+	return {
+		name: item.name,
+		level: item.level ?? undefined,
+		school: item.school ?? undefined,
+		castingTime: item.casting_time ?? undefined,
+		range: item.range ?? undefined,
+		components: item.components ?? undefined,
+		duration: item.duration ?? undefined,
+		description: item.description ?? undefined,
+		isPrepared: item.is_prepared
 	};
 }
 

@@ -76,6 +76,18 @@ const initialCharacters: E2ECharacterRecord[] = [
 				range: 'Melee'
 			}
 		],
+		spellItems: [
+			{
+				name: 'Magic Missile',
+				level: 1,
+				school: 'Evocation',
+				castingTime: '1 action',
+				range: '120 ft.',
+				components: 'V, S',
+				duration: 'Instantaneous',
+				isPrepared: true
+			}
+		],
 		inventoryItems: [
 			{
 				name: 'Spellbook',

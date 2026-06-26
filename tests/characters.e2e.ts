@@ -35,6 +35,17 @@ test('character create route saves a new draft and returns to the roster', async
 				range: 'Melee'
 			}
 		],
+		spellItems: [
+			{
+				name: 'Shield of Faith',
+				level: '1',
+				school: 'Abjuration',
+				castingTime: '1 bonus action',
+				range: '60 ft.',
+				duration: 'Concentration, up to 10 minutes',
+				isPrepared: true
+			}
+		],
 		inventoryItems: [
 			{
 				name: 'Smith tools',
@@ -78,6 +89,17 @@ test('character edit route updates an existing draft and returns to detail', asy
 				range: 'Melee'
 			}
 		],
+		spellItems: [
+			{
+				name: 'Guiding Bolt',
+				level: '1',
+				school: 'Evocation',
+				castingTime: '1 action',
+				range: '120 ft.',
+				duration: 'Instantaneous',
+				isPrepared: true
+			}
+		],
 		inventoryItems: [
 			{
 				name: 'Lantern relic',
@@ -86,7 +108,6 @@ test('character edit route updates an existing draft and returns to detail', asy
 				isEquipped: true
 			}
 		],
-		spells: 'Guiding Bolt',
 		notes: 'Carries a lantern relic.'
 	});
 
@@ -98,8 +119,8 @@ test('character edit route updates an existing draft and returns to detail', asy
 	await expect(page.getByText('Cleric', { exact: true })).toBeVisible();
 	await expect(page.getByText('Pilgrim', { exact: true })).toBeVisible();
 	await expect(page.getByText('Radiant Mace', { exact: true })).toBeVisible();
-	await expect(page.getByText('Lantern relic', { exact: true })).toBeVisible();
 	await expect(page.getByText('Guiding Bolt', { exact: true })).toBeVisible();
+	await expect(page.getByText('Lantern relic', { exact: true })).toBeVisible();
 	await expect(page.getByText('Carries a lantern relic.', { exact: true })).toBeVisible();
 });
 
@@ -157,7 +178,17 @@ async function fillCharacterForm(
 			range?: string;
 			description?: string;
 		}>;
-		spells: string;
+		spellItems: Array<{
+			name: string;
+			level?: string;
+			school?: string;
+			castingTime?: string;
+			range?: string;
+			components?: string;
+			duration?: string;
+			description?: string;
+			isPrepared?: boolean;
+		}>;
 		inventoryItems: Array<{
 			name: string;
 			quantity?: string;
@@ -200,7 +231,17 @@ async function fillCharacterForm(
 				range: 'Melee'
 			}
 		],
-		spells: 'Magic Missile',
+		spellItems: [
+			{
+				name: 'Magic Missile',
+				level: '1',
+				school: 'Evocation',
+				castingTime: '1 action',
+				range: '120 ft.',
+				duration: 'Instantaneous',
+				isPrepared: true
+			}
+		],
 		inventoryItems: [
 			{
 				name: 'Spellbook',
@@ -237,83 +278,143 @@ async function fillCharacterForm(
 	await page.locator('input[name="initiative"]').fill(values.initiative);
 	await page.locator('input[name="speed"]').fill(values.speed);
 	await page.locator('input[name="hitDice"]').fill(values.hitDice);
-	await page.locator('textarea[name="spells"]').fill(values.spells);
 	await page.locator('textarea[name="notes"]').fill(values.notes);
 
-	let currentAttackItemCount = await page.getByLabel('Attack name').count();
+	const attackSection = page
+		.locator('section')
+		.filter({ has: page.getByRole('heading', { name: 'Attacks' }) });
+	const spellSection = page
+		.locator('section')
+		.filter({ has: page.getByRole('heading', { name: 'Spells' }) });
+	const inventorySection = page
+		.locator('section')
+		.filter({ has: page.getByRole('heading', { name: 'Inventory' }) });
+
+	let currentAttackItemCount = await attackSection.getByLabel('Attack name').count();
 
 	while (currentAttackItemCount > values.attackItems.length) {
-		await page.getByRole('button', { name: 'Remove' }).first().click();
+		await attackSection.getByRole('button', { name: 'Remove' }).first().click();
 		currentAttackItemCount -= 1;
 	}
 
 	while (currentAttackItemCount < values.attackItems.length) {
-		await page.getByRole('button', { name: 'Add attack' }).click();
+		await attackSection.getByRole('button', { name: 'Add attack' }).click();
 		currentAttackItemCount += 1;
 	}
 
 	for (let index = 0; index < values.attackItems.length; index += 1) {
 		const item = values.attackItems[index];
-		await page.getByLabel('Attack name').nth(index).fill(item.name);
-		await page
+		await attackSection.getByLabel('Attack name').nth(index).fill(item.name);
+		await attackSection
 			.getByLabel('Attack bonus')
 			.nth(index)
 			.fill(item.attackBonus ?? '');
-		await page
+		await attackSection
 			.getByLabel('Damage')
 			.nth(index)
 			.fill(item.damage ?? '');
-		await page
+		await attackSection
 			.getByLabel('Damage type')
 			.nth(index)
 			.fill(item.damageType ?? '');
-		await page
+		await attackSection
 			.getByLabel('Range')
 			.nth(index)
 			.fill(item.range ?? '');
-		await page
+		await attackSection
 			.getByLabel('Description')
 			.nth(index)
 			.fill(item.description ?? '');
 	}
 
-	let currentInventoryItemCount = await page.getByLabel('Item name').count();
+	let currentSpellItemCount = await spellSection.getByLabel('Spell name').count();
+
+	while (currentSpellItemCount > values.spellItems.length) {
+		await spellSection.getByRole('button', { name: 'Remove' }).first().click();
+		currentSpellItemCount -= 1;
+	}
+
+	while (currentSpellItemCount < values.spellItems.length) {
+		await spellSection.getByRole('button', { name: 'Add spell' }).click();
+		currentSpellItemCount += 1;
+	}
+
+	for (let index = 0; index < values.spellItems.length; index += 1) {
+		const item = values.spellItems[index];
+		await spellSection.getByLabel('Spell name').nth(index).fill(item.name);
+		await spellSection
+			.getByLabel('Level')
+			.nth(index)
+			.fill(item.level ?? '');
+		await spellSection
+			.getByLabel('School')
+			.nth(index)
+			.fill(item.school ?? '');
+		await spellSection
+			.getByLabel('Casting time')
+			.nth(index)
+			.fill(item.castingTime ?? '');
+		await spellSection
+			.getByLabel('Range')
+			.nth(index)
+			.fill(item.range ?? '');
+		await spellSection
+			.getByLabel('Duration')
+			.nth(index)
+			.fill(item.duration ?? '');
+		await spellSection
+			.getByLabel('Components')
+			.nth(index)
+			.fill(item.components ?? '');
+		await spellSection
+			.getByLabel('Description')
+			.nth(index)
+			.fill(item.description ?? '');
+
+		if (item.isPrepared) {
+			await spellSection.getByLabel('Prepared').nth(index).check();
+		} else {
+			await spellSection.getByLabel('Prepared').nth(index).uncheck();
+		}
+	}
+
+	let currentInventoryItemCount = await inventorySection.getByLabel('Item name').count();
 
 	while (currentInventoryItemCount > values.inventoryItems.length) {
-		await page.getByRole('button', { name: 'Remove' }).last().click();
+		await inventorySection.getByRole('button', { name: 'Remove' }).first().click();
 		currentInventoryItemCount -= 1;
 	}
 
 	while (currentInventoryItemCount < values.inventoryItems.length) {
-		await page.getByRole('button', { name: 'Add inventory item' }).click();
+		await inventorySection.getByRole('button', { name: 'Add inventory item' }).click();
 		currentInventoryItemCount += 1;
 	}
 
 	for (let index = 0; index < values.inventoryItems.length; index += 1) {
 		const item = values.inventoryItems[index];
-		await page.getByLabel('Item name').nth(index).fill(item.name);
-		await page
+		await inventorySection.getByLabel('Item name').nth(index).fill(item.name);
+		await inventorySection
 			.getByLabel('Quantity')
 			.nth(index)
 			.fill(item.quantity ?? '1');
 
-		await page
+		await inventorySection
 			.getByLabel('Value')
 			.nth(index)
 			.fill(item.value ?? '');
-		await page
+		await inventorySection
 			.getByLabel('Weight')
 			.nth(index)
 			.fill(item.weight ?? '');
-		await page
+		await inventorySection
 			.getByLabel('Description')
 			.nth(index)
 			.fill(item.description ?? '');
 
 		if (item.isEquipped) {
-			await page.getByLabel('Currently equipped').nth(index).check();
+			await inventorySection.getByLabel('Currently equipped').nth(index).check();
 		} else {
-			await page.getByLabel('Currently equipped').nth(index).uncheck();
+			await inventorySection.getByLabel('Currently equipped').nth(index).uncheck();
 		}
 	}
 }

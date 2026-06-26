@@ -62,6 +62,7 @@ describe('createCharacter', () => {
 		const combatInsert = vi.fn().mockResolvedValue({ error: null });
 		const textInsert = vi.fn().mockResolvedValue({ error: null });
 		const attacksInsert = vi.fn().mockResolvedValue({ error: null });
+		const spellsInsert = vi.fn().mockResolvedValue({ error: null });
 		const inventoryInsert = vi.fn().mockResolvedValue({ error: null });
 
 		const from = vi.fn((table: string) => {
@@ -92,6 +93,12 @@ describe('createCharacter', () => {
 			if (table === 'character_attacks') {
 				return {
 					insert: attacksInsert
+				};
+			}
+
+			if (table === 'character_spells') {
+				return {
+					insert: spellsInsert
 				};
 			}
 
@@ -130,6 +137,14 @@ describe('createCharacter', () => {
 					damage: '1d6',
 					damageType: 'bludgeoning',
 					range: 'Melee'
+				}
+			],
+			spellItems: [
+				{
+					name: 'Magic Missile',
+					level: 1,
+					school: 'Evocation',
+					isPrepared: true
 				}
 			],
 			inventoryItems: [
@@ -174,7 +189,7 @@ describe('createCharacter', () => {
 				character_id: 'char-1',
 				attacks: 'Quarterstaff | +4 | 1d6 bludgeoning | Melee',
 				inventory: 'Spellbook',
-				spells: 'Magic Missile'
+				spells: 'Magic Missile | Level 1 | Evocation | Prepared'
 			})
 		);
 		expect(attacksInsert).toHaveBeenCalledWith([
@@ -182,6 +197,15 @@ describe('createCharacter', () => {
 				character_id: 'char-1',
 				name: 'Quarterstaff',
 				attack_bonus: '+4'
+			})
+		]);
+		expect(spellsInsert).toHaveBeenCalledWith([
+			expect.objectContaining({
+				character_id: 'char-1',
+				name: 'Magic Missile',
+				level: 1,
+				school: 'Evocation',
+				is_prepared: true
 			})
 		]);
 		expect(inventoryInsert).toHaveBeenCalledWith([
@@ -226,6 +250,7 @@ describe('createCharacter', () => {
 				table === 'character_combat_stats' ||
 				table === 'character_text_sections' ||
 				table === 'character_attacks' ||
+				table === 'character_spells' ||
 				table === 'character_inventory_items'
 			) {
 				return {
@@ -253,6 +278,7 @@ describe('createCharacter', () => {
 				initiative: 0,
 				speed: 30,
 				attackItems: [],
+				spellItems: [],
 				inventoryItems: []
 			})
 		).rejects.toThrow('Failed to create character details for user user-1');
@@ -344,6 +370,23 @@ describe('getCharacterForUser', () => {
 			error: null
 		});
 		const attacksSelect = vi.fn().mockReturnValue({ eq: attacksEq });
+		const spellsEq = vi.fn().mockResolvedValue({
+			data: [
+				{
+					name: 'Magic Missile',
+					level: 1,
+					school: 'Evocation',
+					casting_time: '1 action',
+					range: '120 ft.',
+					components: 'V, S',
+					duration: 'Instantaneous',
+					description: null,
+					is_prepared: true
+				}
+			],
+			error: null
+		});
+		const spellsSelect = vi.fn().mockReturnValue({ eq: spellsEq });
 
 		const inventoryEq = vi.fn().mockResolvedValue({
 			data: [
@@ -391,6 +434,12 @@ describe('getCharacterForUser', () => {
 				};
 			}
 
+			if (table === 'character_spells') {
+				return {
+					select: spellsSelect
+				};
+			}
+
 			if (table === 'character_inventory_items') {
 				return {
 					select: inventorySelect
@@ -433,6 +482,18 @@ describe('getCharacterForUser', () => {
 					damage: '1d6',
 					damageType: 'bludgeoning',
 					range: 'Melee'
+				}
+			],
+			spellItems: [
+				{
+					name: 'Magic Missile',
+					level: 1,
+					school: 'Evocation',
+					castingTime: '1 action',
+					range: '120 ft.',
+					components: 'V, S',
+					duration: 'Instantaneous',
+					isPrepared: true
 				}
 			],
 			inventoryItems: [
@@ -522,6 +583,10 @@ describe('getCharacterForUser', () => {
 			data: [],
 			error: null
 		});
+		const spellsEq = vi.fn().mockResolvedValue({
+			data: [],
+			error: null
+		});
 
 		const from = vi.fn((table: string) => {
 			if (table === 'characters') {
@@ -544,6 +609,10 @@ describe('getCharacterForUser', () => {
 				return { select: vi.fn().mockReturnValue({ eq: attacksEq }) };
 			}
 
+			if (table === 'character_spells') {
+				return { select: vi.fn().mockReturnValue({ eq: spellsEq }) };
+			}
+
 			if (table === 'character_inventory_items') {
 				return { select: vi.fn().mockReturnValue({ eq: inventoryEq }) };
 			}
@@ -554,6 +623,7 @@ describe('getCharacterForUser', () => {
 		const character = await getCharacterForUser({ from } as never, 'user-1', 'char-1');
 
 		expect(character?.attackItems).toEqual([]);
+		expect(character?.spellItems).toEqual([]);
 		expect(character?.inventoryItems).toEqual([
 			{ name: 'Rope', quantity: 1, isEquipped: false },
 			{ name: 'Torch', quantity: 1, isEquipped: false }
@@ -671,6 +741,17 @@ describe('getCharacterForUser', () => {
 				};
 			}
 
+			if (table === 'character_spells') {
+				return {
+					select: vi.fn().mockReturnValue({
+						eq: vi.fn().mockResolvedValue({
+							data: [],
+							error: null
+						})
+					})
+				};
+			}
+
 			throw new Error(`Unexpected table ${table}`);
 		});
 
@@ -679,6 +760,7 @@ describe('getCharacterForUser', () => {
 		expect(character?.attackItems).toEqual([
 			{ name: 'Quarterstaff +4 to hit, 1d6 bludgeoning' }
 		]);
+		expect(character?.spellItems).toEqual([]);
 	});
 
 	it('returns null when the owned character does not exist', async () => {
@@ -734,6 +816,26 @@ describe('updateCharacter', () => {
 		const attacksDeleteEq = vi.fn().mockResolvedValue({ error: null });
 		const attacksDelete = vi.fn().mockReturnValue({ eq: attacksDeleteEq });
 		const attacksInsert = vi.fn().mockResolvedValue({ error: null });
+		const spellsSelectEq = vi.fn().mockResolvedValue({
+			data: [
+				{
+					name: 'Magic Missile',
+					level: 1,
+					school: 'Evocation',
+					casting_time: '1 action',
+					range: '120 ft.',
+					components: 'V, S',
+					duration: 'Instantaneous',
+					description: null,
+					is_prepared: true
+				}
+			],
+			error: null
+		});
+		const spellsSelect = vi.fn().mockReturnValue({ eq: spellsSelectEq });
+		const spellsDeleteEq = vi.fn().mockResolvedValue({ error: null });
+		const spellsDelete = vi.fn().mockReturnValue({ eq: spellsDeleteEq });
+		const spellsInsert = vi.fn().mockResolvedValue({ error: null });
 		const inventoryDeleteEq = vi.fn().mockResolvedValue({ error: null });
 		const inventoryDelete = vi.fn().mockReturnValue({ eq: inventoryDeleteEq });
 		const inventoryInsert = vi.fn().mockResolvedValue({ error: null });
@@ -768,6 +870,14 @@ describe('updateCharacter', () => {
 					select: attacksSelect,
 					delete: attacksDelete,
 					insert: attacksInsert
+				};
+			}
+
+			if (table === 'character_spells') {
+				return {
+					select: spellsSelect,
+					delete: spellsDelete,
+					insert: spellsInsert
 				};
 			}
 
@@ -809,6 +919,17 @@ describe('updateCharacter', () => {
 					range: 'Melee'
 				}
 			],
+			spellItems: [
+				{
+					name: 'Guiding Bolt',
+					level: 1,
+					school: 'Evocation',
+					castingTime: '1 action',
+					range: '120 ft.',
+					duration: 'Instantaneous',
+					isPrepared: true
+				}
+			],
 			inventoryItems: [
 				{
 					name: 'Lantern',
@@ -847,7 +968,7 @@ describe('updateCharacter', () => {
 			expect.objectContaining({
 				attacks: 'Radiant Mace | +5 | 1d6 + 3 radiant | Melee',
 				inventory: 'Lantern (equipped)',
-				spells: 'Magic Missile'
+				spells: 'Guiding Bolt | Level 1 | Evocation | Prepared'
 			})
 		);
 		expect(attacksDeleteEq).toHaveBeenCalledWith('character_id', 'char-1');
@@ -856,6 +977,16 @@ describe('updateCharacter', () => {
 				character_id: 'char-1',
 				name: 'Radiant Mace',
 				damage_type: 'radiant'
+			})
+		]);
+		expect(spellsDeleteEq).toHaveBeenCalledWith('character_id', 'char-1');
+		expect(spellsInsert).toHaveBeenCalledWith([
+			expect.objectContaining({
+				character_id: 'char-1',
+				name: 'Guiding Bolt',
+				level: 1,
+				school: 'Evocation',
+				is_prepared: true
 			})
 		]);
 		expect(inventoryDeleteEq).toHaveBeenCalledWith('character_id', 'char-1');
@@ -896,6 +1027,7 @@ describe('updateCharacter', () => {
 				initiative: 0,
 				speed: 30,
 				attackItems: [],
+				spellItems: [],
 				inventoryItems: []
 			})
 		).rejects.toThrow('Character missing was not found for user user-1');
@@ -985,6 +1117,21 @@ describe('updateCharacter', () => {
 				};
 			}
 
+			if (table === 'character_spells') {
+				return {
+					select: vi.fn().mockReturnValue({
+						eq: vi.fn().mockResolvedValue({
+							data: [],
+							error: null
+						})
+					}),
+					delete: vi
+						.fn()
+						.mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+					insert: vi.fn().mockResolvedValue({ error: null })
+				};
+			}
+
 			throw new Error(`Unexpected table ${table}`);
 		});
 
@@ -1017,6 +1164,7 @@ describe('updateCharacter', () => {
 						range: 'Melee'
 					}
 				],
+				spellItems: [],
 				inventoryItems: [],
 				spells: 'Magic Missile'
 			})
