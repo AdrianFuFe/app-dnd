@@ -392,20 +392,6 @@ async function fillCharacterForm(
 
 	for (let index = 0; index < values.inventoryItems.length; index += 1) {
 		const item = values.inventoryItems[index];
-		await inventorySection.getByLabel('Item name').nth(index).fill(item.name);
-		await inventorySection
-			.getByLabel('Quantity')
-			.nth(index)
-			.fill(item.quantity ?? '1');
-
-		await inventorySection
-			.getByLabel('Value')
-			.nth(index)
-			.fill(item.value ?? '');
-		await inventorySection
-			.getByLabel('Weight')
-			.nth(index)
-			.fill(item.weight ?? '');
 		await inventorySection
 			.getByLabel('Description')
 			.nth(index)
@@ -416,6 +402,20 @@ async function fillCharacterForm(
 		} else {
 			await inventorySection.getByLabel('Currently equipped').nth(index).uncheck();
 		}
+
+		await inventorySection.getByLabel('Item name').nth(index).fill(item.name);
+		await inventorySection
+			.getByLabel('Quantity')
+			.nth(index)
+			.fill(item.quantity ?? '1');
+		await inventorySection
+			.getByLabel('Value')
+			.nth(index)
+			.fill(item.value ?? '');
+		await inventorySection
+			.getByLabel('Weight')
+			.nth(index)
+			.fill(item.weight ?? '');
 	}
 }
 

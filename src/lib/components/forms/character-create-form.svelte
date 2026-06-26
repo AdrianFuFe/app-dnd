@@ -184,6 +184,12 @@
 		inventoryItems = inventoryItems.filter((_, itemIndex) => itemIndex !== index);
 	}
 
+	function updateInventoryItem(index: number, patch: Partial<InventoryFormItem>) {
+		inventoryItems = inventoryItems.map((item, itemIndex) =>
+			itemIndex === index ? { ...item, ...patch } : item
+		);
+	}
+
 	function addAttackItem() {
 		attackItems = [
 			...attackItems,
@@ -200,6 +206,12 @@
 
 	function removeAttackItem(index: number) {
 		attackItems = attackItems.filter((_, itemIndex) => itemIndex !== index);
+	}
+
+	function updateAttackItem(index: number, patch: Partial<AttackFormItem>) {
+		attackItems = attackItems.map((item, itemIndex) =>
+			itemIndex === index ? { ...item, ...patch } : item
+		);
 	}
 
 	function addSpellItem() {
@@ -221,6 +233,12 @@
 
 	function removeSpellItem(index: number) {
 		spellItems = spellItems.filter((_, itemIndex) => itemIndex !== index);
+	}
+
+	function updateSpellItem(index: number, patch: Partial<SpellFormItem>) {
+		spellItems = spellItems.map((item, itemIndex) =>
+			itemIndex === index ? { ...item, ...patch } : item
+		);
 	}
 
 	function attackItemsFieldValue(): string {
@@ -660,7 +678,7 @@
 			</p>
 		{:else}
 			<div class="mt-6 space-y-4">
-				{#each attackItems as item, index (`${index}-${item.name}`)}
+				{#each attackItems as item, index (index)}
 					<div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
 						<div class="flex items-center justify-between gap-3">
 							<p class="text-sm font-semibold text-stone-900">Attack {index + 1}</p>
@@ -681,7 +699,11 @@
 								<input
 									class="block w-full rounded-lg border-stone-300"
 									type="text"
-									bind:value={item.name}
+									value={item.name}
+									oninput={(event) =>
+										updateAttackItem(index, {
+											name: (event.currentTarget as HTMLInputElement).value
+										})}
 								/>
 							</label>
 
@@ -693,7 +715,11 @@
 									class="block w-full rounded-lg border-stone-300"
 									type="text"
 									placeholder="+5 to hit"
-									bind:value={item.attackBonus}
+									value={item.attackBonus}
+									oninput={(event) =>
+										updateAttackItem(index, {
+											attackBonus: (event.currentTarget as HTMLInputElement).value
+										})}
 								/>
 							</label>
 
@@ -705,7 +731,11 @@
 									class="block w-full rounded-lg border-stone-300"
 									type="text"
 									placeholder="1d8 + 3"
-									bind:value={item.damage}
+									value={item.damage}
+									oninput={(event) =>
+										updateAttackItem(index, {
+											damage: (event.currentTarget as HTMLInputElement).value
+										})}
 								/>
 							</label>
 
@@ -717,7 +747,11 @@
 									class="block w-full rounded-lg border-stone-300"
 									type="text"
 									placeholder="slashing"
-									bind:value={item.damageType}
+									value={item.damageType}
+									oninput={(event) =>
+										updateAttackItem(index, {
+											damageType: (event.currentTarget as HTMLInputElement).value
+										})}
 								/>
 							</label>
 
@@ -729,7 +763,11 @@
 									class="block w-full rounded-lg border-stone-300"
 									type="text"
 									placeholder="Melee or 20/60 ft."
-									bind:value={item.range}
+									value={item.range}
+									oninput={(event) =>
+										updateAttackItem(index, {
+											range: (event.currentTarget as HTMLInputElement).value
+										})}
 								/>
 							</label>
 
@@ -739,7 +777,11 @@
 								>
 								<textarea
 									class="block min-h-24 w-full rounded-lg border-stone-300"
-									bind:value={item.description}></textarea>
+									value={item.description}
+									oninput={(event) =>
+										updateAttackItem(index, {
+											description: (event.currentTarget as HTMLTextAreaElement).value
+										})}></textarea>
 							</label>
 						</div>
 					</div>
@@ -780,7 +822,7 @@
 			</p>
 		{:else}
 			<div class="mt-6 space-y-4">
-				{#each spellItems as item, index (`${index}-${item.name}`)}
+				{#each spellItems as item, index (index)}
 					<div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
 						<div class="flex items-center justify-between gap-3">
 							<p class="text-sm font-semibold text-stone-900">Spell {index + 1}</p>
@@ -801,7 +843,11 @@
 								<input
 									class="block w-full rounded-lg border-stone-300"
 									type="text"
-									bind:value={item.name}
+									value={item.name}
+									oninput={(event) =>
+										updateSpellItem(index, {
+											name: (event.currentTarget as HTMLInputElement).value
+										})}
 								/>
 							</label>
 
@@ -815,7 +861,11 @@
 									min="0"
 									max="9"
 									placeholder="0 for cantrip"
-									bind:value={item.level}
+									value={item.level}
+									oninput={(event) =>
+										updateSpellItem(index, {
+											level: (event.currentTarget as HTMLInputElement).value
+										})}
 								/>
 							</label>
 
@@ -827,7 +877,11 @@
 									class="block w-full rounded-lg border-stone-300"
 									type="text"
 									placeholder="Evocation"
-									bind:value={item.school}
+									value={item.school}
+									oninput={(event) =>
+										updateSpellItem(index, {
+											school: (event.currentTarget as HTMLInputElement).value
+										})}
 								/>
 							</label>
 
@@ -839,7 +893,11 @@
 									class="block w-full rounded-lg border-stone-300"
 									type="text"
 									placeholder="1 action"
-									bind:value={item.castingTime}
+									value={item.castingTime}
+									oninput={(event) =>
+										updateSpellItem(index, {
+											castingTime: (event.currentTarget as HTMLInputElement).value
+										})}
 								/>
 							</label>
 
@@ -851,7 +909,11 @@
 									class="block w-full rounded-lg border-stone-300"
 									type="text"
 									placeholder="120 ft."
-									bind:value={item.range}
+									value={item.range}
+									oninput={(event) =>
+										updateSpellItem(index, {
+											range: (event.currentTarget as HTMLInputElement).value
+										})}
 								/>
 							</label>
 
@@ -863,7 +925,11 @@
 									class="block w-full rounded-lg border-stone-300"
 									type="text"
 									placeholder="Instantaneous"
-									bind:value={item.duration}
+									value={item.duration}
+									oninput={(event) =>
+										updateSpellItem(index, {
+											duration: (event.currentTarget as HTMLInputElement).value
+										})}
 								/>
 							</label>
 
@@ -875,7 +941,11 @@
 									class="block w-full rounded-lg border-stone-300"
 									type="text"
 									placeholder="V, S, M"
-									bind:value={item.components}
+									value={item.components}
+									oninput={(event) =>
+										updateSpellItem(index, {
+											components: (event.currentTarget as HTMLInputElement).value
+										})}
 								/>
 							</label>
 
@@ -885,14 +955,22 @@
 								>
 								<textarea
 									class="block min-h-24 w-full rounded-lg border-stone-300"
-									bind:value={item.description}></textarea>
+									value={item.description}
+									oninput={(event) =>
+										updateSpellItem(index, {
+											description: (event.currentTarget as HTMLTextAreaElement).value
+										})}></textarea>
 							</label>
 
 							<label class="inline-flex items-center gap-3">
 								<input
 									class="rounded border-stone-300 text-stone-900 focus:ring-stone-500"
 									type="checkbox"
-									bind:checked={item.isPrepared}
+									checked={item.isPrepared}
+									onchange={(event) =>
+										updateSpellItem(index, {
+											isPrepared: (event.currentTarget as HTMLInputElement).checked
+										})}
 								/>
 								<span class="text-sm font-medium text-stone-700">Prepared</span>
 							</label>
@@ -936,7 +1014,7 @@
 			</p>
 		{:else}
 			<div class="mt-6 space-y-4">
-				{#each inventoryItems as item, index (`${index}-${item.name}`)}
+				{#each inventoryItems as item, index (index)}
 					<div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
 						<div class="flex items-center justify-between gap-3">
 							<p class="text-sm font-semibold text-stone-900">Item {index + 1}</p>
@@ -957,7 +1035,11 @@
 								<input
 									class="block w-full rounded-lg border-stone-300"
 									type="text"
-									bind:value={item.name}
+									value={item.name}
+									oninput={(event) =>
+										updateInventoryItem(index, {
+											name: (event.currentTarget as HTMLInputElement).value
+										})}
 								/>
 							</label>
 
@@ -969,7 +1051,11 @@
 									class="block w-full rounded-lg border-stone-300"
 									type="number"
 									min="0"
-									bind:value={item.quantity}
+									value={item.quantity}
+									oninput={(event) =>
+										updateInventoryItem(index, {
+											quantity: (event.currentTarget as HTMLInputElement).value
+										})}
 								/>
 							</label>
 
@@ -980,7 +1066,11 @@
 								<input
 									class="block w-full rounded-lg border-stone-300"
 									type="text"
-									bind:value={item.value}
+									value={item.value}
+									oninput={(event) =>
+										updateInventoryItem(index, {
+											value: (event.currentTarget as HTMLInputElement).value
+										})}
 								/>
 							</label>
 
@@ -993,7 +1083,11 @@
 									type="number"
 									min="0"
 									step="0.1"
-									bind:value={item.weight}
+									value={item.weight}
+									oninput={(event) =>
+										updateInventoryItem(index, {
+											weight: (event.currentTarget as HTMLInputElement).value
+										})}
 								/>
 							</label>
 
@@ -1003,14 +1097,22 @@
 								>
 								<textarea
 									class="block min-h-24 w-full rounded-lg border-stone-300"
-									bind:value={item.description}></textarea>
+									value={item.description}
+									oninput={(event) =>
+										updateInventoryItem(index, {
+											description: (event.currentTarget as HTMLTextAreaElement).value
+										})}></textarea>
 							</label>
 
 							<label class="inline-flex items-center gap-3">
 								<input
 									class="rounded border-stone-300 text-stone-900 focus:ring-stone-500"
 									type="checkbox"
-									bind:checked={item.isEquipped}
+									checked={item.isEquipped}
+									onchange={(event) =>
+										updateInventoryItem(index, {
+											isEquipped: (event.currentTarget as HTMLInputElement).checked
+										})}
 								/>
 								<span class="text-sm font-medium text-stone-700"
 									>Currently equipped</span

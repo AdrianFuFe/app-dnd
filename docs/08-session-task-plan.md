@@ -58,11 +58,11 @@ In that case, it should still name the next recommended block.
     - permissions exist mainly as schema and RLS foundation, not as a full admin feature set
     - environment separation and deployment workflow are not yet formalized
 - current project point:
-    - the MVP app shell and first character workflow are working
-    - structured character sections have started, but `attacks` still needs a final closure pass and `spells` remain unstructured
-    - the repo is ahead of this plan document in character-flow work, but behind it in environment and operator workflow formalization
+  - the MVP app shell and first character workflow are working
+  - structured character sections now cover `inventory`, `attacks`, and `spells`
+  - the repo is ahead of this plan document in character-flow work, but behind it in environment and operator workflow formalization
 - next recommended block:
-    - `S16 - Structured Character Sections`
+  - `S15 - Expanded Spell And Ability Catalogs`
 
 ## Session Blocks
 
@@ -359,8 +359,7 @@ In that case, it should still name the next recommended block.
     - at least one currently free-text section such as `spells`, `attacks`, or `inventory` has a structured workflow
     - the change improves editing without breaking MVP ownership rules
 - current repo note:
-    - `inventory` satisfies the minimum closure criterion already
-    - `attacks` now has a structured workflow in progress, but still benefits from one final verification pass before treating the whole block as fully closed
+  - `inventory`, `attacks`, and `spells` now have structured workflows in the current codebase
 
 ## Notes
 
