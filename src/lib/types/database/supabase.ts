@@ -437,6 +437,54 @@ export interface Database {
 				};
 				Relationships: [];
 			};
+			feats: {
+				Row: {
+					id: string;
+					owner_user_id: string | null;
+					source_id: string;
+					visibility: string;
+					slug: string;
+					name: string;
+					prerequisites: string[];
+					summary: string | null;
+					description: string | null;
+					mechanics: JsonValue;
+					is_system_content: boolean;
+					created_at: string;
+					updated_at: string;
+				};
+				Insert: {
+					id?: string;
+					owner_user_id?: string | null;
+					source_id: string;
+					visibility?: string;
+					slug: string;
+					name: string;
+					prerequisites?: string[];
+					summary?: string | null;
+					description?: string | null;
+					mechanics?: JsonValue;
+					is_system_content?: boolean;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Update: {
+					id?: string;
+					owner_user_id?: string | null;
+					source_id?: string;
+					visibility?: string;
+					slug?: string;
+					name?: string;
+					prerequisites?: string[];
+					summary?: string | null;
+					description?: string | null;
+					mechanics?: JsonValue;
+					is_system_content?: boolean;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Relationships: [];
+			};
 			profiles: {
 				Row: {
 					id: string;

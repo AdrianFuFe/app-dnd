@@ -15,10 +15,32 @@ interface CatalogReferenceItem {
 	classSlugs?: string[];
 	speciesSlug?: string;
 	subspeciesSlugs?: string[];
+	mechanics?: Array<{
+		type: string;
+		spellId?: string;
+	}>;
 	grantedSpellsByLevel?: Array<{
 		level: number;
 		spellSlugs: string[];
 	}>;
+}
+
+function getCatalogFilePath(dataDirectoryPath: string, contentType: string): string {
+	const fileNameByContentType: Record<string, string> = {
+		background: 'backgrounds.json',
+		'character-class': 'classes.json',
+		feat: 'feats.json',
+		species: 'species.json',
+		spell: 'spells.json',
+		subclass: 'subclasses.json',
+		subspecies: 'subspecies.json'
+	};
+
+	return path.join(
+		dataDirectoryPath,
+		'srd-5-1',
+		fileNameByContentType[contentType] ?? `${contentType}.json`
+	);
 }
 
 export interface ContentValidationIssue {
@@ -148,6 +170,23 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 					filePath: path.join(dataDirectoryPath, 'srd-5-1', 'spells.json'),
 					message: `Unknown class slug "${classSlug}" referenced by spell "${spell.slug}"`
 				});
+			}
+		}
+	}
+
+	for (const [contentType, items] of validItemsByContentType.entries()) {
+		for (const item of items) {
+			for (const mechanic of item.mechanics ?? []) {
+				if (
+					mechanic.type === 'spell_grant' &&
+					mechanic.spellId &&
+					!spellSlugs.has(mechanic.spellId)
+				) {
+					result.issues.push({
+						filePath: getCatalogFilePath(dataDirectoryPath, contentType),
+						message: `Unknown spell slug "${mechanic.spellId}" referenced by spell_grant mechanic in "${item.slug}"`
+					});
+				}
 			}
 		}
 	}

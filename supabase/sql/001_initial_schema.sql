@@ -165,6 +165,25 @@ create table if not exists spells (
 	unique (source_id, owner_user_id, slug)
 );
 
+create table if not exists feats (
+	id uuid primary key default gen_random_uuid(),
+	owner_user_id uuid references auth.users (id) on delete cascade,
+	source_id uuid not null references content_sources (id),
+	visibility text not null default 'private' check (
+		visibility in ('private', 'campaign', 'shared', 'public')
+	),
+	slug text not null,
+	name text not null,
+	prerequisites text[] not null default '{}',
+	summary text,
+	description text,
+	mechanics jsonb not null default '[]'::jsonb,
+	is_system_content boolean not null default false,
+	created_at timestamptz not null default now(),
+	updated_at timestamptz not null default now(),
+	unique (source_id, owner_user_id, slug)
+);
+
 create table if not exists characters (
 	id uuid primary key default gen_random_uuid(),
 	user_id uuid not null references auth.users (id) on delete cascade,

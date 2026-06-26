@@ -90,6 +90,16 @@ interface SpellItem {
 	mechanics?: unknown[];
 }
 
+interface FeatItem {
+	slug: string;
+	name: string;
+	prerequisites?: string[];
+	summary?: string | null;
+	description?: string | null;
+	visibility?: Visibility;
+	mechanics?: unknown[];
+}
+
 interface ContentFile<T> {
 	items: T[];
 }
@@ -157,6 +167,7 @@ export function generateSrdCatalogSeedSql(): string {
 	const subclassesFile = readJsonFile<ContentFile<SubclassItem>>('data/srd-5-1/subclasses.json');
 	const backgroundsFile = readJsonFile<ContentFile<BackgroundItem>>('data/srd-5-1/backgrounds.json');
 	const spellsFile = readJsonFile<ContentFile<SpellItem>>('data/srd-5-1/spells.json');
+	const featsFile = readJsonFile<ContentFile<FeatItem>>('data/srd-5-1/feats.json');
 
 	const sourceId = sourceIdSql('srd-5-1');
 
@@ -394,6 +405,36 @@ export function generateSrdCatalogSeedSql(): string {
 		)
 	);
 
+	const featsSql = buildInsert(
+		'feats',
+		[
+			'owner_user_id',
+			'source_id',
+			'visibility',
+			'slug',
+			'name',
+			'prerequisites',
+			'summary',
+			'description',
+			'mechanics',
+			'is_system_content'
+		],
+		featsFile.items.map((item) =>
+			[
+				'null',
+				sourceId,
+				sqlVisibility(item.visibility),
+				sqlString(item.slug),
+				sqlString(item.name),
+				sqlTextArray(item.prerequisites),
+				sqlString(item.summary ?? null),
+				sqlString(item.description ?? null),
+				sqlJson(item.mechanics ?? []),
+				'true'
+			].join(', ')
+		)
+	);
+
 	return [
 		'-- Generated from data/srd-5-1/*.json',
 		'-- Run after 001_initial_schema.sql and 003_content_sources_seed.sql',
@@ -403,6 +444,7 @@ export function generateSrdCatalogSeedSql(): string {
 		classesSql,
 		subclassesSql,
 		backgroundsSql,
-		spellsSql
+		spellsSql,
+		featsSql
 	].join('\n');
 }

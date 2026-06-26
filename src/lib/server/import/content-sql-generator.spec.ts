@@ -11,10 +11,12 @@ describe('generateSrdCatalogSeedSql', () => {
 		expect(sql).toContain('insert into subclasses');
 		expect(sql).toContain('insert into backgrounds');
 		expect(sql).toContain('insert into spells');
+		expect(sql).toContain('insert into feats');
 		expect(sql).toContain("'humano'");
 		expect(sql).toContain("'clerigo'");
 		expect(sql).toContain("'life-domain'");
 		expect(sql).toContain("'acolyte'");
 		expect(sql).toContain("'bless'");
+		expect(sql).toContain("'heavily-armored'");
 	});
 });

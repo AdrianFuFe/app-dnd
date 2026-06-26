@@ -9,6 +9,7 @@ alter table character_classes enable row level security;
 alter table subclasses enable row level security;
 alter table backgrounds enable row level security;
 alter table spells enable row level security;
+alter table feats enable row level security;
 alter table characters enable row level security;
 alter table character_stats enable row level security;
 alter table character_combat_stats enable row level security;
@@ -358,6 +359,57 @@ with check (
 
 create policy "spells_update_own"
 on spells
+for update
+to authenticated
+using (
+	public.has_global_role('admin')
+	or (
+		owner_user_id = auth.uid()
+		and is_system_content = false
+	)
+)
+with check (
+	public.has_global_role('admin')
+	or (
+		owner_user_id = auth.uid()
+		and is_system_content = false
+		and (
+			visibility = 'private'
+			or public.has_global_role('content_editor')
+		)
+	)
+);
+
+create policy "feats_select_visible"
+on feats
+for select
+to authenticated
+using (
+	public.has_global_role('admin')
+	or
+	is_system_content = true
+	or visibility = 'public'
+	or owner_user_id = auth.uid()
+);
+
+create policy "feats_insert_own"
+on feats
+for insert
+to authenticated
+with check (
+	public.has_global_role('admin')
+	or (
+		owner_user_id = auth.uid()
+		and is_system_content = false
+		and (
+			visibility = 'private'
+			or public.has_global_role('content_editor')
+		)
+	)
+);
+
+create policy "feats_update_own"
+on feats
 for update
 to authenticated
 using (

@@ -1,0 +1,31 @@
+{
+	"schemaVersion": 1,
+	"source": "srd-5-1",
+	"contentType": "feat",
+	"items": [
+		{
+			"slug": "heavily-armored",
+			"name": "Heavily Armored",
+			"summary": "Entrenamiento adicional para usar armadura pesada.",
+			"description": "Seed inicial del SRD para disponer de una dote centrada en competencia defensiva y mejora de caracteristica.",
+			"prerequisites": ["medium-armor proficiency"],
+			"visibility": "public",
+			"mechanics": [
+				{ "type": "ability_bonus", "ability": "strength", "value": 1 },
+				{ "type": "proficiency", "proficiencyType": "armor", "value": "heavy-armor" }
+			]
+		},
+		{
+			"slug": "resilient-wisdom",
+			"name": "Resilient (Wisdom)",
+			"summary": "Refuerza la voluntad y otorga competencia en salvaciones de sabiduria.",
+			"description": "Seed inicial del SRD para representar una dote orientada a caracteristicas y tiradas de salvacion.",
+			"prerequisites": [],
+			"visibility": "public",
+			"mechanics": [
+				{ "type": "ability_bonus", "ability": "wisdom", "value": 1 },
+				{ "type": "proficiency", "proficiencyType": "saving_throw", "value": "wisdom" }
+			]
+		}
+	]
+}

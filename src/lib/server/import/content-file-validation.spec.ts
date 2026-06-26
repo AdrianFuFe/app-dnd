@@ -25,7 +25,7 @@ describe('validateContentDataDirectory', () => {
 		const result = validateContentDataDirectory(dataDirectoryPath);
 
 		expect(result.issues).toHaveLength(0);
-		expect(result.validFiles).toHaveLength(10);
+		expect(result.validFiles).toHaveLength(12);
 	});
 
 	it('reports unsupported content types', () => {
@@ -37,7 +37,7 @@ describe('validateContentDataDirectory', () => {
 			JSON.stringify({
 				schemaVersion: 1,
 				source: 'user-private',
-				contentType: 'feat',
+				contentType: 'condition',
 				items: []
 			})
 		);
@@ -45,7 +45,7 @@ describe('validateContentDataDirectory', () => {
 		const result = validateContentDataDirectory(tempDirectoryPath);
 
 		expect(result.issues).toHaveLength(1);
-		expect(result.issues[0]?.message).toContain('Unsupported contentType "feat"');
+		expect(result.issues[0]?.message).toContain('Unsupported contentType "condition"');
 	});
 
 	it('reports malformed JSON files', () => {
@@ -184,6 +184,41 @@ describe('validateContentDataDirectory', () => {
 
 		expect(result.issues).toHaveLength(1);
 		expect(result.issues[0]?.message).toContain('Unknown class slug "clerigo"');
+	});
+
+	it('reports missing spell references from feat mechanics', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'spells.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'spell',
+				items: []
+			})
+		);
+		writeFileSync(
+			path.join(srdDirectoryPath, 'feats.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'feat',
+				items: [
+					{
+						slug: 'dote-prueba',
+						name: 'Dote de Prueba',
+						mechanics: [{ type: 'spell_grant', spellId: 'bless' }]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(1);
+		expect(result.issues[0]?.message).toContain('Unknown spell slug "bless"');
 	});
 
 	it('reports missing subspecies references from species', () => {
