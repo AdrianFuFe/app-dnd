@@ -289,6 +289,116 @@ describe('validateContentDataDirectory', () => {
 		);
 	});
 
+	it('reports class proficiency drift between structured fields and mechanics', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'classes.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'character-class',
+				items: [
+					{
+						slug: 'guerrero',
+						name: 'Guerrero',
+						hitDie: 10,
+						primaryAbilities: ['strength'],
+						savingThrowProficiencies: ['strength', 'constitution'],
+						armorProficiencies: ['all-armor', 'shields'],
+						weaponProficiencies: ['simple-weapons'],
+						mechanics: [
+							{ type: 'proficiency', proficiencyType: 'armor', value: 'all-armor' },
+							{ type: 'proficiency', proficiencyType: 'weapon', value: 'martial-weapons' },
+							{ type: 'proficiency', proficiencyType: 'saving_throw', value: 'strength' },
+							{ type: 'proficiency', proficiencyType: 'saving_throw', value: 'constitution' }
+						]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(2);
+		expect(result.issues[0]?.message).toContain(
+			'Class "guerrero" armor proficiencies do not match proficiency mechanics'
+		);
+		expect(result.issues[1]?.message).toContain(
+			'Class "guerrero" weapon proficiencies do not match proficiency mechanics'
+		);
+	});
+
+	it('reports class spellcasting ability drift between structured fields and mechanics', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'classes.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'character-class',
+				items: [
+					{
+						slug: 'clerigo',
+						name: 'Clerigo',
+						hitDie: 8,
+						primaryAbilities: ['wisdom'],
+						savingThrowProficiencies: ['wisdom', 'charisma'],
+						spellcastingAbility: 'wisdom',
+						mechanics: [{ type: 'spellcasting', ability: 'charisma' }]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(1);
+		expect(result.issues[0]?.message).toContain(
+			'Class "clerigo" spellcasting ability does not match spellcasting mechanics'
+		);
+	});
+
+	it('reports unknown starting equipment references from classes', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'classes.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'character-class',
+				items: [
+					{
+						slug: 'guerrero',
+						name: 'Guerrero',
+						hitDie: 10,
+						primaryAbilities: ['strength'],
+						savingThrowProficiencies: ['strength', 'constitution'],
+						startingEquipment: [
+							{ type: 'item', id: 'mystery-relic' },
+							{ type: 'choice', options: ['chain-mail', 'unknown-kit'] }
+						]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(2);
+		expect(result.issues[0]?.message).toContain(
+			'Unknown equipment id "mystery-relic" referenced by class "guerrero"'
+		);
+		expect(result.issues[1]?.message).toContain(
+			'Unknown equipment option id "unknown-kit" referenced by class "guerrero"'
+		);
+	});
+
 	it('reports duplicate slugs across files of the same content type', () => {
 		const tempDirectoryPath = createTemporaryDataDirectory();
 		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
@@ -383,6 +493,355 @@ describe('validateContentDataDirectory', () => {
 		);
 	});
 
+	it('reports subclass proficiency drift between top-level mechanics and referenced feature mechanics', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'classes.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'character-class',
+				items: [
+					{
+						slug: 'clerigo',
+						name: 'Clerigo',
+						hitDie: 8,
+						primaryAbilities: ['wisdom'],
+						savingThrowProficiencies: ['wisdom', 'charisma']
+					}
+				]
+			})
+		);
+		writeFileSync(
+			path.join(srdDirectoryPath, 'subclasses.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'subclass',
+				items: [
+					{
+						slug: 'life-domain',
+						name: 'Life Domain',
+						classSlug: 'clerigo',
+						mechanics: [
+							{ type: 'proficiency', proficiencyType: 'armor', value: 'light-armor' },
+							{ type: 'feature', featureId: 'bonus-proficiency' }
+						],
+						features: [
+							{
+								level: 1,
+								featureId: 'bonus-proficiency',
+								name: 'Bonus Proficiency',
+								mechanics: [
+									{
+										type: 'proficiency',
+										proficiencyType: 'armor',
+										value: 'heavy-armor'
+									}
+								]
+							}
+						]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(1);
+		expect(result.issues[0]?.message).toContain(
+			'Subclass "life-domain" proficiencies do not match referenced feature mechanics'
+		);
+	});
+
+	it('reports subclass note drift between top-level mechanics and referenced feature mechanics', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'classes.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'character-class',
+				items: [
+					{
+						slug: 'clerigo',
+						name: 'Clerigo',
+						hitDie: 8,
+						primaryAbilities: ['wisdom'],
+						savingThrowProficiencies: ['wisdom', 'charisma']
+					}
+				]
+			})
+		);
+		writeFileSync(
+			path.join(srdDirectoryPath, 'subclasses.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'subclass',
+				items: [
+					{
+						slug: 'life-domain',
+						name: 'Life Domain',
+						classSlug: 'clerigo',
+						mechanics: [
+							{ type: 'note', text: 'Gain heavy armor training.' },
+							{ type: 'feature', featureId: 'bonus-proficiency' }
+						],
+						features: [
+							{
+								level: 1,
+								featureId: 'bonus-proficiency',
+								name: 'Bonus Proficiency',
+								mechanics: [{ type: 'note', text: 'Gain martial weapon training.' }]
+							}
+						]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(1);
+		expect(result.issues[0]?.message).toContain(
+			'Subclass "life-domain" notes do not match referenced feature mechanics'
+		);
+	});
+
+	it('reports duplicate subclass feature ids', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'classes.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'character-class',
+				items: [
+					{
+						slug: 'clerigo',
+						name: 'Clerigo',
+						hitDie: 8,
+						primaryAbilities: ['wisdom'],
+						savingThrowProficiencies: ['wisdom', 'charisma']
+					}
+				]
+			})
+		);
+		writeFileSync(
+			path.join(srdDirectoryPath, 'subclasses.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'subclass',
+				items: [
+					{
+						slug: 'life-domain',
+						name: 'Life Domain',
+						classSlug: 'clerigo',
+						features: [
+							{
+								level: 1,
+								featureId: 'bonus-proficiency',
+								name: 'Bonus Proficiency',
+								mechanics: []
+							},
+							{
+								level: 2,
+								featureId: 'bonus-proficiency',
+								name: 'Bonus Proficiency Upgrade',
+								mechanics: []
+							}
+						]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(1);
+		expect(result.issues[0]?.message).toContain(
+			'Subclass "life-domain" contains duplicate feature ids'
+		);
+	});
+
+	it('accepts matching subclass proficiencies across top-level and feature mechanics', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'classes.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'character-class',
+				items: [
+					{
+						slug: 'clerigo',
+						name: 'Clerigo',
+						hitDie: 8,
+						primaryAbilities: ['wisdom'],
+						savingThrowProficiencies: ['wisdom', 'charisma']
+					}
+				]
+			})
+		);
+		writeFileSync(
+			path.join(srdDirectoryPath, 'subclasses.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'subclass',
+				items: [
+					{
+						slug: 'life-domain',
+						name: 'Life Domain',
+						classSlug: 'clerigo',
+						mechanics: [
+							{ type: 'proficiency', proficiencyType: 'armor', value: 'heavy-armor' },
+							{ type: 'feature', featureId: 'bonus-proficiency' }
+						],
+						features: [
+							{
+								level: 1,
+								featureId: 'bonus-proficiency',
+								name: 'Bonus Proficiency',
+								mechanics: [
+									{
+										type: 'proficiency',
+										proficiencyType: 'armor',
+										value: 'heavy-armor'
+									}
+								]
+							}
+						]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(0);
+	});
+
+	it('accepts matching subclass notes across top-level and feature mechanics', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'classes.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'character-class',
+				items: [
+					{
+						slug: 'clerigo',
+						name: 'Clerigo',
+						hitDie: 8,
+						primaryAbilities: ['wisdom'],
+						savingThrowProficiencies: ['wisdom', 'charisma']
+					}
+				]
+			})
+		);
+		writeFileSync(
+			path.join(srdDirectoryPath, 'subclasses.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'subclass',
+				items: [
+					{
+						slug: 'life-domain',
+						name: 'Life Domain',
+						classSlug: 'clerigo',
+						mechanics: [
+							{ type: 'note', text: 'Gain heavy armor training.' },
+							{ type: 'feature', featureId: 'bonus-proficiency' }
+						],
+						features: [
+							{
+								level: 1,
+								featureId: 'bonus-proficiency',
+								name: 'Bonus Proficiency',
+								mechanics: [{ type: 'note', text: 'Gain heavy armor training.' }]
+							}
+						]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(0);
+	});
+
+	it('accepts unique subclass feature ids', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'classes.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'character-class',
+				items: [
+					{
+						slug: 'clerigo',
+						name: 'Clerigo',
+						hitDie: 8,
+						primaryAbilities: ['wisdom'],
+						savingThrowProficiencies: ['wisdom', 'charisma']
+					}
+				]
+			})
+		);
+		writeFileSync(
+			path.join(srdDirectoryPath, 'subclasses.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'subclass',
+				items: [
+					{
+						slug: 'life-domain',
+						name: 'Life Domain',
+						classSlug: 'clerigo',
+						features: [
+							{
+								level: 1,
+								featureId: 'bonus-proficiency',
+								name: 'Bonus Proficiency',
+								mechanics: []
+							},
+							{
+								level: 2,
+								featureId: 'preserve-life',
+								name: 'Preserve Life',
+								mechanics: []
+							}
+						]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(0);
+	});
+
 	it('reports missing spell references from feat mechanics', () => {
 		const tempDirectoryPath = createTemporaryDataDirectory();
 		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
@@ -416,6 +875,123 @@ describe('validateContentDataDirectory', () => {
 
 		expect(result.issues).toHaveLength(1);
 		expect(result.issues[0]?.message).toContain('Unknown spell slug "bless"');
+	});
+
+	it('reports background drift between structured fields and mechanics', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'backgrounds.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'background',
+				items: [
+					{
+						slug: 'acolyte',
+						name: 'Acolyte',
+						skillProficiencies: ['insight', 'religion'],
+						toolProficiencies: [],
+						languages: [{ type: 'choice', count: 2, scope: 'any' }],
+						mechanics: [
+							{ type: 'proficiency', proficiencyType: 'skill', value: 'insight' },
+							{ type: 'choose_language', count: 1 }
+						]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(2);
+		expect(result.issues[0]?.message).toContain(
+			'Background "acolyte" skill proficiencies do not match proficiency mechanics'
+		);
+		expect(result.issues[1]?.message).toContain(
+			'Background "acolyte" language choices do not match choose_language mechanics'
+		);
+	});
+
+	it('reports unknown equipment references from backgrounds', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'backgrounds.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'background',
+				items: [
+					{
+						slug: 'acolyte',
+						name: 'Acolyte',
+						equipment: [
+							{ type: 'item', id: 'holy-symbol' },
+							{ type: 'choice', options: ['prayer-book', 'unknown-scroll-case'] }
+						]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(1);
+		expect(result.issues[0]?.message).toContain(
+			'Unknown equipment option id "unknown-scroll-case" referenced by background "acolyte"'
+		);
+	});
+
+	it('accepts known structured equipment references from classes and backgrounds', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'classes.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'character-class',
+				items: [
+					{
+						slug: 'clerigo',
+						name: 'Clerigo',
+						hitDie: 8,
+						primaryAbilities: ['wisdom'],
+						savingThrowProficiencies: ['wisdom', 'charisma'],
+						startingEquipment: [
+							{ type: 'choice', options: ['mace', 'warhammer'] },
+							{ type: 'item', id: 'holy-symbol' }
+						]
+					}
+				]
+			})
+		);
+		writeFileSync(
+			path.join(srdDirectoryPath, 'backgrounds.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'background',
+				items: [
+					{
+						slug: 'acolyte',
+						name: 'Acolyte',
+						equipment: [
+							{ type: 'item', id: 'holy-symbol' },
+							{ type: 'choice', options: ['prayer-book', 'prayer-wheel'] }
+						]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(0);
 	});
 
 	it('accepts valid catalog references in feat prerequisites', () => {
@@ -478,6 +1054,35 @@ describe('validateContentDataDirectory', () => {
 							'spell:bless',
 							'feat:resilient-wisdom'
 						]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(0);
+	});
+
+	it('accepts matching class spellcasting ability and spellcasting mechanics', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'classes.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'character-class',
+				items: [
+					{
+						slug: 'clerigo',
+						name: 'Clerigo',
+						hitDie: 8,
+						primaryAbilities: ['wisdom'],
+						savingThrowProficiencies: ['wisdom', 'charisma'],
+						spellcastingAbility: 'wisdom',
+						mechanics: [{ type: 'spellcasting', ability: 'wisdom' }]
 					}
 				]
 			})
@@ -557,6 +1162,96 @@ describe('validateContentDataDirectory', () => {
 
 		expect(result.issues).toHaveLength(1);
 		expect(result.issues[0]?.message).toContain('Unknown subspecies slug "high-elf"');
+	});
+
+	it('reports species language drift between structured fields and mechanics', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'species.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'species',
+				items: [
+					{
+						slug: 'humano',
+						name: 'Humano',
+						languages: [{ type: 'fixed', language: 'comun' }],
+						mechanics: [
+							{ type: 'language', mode: 'fixed', language: 'elfico' },
+							{ type: 'choose_language', count: 1 }
+						]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(2);
+		expect(result.issues[0]?.message).toContain(
+			'Species "humano" fixed languages do not match language mechanics'
+		);
+		expect(result.issues[1]?.message).toContain(
+			'Species "humano" language choices do not match choose_language mechanics'
+		);
+	});
+
+	it('reports species speed drift between structured fields and mechanics', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'species.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'species',
+				items: [
+					{
+						slug: 'elfo',
+						name: 'Elfo',
+						baseSpeed: 30,
+						mechanics: [{ type: 'speed', value: 35 }]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(1);
+		expect(result.issues[0]?.message).toContain(
+			'Species "elfo" base speed does not match speed mechanics'
+		);
+	});
+
+	it('accepts matching species speed across structured fields and mechanics', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'species.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'species',
+				items: [
+					{
+						slug: 'elfo',
+						name: 'Elfo',
+						baseSpeed: 30,
+						mechanics: [{ type: 'speed', value: 30 }]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(0);
 	});
 
 	it('reports missing species references from subspecies', () => {

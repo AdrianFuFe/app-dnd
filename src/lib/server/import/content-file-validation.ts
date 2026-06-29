@@ -16,15 +16,61 @@ interface ValidatedCatalogItem {
 
 interface CatalogReferenceItem {
 	slug: string;
+	armorProficiencies?: string[];
+	baseSpeed?: number;
 	classSlug?: string;
 	classSlugs?: string[];
+	equipment?: Array<
+		| {
+				type: 'item';
+				id: string;
+		  }
+		| {
+				type: 'choice';
+				options: string[];
+		  }
+	>;
+	languages?: Array<{
+		type: 'fixed' | 'choice';
+		language?: string;
+		count?: number;
+		scope?: 'any';
+	}>;
+	primaryAbilities?: string[];
 	prerequisites?: string[];
+	savingThrowProficiencies?: string[];
+	skillChoices?: {
+		count: number;
+		options: string[];
+	};
+	skillProficiencies?: string[];
+	spellcastingAbility?: string | null;
+	startingEquipment?: Array<
+		| {
+				type: 'item';
+				id: string;
+		  }
+		| {
+				type: 'choice';
+				options: string[];
+		  }
+	>;
 	speciesSlug?: string;
 	subspeciesSlugs?: string[];
+	toolProficiencies?: string[];
+	weaponProficiencies?: string[];
 	mechanics?: Array<{
 		type: string;
 		spellId?: string;
 		featureId?: string;
+		ability?: string;
+		proficiencyType?: string;
+		text?: string;
+		value?: string;
+		count?: number;
+		options?: string[];
+		language?: string;
+		range?: number;
 	}>;
 	progression?: Array<{
 		level: number;
@@ -38,6 +84,12 @@ interface CatalogReferenceItem {
 		level: number;
 		featureId?: string;
 		name: string;
+		mechanics?: Array<{
+			type: string;
+			proficiencyType?: string;
+			text?: string;
+			value?: string;
+		}>;
 	}>;
 }
 
@@ -47,6 +99,74 @@ function toFeatureId(value: string): string {
 		.toLowerCase()
 		.replace(/[^a-z0-9]+/g, '-')
 		.replace(/^-+|-+$/g, '');
+}
+
+function toSortedUnique(values: string[]): string[] {
+	return [...new Set(values)].sort();
+}
+
+function arraysEqual(left: string[], right: string[]): boolean {
+	return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+const knownEquipmentReferenceIds = new Set([
+	'any-simple-weapon',
+	'artisan-tools',
+	'belt-pouch',
+	'bone-dice',
+	'cards',
+	'chain-mail',
+	'common-clothes',
+	'dungeoneers-pack',
+	'explorers-pack',
+	'greataxe',
+	'holy-symbol',
+	'insignia-of-rank',
+	'leather-armor',
+	'light-crossbow-and-20-bolts',
+	'mace',
+	'martial-weapon-and-shield',
+	'prayer-book',
+	'prayer-wheel',
+	'priests-pack',
+	'satchel',
+	'scale-mail',
+	'shield',
+	'sticks-of-incense',
+	'travelers-clothes',
+	'trophy-from-a-fallen-enemy',
+	'two-handaxes',
+	'two-martial-weapons',
+	'vestments',
+	'warhammer'
+]);
+
+function validateEquipmentReferences(
+	result: ContentValidationResult,
+	filePath: string,
+	contentLabel: string,
+	contentSlug: string,
+	equipmentEntries: CatalogReferenceItem['equipment'] | CatalogReferenceItem['startingEquipment']
+): void {
+	for (const entry of equipmentEntries ?? []) {
+		if (entry.type === 'item' && !knownEquipmentReferenceIds.has(entry.id)) {
+			result.issues.push({
+				filePath,
+				message: `Unknown equipment id "${entry.id}" referenced by ${contentLabel} "${contentSlug}"`
+			});
+		}
+
+		if (entry.type === 'choice') {
+			for (const option of entry.options) {
+				if (!knownEquipmentReferenceIds.has(option)) {
+					result.issues.push({
+						filePath,
+						message: `Unknown equipment option id "${option}" referenced by ${contentLabel} "${contentSlug}"`
+					});
+				}
+			}
+		}
+	}
 }
 
 function getCatalogFilePath(dataDirectoryPath: string, contentType: string): string {
@@ -227,9 +347,55 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 	}
 
 	for (const { filePath, item: characterClass } of classItems) {
+		validateEquipmentReferences(
+			result,
+			filePath,
+			'class',
+			characterClass.slug,
+			characterClass.startingEquipment
+		);
 		const progressionFeatureIds = new Set(
 			(characterClass.progression ?? []).flatMap((level) => level.features ?? [])
 		);
+		const mechanics = characterClass.mechanics ?? [];
+		const armorProficienciesFromMechanics = toSortedUnique(
+			mechanics
+				.filter(
+					(mechanic) =>
+						mechanic.type === 'proficiency' && mechanic.proficiencyType === 'armor' && mechanic.value
+					)
+				.map((mechanic) => mechanic.value as string)
+		);
+		const weaponProficienciesFromMechanics = toSortedUnique(
+			mechanics
+				.filter(
+					(mechanic) =>
+						mechanic.type === 'proficiency' &&
+						mechanic.proficiencyType === 'weapon' &&
+						mechanic.value
+					)
+				.map((mechanic) => mechanic.value as string)
+		);
+		const savingThrowProficienciesFromMechanics = toSortedUnique(
+			mechanics
+				.filter(
+					(mechanic) =>
+						mechanic.type === 'proficiency' &&
+						mechanic.proficiencyType === 'saving_throw' &&
+						mechanic.value
+					)
+				.map((mechanic) => mechanic.value as string)
+		);
+		const skillChoiceMechanic = mechanics.find(
+			(mechanic) =>
+				mechanic.type === 'choose_proficiency' && mechanic.proficiencyType === 'skill'
+		);
+		const spellcastingMechanic = mechanics.find(
+			(mechanic) => mechanic.type === 'spellcasting' && mechanic.ability
+		);
+		const hasArmorMechanics = armorProficienciesFromMechanics.length > 0;
+		const hasWeaponMechanics = weaponProficienciesFromMechanics.length > 0;
+		const hasSavingThrowMechanics = savingThrowProficienciesFromMechanics.length > 0;
 
 		for (const mechanic of characterClass.mechanics ?? []) {
 			if (
@@ -243,12 +409,122 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 				});
 			}
 		}
+
+		if (
+			hasArmorMechanics &&
+			!arraysEqual(
+				toSortedUnique(characterClass.armorProficiencies ?? []),
+				armorProficienciesFromMechanics
+			)
+		) {
+			result.issues.push({
+				filePath,
+				message: `Class "${characterClass.slug}" armor proficiencies do not match proficiency mechanics`
+			});
+		}
+
+		if (
+			hasWeaponMechanics &&
+			!arraysEqual(
+				toSortedUnique(characterClass.weaponProficiencies ?? []),
+				weaponProficienciesFromMechanics
+			)
+		) {
+			result.issues.push({
+				filePath,
+				message: `Class "${characterClass.slug}" weapon proficiencies do not match proficiency mechanics`
+			});
+		}
+
+		if (
+			hasSavingThrowMechanics &&
+			!arraysEqual(
+				toSortedUnique(characterClass.savingThrowProficiencies ?? []),
+				savingThrowProficienciesFromMechanics
+			)
+		) {
+			result.issues.push({
+				filePath,
+				message: `Class "${characterClass.slug}" saving throw proficiencies do not match proficiency mechanics`
+			});
+		}
+
+		if (characterClass.skillChoices && skillChoiceMechanic) {
+			const skillChoiceOptions = toSortedUnique(characterClass.skillChoices.options ?? []);
+			const mechanicOptions = toSortedUnique(skillChoiceMechanic?.options ?? []);
+
+			if (
+				characterClass.skillChoices.count !== skillChoiceMechanic.count ||
+				!arraysEqual(skillChoiceOptions, mechanicOptions)
+			) {
+				result.issues.push({
+					filePath,
+					message: `Class "${characterClass.slug}" skill choices do not match choose_proficiency mechanics`
+				});
+			}
+		}
+
+		if (
+			spellcastingMechanic &&
+			characterClass.spellcastingAbility !== spellcastingMechanic.ability
+		) {
+			result.issues.push({
+				filePath,
+				message: `Class "${characterClass.slug}" spellcasting ability does not match spellcasting mechanics`
+			});
+		}
 	}
 
 	for (const { filePath, item: subclass } of subclasses) {
-		const subclassFeatureIds = new Set(
-			(subclass.features ?? []).map((feature) => feature.featureId ?? toFeatureId(feature.name))
+		const normalizedSubclassFeatureIds = (subclass.features ?? []).map(
+			(feature) => feature.featureId ?? toFeatureId(feature.name)
 		);
+		const subclassFeatureIds = new Set(normalizedSubclassFeatureIds);
+		const mechanics = subclass.mechanics ?? [];
+		const referencedFeatureIds = new Set(
+			mechanics
+				.filter((mechanic) => mechanic.type === 'feature' && mechanic.featureId)
+				.map((mechanic) => mechanic.featureId as string)
+		);
+		const subclassProficienciesFromMechanics = toSortedUnique(
+			mechanics
+				.filter(
+					(mechanic) => mechanic.type === 'proficiency' && mechanic.proficiencyType && mechanic.value
+				)
+				.map((mechanic) => `${mechanic.proficiencyType}:${mechanic.value}`)
+		);
+		const subclassProficienciesFromFeatures = toSortedUnique(
+			(subclass.features ?? [])
+				.filter((feature) =>
+					referencedFeatureIds.has(feature.featureId ?? toFeatureId(feature.name))
+				)
+				.flatMap((feature) => feature.mechanics ?? [])
+				.filter(
+					(mechanic) => mechanic.type === 'proficiency' && mechanic.proficiencyType && mechanic.value
+				)
+				.map((mechanic) => `${mechanic.proficiencyType}:${mechanic.value}`)
+		);
+		const subclassNotesFromMechanics = toSortedUnique(
+			mechanics
+				.filter((mechanic) => mechanic.type === 'note' && mechanic.text)
+				.map((mechanic) => mechanic.text as string)
+		);
+		const subclassNotesFromFeatures = toSortedUnique(
+			(subclass.features ?? [])
+				.filter((feature) =>
+					referencedFeatureIds.has(feature.featureId ?? toFeatureId(feature.name))
+				)
+				.flatMap((feature) => feature.mechanics ?? [])
+				.filter((mechanic) => mechanic.type === 'note' && mechanic.text)
+				.map((mechanic) => mechanic.text as string)
+		);
+
+		if (subclassFeatureIds.size !== normalizedSubclassFeatureIds.length) {
+			result.issues.push({
+				filePath,
+				message: `Subclass "${subclass.slug}" contains duplicate feature ids`
+			});
+		}
 
 		for (const mechanic of subclass.mechanics ?? []) {
 			if (
@@ -261,6 +537,28 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 					message: `Unknown feature id "${mechanic.featureId}" referenced by subclass "${subclass.slug}"`
 				});
 			}
+		}
+
+		if (
+			subclassProficienciesFromMechanics.length > 0 &&
+			subclassProficienciesFromFeatures.length > 0 &&
+			!arraysEqual(subclassProficienciesFromMechanics, subclassProficienciesFromFeatures)
+		) {
+			result.issues.push({
+				filePath,
+				message: `Subclass "${subclass.slug}" proficiencies do not match referenced feature mechanics`
+			});
+		}
+
+		if (
+			subclassNotesFromMechanics.length > 0 &&
+			subclassNotesFromFeatures.length > 0 &&
+			!arraysEqual(subclassNotesFromMechanics, subclassNotesFromFeatures)
+		) {
+			result.issues.push({
+				filePath,
+				message: `Subclass "${subclass.slug}" notes do not match referenced feature mechanics`
+			});
 		}
 	}
 
@@ -327,6 +625,53 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 	}
 
 	for (const { item: species } of speciesItems) {
+		const speedFromMechanics = (species.mechanics ?? []).find(
+			(mechanic) => mechanic.type === 'speed' && typeof mechanic.value === 'number'
+		)?.value;
+		const fixedLanguages = toSortedUnique(
+			(species.languages ?? [])
+				.filter((entry) => entry.type === 'fixed' && entry.language)
+				.map((entry) => entry.language as string)
+		);
+		const fixedLanguagesFromMechanics = toSortedUnique(
+			(species.mechanics ?? [])
+				.filter((mechanic) => mechanic.type === 'language' && mechanic.language)
+				.map((mechanic) => mechanic.language as string)
+		);
+		const chooseLanguageCount = (species.languages ?? [])
+			.filter((entry) => entry.type === 'choice')
+			.reduce((total, entry) => total + (entry.count ?? 0), 0);
+		const chooseLanguageCountFromMechanics = (species.mechanics ?? [])
+			.filter((mechanic) => mechanic.type === 'choose_language')
+			.reduce((total, mechanic) => total + (mechanic.count ?? 0), 0);
+		const hasFixedLanguageMechanics = fixedLanguagesFromMechanics.length > 0;
+		const hasChooseLanguageMechanics = chooseLanguageCountFromMechanics > 0;
+
+		if (hasFixedLanguageMechanics && !arraysEqual(fixedLanguages, fixedLanguagesFromMechanics)) {
+			result.issues.push({
+				filePath: path.join(dataDirectoryPath, 'srd-5-1', 'species.json'),
+				message: `Species "${species.slug}" fixed languages do not match language mechanics`
+			});
+		}
+
+		if (hasChooseLanguageMechanics && chooseLanguageCount !== chooseLanguageCountFromMechanics) {
+			result.issues.push({
+				filePath: path.join(dataDirectoryPath, 'srd-5-1', 'species.json'),
+				message: `Species "${species.slug}" language choices do not match choose_language mechanics`
+			});
+		}
+
+		if (
+			typeof speedFromMechanics === 'number' &&
+			species.baseSpeed !== undefined &&
+			species.baseSpeed !== speedFromMechanics
+		) {
+			result.issues.push({
+				filePath: path.join(dataDirectoryPath, 'srd-5-1', 'species.json'),
+				message: `Species "${species.slug}" base speed does not match speed mechanics`
+			});
+		}
+
 		for (const subspeciesSlug of species.subspeciesSlugs ?? []) {
 			if (!subspeciesSlugs.has(subspeciesSlug)) {
 				result.issues.push({
@@ -342,6 +687,91 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 			result.issues.push({
 				filePath: path.join(dataDirectoryPath, 'srd-5-1', 'subspecies.json'),
 				message: `Unknown species slug "${subspecies.speciesSlug}" referenced by subspecies "${subspecies.slug}"`
+			});
+		}
+	}
+
+	for (const { filePath, item: background } of validItemsByContentType.get('background') ?? []) {
+		validateEquipmentReferences(result, filePath, 'background', background.slug, background.equipment);
+		const mechanics = background.mechanics ?? [];
+		const skillProficienciesFromMechanics = toSortedUnique(
+			mechanics
+				.filter(
+					(mechanic) =>
+						mechanic.type === 'proficiency' &&
+						mechanic.proficiencyType === 'skill' &&
+						mechanic.value
+					)
+				.map((mechanic) => mechanic.value as string)
+		);
+		const toolProficienciesFromMechanics = toSortedUnique(
+			mechanics
+				.filter(
+					(mechanic) =>
+						mechanic.type === 'proficiency' &&
+						mechanic.proficiencyType === 'tool' &&
+						mechanic.value
+					)
+				.map((mechanic) => mechanic.value as string)
+		);
+		const fixedLanguages = toSortedUnique(
+			(background.languages ?? [])
+				.filter((entry) => entry.type === 'fixed' && entry.language)
+				.map((entry) => entry.language as string)
+		);
+		const fixedLanguagesFromMechanics = toSortedUnique(
+			mechanics
+				.filter((mechanic) => mechanic.type === 'language' && mechanic.language)
+				.map((mechanic) => mechanic.language as string)
+		);
+		const chooseLanguageCount = (background.languages ?? [])
+			.filter((entry) => entry.type === 'choice')
+			.reduce((total, entry) => total + (entry.count ?? 0), 0);
+		const chooseLanguageCountFromMechanics = mechanics
+			.filter((mechanic) => mechanic.type === 'choose_language')
+			.reduce((total, mechanic) => total + (mechanic.count ?? 0), 0);
+		const hasSkillMechanics = skillProficienciesFromMechanics.length > 0;
+		const hasToolMechanics = toolProficienciesFromMechanics.length > 0;
+		const hasFixedLanguageMechanics = fixedLanguagesFromMechanics.length > 0;
+		const hasChooseLanguageMechanics = chooseLanguageCountFromMechanics > 0;
+
+		if (
+			hasSkillMechanics &&
+			!arraysEqual(
+				toSortedUnique(background.skillProficiencies ?? []),
+				skillProficienciesFromMechanics
+			)
+		) {
+			result.issues.push({
+				filePath,
+				message: `Background "${background.slug}" skill proficiencies do not match proficiency mechanics`
+			});
+		}
+
+		if (
+			hasToolMechanics &&
+			!arraysEqual(
+				toSortedUnique(background.toolProficiencies ?? []),
+				toolProficienciesFromMechanics
+			)
+		) {
+			result.issues.push({
+				filePath,
+				message: `Background "${background.slug}" tool proficiencies do not match proficiency mechanics`
+			});
+		}
+
+		if (hasFixedLanguageMechanics && !arraysEqual(fixedLanguages, fixedLanguagesFromMechanics)) {
+			result.issues.push({
+				filePath,
+				message: `Background "${background.slug}" fixed languages do not match language mechanics`
+			});
+		}
+
+		if (hasChooseLanguageMechanics && chooseLanguageCount !== chooseLanguageCountFromMechanics) {
+			result.issues.push({
+				filePath,
+				message: `Background "${background.slug}" language choices do not match choose_language mechanics`
 			});
 		}
 	}
