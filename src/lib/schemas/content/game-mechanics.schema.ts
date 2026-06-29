@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { positiveSelectionCountSchema, slugOptionsSchema } from './selection.schema.ts';
+import { slugSchema } from './slug.schema.ts';
 
 export const abilitySchema = z.enum([
 	'strength',
@@ -21,7 +23,7 @@ export const gameMechanicSchema = z.discriminatedUnion('type', [
 	}),
 	z.object({
 		type: z.literal('choose_ability_bonus'),
-		count: z.number().int().positive(),
+		count: positiveSelectionCountSchema,
 		value: z.number().int(),
 		allowed: z.array(abilitySchema).optional()
 	}),
@@ -36,22 +38,22 @@ export const gameMechanicSchema = z.discriminatedUnion('type', [
 	z.object({
 		type: z.literal('language'),
 		mode: z.literal('fixed'),
-		language: z.string().trim().min(1)
+		language: slugSchema
 	}),
 	z.object({
 		type: z.literal('choose_language'),
-		count: z.number().int().positive()
+		count: positiveSelectionCountSchema
 	}),
 	z.object({
 		type: z.literal('proficiency'),
 		proficiencyType: proficiencyTypeSchema,
-		value: z.string().trim().min(1)
+		value: slugSchema
 	}),
 	z.object({
 		type: z.literal('choose_proficiency'),
 		proficiencyType: z.enum(['skill', 'tool']),
-		count: z.number().int().positive(),
-		options: z.array(z.string().trim().min(1)).min(1)
+		count: positiveSelectionCountSchema,
+		options: slugOptionsSchema
 	}),
 	z.object({
 		type: z.literal('resistance'),

@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { slugSchema } from './common-content.schema.ts';
+import { slugSchema } from './slug.schema.ts';
+import { positiveSelectionCountSchema } from './selection.schema.ts';
 
 const fixedLanguageEntrySchema = z.object({
 	type: z.literal('fixed'),
@@ -8,7 +9,7 @@ const fixedLanguageEntrySchema = z.object({
 
 const chooseLanguageEntrySchema = z.object({
 	type: z.literal('choice'),
-	count: z.number().int().positive(),
+	count: positiveSelectionCountSchema,
 	scope: z.enum(['any']).default('any')
 });
 

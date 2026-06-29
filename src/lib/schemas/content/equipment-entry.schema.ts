@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { slugSchema } from './common-content.schema.ts';
+import { slugSchema } from './slug.schema.ts';
 
 const equipmentItemEntrySchema = z.object({
 	type: z.literal('item'),

@@ -352,6 +352,23 @@ describe('content schema examples', () => {
 		expect(result.success).toBe(false);
 	});
 
+	it('rejects invalid proficiency slugs in background entries', () => {
+		const result = backgroundFileSchema.safeParse({
+			schemaVersion: 1,
+			source: 'srd-5-1',
+			contentType: 'background',
+			items: [
+				{
+					slug: 'acolyte',
+					name: 'Acolyte',
+					skillProficiencies: ['animal handling']
+				}
+			]
+		});
+
+		expect(result.success).toBe(false);
+	});
+
 	it('accepts a valid character class entry', () => {
 		const parsed = characterClassFileSchema.parse({
 			schemaVersion: 1,
@@ -409,6 +426,49 @@ describe('content schema examples', () => {
 					hitDie: 12,
 					primaryAbilities: ['luck'],
 					savingThrowProficiencies: ['strength', 'constitution']
+				}
+			]
+		});
+
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects invalid proficiency slugs in character class entries', () => {
+		const result = characterClassFileSchema.safeParse({
+			schemaVersion: 1,
+			source: 'srd-5-1',
+			contentType: 'character-class',
+			items: [
+				{
+					slug: 'barbaro',
+					name: 'Barbaro',
+					hitDie: 12,
+					primaryAbilities: ['strength'],
+					savingThrowProficiencies: ['strength', 'constitution'],
+					armorProficiencies: ['light armor']
+				}
+			]
+		});
+
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects invalid skill choice option slugs in character class entries', () => {
+		const result = characterClassFileSchema.safeParse({
+			schemaVersion: 1,
+			source: 'srd-5-1',
+			contentType: 'character-class',
+			items: [
+				{
+					slug: 'barbaro',
+					name: 'Barbaro',
+					hitDie: 12,
+					primaryAbilities: ['strength'],
+					savingThrowProficiencies: ['strength', 'constitution'],
+					skillChoices: {
+						count: 2,
+						options: ['animal handling']
+					}
 				}
 			]
 		});

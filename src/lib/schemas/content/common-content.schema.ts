@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { gameMechanicsSchema } from './game-mechanics.schema.ts';
+import { slugSchema } from './slug.schema.ts';
 
 export const contentSourceSchema = z.enum(['srd-5-1', 'srd-5-2', 'user-private', 'homebrew']);
 
@@ -17,15 +18,6 @@ export const contentTypeSchema = z.enum([
 	'feat',
 	'monster'
 ]);
-
-export const slugSchema = z
-	.string()
-	.trim()
-	.min(1)
-	.regex(
-		/^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-		'Slug must use lowercase letters, numbers, and hyphens only'
-	);
 
 export const contentBaseFieldsSchema = z.object({
 	slug: slugSchema,
