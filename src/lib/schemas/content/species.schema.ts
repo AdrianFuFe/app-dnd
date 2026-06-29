@@ -1,10 +1,11 @@
 import { z } from 'zod';
 import { contentBaseFieldsSchema, contentFileBaseSchema } from './common-content.schema.ts';
+import { languageEntriesSchema } from './language-entry.schema.ts';
 
 export const speciesItemSchema = contentBaseFieldsSchema.extend({
 	size: z.string().trim().min(1).optional(),
 	baseSpeed: z.number().int().nonnegative().optional(),
-	languages: z.array(z.string().trim().min(1)).default([]),
+	languages: languageEntriesSchema.default([]),
 	subspeciesSlugs: z.array(z.string().trim().min(1)).default([])
 });
 

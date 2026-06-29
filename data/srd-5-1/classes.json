@@ -28,10 +28,16 @@
 				]
 			},
 			"startingEquipment": [
-				"chain-mail",
-				"martial-weapon-and-shield-or-two-martial-weapons",
-				"light-crossbow-and-20-bolts-or-two-handaxes",
-				"dungeoneers-pack-or-explorers-pack"
+				{ "type": "item", "id": "chain-mail" },
+				{
+					"type": "choice",
+					"options": ["martial-weapon-and-shield", "two-martial-weapons"]
+				},
+				{
+					"type": "choice",
+					"options": ["light-crossbow-and-20-bolts", "two-handaxes"]
+				},
+				{ "type": "choice", "options": ["dungeoneers-pack", "explorers-pack"] }
 			],
 			"spellcastingAbility": null,
 			"visibility": "public",
@@ -82,12 +88,23 @@
 				"options": ["history", "insight", "medicine", "persuasion", "religion"]
 			},
 			"startingEquipment": [
-				"mace-or-warhammer-if-proficient",
-				"scale-mail-or-leather-armor-or-chain-mail-if-proficient",
-				"light-crossbow-and-20-bolts-or-any-simple-weapon",
-				"priests-pack-or-explorers-pack",
-				"shield",
-				"holy-symbol"
+				{
+					"type": "choice",
+					"options": ["mace", "warhammer"],
+					"note": "Warhammer requires martial weapon proficiency."
+				},
+				{
+					"type": "choice",
+					"options": ["scale-mail", "leather-armor", "chain-mail"],
+					"note": "Chain mail requires proficiency."
+				},
+				{
+					"type": "choice",
+					"options": ["light-crossbow-and-20-bolts", "any-simple-weapon"]
+				},
+				{ "type": "choice", "options": ["priests-pack", "explorers-pack"] },
+				{ "type": "item", "id": "shield" },
+				{ "type": "item", "id": "holy-symbol" }
 			],
 			"spellcastingAbility": "wisdom",
 			"visibility": "public",

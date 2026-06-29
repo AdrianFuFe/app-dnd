@@ -1,11 +1,13 @@
 import { z } from 'zod';
 import { contentBaseFieldsSchema, contentFileBaseSchema } from './common-content.schema.ts';
+import { equipmentEntriesSchema } from './equipment-entry.schema.ts';
+import { languageEntriesSchema } from './language-entry.schema.ts';
 
 export const backgroundItemSchema = contentBaseFieldsSchema.extend({
 	skillProficiencies: z.array(z.string().trim().min(1)).default([]),
 	toolProficiencies: z.array(z.string().trim().min(1)).default([]),
-	languages: z.array(z.string().trim().min(1)).default([]),
-	equipment: z.array(z.string().trim().min(1)).default([]),
+	languages: languageEntriesSchema.default([]),
+	equipment: equipmentEntriesSchema.default([]),
 	featureName: z.string().trim().min(1).nullable().optional()
 });
 

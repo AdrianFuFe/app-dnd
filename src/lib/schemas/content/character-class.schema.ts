@@ -1,10 +1,15 @@
 import { z } from 'zod';
-import { contentBaseFieldsSchema, contentFileBaseSchema } from './common-content.schema.ts';
+import {
+	contentBaseFieldsSchema,
+	contentFileBaseSchema,
+	slugSchema
+} from './common-content.schema.ts';
+import { equipmentEntriesSchema } from './equipment-entry.schema.ts';
 import { abilitySchema } from './game-mechanics.schema.ts';
 
 const skillChoiceSchema = z.object({
 	count: z.number().int().positive(),
-	options: z.array(z.string().trim().min(1)).min(1)
+	options: z.array(slugSchema).min(1)
 });
 
 const levelProgressionSchema = z.object({
@@ -14,13 +19,13 @@ const levelProgressionSchema = z.object({
 
 export const characterClassItemSchema = contentBaseFieldsSchema.extend({
 	hitDie: z.number().int().positive(),
-	primaryAbilities: z.array(z.string().trim().min(1)).min(1),
-	savingThrowProficiencies: z.array(z.string().trim().min(1)).min(1),
+	primaryAbilities: z.array(abilitySchema).min(1),
+	savingThrowProficiencies: z.array(abilitySchema).min(1),
 	armorProficiencies: z.array(z.string().trim().min(1)).default([]),
 	weaponProficiencies: z.array(z.string().trim().min(1)).default([]),
 	toolProficiencies: z.array(z.string().trim().min(1)).default([]),
 	skillChoices: skillChoiceSchema.optional(),
-	startingEquipment: z.array(z.string().trim().min(1)).default([]),
+	startingEquipment: equipmentEntriesSchema.default([]),
 	spellcastingAbility: abilitySchema.nullable().optional(),
 	progression: z.array(levelProgressionSchema).default([])
 });

@@ -10,7 +10,10 @@
 			"description": "Seed inicial para validar el eje species-subspecies del catalogo. La modelizacion completa de rasgos puede ampliarse mas adelante.",
 			"size": "medium",
 			"baseSpeed": 30,
-			"languages": ["comun", "elfico"],
+			"languages": [
+				{ "type": "fixed", "language": "comun" },
+				{ "type": "fixed", "language": "elfico" }
+			],
 			"subspeciesSlugs": ["high-elf"],
 			"visibility": "public",
 			"mechanics": [
@@ -33,7 +36,10 @@
 			"description": "Seed inicial basada en la documentacion SRD del proyecto. Conviene revisar nombres y redaccion final contra la fuente oficial antes de ampliar el catalogo.",
 			"size": "medium",
 			"baseSpeed": 30,
-			"languages": ["comun"],
+			"languages": [
+				{ "type": "fixed", "language": "comun" },
+				{ "type": "choice", "count": 1, "scope": "any" }
+			],
 			"subspeciesSlugs": [],
 			"visibility": "public",
 			"mechanics": [

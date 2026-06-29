@@ -8,7 +8,7 @@
 			"name": "Heavily Armored",
 			"summary": "Entrenamiento adicional para usar armadura pesada.",
 			"description": "Seed inicial del SRD para disponer de una dote centrada en competencia defensiva y mejora de caracteristica.",
-			"prerequisites": ["medium-armor proficiency"],
+			"prerequisites": ["proficiency:armor:medium-armor"],
 			"visibility": "public",
 			"mechanics": [
 				{ "type": "ability_bonus", "ability": "strength", "value": 1 },

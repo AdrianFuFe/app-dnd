@@ -63,6 +63,7 @@ In that case, it should still name the next recommended block.
   - the repo is ahead of this plan document in character-flow work, and environment separation is now documented
 - next recommended block:
   - `S15 - Expanded Spell And Ability Catalogs`
+  - this is the intended continuation after `S9 - Environment Setup`
 
 ## Session Blocks
 
@@ -339,6 +340,9 @@ In that case, it should still name the next recommended block.
     - content validation scripts if changed
 - closure criterion:
     - more catalog entities such as `spells` and ability-related content are validated and available for future UI wiring
+- current repo note:
+    - the repo already includes initial `spells` and `feats` catalog files plus validation and seed-generation support
+    - use this block to continue expanding that catalog surface or to close any remaining gaps before moving on
 
 ### S16 - Structured Character Sections
 
@@ -367,7 +371,6 @@ In that case, it should still name the next recommended block.
 - each block should fit comfortably in one focused chat
 - if a block grows during implementation, split it rather than stretching the session
 - recommended implementation order from the current project state:
-    - `S16 - Structured Character Sections`
     - `S15 - Expanded Spell And Ability Catalogs`
     - `S10 - Runtime Integration Check`
     - `S12 - Role Enforcement Foundations`

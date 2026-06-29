@@ -10,14 +10,14 @@
 			"description": "Seed inicial del SRD para disponer de un trasfondo reutilizable en formularios y futuras pantallas de contenido.",
 			"skillProficiencies": ["insight", "religion"],
 			"toolProficiencies": [],
-			"languages": ["choose:any:2"],
+			"languages": [{ "type": "choice", "count": 2, "scope": "any" }],
 			"equipment": [
-				"holy-symbol",
-				"prayer-book-or-prayer-wheel",
-				"5-sticks-of-incense",
-				"vestments",
-				"common-clothes",
-				"belt-pouch-15-gp"
+				{ "type": "item", "id": "holy-symbol" },
+				{ "type": "choice", "options": ["prayer-book", "prayer-wheel"] },
+				{ "type": "item", "id": "sticks-of-incense", "quantity": 5 },
+				{ "type": "item", "id": "vestments" },
+				{ "type": "item", "id": "common-clothes" },
+				{ "type": "item", "id": "belt-pouch", "note": "Contains 15 gp." }
 			],
 			"featureName": "Shelter of the Faithful",
 			"visibility": "public",
@@ -40,11 +40,11 @@
 			"toolProficiencies": ["gaming-set", "vehicles-land"],
 			"languages": [],
 			"equipment": [
-				"insignia-of-rank",
-				"trophy-from-a-fallen-enemy",
-				"bone-dice-or-cards",
-				"common-clothes",
-				"belt-pouch-10-gp"
+				{ "type": "item", "id": "insignia-of-rank" },
+				{ "type": "item", "id": "trophy-from-a-fallen-enemy" },
+				{ "type": "choice", "options": ["bone-dice", "cards"] },
+				{ "type": "item", "id": "common-clothes" },
+				{ "type": "item", "id": "belt-pouch", "note": "Contains 10 gp." }
 			],
 			"featureName": "Military Rank",
 			"visibility": "public",

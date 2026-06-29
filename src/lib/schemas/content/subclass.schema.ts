@@ -3,6 +3,7 @@ import { contentBaseFieldsSchema, contentFileBaseSchema } from './common-content
 
 const subclassFeatureSchema = z.object({
 	level: z.number().int().min(1).max(20),
+	featureId: z.string().trim().min(1).optional(),
 	name: z.string().trim().min(1),
 	summary: z.string().trim().min(1).nullable().optional(),
 	description: z.string().trim().min(1).nullable().optional(),

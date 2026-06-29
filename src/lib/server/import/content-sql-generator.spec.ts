@@ -18,5 +18,9 @@ describe('generateSrdCatalogSeedSql', () => {
 		expect(sql).toContain("'acolyte'");
 		expect(sql).toContain("'bless'");
 		expect(sql).toContain("'heavily-armored'");
+		expect(sql).toContain('"type":"choice"');
+		expect(sql).toContain('"quantity":5');
+		expect(sql).toContain("array['comun', 'elfico']::text[]");
+		expect(sql).toContain("array['choose:any:2']::text[]");
 	});
 });

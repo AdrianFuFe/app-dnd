@@ -3,6 +3,13 @@ import path from 'node:path';
 
 type Visibility = 'private' | 'campaign' | 'shared' | 'public';
 
+interface LanguageEntry {
+	type: 'fixed' | 'choice';
+	language?: string;
+	count?: number;
+	scope?: 'any';
+}
+
 interface SpeciesItem {
 	slug: string;
 	name: string;
@@ -10,7 +17,7 @@ interface SpeciesItem {
 	description?: string | null;
 	size?: string;
 	baseSpeed?: number;
-	languages?: string[];
+	languages?: LanguageEntry[];
 	subspeciesSlugs?: string[];
 	visibility?: Visibility;
 	mechanics?: unknown[];
@@ -62,8 +69,8 @@ interface BackgroundItem {
 	name: string;
 	skillProficiencies?: string[];
 	toolProficiencies?: string[];
-	languages?: string[];
-	equipment?: string[];
+	languages?: LanguageEntry[];
+	equipment?: unknown[];
 	featureName?: string | null;
 	summary?: string | null;
 	description?: string | null;
@@ -125,6 +132,16 @@ function sqlTextArray(values: string[] | undefined): string {
 	}
 
 	return `array[${safeValues.map((value) => sqlString(value)).join(', ')}]::text[]`;
+}
+
+function languageEntriesToTokens(entries: LanguageEntry[] | undefined): string[] {
+	return (entries ?? []).map((entry) => {
+		if (entry.type === 'fixed' && entry.language) {
+			return entry.language;
+		}
+
+		return `choose:${entry.scope ?? 'any'}:${entry.count ?? 1}`;
+	});
 }
 
 function sqlJson(value: unknown): string {
@@ -199,7 +216,7 @@ export function generateSrdCatalogSeedSql(): string {
 				sqlString(item.description ?? null),
 				sqlString(item.size ?? null),
 				item.baseSpeed ?? 'null',
-				sqlTextArray(item.languages),
+				sqlTextArray(languageEntriesToTokens(item.languages)),
 				sqlTextArray(item.subspeciesSlugs),
 				sqlJson(item.mechanics ?? []),
 				'true'
@@ -346,8 +363,8 @@ export function generateSrdCatalogSeedSql(): string {
 				sqlString(item.name),
 				sqlTextArray(item.skillProficiencies),
 				sqlTextArray(item.toolProficiencies),
-				sqlTextArray(item.languages),
-				sqlTextArray(item.equipment),
+				sqlTextArray(languageEntriesToTokens(item.languages)),
+				sqlJson(item.equipment ?? []),
 				sqlString(item.featureName ?? null),
 				sqlString(item.summary ?? null),
 				sqlString(item.description ?? null),

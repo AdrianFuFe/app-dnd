@@ -26,6 +26,7 @@
 			"features": [
 				{
 					"level": 1,
+					"featureId": "bonus-proficiency",
 					"name": "Bonus Proficiency",
 					"summary": "Ganas competencia con armadura pesada.",
 					"mechanics": [
@@ -38,6 +39,7 @@
 				},
 				{
 					"level": 1,
+					"featureId": "disciple-of-life",
 					"name": "Disciple of Life",
 					"summary": "Tus conjuros de curacion recuperan puntos de golpe adicionales.",
 					"mechanics": [
@@ -49,6 +51,7 @@
 				},
 				{
 					"level": 2,
+					"featureId": "preserve-life",
 					"name": "Channel Divinity: Preserve Life",
 					"summary": "Canalizas energia curativa para repartir puntos de golpe entre criaturas cercanas.",
 					"mechanics": [
