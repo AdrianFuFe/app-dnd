@@ -48,6 +48,7 @@ In that case, it should still name the next recommended block.
     - `S6 - Character SQL Slice`
     - `S7 - Character Creation UI`
     - `S8 - Content Catalog Wiring` for `species` and `class`
+    - `S9 - Environment Setup`
     - `S11 - Character Create/Edit E2E`
 - effectively completed beyond the original status notes:
     - expanded catalog wiring now also covers `backgrounds`, `subspecies`, and `subclasses`
@@ -56,11 +57,10 @@ In that case, it should still name the next recommended block.
     - real character CRUD exists
     - spell workflows are still free-text
     - permissions exist mainly as schema and RLS foundation, not as a full admin feature set
-    - environment separation and deployment workflow are not yet formalized
 - current project point:
   - the MVP app shell and first character workflow are working
   - structured character sections now cover `inventory`, `attacks`, and `spells`
-  - the repo is ahead of this plan document in character-flow work, but behind it in environment and operator workflow formalization
+  - the repo is ahead of this plan document in character-flow work, and environment separation is now documented
 - next recommended block:
   - `S15 - Expanded Spell And Ability Catalogs`
 
@@ -369,7 +369,6 @@ In that case, it should still name the next recommended block.
 - recommended implementation order from the current project state:
     - `S16 - Structured Character Sections`
     - `S15 - Expanded Spell And Ability Catalogs`
-    - `S9 - Environment Setup`
     - `S10 - Runtime Integration Check`
     - `S12 - Role Enforcement Foundations`
     - `S13 - Admin And Test User Workflow`

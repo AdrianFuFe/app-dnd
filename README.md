@@ -17,9 +17,23 @@
 1. Install dependencies with `pnpm install`
 2. Copy `.env.example` to `.env`
 3. Fill in `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` from the dedicated `dev` Supabase project
-4. Run `pnpm dev`
+4. Leave `APP_E2E=false` for normal development
+5. Run `pnpm dev`
 
-Use a separate Supabase project for local development. Do not point local `.env` values at production.
+Use a separate Supabase project for local development. Do not point local `.env` values at production, and do not reuse the production project for day-to-day development.
+
+## Deployment Environment
+
+Production should use the same variable names as local development, but with values from the separate `prod` Supabase project configured in the hosting platform.
+
+For production:
+
+- set `PUBLIC_SUPABASE_URL` to the `prod` project URL
+- set `PUBLIC_SUPABASE_ANON_KEY` to the `prod` project anon key
+- set `SUPABASE_SERVICE_ROLE_KEY` only if server-only operator tooling needs it
+- keep `APP_E2E` unset or `false`
+
+Do not copy a local `.env` file into production.
 
 ## Environment Model
 
@@ -84,5 +98,5 @@ For admin and permission-level testing, see [docs/11-admin-and-test-user-workflo
 ## Supabase Notes
 
 - Browser and request-scoped app access use the public Supabase URL and anon key
-- The service-role key is intentionally optional in today’s runtime because the current MVP flow does not require admin-only server actions on every request
+- The service-role key is intentionally optional in today's runtime because the current MVP flow does not require admin-only server actions on every request
 - Production secrets should be configured in the deployment platform, not committed to the repo
