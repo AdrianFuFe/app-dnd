@@ -8,6 +8,11 @@ import type {
 	CharacterSubclassOption,
 	CharacterSubspeciesOption
 } from '$lib/types/content/character-catalog';
+import type {
+	ExpandedContentCatalog,
+	FeatCatalogEntry,
+	SpellCatalogEntry
+} from '$lib/types/content/expanded-content-catalog';
 import type { CharacterCreateInput } from '$lib/types/domain/character';
 
 type E2EMockSupabaseClient = SupabaseClient<Database> & {
@@ -202,6 +207,57 @@ const e2eCatalog: CharacterCreationCatalog = {
 	]
 };
 
+const e2eExpandedContentCatalog: ExpandedContentCatalog = {
+	spells: [
+		{
+			id: 'spell-e2e-1',
+			slug: 'bless',
+			name: 'Bless',
+			level: 1,
+			school: 'enchantment',
+			castingTime: '1 action',
+			range: '30 feet',
+			duration: 'Up to 1 minute',
+			classSlugs: ['cleric'],
+			summary: 'Up to three creatures add 1d4 to attacks and saves.',
+			concentration: true,
+			ritual: false
+		},
+		{
+			id: 'spell-e2e-2',
+			slug: 'magic-missile',
+			name: 'Magic Missile',
+			level: 1,
+			school: 'evocation',
+			castingTime: '1 action',
+			range: '120 feet',
+			duration: 'Instantaneous',
+			classSlugs: ['wizard'],
+			summary: 'Force darts hit automatically and can split between targets.',
+			concentration: false,
+			ritual: false
+		}
+	],
+	feats: [
+		{
+			id: 'feat-e2e-1',
+			slug: 'heavily-armored',
+			name: 'Heavily Armored',
+			prerequisites: ['proficiency:armor:medium-armor'],
+			summary: 'Gain heavy armor training and improve Strength.',
+			description: 'Useful for builds that want stronger frontline defenses.'
+		},
+		{
+			id: 'feat-e2e-2',
+			slug: 'resilient-wisdom',
+			name: 'Resilient (Wisdom)',
+			prerequisites: [],
+			summary: 'Improve Wisdom and gain Wisdom saving throw proficiency.',
+			description: 'A simple defensive feat for casters and support characters.'
+		}
+	]
+};
+
 const state = {
 	characters: [] as E2ECharacterRecord[],
 	nextCharacterSequence: 2,
@@ -282,6 +338,13 @@ export function listE2ECatalog(): CharacterCreationCatalog {
 		classOptions: e2eCatalog.classOptions.map((option) => ({ ...option })),
 		subclassOptions: e2eCatalog.subclassOptions.map((option) => ({ ...option })),
 		backgroundOptions: e2eCatalog.backgroundOptions.map((option) => ({ ...option }))
+	};
+}
+
+export function listE2EExpandedContentCatalog(): ExpandedContentCatalog {
+	return {
+		spells: e2eExpandedContentCatalog.spells.map(cloneSpellCatalogEntry),
+		feats: e2eExpandedContentCatalog.feats.map(cloneFeatCatalogEntry)
 	};
 }
 
@@ -392,4 +455,18 @@ function nextUpdatedAt(): string {
 	const updatedAt = new Date(Date.UTC(2026, 5, 25, 9, state.nextUpdatedMinute, 0)).toISOString();
 	state.nextUpdatedMinute += 1;
 	return updatedAt;
+}
+
+function cloneSpellCatalogEntry(spell: SpellCatalogEntry): SpellCatalogEntry {
+	return {
+		...spell,
+		classSlugs: [...spell.classSlugs]
+	};
+}
+
+function cloneFeatCatalogEntry(feat: FeatCatalogEntry): FeatCatalogEntry {
+	return {
+		...feat,
+		prerequisites: [...feat.prerequisites]
+	};
 }

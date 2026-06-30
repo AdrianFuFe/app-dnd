@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { listCharacterCreationCatalog, resolveCharacterCreationCatalogSelections } from './catalog';
+import {
+	listCharacterCreationCatalog,
+	listExpandedContentCatalog,
+	resolveCharacterCreationCatalogSelections
+} from './catalog';
 
 describe('listCharacterCreationCatalog', () => {
 	it('loads structured catalog options for character creation', async () => {
@@ -330,5 +334,89 @@ describe('resolveCharacterCreationCatalogSelections', () => {
 				speciesId: 'missing-species'
 			})
 		).rejects.toThrow('Please choose a valid species from the catalog.');
+	});
+});
+
+describe('listExpandedContentCatalog', () => {
+	it('loads spell and feat entries for shared catalog browsing', async () => {
+		const spellNameOrder = vi.fn().mockResolvedValue({
+			data: [
+				{
+					id: 'spell-1',
+					slug: 'bless',
+					name: 'Bless',
+					level: 1,
+					school: 'enchantment',
+					casting_time: '1 action',
+					range_text: '30 feet',
+					duration: 'Up to 1 minute',
+					class_slugs: ['clerigo'],
+					summary: 'Buff allies.',
+					concentration: true,
+					ritual: false
+				}
+			],
+			error: null
+		});
+		const spellLevelOrder = vi.fn().mockReturnValue({ order: spellNameOrder });
+		const spellSelect = vi.fn().mockReturnValue({ order: spellLevelOrder });
+
+		const featOrder = vi.fn().mockResolvedValue({
+			data: [
+				{
+					id: 'feat-1',
+					slug: 'heavily-armored',
+					name: 'Heavily Armored',
+					prerequisites: ['proficiency:armor:medium-armor'],
+					summary: 'Gain heavy armor training.',
+					description: 'Boosts durability for front-line builds.'
+				}
+			],
+			error: null
+		});
+		const featSelect = vi.fn().mockReturnValue({ order: featOrder });
+
+		const from = vi.fn((table: string) => {
+			if (table === 'spells') {
+				return { select: spellSelect };
+			}
+
+			if (table === 'feats') {
+				return { select: featSelect };
+			}
+
+			throw new Error(`Unexpected table ${table}`);
+		});
+
+		const catalog = await listExpandedContentCatalog({ from } as never);
+
+		expect(catalog).toEqual({
+			spells: [
+				{
+					id: 'spell-1',
+					slug: 'bless',
+					name: 'Bless',
+					level: 1,
+					school: 'enchantment',
+					castingTime: '1 action',
+					range: '30 feet',
+					duration: 'Up to 1 minute',
+					classSlugs: ['clerigo'],
+					summary: 'Buff allies.',
+					concentration: true,
+					ritual: false
+				}
+			],
+			feats: [
+				{
+					id: 'feat-1',
+					slug: 'heavily-armored',
+					name: 'Heavily Armored',
+					prerequisites: ['proficiency:armor:medium-armor'],
+					summary: 'Gain heavy armor training.',
+					description: 'Boosts durability for front-line builds.'
+				}
+			]
+		});
 	});
 });

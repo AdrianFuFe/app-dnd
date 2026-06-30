@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
 	getE2EBackgroundOption,
 	getE2EClassOption,
+	listE2EExpandedContentCatalog,
 	getE2ESpeciesOption,
 	getE2ESubclassOption,
 	getE2ESubspeciesOption,
@@ -17,6 +18,11 @@ import type {
 	CharacterSubclassOption,
 	CharacterSubspeciesOption
 } from '$lib/types/content/character-catalog';
+import type {
+	ExpandedContentCatalog,
+	FeatCatalogEntry,
+	SpellCatalogEntry
+} from '$lib/types/content/expanded-content-catalog';
 
 type SpeciesRow = {
 	id: string;
@@ -57,6 +63,30 @@ type BackgroundRow = {
 	summary: string | null;
 };
 
+type SpellRow = {
+	id: string;
+	slug: string;
+	name: string;
+	level: number;
+	school: string;
+	casting_time: string | null;
+	range_text: string | null;
+	duration: string | null;
+	class_slugs: string[];
+	summary: string | null;
+	concentration: boolean;
+	ritual: boolean;
+};
+
+type FeatRow = {
+	id: string;
+	slug: string;
+	name: string;
+	prerequisites: string[];
+	summary: string | null;
+	description: string | null;
+};
+
 export async function listCharacterCreationCatalog(
 	supabase: SupabaseClient<Database>
 ): Promise<CharacterCreationCatalog> {
@@ -79,6 +109,24 @@ export async function listCharacterCreationCatalog(
 		classOptions,
 		subclassOptions,
 		backgroundOptions
+	};
+}
+
+export async function listExpandedContentCatalog(
+	supabase: SupabaseClient<Database>
+): Promise<ExpandedContentCatalog> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		return listE2EExpandedContentCatalog();
+	}
+
+	const [spells, feats] = await Promise.all([
+		listSpellCatalogEntries(supabase),
+		listFeatCatalogEntries(supabase)
+	]);
+
+	return {
+		spells,
+		feats
 	};
 }
 
@@ -424,5 +472,84 @@ function mapBackgroundOption(
 		slug: background.slug,
 		name: background.name,
 		summary: background.summary
+	};
+}
+
+async function listSpellCatalogEntries(
+	supabase: SupabaseClient<Database>
+): Promise<SpellCatalogEntry[]> {
+	const { data, error } = await supabase
+		.from('spells')
+		.select(
+			'id, slug, name, level, school, casting_time, range_text, duration, class_slugs, summary, concentration, ritual'
+		)
+		.order('level', { ascending: true })
+		.order('name', { ascending: true });
+
+	if (error) {
+		throw new Error('Failed to load spell catalog entries.');
+	}
+
+	return data.map(mapSpellCatalogEntry);
+}
+
+async function listFeatCatalogEntries(
+	supabase: SupabaseClient<Database>
+): Promise<FeatCatalogEntry[]> {
+	const { data, error } = await supabase
+		.from('feats')
+		.select('id, slug, name, prerequisites, summary, description')
+		.order('name', { ascending: true });
+
+	if (error) {
+		throw new Error('Failed to load feat catalog entries.');
+	}
+
+	return data.map(mapFeatCatalogEntry);
+}
+
+function mapSpellCatalogEntry(
+	spell: Pick<
+		SpellRow,
+		| 'id'
+		| 'slug'
+		| 'name'
+		| 'level'
+		| 'school'
+		| 'casting_time'
+		| 'range_text'
+		| 'duration'
+		| 'class_slugs'
+		| 'summary'
+		| 'concentration'
+		| 'ritual'
+	>
+): SpellCatalogEntry {
+	return {
+		id: spell.id,
+		slug: spell.slug,
+		name: spell.name,
+		level: spell.level,
+		school: spell.school,
+		castingTime: spell.casting_time,
+		range: spell.range_text,
+		duration: spell.duration,
+		classSlugs: spell.class_slugs,
+		summary: spell.summary,
+		concentration: spell.concentration,
+		ritual: spell.ritual
+	};
+}
+
+function mapFeatCatalogEntry(
+	feat: Pick<FeatRow, 'id' | 'slug' | 'name' | 'prerequisites' | 'summary' | 'description'>
+): FeatCatalogEntry {
+	return {
+		id: feat.id,
+		slug: feat.slug,
+		name: feat.name,
+		prerequisites: feat.prerequisites,
+		summary: feat.summary,
+		description: feat.description
 	};
 }
