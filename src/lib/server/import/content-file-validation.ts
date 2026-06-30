@@ -141,6 +141,66 @@ const knownEquipmentReferenceIds = new Set([
 	'warhammer'
 ]);
 
+const knownSkillProficiencySlugs = new Set([
+	'acrobatics',
+	'animal-handling',
+	'arcana',
+	'athletics',
+	'deception',
+	'history',
+	'insight',
+	'intimidation',
+	'investigation',
+	'medicine',
+	'nature',
+	'perception',
+	'performance',
+	'persuasion',
+	'religion',
+	'sleight-of-hand',
+	'stealth',
+	'survival'
+]);
+
+const knownArmorProficiencySlugs = new Set([
+	'light-armor',
+	'medium-armor',
+	'heavy-armor',
+	'all-armor',
+	'shields'
+]);
+
+const knownWeaponProficiencySlugs = new Set(['simple-weapons', 'martial-weapons']);
+
+const knownSavingThrowProficiencySlugs = new Set([
+	'strength',
+	'dexterity',
+	'constitution',
+	'intelligence',
+	'wisdom',
+	'charisma'
+]);
+
+function isKnownFeatProficiencyReference(proficiencyType: string, slug: string): boolean {
+	if (proficiencyType === 'skill') {
+		return knownSkillProficiencySlugs.has(slug);
+	}
+
+	if (proficiencyType === 'armor') {
+		return knownArmorProficiencySlugs.has(slug);
+	}
+
+	if (proficiencyType === 'weapon') {
+		return knownWeaponProficiencySlugs.has(slug);
+	}
+
+	if (proficiencyType === 'saving_throw') {
+		return knownSavingThrowProficiencySlugs.has(slug);
+	}
+
+	return true;
+}
+
 function validateEquipmentReferences(
 	result: ContentValidationResult,
 	filePath: string,
@@ -603,6 +663,21 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 					filePath,
 					message: `Unknown feat slug "${slug}" referenced by feat prerequisite in "${feat.slug}"`
 				});
+			}
+
+			if (kind === 'proficiency') {
+				const [, proficiencyType, proficiencySlug] = prerequisite.split(':', 3);
+
+				if (
+					proficiencyType &&
+					proficiencySlug &&
+					!isKnownFeatProficiencyReference(proficiencyType, proficiencySlug)
+				) {
+					result.issues.push({
+						filePath,
+						message: `Unknown ${proficiencyType} proficiency slug "${proficiencySlug}" referenced by feat prerequisite in "${feat.slug}"`
+					});
+				}
 			}
 		}
 	}

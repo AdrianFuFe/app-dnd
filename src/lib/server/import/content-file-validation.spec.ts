@@ -1064,6 +1064,37 @@ describe('validateContentDataDirectory', () => {
 		expect(result.issues).toHaveLength(0);
 	});
 
+	it('accepts known proficiency references in feat prerequisites', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'feats.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'feat',
+				items: [
+					{
+						slug: 'dote-prueba',
+						name: 'Dote de Prueba',
+						prerequisites: [
+							'proficiency:skill:acrobatics',
+							'proficiency:armor:medium-armor',
+							'proficiency:weapon:simple-weapons',
+							'proficiency:saving_throw:wisdom',
+							'proficiency:tool:artisan-tools'
+						]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(0);
+	});
+
 	it('accepts matching class spellcasting ability and spellcasting mechanics', () => {
 		const tempDirectoryPath = createTemporaryDataDirectory();
 		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
@@ -1127,6 +1158,48 @@ describe('validateContentDataDirectory', () => {
 		expect(result.issues[2]?.message).toContain('Unknown subspecies slug "high-elf"');
 		expect(result.issues[3]?.message).toContain('Unknown spell slug "bless"');
 		expect(result.issues[4]?.message).toContain('Unknown feat slug "resilient-wisdom"');
+	});
+
+	it('reports unknown proficiency references from feat prerequisites', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'feats.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'feat',
+				items: [
+					{
+						slug: 'dote-prueba',
+						name: 'Dote de Prueba',
+						prerequisites: [
+							'proficiency:skill:animal-hndling',
+							'proficiency:armor:medum-armor',
+							'proficiency:weapon:martial-weapon',
+							'proficiency:saving_throw:luck'
+						]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(4);
+		expect(result.issues[0]?.message).toContain(
+			'Unknown skill proficiency slug "animal-hndling"'
+		);
+		expect(result.issues[1]?.message).toContain(
+			'Unknown armor proficiency slug "medum-armor"'
+		);
+		expect(result.issues[2]?.message).toContain(
+			'Unknown weapon proficiency slug "martial-weapon"'
+		);
+		expect(result.issues[3]?.message).toContain(
+			'Unknown saving_throw proficiency slug "luck"'
+		);
 	});
 
 	it('reports missing subspecies references from species', () => {
