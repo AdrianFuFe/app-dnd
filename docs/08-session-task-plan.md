@@ -50,9 +50,12 @@ In that case, it should still name the next recommended block.
     - `S8 - Content Catalog Wiring` for `species` and `class`
     - `S9 - Environment Setup`
     - `S11 - Character Create/Edit E2E`
+    - `S12 - Role Enforcement Foundations`
+    - `S13 - Admin And Test User Workflow`
 - effectively completed beyond the original status notes:
     - expanded catalog wiring now also covers `backgrounds`, `subspecies`, and `subclasses`
     - `inventory` already has a structured workflow with child-table persistence
+    - admin/test-user operator tooling is implemented through `scripts/create-test-user.ts`, `scripts/manage-user-role.ts`, and `docs/11-admin-and-test-user-workflow.md`
 - implemented but still intentionally shallow:
     - real character CRUD exists
     - spell workflows are still free-text
@@ -63,8 +66,7 @@ In that case, it should still name the next recommended block.
   - the repo is ahead of this plan document in character-flow work, and environment separation is now documented
   - runtime integration behavior is now documented in `README.md` and `docs/10-runtime-integration-check.md`, with request-time status checks in `src/lib/server/runtime/integration.ts`
 - next recommended block:
-  - `S12 - Role Enforcement Foundations`
-  - `S13 - Admin And Test User Workflow`
+  - `S15 - Expanded Spell And Ability Catalogs`
 
 ## Session Blocks
 
