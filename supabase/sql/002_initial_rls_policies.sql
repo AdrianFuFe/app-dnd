@@ -71,8 +71,14 @@ create policy "profiles_update_own"
 on profiles
 for update
 to authenticated
-using (id = auth.uid())
-with check (id = auth.uid());
+using (
+	id = auth.uid()
+	or public.has_global_role('admin')
+)
+with check (
+	id = auth.uid()
+	or public.has_global_role('admin')
+);
 
 create policy "species_select_visible"
 on species

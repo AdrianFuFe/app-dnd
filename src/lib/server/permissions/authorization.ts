@@ -5,8 +5,10 @@ import {
 	GLOBAL_ROLE_CAPABILITIES,
 	GLOBAL_ROLE_LABELS,
 	GLOBAL_ROLE_RANK,
+	getPermissionScopePolicy,
 	type AuthorizationContext,
 	type GlobalRole,
+	type PermissionScope,
 	type RoleCapability
 } from '$lib/types/permissions/permissions';
 
@@ -30,6 +32,15 @@ export function hasCapability(
 	capability: RoleCapability
 ): boolean {
 	return context.capabilities.includes(capability);
+}
+
+export function hasPermissionScopeAccess(
+	context: Pick<AuthorizationContext, 'globalRole' | 'capabilities'>,
+	scope: PermissionScope
+): boolean {
+	const policy = getPermissionScopePolicy(scope);
+
+	return hasCapability(context, policy.capability) && policy.allowedRoles.includes(context.globalRole);
 }
 
 export async function getAuthorizationContext(
@@ -66,6 +77,18 @@ export function requireCapability(
 ): AuthorizationContext {
 	if (!hasCapability(context, capability)) {
 		throw httpError(403, `Missing required capability: ${capability}.`);
+	}
+
+	return context;
+}
+
+export function requirePermissionScopeAccess(
+	context: AuthorizationContext,
+	scope: PermissionScope
+): AuthorizationContext {
+	if (!hasPermissionScopeAccess(context, scope)) {
+		const policy = getPermissionScopePolicy(scope);
+		throw httpError(403, `Missing permission for ${scope}: ${policy.description}`);
 	}
 
 	return context;

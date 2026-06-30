@@ -61,9 +61,10 @@ In that case, it should still name the next recommended block.
   - the MVP app shell and first character workflow are working
   - structured character sections now cover `inventory`, `attacks`, and `spells`
   - the repo is ahead of this plan document in character-flow work, and environment separation is now documented
+  - runtime integration behavior is now documented in `README.md` and `docs/10-runtime-integration-check.md`, with request-time status checks in `src/lib/server/runtime/integration.ts`
 - next recommended block:
-  - `S15 - Expanded Spell And Ability Catalogs`
-  - this is the intended continuation after `S9 - Environment Setup`
+  - `S12 - Role Enforcement Foundations`
+  - `S13 - Admin And Test User Workflow`
 
 ## Session Blocks
 
@@ -245,6 +246,8 @@ In that case, it should still name the next recommended block.
     - it is clear how to run the app in mock mode vs live Supabase mode
     - missing integration steps are documented or removed
     - a developer can tell what is testable today without guessing
+- current repo note:
+    - this block is effectively complete in the current codebase through `README.md`, `docs/10-runtime-integration-check.md`, `src/hooks.server.ts`, and `src/lib/server/runtime/integration.ts`
 
 ### S11 - Character Create/Edit E2E
 
@@ -371,7 +374,5 @@ In that case, it should still name the next recommended block.
 - each block should fit comfortably in one focused chat
 - if a block grows during implementation, split it rather than stretching the session
 - recommended implementation order from the current project state:
-    - `S15 - Expanded Spell And Ability Catalogs`
-    - `S10 - Runtime Integration Check`
     - `S12 - Role Enforcement Foundations`
     - `S13 - Admin And Test User Workflow`

@@ -4,7 +4,9 @@ import {
 	getAuthorizationContext,
 	hasCapability,
 	hasGlobalRole,
+	hasPermissionScopeAccess,
 	requireCapability,
+	requirePermissionScopeAccess,
 	requireGlobalRole
 } from './authorization';
 
@@ -110,6 +112,18 @@ describe('role enforcement helpers', () => {
 		expect(hasCapability(context, 'manage_system_content')).toBe(false);
 	});
 
+	it('checks scope access from the shared permission policy', () => {
+		expect(hasPermissionScopeAccess(createAuthorizationContext('user-1', 'user'), 'shared_content')).toBe(
+			false
+		);
+		expect(
+			hasPermissionScopeAccess(createAuthorizationContext('user-2', 'content_editor'), 'shared_content')
+		).toBe(true);
+		expect(hasPermissionScopeAccess(createAuthorizationContext('user-3', 'admin'), 'system_content')).toBe(
+			true
+		);
+	});
+
 	it('throws 403 for missing roles or capabilities', () => {
 		const context = createAuthorizationContext('user-1', 'user');
 
@@ -119,6 +133,11 @@ describe('role enforcement helpers', () => {
 			})
 		);
 		expect(() => requireCapability(context, 'manage_system_content')).toThrow(
+			expect.objectContaining({
+				status: 403
+			})
+		);
+		expect(() => requirePermissionScopeAccess(context, 'user_role_administration')).toThrow(
 			expect.objectContaining({
 				status: 403
 			})
