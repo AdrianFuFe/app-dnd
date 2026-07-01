@@ -1,4 +1,9 @@
 import { z } from 'zod';
+import {
+	damageTypeSchema,
+	isKnownProficiencySlug,
+	languageSlugSchema
+} from './catalog-vocabularies.schema.ts';
 import { positiveSelectionCountSchema, slugOptionsSchema } from './selection.schema.ts';
 import { slugSchema } from './slug.schema.ts';
 
@@ -38,7 +43,7 @@ export const gameMechanicSchema = z.discriminatedUnion('type', [
 	z.object({
 		type: z.literal('language'),
 		mode: z.literal('fixed'),
-		language: slugSchema
+		language: languageSlugSchema
 	}),
 	z.object({
 		type: z.literal('choose_language'),
@@ -48,16 +53,34 @@ export const gameMechanicSchema = z.discriminatedUnion('type', [
 		type: z.literal('proficiency'),
 		proficiencyType: proficiencyTypeSchema,
 		value: slugSchema
+	}).superRefine((value, context) => {
+		if (!isKnownProficiencySlug(value.proficiencyType, value.value)) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ['value'],
+				message: `Unknown ${value.proficiencyType} proficiency slug`
+			});
+		}
 	}),
 	z.object({
 		type: z.literal('choose_proficiency'),
 		proficiencyType: z.enum(['skill', 'tool']),
 		count: positiveSelectionCountSchema,
 		options: slugOptionsSchema
+	}).superRefine((value, context) => {
+		for (const [index, option] of value.options.entries()) {
+			if (!isKnownProficiencySlug(value.proficiencyType, option)) {
+				context.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['options', index],
+					message: `Unknown ${value.proficiencyType} proficiency slug`
+				});
+			}
+		}
 	}),
 	z.object({
 		type: z.literal('resistance'),
-		damageType: z.string().trim().min(1)
+		damageType: damageTypeSchema
 	}),
 	z.object({
 		type: z.literal('spell_grant'),

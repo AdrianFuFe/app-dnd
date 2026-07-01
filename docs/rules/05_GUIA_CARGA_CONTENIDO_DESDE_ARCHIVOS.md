@@ -27,6 +27,8 @@ data/
     subclass.template.json
     background.template.json
     spell.template.json
+    feat.template.json
+    equipment.template.json
 ```
 
 ## Regla importante
@@ -101,6 +103,8 @@ src/lib/schemas/content/
   class.schema.ts
   spell.schema.ts
   background.schema.ts
+  feat.schema.ts
+  equipment.schema.ts
 ```
 
 ## Reglas para importar contenido faltante del Manual

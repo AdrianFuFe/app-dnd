@@ -1,10 +1,10 @@
 import { z } from 'zod';
-import { slugSchema } from './slug.schema.ts';
+import { languageSlugSchema } from './catalog-vocabularies.schema.ts';
 import { positiveSelectionCountSchema } from './selection.schema.ts';
 
 const fixedLanguageEntrySchema = z.object({
 	type: z.literal('fixed'),
-	language: slugSchema
+	language: languageSlugSchema
 });
 
 const chooseLanguageEntrySchema = z.object({

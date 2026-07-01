@@ -25,7 +25,7 @@ describe('validateContentDataDirectory', () => {
 		const result = validateContentDataDirectory(dataDirectoryPath);
 
 		expect(result.issues).toHaveLength(0);
-		expect(result.validFiles).toHaveLength(13);
+		expect(result.validFiles).toHaveLength(14);
 	});
 
 	it('reports unsupported content types', () => {
@@ -257,6 +257,99 @@ describe('validateContentDataDirectory', () => {
 		expect(result.issues[0]?.message).toContain('Unknown class slug "clerigo"');
 	});
 
+	it('reports schema validation issues for invalid spell schools and component metadata', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'spells.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'spell',
+				items: [
+					{
+						slug: 'orbe-de-vacio',
+						name: 'Orbe de Vacio',
+						level: 2,
+						school: 'void',
+						components: 'V, focus',
+						materials: 'A crystal lens.'
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(1);
+		expect(result.issues[0]?.message).toContain('items.0.school: Invalid option');
+		expect(result.issues[0]?.message).toContain(
+			'items.0.components.1: Use spell components as a comma-separated list of V, S, and M'
+		);
+	});
+
+	it('reports schema validation issues when spell materials text is present without M components', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'spells.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'spell',
+				items: [
+					{
+						slug: 'campanas-ardientes',
+						name: 'Campanas Ardientes',
+						level: 1,
+						school: 'evocation',
+						components: 'V, S',
+						materials: 'A tiny silver bell.'
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(1);
+		expect(result.issues[0]?.message).toContain(
+			'items.0.materials: Materials text is only allowed when spell components include M'
+		);
+	});
+
+	it('reports schema validation issues when spell materials are missing for M components', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'spells.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'spell',
+				items: [
+					{
+						slug: 'campanas-ardientes',
+						name: 'Campanas Ardientes',
+						level: 1,
+						school: 'evocation',
+						components: 'V, M'
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(1);
+		expect(result.issues[0]?.message).toContain(
+			'items.0.materials: Provide materials text when spell components include M'
+		);
+	});
+
 	it('reports missing feature references from class mechanics', () => {
 		const tempDirectoryPath = createTemporaryDataDirectory();
 		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
@@ -327,6 +420,61 @@ describe('validateContentDataDirectory', () => {
 		);
 		expect(result.issues[1]?.message).toContain(
 			'Class "guerrero" weapon proficiencies do not match proficiency mechanics'
+		);
+	});
+
+	it('reports schema validation issues for unknown class proficiency slugs', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'classes.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'character-class',
+				items: [
+					{
+						slug: 'guerrero',
+						name: 'Guerrero',
+						hitDie: 10,
+						primaryAbilities: ['strength'],
+						savingThrowProficiencies: ['strength'],
+						armorProficiencies: ['mystic-armor'],
+						weaponProficiencies: ['laser-rifle'],
+						toolProficiencies: ['alchemy-kit'],
+						skillChoices: {
+							count: 1,
+							options: ['animal-hndling']
+						},
+						mechanics: [
+							{
+								type: 'choose_proficiency',
+								proficiencyType: 'skill',
+								count: 1,
+								options: ['animal-hndling']
+							},
+							{ type: 'proficiency', proficiencyType: 'tool', value: 'alchemy-kit' },
+							{ type: 'proficiency', proficiencyType: 'saving_throw', value: 'luck' }
+						]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(1);
+		expect(result.issues.map((issue) => issue.message)).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining('items.0.armorProficiencies.0: Invalid option'),
+				expect.stringContaining('items.0.weaponProficiencies.0: Invalid input'),
+				expect.stringContaining('items.0.toolProficiencies.0: Invalid option'),
+				expect.stringContaining('items.0.skillChoices.options.0: Invalid option'),
+				expect.stringContaining('items.0.mechanics.0.options.0: Unknown skill proficiency slug'),
+				expect.stringContaining('items.0.mechanics.1.value: Unknown tool proficiency slug'),
+				expect.stringContaining('items.0.mechanics.2.value: Unknown saving_throw proficiency slug')
+			])
 		);
 	});
 
@@ -914,6 +1062,70 @@ describe('validateContentDataDirectory', () => {
 		);
 	});
 
+	it('reports schema validation issues for unknown background and subspecies proficiencies', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'species.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'species',
+				items: [{ slug: 'elfo', name: 'Elfo' }]
+			})
+		);
+		writeFileSync(
+			path.join(srdDirectoryPath, 'subspecies.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'subspecies',
+				items: [
+					{
+						slug: 'high-elf',
+						name: 'High Elf',
+						speciesSlug: 'elfo',
+						mechanics: [{ type: 'proficiency', proficiencyType: 'weapon', value: 'sun-blade' }]
+					}
+				]
+			})
+		);
+		writeFileSync(
+			path.join(srdDirectoryPath, 'backgrounds.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'background',
+				items: [
+					{
+						slug: 'soldier',
+						name: 'Soldier',
+						skillProficiencies: ['athletiks'],
+						toolProficiencies: ['vehicle-air'],
+						mechanics: [
+							{ type: 'proficiency', proficiencyType: 'skill', value: 'athletiks' },
+							{ type: 'proficiency', proficiencyType: 'tool', value: 'vehicle-air' }
+						]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(2);
+		expect(result.issues.map((issue) => issue.message)).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining('items.0.mechanics.0.value: Unknown weapon proficiency slug'),
+				expect.stringContaining('items.0.skillProficiencies.0: Invalid option'),
+				expect.stringContaining('items.0.toolProficiencies.0: Invalid option'),
+				expect.stringContaining('items.0.mechanics.0.value: Unknown skill proficiency slug'),
+				expect.stringContaining('items.0.mechanics.1.value: Unknown tool proficiency slug')
+			])
+		);
+	});
+
 	it('reports unknown equipment references from backgrounds', () => {
 		const tempDirectoryPath = createTemporaryDataDirectory();
 		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
@@ -1160,7 +1372,7 @@ describe('validateContentDataDirectory', () => {
 		expect(result.issues[4]?.message).toContain('Unknown feat slug "resilient-wisdom"');
 	});
 
-	it('reports unknown proficiency references from feat prerequisites', () => {
+	it('reports schema validation issues for unknown feat proficiency prerequisites', () => {
 		const tempDirectoryPath = createTemporaryDataDirectory();
 		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
 		mkdirSync(srdDirectoryPath, { recursive: true });
@@ -1187,18 +1399,18 @@ describe('validateContentDataDirectory', () => {
 
 		const result = validateContentDataDirectory(tempDirectoryPath);
 
-		expect(result.issues).toHaveLength(4);
+		expect(result.issues).toHaveLength(1);
 		expect(result.issues[0]?.message).toContain(
-			'Unknown skill proficiency slug "animal-hndling"'
+			'items.0.prerequisites.0: Unknown skill proficiency slug'
 		);
-		expect(result.issues[1]?.message).toContain(
-			'Unknown armor proficiency slug "medum-armor"'
+		expect(result.issues[0]?.message).toContain(
+			'items.0.prerequisites.1: Unknown armor proficiency slug'
 		);
-		expect(result.issues[2]?.message).toContain(
-			'Unknown weapon proficiency slug "martial-weapon"'
+		expect(result.issues[0]?.message).toContain(
+			'items.0.prerequisites.2: Unknown weapon proficiency slug'
 		);
-		expect(result.issues[3]?.message).toContain(
-			'Unknown saving_throw proficiency slug "luck"'
+		expect(result.issues[0]?.message).toContain(
+			'items.0.prerequisites.3: Unknown saving_throw proficiency slug'
 		);
 	});
 
@@ -1272,6 +1484,54 @@ describe('validateContentDataDirectory', () => {
 		);
 	});
 
+	it('reports schema validation issues for unknown language slugs', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'species.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'species',
+				items: [
+					{
+						slug: 'humano',
+						name: 'Humano',
+						languages: [{ type: 'fixed', language: 'common' }],
+						mechanics: [{ type: 'language', mode: 'fixed', language: 'common' }]
+					}
+				]
+			})
+		);
+		writeFileSync(
+			path.join(srdDirectoryPath, 'backgrounds.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'background',
+				items: [
+					{
+						slug: 'sage',
+						name: 'Sage',
+						languages: [{ type: 'fixed', language: 'celestial' }],
+						mechanics: [{ type: 'language', mode: 'fixed', language: 'celestial' }]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(2);
+		expect(result.issues.map((issue) => issue.message)).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining('items.0.languages.0.language: Invalid option'),
+				expect.stringContaining('items.0.languages.0.language: Invalid option')
+			])
+		);
+	});
+
 	it('reports species speed drift between structured fields and mechanics', () => {
 		const tempDirectoryPath = createTemporaryDataDirectory();
 		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
@@ -1298,6 +1558,54 @@ describe('validateContentDataDirectory', () => {
 		expect(result.issues).toHaveLength(1);
 		expect(result.issues[0]?.message).toContain(
 			'Species "elfo" base speed does not match speed mechanics'
+		);
+	});
+
+	it('reports schema validation issues for unknown damage types', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'species.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'species',
+				items: [
+					{
+						slug: 'tiefling',
+						name: 'Tiefling',
+						mechanics: [{ type: 'resistance', damageType: 'void' }]
+					}
+				]
+			})
+		);
+		writeFileSync(
+			path.join(srdDirectoryPath, 'equipment.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'equipment',
+				items: [
+					{
+						slug: 'shadow-blade',
+						name: 'Shadow Blade',
+						category: 'weapon',
+						damage: '1d8',
+						damageType: 'shadow'
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(2);
+		expect(result.issues.map((issue) => issue.message)).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining('items.0.mechanics.0.damageType: Invalid option'),
+				expect.stringContaining('items.0.damageType: Invalid option')
+			])
 		);
 	});
 

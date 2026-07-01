@@ -3,6 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { backgroundFileSchema } from './background.schema.ts';
 import { characterClassFileSchema } from './character-class.schema.ts';
+import { equipmentFileSchema } from './equipment.schema.ts';
 import { featFileSchema } from './feat.schema.ts';
 import { speciesFileSchema } from './species.schema.ts';
 import { spellFileSchema } from './spell.schema.ts';
@@ -37,6 +38,14 @@ describe('content templates', () => {
 		const template = readJsonFile<unknown>('data/private-content-templates/feat.template.json');
 
 		expect(() => featFileSchema.parse(template)).not.toThrow();
+	});
+
+	it('validates the equipment template file', () => {
+		const template = readJsonFile<unknown>(
+			'data/private-content-templates/equipment.template.json'
+		);
+
+		expect(() => equipmentFileSchema.parse(template)).not.toThrow();
 	});
 
 	it('validates the subclass template file', () => {
@@ -128,6 +137,16 @@ describe('content templates', () => {
 			proficiencyType: 'saving_throw',
 			value: 'wisdom'
 		});
+	});
+
+	it('validates the SRD equipment starter file', () => {
+		const file = readJsonFile<unknown>('data/srd-5-1/equipment.json');
+
+		const parsed = equipmentFileSchema.parse(file);
+
+		expect(parsed.items).toHaveLength(33);
+		expect(parsed.items[0]?.slug).toBe('any-simple-weapon');
+		expect(parsed.items[9]?.damageType).toBe('slashing');
 	});
 
 	it('validates the SRD subclasses starter file', () => {
@@ -297,6 +316,129 @@ describe('content schema examples', () => {
 		expect(result.success).toBe(false);
 	});
 
+	it('rejects unknown proficiency slugs in feat prerequisites', () => {
+		const result = featFileSchema.safeParse({
+			schemaVersion: 1,
+			source: 'user-private',
+			contentType: 'feat',
+			items: [
+				{
+					slug: 'dote-prueba',
+					name: 'Dote de Prueba',
+					prerequisites: ['proficiency:skill:animal-hndling']
+				}
+			]
+		});
+
+		expect(result.success).toBe(false);
+		expect(result.error?.issues[0]?.message).toContain('Unknown skill proficiency slug');
+	});
+
+	it('rejects unknown spell schools in spell entries', () => {
+		const result = spellFileSchema.safeParse({
+			schemaVersion: 1,
+			source: 'user-private',
+			contentType: 'spell',
+			items: [
+				{
+					slug: 'orbe-de-vacio',
+					name: 'Orbe de Vacio',
+					level: 2,
+					school: 'void'
+				}
+			]
+		});
+
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects invalid spell component strings', () => {
+		const result = spellFileSchema.safeParse({
+			schemaVersion: 1,
+			source: 'user-private',
+			contentType: 'spell',
+			items: [
+				{
+					slug: 'conjuro-prueba',
+					name: 'Conjuro de Prueba',
+					level: 1,
+					school: 'evocation',
+					components: 'V, focus'
+				}
+			]
+		});
+
+		expect(result.success).toBe(false);
+		expect(result.error?.issues[0]?.message).toContain(
+			'Use spell components as a comma-separated list of V, S, and M'
+		);
+	});
+
+	it('rejects spell materials text without an M component', () => {
+		const result = spellFileSchema.safeParse({
+			schemaVersion: 1,
+			source: 'user-private',
+			contentType: 'spell',
+			items: [
+				{
+					slug: 'conjuro-prueba',
+					name: 'Conjuro de Prueba',
+					level: 1,
+					school: 'evocation',
+					components: 'V, S',
+					materials: 'A tiny bell.'
+				}
+			]
+		});
+
+		expect(result.success).toBe(false);
+		expect(result.error?.issues[0]?.message).toContain(
+			'Materials text is only allowed when spell components include M'
+		);
+	});
+
+	it('rejects spell M components without materials text', () => {
+		const result = spellFileSchema.safeParse({
+			schemaVersion: 1,
+			source: 'user-private',
+			contentType: 'spell',
+			items: [
+				{
+					slug: 'conjuro-prueba',
+					name: 'Conjuro de Prueba',
+					level: 1,
+					school: 'evocation',
+					components: 'V, M'
+				}
+			]
+		});
+
+		expect(result.success).toBe(false);
+		expect(result.error?.issues[0]?.message).toContain(
+			'Provide materials text when spell components include M'
+		);
+	});
+
+	it('accepts spell materials text when components include M', () => {
+		const result = spellFileSchema.safeParse({
+			schemaVersion: 1,
+			source: 'user-private',
+			contentType: 'spell',
+			items: [
+				{
+					slug: 'conjuro-prueba',
+					name: 'Conjuro de Prueba',
+					level: 1,
+					school: 'evocation',
+					components: 'V, S, M',
+					materials: 'A tiny bell.'
+				}
+			]
+		});
+
+		expect(result.success).toBe(true);
+	});
+
 	it('accepts a valid species entry', () => {
 		const parsed = speciesFileSchema.parse({
 			schemaVersion: 1,
@@ -315,6 +457,23 @@ describe('content schema examples', () => {
 		});
 
 		expect(parsed.items[0]?.slug).toBe('humano');
+	});
+
+	it('rejects unknown language slugs in structured content files', () => {
+		const result = speciesFileSchema.safeParse({
+			schemaVersion: 1,
+			source: 'srd-5-1',
+			contentType: 'species',
+			items: [
+				{
+					slug: 'humano',
+					name: 'Humano',
+					languages: [{ type: 'fixed', language: 'common' }]
+				}
+			]
+		});
+
+		expect(result.success).toBe(false);
 	});
 
 	it('accepts a valid subspecies entry', () => {
@@ -369,6 +528,31 @@ describe('content schema examples', () => {
 		expect(result.success).toBe(false);
 	});
 
+	it('rejects invalid proficiency slugs in mechanics entries', () => {
+		const result = backgroundFileSchema.safeParse({
+			schemaVersion: 1,
+			source: 'srd-5-1',
+			contentType: 'background',
+			items: [
+				{
+					slug: 'soldier',
+					name: 'Soldier',
+					mechanics: [
+						{ type: 'proficiency', proficiencyType: 'tool', value: 'vehicle-air' },
+						{
+							type: 'choose_proficiency',
+							proficiencyType: 'skill',
+							count: 1,
+							options: ['animal-hndling']
+						}
+					]
+				}
+			]
+		});
+
+		expect(result.success).toBe(false);
+	});
+
 	it('accepts a valid character class entry', () => {
 		const parsed = characterClassFileSchema.parse({
 			schemaVersion: 1,
@@ -412,6 +596,25 @@ describe('content schema examples', () => {
 		});
 
 		expect(parsed.items[0]?.equipment).toHaveLength(3);
+	});
+
+	it('rejects unknown damage types in equipment entries', () => {
+		const result = equipmentFileSchema.safeParse({
+			schemaVersion: 1,
+			source: 'srd-5-1',
+			contentType: 'equipment',
+			items: [
+				{
+					slug: 'shadow-blade',
+					name: 'Shadow Blade',
+					category: 'weapon',
+					damage: '1d8',
+					damageType: 'shadow'
+				}
+			]
+		});
+
+		expect(result.success).toBe(false);
 	});
 
 	it('rejects invalid ability names in character class ability fields', () => {
