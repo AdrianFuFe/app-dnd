@@ -279,6 +279,7 @@ create table if not exists character_attacks (
 create table if not exists character_spells (
 	id uuid primary key default gen_random_uuid(),
 	character_id uuid not null references characters (id) on delete cascade,
+	spell_id uuid references spells (id),
 	name text not null,
 	level integer check (level is null or level between 0 and 9),
 	school text,
@@ -288,6 +289,16 @@ create table if not exists character_spells (
 	duration text,
 	description text,
 	is_prepared boolean not null default false,
+	created_at timestamptz not null default now(),
+	updated_at timestamptz not null default now()
+);
+
+create table if not exists character_feats (
+	id uuid primary key default gen_random_uuid(),
+	character_id uuid not null references characters (id) on delete cascade,
+	feat_id uuid references feats (id),
+	name text not null,
+	description text,
 	created_at timestamptz not null default now(),
 	updated_at timestamptz not null default now()
 );

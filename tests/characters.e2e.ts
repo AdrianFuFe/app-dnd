@@ -52,6 +52,11 @@ test('character create route saves a new draft and returns to the roster', async
 				quantity: '1',
 				value: '15 gp'
 			}
+		],
+		featItems: [
+			{
+				catalogFeatName: 'Heavily Armored'
+			}
 		]
 	});
 
@@ -91,12 +96,7 @@ test('character edit route updates an existing draft and returns to detail', asy
 		],
 		spellItems: [
 			{
-				name: 'Guiding Bolt',
-				level: '1',
-				school: 'Evocation',
-				castingTime: '1 action',
-				range: '120 ft.',
-				duration: 'Instantaneous',
+				catalogSpellName: 'Guiding Bolt',
 				isPrepared: true
 			}
 		],
@@ -106,6 +106,11 @@ test('character edit route updates an existing draft and returns to detail', asy
 				quantity: '1',
 				description: 'Burns with a warm dawn glow.',
 				isEquipped: true
+			}
+		],
+		featItems: [
+			{
+				catalogFeatName: 'Resilient (Wisdom)'
 			}
 		],
 		notes: 'Carries a lantern relic.'
@@ -120,6 +125,7 @@ test('character edit route updates an existing draft and returns to detail', asy
 	await expect(page.getByText('Pilgrim', { exact: true })).toBeVisible();
 	await expect(page.getByText('Radiant Mace', { exact: true })).toBeVisible();
 	await expect(page.getByText('Guiding Bolt', { exact: true })).toBeVisible();
+	await expect(page.getByText('Resilient (Wisdom)', { exact: true })).toBeVisible();
 	await expect(page.getByText('Lantern relic', { exact: true })).toBeVisible();
 	await expect(page.getByText('Carries a lantern relic.', { exact: true })).toBeVisible();
 });
@@ -179,7 +185,8 @@ async function fillCharacterForm(
 			description?: string;
 		}>;
 		spellItems: Array<{
-			name: string;
+			catalogSpellName?: string;
+			name?: string;
 			level?: string;
 			school?: string;
 			castingTime?: string;
@@ -188,6 +195,11 @@ async function fillCharacterForm(
 			duration?: string;
 			description?: string;
 			isPrepared?: boolean;
+		}>;
+		featItems: Array<{
+			catalogFeatName?: string;
+			name?: string;
+			description?: string;
 		}>;
 		inventoryItems: Array<{
 			name: string;
@@ -248,6 +260,7 @@ async function fillCharacterForm(
 				quantity: '1'
 			}
 		],
+		featItems: [],
 		notes: 'Tracks ley lines.',
 		...overrides
 	};
@@ -289,6 +302,9 @@ async function fillCharacterForm(
 	const inventorySection = page
 		.locator('section')
 		.filter({ has: page.getByRole('heading', { name: 'Inventory' }) });
+	const featSection = page
+		.locator('section')
+		.filter({ has: page.getByRole('heading', { name: 'Feats' }) });
 
 	let currentAttackItemCount = await attackSection.getByLabel('Attack name').count();
 
@@ -341,40 +357,70 @@ async function fillCharacterForm(
 
 	for (let index = 0; index < values.spellItems.length; index += 1) {
 		const item = values.spellItems[index];
-		await spellSection.getByLabel('Spell name').nth(index).fill(item.name);
-		await spellSection
-			.getByLabel('Level')
-			.nth(index)
-			.fill(item.level ?? '');
-		await spellSection
-			.getByLabel('School')
-			.nth(index)
-			.fill(item.school ?? '');
-		await spellSection
-			.getByLabel('Casting time')
-			.nth(index)
-			.fill(item.castingTime ?? '');
-		await spellSection
-			.getByLabel('Range')
-			.nth(index)
-			.fill(item.range ?? '');
-		await spellSection
-			.getByLabel('Duration')
-			.nth(index)
-			.fill(item.duration ?? '');
-		await spellSection
-			.getByLabel('Components')
-			.nth(index)
-			.fill(item.components ?? '');
-		await spellSection
-			.getByLabel('Description')
-			.nth(index)
-			.fill(item.description ?? '');
+		if (item.catalogSpellName) {
+			await spellSection.getByLabel('Catalog spell').nth(index).selectOption({
+				label:
+					item.level === '0'
+						? `${item.catalogSpellName} (Cantrip)`
+						: `${item.catalogSpellName} (Level ${item.level ?? '1'})`
+			});
+		}
+		if (item.name !== undefined) {
+			await spellSection.getByLabel('Spell name').nth(index).fill(item.name);
+		}
+		if (item.level !== undefined) {
+			await spellSection.getByLabel('Spell level').nth(index).fill(item.level);
+		}
+		if (item.school !== undefined) {
+			await spellSection.getByLabel('School').nth(index).fill(item.school);
+		}
+		if (item.castingTime !== undefined) {
+			await spellSection.getByLabel('Casting time').nth(index).fill(item.castingTime);
+		}
+		if (item.range !== undefined) {
+			await spellSection.getByLabel('Range').nth(index).fill(item.range);
+		}
+		if (item.duration !== undefined) {
+			await spellSection.getByLabel('Duration').nth(index).fill(item.duration);
+		}
+		if (item.components !== undefined) {
+			await spellSection.getByLabel('Components').nth(index).fill(item.components);
+		}
+		if (item.description !== undefined) {
+			await spellSection.getByLabel('Description').nth(index).fill(item.description);
+		}
 
 		if (item.isPrepared) {
 			await spellSection.getByLabel('Prepared').nth(index).check();
 		} else {
 			await spellSection.getByLabel('Prepared').nth(index).uncheck();
+		}
+	}
+
+	let currentFeatItemCount = await featSection.getByLabel('Feat name').count();
+
+	while (currentFeatItemCount > values.featItems.length) {
+		await featSection.getByRole('button', { name: 'Remove' }).first().click();
+		currentFeatItemCount -= 1;
+	}
+
+	while (currentFeatItemCount < values.featItems.length) {
+		await featSection.getByRole('button', { name: 'Add feat' }).click();
+		currentFeatItemCount += 1;
+	}
+
+	for (let index = 0; index < values.featItems.length; index += 1) {
+		const item = values.featItems[index];
+		if (item.catalogFeatName) {
+			await featSection.getByLabel('Catalog feat').nth(index).selectOption({
+				label: item.catalogFeatName
+			});
+		}
+		if (item.name !== undefined) {
+			await featSection.getByLabel('Feat name').nth(index).fill(item.name);
+		}
+		if (item.description !== undefined) {
+			await featSection.getByLabel('Description').nth(index).fill(item.description);
 		}
 	}
 

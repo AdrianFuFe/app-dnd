@@ -6,6 +6,10 @@
 		type CharacterCreateFormValues
 	} from '$lib/domain/characters/character-form';
 	import type { CharacterCreationCatalog } from '$lib/types/content/character-catalog';
+	import type {
+		FeatCatalogEntry,
+		SpellCatalogEntry
+	} from '$lib/types/content/expanded-content-catalog';
 
 	type CharacterFieldErrors = Partial<Record<keyof CharacterCreateFormValues, string[]>>;
 	type CharacterCancelHref = '/app/characters' | `/app/characters/${string}`;
@@ -26,6 +30,7 @@
 		description: string;
 	};
 	type SpellFormItem = {
+		spellId: string;
 		name: string;
 		level: string;
 		school: string;
@@ -36,9 +41,16 @@
 		description: string;
 		isPrepared: boolean;
 	};
+	type FeatFormItem = {
+		featId: string;
+		name: string;
+		description: string;
+	};
 
 	let {
 		catalog,
+		featCatalog,
+		spellCatalog,
 		values,
 		errors = {},
 		formError,
@@ -47,6 +59,8 @@
 		cancelLabel = 'Back to characters'
 	}: {
 		catalog: CharacterCreationCatalog;
+		featCatalog: FeatCatalogEntry[];
+		spellCatalog: SpellCatalogEntry[];
 		values: CharacterCreateFormValues;
 		errors?: CharacterFieldErrors;
 		formError?: string;
@@ -76,12 +90,14 @@
 	let formValues = $state(createCharacterFormValues());
 	let attackItems = $state<AttackFormItem[]>([]);
 	let spellItems = $state<SpellFormItem[]>([]);
+	let featItems = $state<FeatFormItem[]>([]);
 	let inventoryItems = $state<InventoryFormItem[]>([]);
 
 	$effect(() => {
 		formValues = { ...values };
 		attackItems = parseAttackItems(values.attackItems, values.attacks);
 		spellItems = parseSpellItems(values.spellItems, values.spells);
+		featItems = parseFeatItems(values.featItems);
 		inventoryItems = parseInventoryItems(values.inventoryItems);
 	});
 
@@ -131,6 +147,54 @@
 		return classSlug
 			? catalog.subclassOptions.filter((option) => option.classSlug === classSlug)
 			: [];
+	}
+
+	function availableSpellCatalogEntries(classId: string) {
+		const classSlug = selectedClass(classId)?.slug;
+
+		if (!classSlug) {
+			return spellCatalog;
+		}
+
+		return spellCatalog.filter(
+			(entry) => entry.classSlugs.length === 0 || entry.classSlugs.includes(classSlug)
+		);
+	}
+
+	function findSpellCatalogEntryById(spellId: string) {
+		return spellCatalog.find((entry) => entry.id === spellId);
+	}
+
+	function selectedSpellCatalogId(item: SpellFormItem): string {
+		const match = spellCatalog.find(
+			(entry) =>
+				entry.id === item.spellId ||
+				(entry.name === item.name &&
+					(item.level.trim().length === 0 || String(entry.level) === item.level))
+		);
+
+		return match?.id ?? '';
+	}
+
+	function applyCatalogSpell(index: number, spellId: string) {
+		const spell = findSpellCatalogEntryById(spellId);
+
+		if (!spell) {
+			updateSpellItem(index, { spellId: '' });
+			return;
+		}
+
+		updateSpellItem(index, {
+			spellId: spell.id,
+			name: spell.name,
+			level: String(spell.level),
+			school: spell.school,
+			castingTime: spell.castingTime ?? '',
+			range: spell.range ?? '',
+			components: spell.components ?? '',
+			duration: spell.duration ?? '',
+			description: spell.description ?? spell.summary ?? ''
+		});
 	}
 
 	function selectedSubclassSummary(subclassId: string): string | undefined {
@@ -218,6 +282,7 @@
 		spellItems = [
 			...spellItems,
 			{
+				spellId: '',
 				name: '',
 				level: '',
 				school: '',
@@ -229,6 +294,54 @@
 				isPrepared: false
 			}
 		];
+	}
+
+	function findFeatCatalogEntryById(featId: string) {
+		return featCatalog.find((entry) => entry.id === featId);
+	}
+
+	function selectedFeatCatalogId(item: FeatFormItem): string {
+		const match = featCatalog.find(
+			(entry) => entry.id === item.featId || entry.name === item.name
+		);
+
+		return match?.id ?? '';
+	}
+
+	function applyCatalogFeat(index: number, featId: string) {
+		const feat = findFeatCatalogEntryById(featId);
+
+		if (!feat) {
+			updateFeatItem(index, { featId: '' });
+			return;
+		}
+
+		updateFeatItem(index, {
+			featId: feat.id,
+			name: feat.name,
+			description: feat.description ?? feat.summary ?? ''
+		});
+	}
+
+	function addFeatItem() {
+		featItems = [
+			...featItems,
+			{
+				featId: '',
+				name: '',
+				description: ''
+			}
+		];
+	}
+
+	function removeFeatItem(index: number) {
+		featItems = featItems.filter((_, itemIndex) => itemIndex !== index);
+	}
+
+	function updateFeatItem(index: number, patch: Partial<FeatFormItem>) {
+		featItems = featItems.map((item, itemIndex) =>
+			itemIndex === index ? { ...item, ...patch } : item
+		);
 	}
 
 	function removeSpellItem(index: number) {
@@ -270,6 +383,7 @@
 	function spellItemsFieldValue(): string {
 		return JSON.stringify(
 			spellItems.map((item) => ({
+				spellId: item.spellId.trim().length > 0 ? item.spellId : undefined,
 				name: item.name,
 				level: item.level.trim().length > 0 ? Number(item.level) : undefined,
 				school: item.school,
@@ -279,6 +393,16 @@
 				duration: item.duration,
 				description: item.description,
 				isPrepared: item.isPrepared
+			}))
+		);
+	}
+
+	function featItemsFieldValue(): string {
+		return JSON.stringify(
+			featItems.map((item) => ({
+				featId: item.featId.trim().length > 0 ? item.featId : undefined,
+				name: item.name,
+				description: item.description
 			}))
 		);
 	}
@@ -362,6 +486,7 @@
 
 				if (Array.isArray(parsed)) {
 					return parsed.map((item) => ({
+						spellId: typeof item?.spellId === 'string' ? item.spellId : '',
 						name: typeof item?.name === 'string' ? item.name : '',
 						level:
 							typeof item?.level === 'number' || typeof item?.level === 'string'
@@ -386,6 +511,7 @@
 			.map((item) => item.trim())
 			.filter((item) => item.length > 0)
 			.map((name) => ({
+				spellId: '',
 				name,
 				level: '',
 				school: '',
@@ -396,6 +522,28 @@
 				description: '',
 				isPrepared: false
 			}));
+	}
+
+	function parseFeatItems(value: string): FeatFormItem[] {
+		if (!value.trim()) {
+			return [];
+		}
+
+		try {
+			const parsed = JSON.parse(value);
+
+			if (!Array.isArray(parsed)) {
+				return [];
+			}
+
+			return parsed.map((item) => ({
+				featId: typeof item?.featId === 'string' ? item.featId : '',
+				name: typeof item?.name === 'string' ? item.name : '',
+				description: typeof item?.description === 'string' ? item.description : ''
+			}));
+		} catch {
+			return [];
+		}
 	}
 </script>
 
@@ -795,8 +943,8 @@
 			<div class="space-y-1">
 				<h2 class="text-xl font-semibold text-stone-900">Spells</h2>
 				<p class="text-sm text-stone-600">
-					Track spell names, levels, and prep status as rows so the character sheet stays
-					easier to scan than one long text block.
+					Choose from the shared spell catalog when possible, then adjust the row manually
+					if this draft needs a variant or extra notes.
 				</p>
 			</div>
 			<button
@@ -836,6 +984,33 @@
 						</div>
 
 						<div class="mt-4 grid gap-4 lg:grid-cols-2">
+							<label class="block lg:col-span-2">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Catalog spell</span
+								>
+								<select
+									class="block w-full rounded-lg border-stone-300"
+									value={selectedSpellCatalogId(item)}
+									onchange={(event) =>
+										applyCatalogSpell(
+											index,
+											(event.currentTarget as HTMLSelectElement).value
+										)}
+								>
+									<option value="">Custom spell or choose from catalog</option>
+									{#each availableSpellCatalogEntries(formValues.classId) as option (option.id)}
+										<option value={option.id}>
+											{option.name} ({option.level === 0 ? 'Cantrip' : `Level ${option.level}`})
+										</option>
+									{/each}
+								</select>
+								{#if formValues.classId && availableSpellCatalogEntries(formValues.classId).length === 0}
+									<p class="mt-1 text-sm text-stone-500">
+										No shared catalog spells match the currently selected class yet.
+									</p>
+								{/if}
+							</label>
+
 							<label class="block">
 								<span class="mb-1 block text-sm font-medium text-stone-700"
 									>Spell name</span
@@ -846,6 +1021,7 @@
 									value={item.name}
 									oninput={(event) =>
 										updateSpellItem(index, {
+											spellId: '',
 											name: (event.currentTarget as HTMLInputElement).value
 										})}
 								/>
@@ -853,7 +1029,7 @@
 
 							<label class="block">
 								<span class="mb-1 block text-sm font-medium text-stone-700"
-									>Level</span
+									>Spell level</span
 								>
 								<input
 									class="block w-full rounded-lg border-stone-300"
@@ -864,6 +1040,7 @@
 									value={item.level}
 									oninput={(event) =>
 										updateSpellItem(index, {
+											spellId: '',
 											level: (event.currentTarget as HTMLInputElement).value
 										})}
 								/>
@@ -880,6 +1057,7 @@
 									value={item.school}
 									oninput={(event) =>
 										updateSpellItem(index, {
+											spellId: '',
 											school: (event.currentTarget as HTMLInputElement).value
 										})}
 								/>
@@ -896,6 +1074,7 @@
 									value={item.castingTime}
 									oninput={(event) =>
 										updateSpellItem(index, {
+											spellId: '',
 											castingTime: (event.currentTarget as HTMLInputElement).value
 										})}
 								/>
@@ -912,6 +1091,7 @@
 									value={item.range}
 									oninput={(event) =>
 										updateSpellItem(index, {
+											spellId: '',
 											range: (event.currentTarget as HTMLInputElement).value
 										})}
 								/>
@@ -928,6 +1108,7 @@
 									value={item.duration}
 									oninput={(event) =>
 										updateSpellItem(index, {
+											spellId: '',
 											duration: (event.currentTarget as HTMLInputElement).value
 										})}
 								/>
@@ -944,6 +1125,7 @@
 									value={item.components}
 									oninput={(event) =>
 										updateSpellItem(index, {
+											spellId: '',
 											components: (event.currentTarget as HTMLInputElement).value
 										})}
 								/>
@@ -973,6 +1155,104 @@
 										})}
 								/>
 								<span class="text-sm font-medium text-stone-700">Prepared</span>
+							</label>
+						</div>
+					</div>
+				{/each}
+			</div>
+		{/if}
+	</section>
+
+	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+		<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+			<div class="space-y-1">
+				<h2 class="text-xl font-semibold text-stone-900">Feats</h2>
+				<p class="text-sm text-stone-600">
+					Choose shared catalog feats when possible so the saved draft stays linked to
+					trusted content.
+				</p>
+			</div>
+			<button
+				class="rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-900 transition hover:border-stone-400"
+				type="button"
+				onclick={addFeatItem}
+			>
+				Add feat
+			</button>
+		</div>
+
+		<input type="hidden" name="featItems" value={featItemsFieldValue()} />
+
+		{#if firstError('featItems')}
+			<p class="mt-4 text-sm text-red-700">{firstError('featItems')}</p>
+		{/if}
+
+		{#if featItems.length === 0}
+			<p
+				class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600"
+			>
+				No feats yet. Add the feats this draft already relies on.
+			</p>
+		{:else}
+			<div class="mt-6 space-y-4">
+				{#each featItems as item, index (index)}
+					<div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+						<div class="flex items-center justify-between gap-3">
+							<p class="text-sm font-semibold text-stone-900">Feat {index + 1}</p>
+							<button
+								class="text-sm font-medium text-rose-700 transition hover:text-rose-900"
+								type="button"
+								onclick={() => removeFeatItem(index)}
+							>
+								Remove
+							</button>
+						</div>
+
+						<div class="mt-4 grid gap-4 lg:grid-cols-2">
+							<label class="block lg:col-span-2">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Catalog feat</span
+								>
+								<select
+									class="block w-full rounded-lg border-stone-300"
+									value={selectedFeatCatalogId(item)}
+									onchange={(event) =>
+										applyCatalogFeat(index, (event.currentTarget as HTMLSelectElement).value)}
+								>
+									<option value="">Custom feat or choose from catalog</option>
+									{#each featCatalog as option (option.id)}
+										<option value={option.id}>{option.name}</option>
+									{/each}
+								</select>
+							</label>
+
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Feat name</span
+								>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									type="text"
+									value={item.name}
+									oninput={(event) =>
+										updateFeatItem(index, {
+											featId: '',
+											name: (event.currentTarget as HTMLInputElement).value
+										})}
+								/>
+							</label>
+
+							<label class="block lg:col-span-2">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Description</span
+								>
+								<textarea
+									class="block min-h-24 w-full rounded-lg border-stone-300"
+									value={item.description}
+									oninput={(event) =>
+										updateFeatItem(index, {
+											description: (event.currentTarget as HTMLTextAreaElement).value
+										})}></textarea>
 							</label>
 						</div>
 					</div>

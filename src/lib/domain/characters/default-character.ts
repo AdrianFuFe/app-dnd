@@ -18,6 +18,7 @@ export function createDefaultCharacterInput(): CharacterCreateInput {
 		speed: 30,
 		attackItems: [],
 		spellItems: [],
+		featItems: [],
 		inventoryItems: []
 	};
 }

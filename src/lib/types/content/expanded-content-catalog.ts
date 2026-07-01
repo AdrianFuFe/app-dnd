@@ -6,9 +6,11 @@ export type SpellCatalogEntry = {
 	school: string;
 	castingTime: string | null;
 	range: string | null;
+	components: string | null;
 	duration: string | null;
 	classSlugs: string[];
 	summary: string | null;
+	description: string | null;
 	concentration: boolean;
 	ritual: boolean;
 };

@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import {
 	listCharacterCreationCatalog,
 	listExpandedContentCatalog,
+	resolveCharacterFeatCatalogSelections,
+	resolveCharacterSpellCatalogSelections,
 	resolveCharacterCreationCatalogSelections
 } from './catalog';
 
@@ -349,9 +351,11 @@ describe('listExpandedContentCatalog', () => {
 					school: 'enchantment',
 					casting_time: '1 action',
 					range_text: '30 feet',
+					components: 'V, S, M',
 					duration: 'Up to 1 minute',
 					class_slugs: ['clerigo'],
 					summary: 'Buff allies.',
+					description: 'Bolster your allies with divine favor.',
 					concentration: true,
 					ritual: false
 				}
@@ -400,9 +404,11 @@ describe('listExpandedContentCatalog', () => {
 					school: 'enchantment',
 					castingTime: '1 action',
 					range: '30 feet',
+					components: 'V, S, M',
 					duration: 'Up to 1 minute',
 					classSlugs: ['clerigo'],
 					summary: 'Buff allies.',
+					description: 'Bolster your allies with divine favor.',
 					concentration: true,
 					ritual: false
 				}
@@ -418,5 +424,212 @@ describe('listExpandedContentCatalog', () => {
 				}
 			]
 		});
+	});
+});
+
+describe('resolveCharacterSpellCatalogSelections', () => {
+	it('normalizes linked spell rows from trusted catalog data', async () => {
+		const classesSingle = vi.fn().mockResolvedValue({
+			data: {
+				id: 'class-1',
+				slug: 'clerigo',
+				name: 'Clerigo'
+			},
+			error: null
+		});
+		const classesEq = vi.fn().mockReturnValue({ single: classesSingle });
+		const classesSelect = vi.fn().mockReturnValue({ eq: classesEq });
+
+		const spellsIn = vi.fn().mockResolvedValue({
+			data: [
+				{
+					id: 'spell-1',
+					slug: 'bless',
+					name: 'Bless',
+					level: 1,
+					school: 'enchantment',
+					casting_time: '1 action',
+					range_text: '30 feet',
+					components: 'V, S, M',
+					duration: 'Up to 1 minute',
+					class_slugs: ['clerigo'],
+					summary: 'Buff allies.',
+					description: 'Bolster your allies with divine favor.',
+					concentration: true,
+					ritual: false
+				}
+			],
+			error: null
+		});
+		const spellsSelect = vi.fn().mockReturnValue({ in: spellsIn });
+
+		const from = vi.fn((table: string) => {
+			if (table === 'character_classes') {
+				return { select: classesSelect };
+			}
+
+			if (table === 'spells') {
+				return { select: spellsSelect };
+			}
+
+			throw new Error(`Unexpected table ${table}`);
+		});
+
+		const spellItems = await resolveCharacterSpellCatalogSelections({ from } as never, {
+			classId: 'class-1',
+			spellItems: [
+				{
+					spellId: 'spell-1',
+					name: 'Old Name',
+					level: 9,
+					isPrepared: true
+				}
+			]
+		});
+
+		expect(spellItems).toEqual([
+			{
+				spellId: 'spell-1',
+				name: 'Bless',
+				level: 1,
+				school: 'enchantment',
+				castingTime: '1 action',
+				range: '30 feet',
+				components: 'V, S, M',
+				duration: 'Up to 1 minute',
+				description: 'Bolster your allies with divine favor.',
+				isPrepared: true
+			}
+		]);
+	});
+
+	it('rejects linked spells that do not match the selected class', async () => {
+		const classesSingle = vi.fn().mockResolvedValue({
+			data: {
+				id: 'class-1',
+				slug: 'guerrero',
+				name: 'Guerrero'
+			},
+			error: null
+		});
+		const classesEq = vi.fn().mockReturnValue({ single: classesSingle });
+		const classesSelect = vi.fn().mockReturnValue({ eq: classesEq });
+
+		const spellsIn = vi.fn().mockResolvedValue({
+			data: [
+				{
+					id: 'spell-1',
+					slug: 'bless',
+					name: 'Bless',
+					level: 1,
+					school: 'enchantment',
+					casting_time: '1 action',
+					range_text: '30 feet',
+					components: 'V, S, M',
+					duration: 'Up to 1 minute',
+					class_slugs: ['clerigo'],
+					summary: 'Buff allies.',
+					description: 'Bolster your allies with divine favor.',
+					concentration: true,
+					ritual: false
+				}
+			],
+			error: null
+		});
+		const spellsSelect = vi.fn().mockReturnValue({ in: spellsIn });
+
+		const from = vi.fn((table: string) => {
+			if (table === 'character_classes') {
+				return { select: classesSelect };
+			}
+
+			if (table === 'spells') {
+				return { select: spellsSelect };
+			}
+
+			throw new Error(`Unexpected table ${table}`);
+		});
+
+		await expect(
+			resolveCharacterSpellCatalogSelections({ from } as never, {
+				classId: 'class-1',
+				spellItems: [
+					{
+						spellId: 'spell-1',
+						name: 'Bless',
+						isPrepared: false
+					}
+				]
+			})
+		).rejects.toThrow('Please choose a valid spell for the selected class.');
+	});
+});
+
+describe('resolveCharacterFeatCatalogSelections', () => {
+	it('normalizes linked feat rows from trusted catalog data', async () => {
+		const featsIn = vi.fn().mockResolvedValue({
+			data: [
+				{
+					id: 'feat-1',
+					slug: 'alert',
+					name: 'Alert',
+					prerequisites: [],
+					summary: 'Act quickly.',
+					description: 'You gain a bonus to initiative.'
+				}
+			],
+			error: null
+		});
+		const featsSelect = vi.fn().mockReturnValue({ in: featsIn });
+		const from = vi.fn((table: string) => {
+			if (table === 'feats') {
+				return { select: featsSelect };
+			}
+
+			throw new Error(`Unexpected table ${table}`);
+		});
+
+		const featItems = await resolveCharacterFeatCatalogSelections({ from } as never, {
+			featItems: [
+				{
+					featId: 'feat-1',
+					name: 'Old Name'
+				}
+			]
+		});
+
+		expect(featItems).toEqual([
+			{
+				featId: 'feat-1',
+				name: 'Alert',
+				description: 'You gain a bonus to initiative.'
+			}
+		]);
+	});
+
+	it('rejects unknown linked feats', async () => {
+		const featsIn = vi.fn().mockResolvedValue({
+			data: [],
+			error: null
+		});
+		const featsSelect = vi.fn().mockReturnValue({ in: featsIn });
+		const from = vi.fn((table: string) => {
+			if (table === 'feats') {
+				return { select: featsSelect };
+			}
+
+			throw new Error(`Unexpected table ${table}`);
+		});
+
+		await expect(
+			resolveCharacterFeatCatalogSelections({ from } as never, {
+				featItems: [
+					{
+						featId: 'missing-feat',
+						name: 'Missing'
+					}
+				]
+			})
+		).rejects.toThrow('Please choose a valid feat from the catalog.');
 	});
 });

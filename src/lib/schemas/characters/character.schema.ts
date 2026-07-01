@@ -88,6 +88,7 @@ export const characterAttackItemSchema = z.object({
 });
 
 export const characterSpellItemSchema = z.object({
+	spellId: optionalUuidSchema,
 	name: requiredTextSchema,
 	level: z.preprocess((value) => {
 		if (value === '' || value === null || value === undefined) {
@@ -103,6 +104,12 @@ export const characterSpellItemSchema = z.object({
 	duration: optionalTextSchema,
 	description: optionalTextSchema,
 	isPrepared: booleanSchema
+});
+
+export const characterFeatItemSchema = z.object({
+	featId: optionalUuidSchema,
+	name: requiredTextSchema,
+	description: optionalTextSchema
 });
 
 export const characterInventoryItemsSchema = z.preprocess((value) => {
@@ -171,6 +178,28 @@ export const characterSpellItemsSchema = z.preprocess((value) => {
 	return value;
 }, z.array(characterSpellItemSchema));
 
+export const characterFeatItemsSchema = z.preprocess((value) => {
+	if (typeof value === 'string') {
+		const trimmed = value.trim();
+
+		if (trimmed.length === 0) {
+			return [];
+		}
+
+		try {
+			return JSON.parse(trimmed);
+		} catch {
+			return value;
+		}
+	}
+
+	if (value === undefined || value === null) {
+		return [];
+	}
+
+	return value;
+}, z.array(characterFeatItemSchema));
+
 export const characterIdentitySchema = z.object({
 	name: requiredTextSchema,
 	speciesId: optionalUuidSchema,
@@ -201,6 +230,7 @@ export const characterCreateInputSchema = z
 		...characterTextSectionsSchema.shape,
 		attackItems: characterAttackItemsSchema.default([]),
 		spellItems: characterSpellItemsSchema.default([]),
+		featItems: characterFeatItemsSchema.default([]),
 		inventoryItems: characterInventoryItemsSchema.default([])
 	})
 	.refine(({ currentHp, maxHp }) => currentHp <= maxHp, {
@@ -215,6 +245,7 @@ export type CharacterCombatStatsInput = z.infer<typeof characterCombatStatsSchem
 export type CharacterInventoryItemInput = z.infer<typeof characterInventoryItemSchema>;
 export type CharacterAttackItemInput = z.infer<typeof characterAttackItemSchema>;
 export type CharacterSpellItemInput = z.infer<typeof characterSpellItemSchema>;
+export type CharacterFeatItemInput = z.infer<typeof characterFeatItemSchema>;
 export type CharacterTextSectionsInput = z.infer<typeof characterTextSectionsSchema>;
 
 export { abilityNames };

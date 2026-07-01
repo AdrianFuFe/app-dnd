@@ -45,11 +45,19 @@ describe('characterCreateInputSchema', () => {
 			]),
 			spellItems: JSON.stringify([
 				{
+					spellId: '88888888-8888-4888-8888-888888888888',
 					name: 'Magic Missile',
 					level: 1,
 					school: 'Evocation',
 					duration: 'Instantaneous',
 					isPrepared: true
+				}
+			]),
+			featItems: JSON.stringify([
+				{
+					featId: 'aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa',
+					name: 'Heavily Armored',
+					description: 'Gain heavy armor training.'
 				}
 			]),
 			inventoryItems: JSON.stringify([
@@ -71,7 +79,9 @@ describe('characterCreateInputSchema', () => {
 		expect(result.intelligence).toBe(16);
 		expect(result.currentHp).toBe(18);
 		expect(result.attackItems[0]?.damageType).toBe('bludgeoning');
+		expect(result.spellItems[0]?.spellId).toBe('88888888-8888-4888-8888-888888888888');
 		expect(result.spellItems[0]?.school).toBe('Evocation');
+		expect(result.featItems[0]?.featId).toBe('aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa');
 		expect(result.inventoryItems[0]?.name).toBe('Spellbook');
 		expect(result.spells).toContain('Shield');
 	});
@@ -106,6 +116,7 @@ describe('characterCreateInputSchema', () => {
 			hitDice: '',
 			attackItems: '',
 			spellItems: '',
+			featItems: '',
 			inventoryItems: '',
 			attacks: ' ',
 			spells: '',
@@ -118,6 +129,7 @@ describe('characterCreateInputSchema', () => {
 		expect(result.story).toBeUndefined();
 		expect(result.attackItems).toEqual([]);
 		expect(result.spellItems).toEqual([]);
+		expect(result.featItems).toEqual([]);
 		expect(result.inventoryItems).toEqual([]);
 		expect(result.attacks).toBeUndefined();
 	});

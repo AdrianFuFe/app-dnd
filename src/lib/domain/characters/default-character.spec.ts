@@ -23,6 +23,7 @@ describe('createDefaultCharacterInput', () => {
 			speed: 30,
 			attackItems: [],
 			spellItems: [],
+			featItems: [],
 			inventoryItems: []
 		});
 

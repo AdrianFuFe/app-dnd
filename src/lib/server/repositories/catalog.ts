@@ -2,6 +2,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
 	getE2EBackgroundOption,
 	getE2EClassOption,
+	getE2EFeatCatalogEntry,
+	getE2ESpellCatalogEntry,
 	listE2EExpandedContentCatalog,
 	getE2ESpeciesOption,
 	getE2ESubclassOption,
@@ -23,6 +25,7 @@ import type {
 	FeatCatalogEntry,
 	SpellCatalogEntry
 } from '$lib/types/content/expanded-content-catalog';
+import type { CharacterFeatItem, CharacterSpellItem } from '$lib/types/domain/character';
 
 type SpeciesRow = {
 	id: string;
@@ -71,9 +74,11 @@ type SpellRow = {
 	school: string;
 	casting_time: string | null;
 	range_text: string | null;
+	components: string | null;
 	duration: string | null;
 	class_slugs: string[];
 	summary: string | null;
+	description: string | null;
 	concentration: boolean;
 	ritual: boolean;
 };
@@ -234,6 +239,84 @@ export async function resolveCharacterCreationCatalogSelections(
 		backgroundId: background?.id,
 		background: background?.name
 	};
+}
+
+export async function resolveCharacterSpellCatalogSelections(
+	supabase: SupabaseClient<Database>,
+	selection: {
+		classId?: string;
+		spellItems: CharacterSpellItem[];
+	}
+): Promise<CharacterSpellItem[]> {
+	const linkedSpellIds = selection.spellItems
+		.map((item) => item.spellId)
+		.filter((spellId): spellId is string => typeof spellId === 'string' && spellId.length > 0);
+
+	if (linkedSpellIds.length === 0) {
+		return selection.spellItems;
+	}
+
+	if (isE2EMockSupabaseClient(supabase)) {
+		const classSlug = selection.classId
+			? getE2EClassOption(selection.classId)?.slug
+			: undefined;
+
+		return selection.spellItems.map((item) =>
+			normalizeCharacterSpellItem(
+				item,
+				item.spellId ? getE2ESpellCatalogEntry(item.spellId) : undefined,
+				classSlug
+			)
+		);
+	}
+
+	const [characterClass, spellEntries] = await Promise.all([
+		loadSelectedCharacterClass(supabase, selection.classId),
+		loadSelectedSpellCatalogEntries(supabase, linkedSpellIds)
+	]);
+	const spellEntriesById = new Map(spellEntries.map((entry) => [entry.id, entry]));
+
+	return selection.spellItems.map((item) =>
+		normalizeCharacterSpellItem(
+			item,
+			item.spellId ? spellEntriesById.get(item.spellId) : undefined,
+			characterClass?.slug
+		)
+	);
+}
+
+export async function resolveCharacterFeatCatalogSelections(
+	supabase: SupabaseClient<Database>,
+	selection: {
+		featItems: CharacterFeatItem[];
+	}
+): Promise<CharacterFeatItem[]> {
+	const linkedFeatIds = selection.featItems
+		.map((item) => item.featId)
+		.filter((featId): featId is string => typeof featId === 'string' && featId.length > 0);
+
+	if (linkedFeatIds.length === 0) {
+		return selection.featItems;
+	}
+
+	if (isE2EMockSupabaseClient(supabase)) {
+		return selection.featItems.map((item) =>
+			normalizeCharacterFeatItem(
+				item,
+				item.featId ? getE2EFeatCatalogEntry(item.featId) : undefined
+			)
+		);
+	}
+
+	const featEntries = await loadSelectedFeatCatalogEntries(supabase, linkedFeatIds);
+	const featEntriesById = new Map(featEntries.map((entry) => [entry.id, entry]));
+
+	return selection.featItems.map((item) =>
+		normalizeCharacterFeatItem(
+			item,
+			item.featId ? featEntriesById.get(item.featId) : undefined
+		)
+	);
 }
 
 async function listSpeciesOptions(
@@ -481,13 +564,31 @@ async function listSpellCatalogEntries(
 	const { data, error } = await supabase
 		.from('spells')
 		.select(
-			'id, slug, name, level, school, casting_time, range_text, duration, class_slugs, summary, concentration, ritual'
+			'id, slug, name, level, school, casting_time, range_text, components, duration, class_slugs, summary, description, concentration, ritual'
 		)
 		.order('level', { ascending: true })
 		.order('name', { ascending: true });
 
 	if (error) {
 		throw new Error('Failed to load spell catalog entries.');
+	}
+
+	return data.map(mapSpellCatalogEntry);
+}
+
+async function loadSelectedSpellCatalogEntries(
+	supabase: SupabaseClient<Database>,
+	spellIds: string[]
+): Promise<SpellCatalogEntry[]> {
+	const { data, error } = await supabase
+		.from('spells')
+		.select(
+			'id, slug, name, level, school, casting_time, range_text, components, duration, class_slugs, summary, description, concentration, ritual'
+		)
+		.in('id', spellIds);
+
+	if (error) {
+		throw new Error('Failed to load selected spell catalog entries.');
 	}
 
 	return data.map(mapSpellCatalogEntry);
@@ -508,6 +609,22 @@ async function listFeatCatalogEntries(
 	return data.map(mapFeatCatalogEntry);
 }
 
+async function loadSelectedFeatCatalogEntries(
+	supabase: SupabaseClient<Database>,
+	featIds: string[]
+): Promise<FeatCatalogEntry[]> {
+	const { data, error } = await supabase
+		.from('feats')
+		.select('id, slug, name, prerequisites, summary, description')
+		.in('id', featIds);
+
+	if (error) {
+		throw new Error('Failed to load selected feat catalog entries.');
+	}
+
+	return data.map(mapFeatCatalogEntry);
+}
+
 function mapSpellCatalogEntry(
 	spell: Pick<
 		SpellRow,
@@ -518,9 +635,11 @@ function mapSpellCatalogEntry(
 		| 'school'
 		| 'casting_time'
 		| 'range_text'
+		| 'components'
 		| 'duration'
 		| 'class_slugs'
 		| 'summary'
+		| 'description'
 		| 'concentration'
 		| 'ritual'
 	>
@@ -533,9 +652,11 @@ function mapSpellCatalogEntry(
 		school: spell.school,
 		castingTime: spell.casting_time,
 		range: spell.range_text,
+		components: spell.components,
 		duration: spell.duration,
 		classSlugs: spell.class_slugs,
 		summary: spell.summary,
+		description: spell.description,
 		concentration: spell.concentration,
 		ritual: spell.ritual
 	};
@@ -551,5 +672,56 @@ function mapFeatCatalogEntry(
 		prerequisites: feat.prerequisites,
 		summary: feat.summary,
 		description: feat.description
+	};
+}
+
+function normalizeCharacterSpellItem(
+	item: CharacterSpellItem,
+	spell: SpellCatalogEntry | undefined,
+	classSlug: string | undefined
+): CharacterSpellItem {
+	if (!item.spellId) {
+		return item;
+	}
+
+	if (!spell) {
+		throw new Error('Please choose a valid spell from the catalog.');
+	}
+
+	if (classSlug && spell.classSlugs.length > 0 && !spell.classSlugs.includes(classSlug)) {
+		throw new Error('Please choose a valid spell for the selected class.');
+	}
+
+	return {
+		...item,
+		spellId: spell.id,
+		name: spell.name,
+		level: spell.level,
+		school: spell.school,
+		castingTime: spell.castingTime ?? undefined,
+		range: spell.range ?? undefined,
+		components: spell.components ?? undefined,
+		duration: spell.duration ?? undefined,
+		description: item.description ?? spell.description ?? spell.summary ?? undefined
+	};
+}
+
+function normalizeCharacterFeatItem(
+	item: CharacterFeatItem,
+	feat: FeatCatalogEntry | undefined
+): CharacterFeatItem {
+	if (!item.featId) {
+		return item;
+	}
+
+	if (!feat) {
+		throw new Error('Please choose a valid feat from the catalog.');
+	}
+
+	return {
+		...item,
+		featId: feat.id,
+		name: feat.name,
+		description: item.description ?? feat.description ?? feat.summary ?? undefined
 	};
 }

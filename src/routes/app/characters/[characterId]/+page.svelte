@@ -318,6 +318,27 @@
 						{/if}
 					</div>
 					<div>
+						<p class="text-sm font-medium text-stone-500">Feats</p>
+						{#if data.character.featItems.length === 0}
+							<p class="mt-2 text-sm leading-7 text-stone-700">No feats recorded yet.</p>
+						{:else}
+							<div class="mt-3 space-y-3">
+								{#each data.character.featItems as feat (`${feat.name}-${feat.featId ?? ''}`)}
+									<div
+										class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4"
+									>
+										<p class="text-base font-semibold text-stone-900">{feat.name}</p>
+										{#if feat.description}
+											<p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700">
+												{feat.description}
+											</p>
+										{/if}
+									</div>
+								{/each}
+							</div>
+						{/if}
+					</div>
+					<div>
 						<p class="text-sm font-medium text-stone-500">Notes</p>
 						<p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700">
 							{optionalText(data.character.notes)}

@@ -7,7 +7,10 @@ import {
 import { characterCreateInputSchema } from '$lib/schemas/characters/character.schema';
 import {
 	listCharacterCreationCatalog,
-	resolveCharacterCreationCatalogSelections
+	listExpandedContentCatalog,
+	resolveCharacterCreationCatalogSelections,
+	resolveCharacterFeatCatalogSelections,
+	resolveCharacterSpellCatalogSelections
 } from '$lib/server/repositories/catalog';
 import { getCharacterForUser, updateCharacter } from '$lib/server/repositories/characters';
 
@@ -20,8 +23,9 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 		throw error(500, 'Supabase is not configured yet.');
 	}
 
-	const [catalog, character] = await Promise.all([
+	const [catalog, expandedContentCatalog, character] = await Promise.all([
 		listCharacterCreationCatalog(locals.supabase),
+		listExpandedContentCatalog(locals.supabase),
 		getCharacterForUser(locals.supabase, locals.session.user.id, params.characterId)
 	]);
 
@@ -33,7 +37,9 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 		characterId: character.id,
 		characterName: character.name,
 		values: createCharacterFormValuesFromInput(character),
-		catalog
+		catalog,
+		featCatalog: expandedContentCatalog.feats,
+		spellCatalog: expandedContentCatalog.spells
 	};
 };
 
@@ -74,6 +80,13 @@ export const actions: Actions = {
 					backgroundId: parsed.data.backgroundId
 				}
 			);
+			const spellItems = await resolveCharacterSpellCatalogSelections(locals.supabase, {
+				classId: catalogSelection.classId,
+				spellItems: parsed.data.spellItems
+			});
+			const featItems = await resolveCharacterFeatCatalogSelections(locals.supabase, {
+				featItems: parsed.data.featItems
+			});
 
 			const character = await updateCharacter(
 				locals.supabase,
@@ -90,7 +103,9 @@ export const actions: Actions = {
 					subclassId: catalogSelection.subclassId,
 					subclass: catalogSelection.subclass,
 					backgroundId: catalogSelection.backgroundId,
-					background: catalogSelection.background
+					background: catalogSelection.background,
+					featItems,
+					spellItems
 				}
 			);
 			const updatedName = encodeURIComponent(character.name);

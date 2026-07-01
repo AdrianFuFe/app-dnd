@@ -8,24 +8,38 @@ import {
 import { characterCreateInputSchema } from '$lib/schemas/characters/character.schema';
 import {
 	listCharacterCreationCatalog,
-	resolveCharacterCreationCatalogSelections
+	listExpandedContentCatalog,
+	resolveCharacterCreationCatalogSelections,
+	resolveCharacterFeatCatalogSelections,
+	resolveCharacterSpellCatalogSelections
 } from '$lib/server/repositories/catalog';
 import { createCharacter } from '$lib/server/repositories/characters';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	const catalog = locals.supabase
-		? await listCharacterCreationCatalog(locals.supabase)
-		: {
-				speciesOptions: [],
-				subspeciesOptions: [],
-				classOptions: [],
-				subclassOptions: [],
-				backgroundOptions: []
-			};
+	const [catalog, expandedContentCatalog] = locals.supabase
+		? await Promise.all([
+				listCharacterCreationCatalog(locals.supabase),
+				listExpandedContentCatalog(locals.supabase)
+			])
+		: [
+				{
+					speciesOptions: [],
+					subspeciesOptions: [],
+					classOptions: [],
+					subclassOptions: [],
+					backgroundOptions: []
+				},
+				{
+					spells: [],
+					feats: []
+				}
+			];
 
 	return {
 		values: createCharacterFormValuesFromInput(createDefaultCharacterInput()),
-		catalog
+		catalog,
+		featCatalog: expandedContentCatalog.feats,
+		spellCatalog: expandedContentCatalog.spells
 	};
 };
 
@@ -66,6 +80,13 @@ export const actions: Actions = {
 					backgroundId: parsed.data.backgroundId
 				}
 			);
+			const spellItems = await resolveCharacterSpellCatalogSelections(locals.supabase, {
+				classId: catalogSelection.classId,
+				spellItems: parsed.data.spellItems
+			});
+			const featItems = await resolveCharacterFeatCatalogSelections(locals.supabase, {
+				featItems: parsed.data.featItems
+			});
 
 			const character = await createCharacter(locals.supabase, locals.session.user.id, {
 				...parsed.data,
@@ -78,7 +99,9 @@ export const actions: Actions = {
 				subclassId: catalogSelection.subclassId,
 				subclass: catalogSelection.subclass,
 				backgroundId: catalogSelection.backgroundId,
-				background: catalogSelection.background
+				background: catalogSelection.background,
+				featItems,
+				spellItems
 			});
 			const createdName = encodeURIComponent(character.name);
 

@@ -14,7 +14,7 @@
 		"format": "prettier --write .",
 		"test:unit": "vitest",
 		"test": "pnpm test:unit run && pnpm test:e2e",
-		"test:e2e": "playwright test",
+		"test:e2e": "pnpm build && playwright test",
 		"validate:content": "node --experimental-strip-types scripts/validate-content.ts",
 		"generate:content-seed-sql": "node --experimental-strip-types scripts/generate-content-seed-sql.ts",
 		"create:test-user": "node --experimental-strip-types scripts/create-test-user.ts",

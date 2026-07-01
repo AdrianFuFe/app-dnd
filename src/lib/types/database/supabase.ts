@@ -184,10 +184,56 @@ export interface Database {
 					}
 				];
 			};
+			character_feats: {
+				Row: {
+					id: string;
+					character_id: string;
+					feat_id: string | null;
+					name: string;
+					description: string | null;
+					created_at: string;
+					updated_at: string;
+				};
+				Insert: {
+					id?: string;
+					character_id: string;
+					feat_id?: string | null;
+					name: string;
+					description?: string | null;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Update: {
+					id?: string;
+					character_id?: string;
+					feat_id?: string | null;
+					name?: string;
+					description?: string | null;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'character_feats_character_id_fkey';
+						columns: ['character_id'];
+						isOneToOne: false;
+						referencedRelation: 'characters';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'character_feats_feat_id_fkey';
+						columns: ['feat_id'];
+						isOneToOne: false;
+						referencedRelation: 'feats';
+						referencedColumns: ['id'];
+					}
+				];
+			};
 			character_spells: {
 				Row: {
 					id: string;
 					character_id: string;
+					spell_id: string | null;
 					name: string;
 					level: number | null;
 					school: string | null;
@@ -203,6 +249,7 @@ export interface Database {
 				Insert: {
 					id?: string;
 					character_id: string;
+					spell_id?: string | null;
 					name: string;
 					level?: number | null;
 					school?: string | null;
@@ -218,6 +265,7 @@ export interface Database {
 				Update: {
 					id?: string;
 					character_id?: string;
+					spell_id?: string | null;
 					name?: string;
 					level?: number | null;
 					school?: string | null;
@@ -236,6 +284,13 @@ export interface Database {
 						columns: ['character_id'];
 						isOneToOne: false;
 						referencedRelation: 'characters';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'character_spells_spell_id_fkey';
+						columns: ['spell_id'];
+						isOneToOne: false;
+						referencedRelation: 'spells';
 						referencedColumns: ['id'];
 					}
 				];

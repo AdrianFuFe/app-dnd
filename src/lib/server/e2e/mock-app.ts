@@ -40,6 +40,11 @@ const E2E_SUBCLASS_EVOCATION_ID = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
 const E2E_BACKGROUND_SAGE_ID = '55555555-5555-4555-8555-555555555555';
 const E2E_BACKGROUND_GUILD_ARTISAN_ID = '66666666-6666-4666-8666-666666666666';
 const E2E_BACKGROUND_PILGRIM_ID = '77777777-7777-4777-8777-777777777777';
+const E2E_SPELL_BLESS_ID = '88888888-8888-4888-8888-888888888888';
+const E2E_SPELL_MAGIC_MISSILE_ID = '99999999-9999-4999-8999-999999999999';
+const E2E_SPELL_GUIDING_BOLT_ID = '12121212-1212-4121-8121-121212121212';
+const E2E_FEAT_HEAVILY_ARMORED_ID = '13131313-1313-4131-8131-131313131313';
+const E2E_FEAT_RESILIENT_WISDOM_ID = '14141414-1414-4141-8141-141414141414';
 
 const initialCharacters: E2ECharacterRecord[] = [
 	{
@@ -83,6 +88,7 @@ const initialCharacters: E2ECharacterRecord[] = [
 		],
 		spellItems: [
 			{
+				spellId: E2E_SPELL_MAGIC_MISSILE_ID,
 				name: 'Magic Missile',
 				level: 1,
 				school: 'Evocation',
@@ -93,6 +99,7 @@ const initialCharacters: E2ECharacterRecord[] = [
 				isPrepared: true
 			}
 		],
+		featItems: [],
 		inventoryItems: [
 			{
 				name: 'Spellbook',
@@ -210,37 +217,57 @@ const e2eCatalog: CharacterCreationCatalog = {
 const e2eExpandedContentCatalog: ExpandedContentCatalog = {
 	spells: [
 		{
-			id: 'spell-e2e-1',
+			id: E2E_SPELL_BLESS_ID,
 			slug: 'bless',
 			name: 'Bless',
 			level: 1,
 			school: 'enchantment',
 			castingTime: '1 action',
 			range: '30 feet',
+			components: 'V, S, M',
 			duration: 'Up to 1 minute',
 			classSlugs: ['cleric'],
 			summary: 'Up to three creatures add 1d4 to attacks and saves.',
+			description: 'Bolster your party with a short-lived divine bonus.',
 			concentration: true,
 			ritual: false
 		},
 		{
-			id: 'spell-e2e-2',
+			id: E2E_SPELL_MAGIC_MISSILE_ID,
 			slug: 'magic-missile',
 			name: 'Magic Missile',
 			level: 1,
 			school: 'evocation',
 			castingTime: '1 action',
 			range: '120 feet',
+			components: 'V, S',
 			duration: 'Instantaneous',
 			classSlugs: ['wizard'],
 			summary: 'Force darts hit automatically and can split between targets.',
+			description: 'Create glowing darts of force that strike unerringly.',
+			concentration: false,
+			ritual: false
+		},
+		{
+			id: E2E_SPELL_GUIDING_BOLT_ID,
+			slug: 'guiding-bolt',
+			name: 'Guiding Bolt',
+			level: 1,
+			school: 'evocation',
+			castingTime: '1 action',
+			range: '120 feet',
+			components: 'V, S',
+			duration: 'Instantaneous',
+			classSlugs: ['cleric'],
+			summary: 'Radiant energy marks a target and helps the next strike land.',
+			description: 'A flash of light deals radiant damage and grants advantage to the next attack.',
 			concentration: false,
 			ritual: false
 		}
 	],
 	feats: [
 		{
-			id: 'feat-e2e-1',
+			id: E2E_FEAT_HEAVILY_ARMORED_ID,
 			slug: 'heavily-armored',
 			name: 'Heavily Armored',
 			prerequisites: ['proficiency:armor:medium-armor'],
@@ -248,7 +275,7 @@ const e2eExpandedContentCatalog: ExpandedContentCatalog = {
 			description: 'Useful for builds that want stronger frontline defenses.'
 		},
 		{
-			id: 'feat-e2e-2',
+			id: E2E_FEAT_RESILIENT_WISDOM_ID,
 			slug: 'resilient-wisdom',
 			name: 'Resilient (Wisdom)',
 			prerequisites: [],
@@ -370,6 +397,14 @@ export function getE2EBackgroundOption(
 	backgroundId: string
 ): CharacterBackgroundOption | undefined {
 	return e2eCatalog.backgroundOptions.find((option) => option.id === backgroundId);
+}
+
+export function getE2ESpellCatalogEntry(spellId: string): SpellCatalogEntry | undefined {
+	return e2eExpandedContentCatalog.spells.find((entry) => entry.id === spellId);
+}
+
+export function getE2EFeatCatalogEntry(featId: string): FeatCatalogEntry | undefined {
+	return e2eExpandedContentCatalog.feats.find((entry) => entry.id === featId);
 }
 
 export function listE2ECharactersForUser(userId: string) {
