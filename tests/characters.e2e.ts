@@ -28,11 +28,8 @@ test('character create route saves a new draft and returns to the roster', async
 		hitDice: '4d10',
 		attackItems: [
 			{
-				name: 'Warhammer',
-				attackBonus: '+5',
-				damage: '1d10 + 3',
-				damageType: 'bludgeoning',
-				range: 'Melee'
+				catalogWeaponName: 'Warhammer',
+				attackBonus: '+5'
 			}
 		],
 		spellItems: [
@@ -48,9 +45,9 @@ test('character create route saves a new draft and returns to the roster', async
 		],
 		inventoryItems: [
 			{
-				name: 'Smith tools',
+				catalogItemName: "Smith's Tools",
 				quantity: '1',
-				value: '15 gp'
+				isEquipped: true
 			}
 		],
 		featItems: [
@@ -87,11 +84,8 @@ test('character edit route updates an existing draft and returns to detail', asy
 		currentHp: '20',
 		attackItems: [
 			{
-				name: 'Radiant Mace',
-				attackBonus: '+5',
-				damage: '1d6 + 3',
-				damageType: 'radiant',
-				range: 'Melee'
+				catalogWeaponName: 'Warhammer',
+				attackBonus: '+5'
 			}
 		],
 		spellItems: [
@@ -102,9 +96,8 @@ test('character edit route updates an existing draft and returns to detail', asy
 		],
 		inventoryItems: [
 			{
-				name: 'Lantern relic',
+				catalogItemName: 'Lantern',
 				quantity: '1',
-				description: 'Burns with a warm dawn glow.',
 				isEquipped: true
 			}
 		],
@@ -123,11 +116,41 @@ test('character edit route updates an existing draft and returns to detail', asy
 	await expect(page.getByRole('heading', { name: 'Talia Dawnweaver' })).toBeVisible();
 	await expect(page.getByText('Cleric', { exact: true })).toBeVisible();
 	await expect(page.getByText('Pilgrim', { exact: true })).toBeVisible();
-	await expect(page.getByText('Radiant Mace', { exact: true })).toBeVisible();
+	await expect(page.getByText('Warhammer', { exact: true })).toBeVisible();
+	await expect(page.getByText('Catalog weapon', { exact: true })).toBeVisible();
+	await expect(page.getByText('versatile (1d10)', { exact: true })).toBeVisible();
+	await expect(page.getByText('+5 | 1d8 bludgeoning | Melee', { exact: true })).toBeVisible();
+	await expect(
+		page.getByText('A versatile melee weapon that rewards strong front-line fighters.', {
+			exact: true
+		})
+	).toBeVisible();
 	await expect(page.getByText('Guiding Bolt', { exact: true })).toBeVisible();
 	await expect(page.getByText('Resilient (Wisdom)', { exact: true })).toBeVisible();
-	await expect(page.getByText('Lantern relic', { exact: true })).toBeVisible();
+	await expect(page.getByText('Lantern', { exact: true })).toBeVisible();
+	await expect(page.getByText('Catalog item', { exact: true })).toBeVisible();
+	await expect(page.getByText('5 gp | 2 lb', { exact: true })).toBeVisible();
+	await expect(page.getByText('adventuring-gear', { exact: true })).toBeVisible();
+	await expect(
+		page.getByText('A lantern useful for long watches, ruins, and coastal fog.', {
+			exact: true
+		})
+	).toBeVisible();
 	await expect(page.getByText('Carries a lantern relic.', { exact: true })).toBeVisible();
+});
+
+test('character detail route shows enriched catalog-linked attacks and inventory', async ({ page }) => {
+	await page.goto('/app/characters/char-e2e-1');
+
+	await expect(page).toHaveURL('/app/characters/char-e2e-1');
+	await expect(page.getByRole('heading', { name: 'Talia Stormstep' })).toBeVisible();
+	await expect(page.getByText('Quarterstaff', { exact: true })).toBeVisible();
+	await expect(page.getByText('Catalog weapon', { exact: true })).toBeVisible();
+	await expect(page.getByText('versatile (1d8)', { exact: true })).toBeVisible();
+	await expect(page.getByText('+4 | 1d6 bludgeoning | Melee', { exact: true })).toBeVisible();
+	await expect(page.getByText('Spellbook', { exact: true })).toBeVisible();
+	await expect(page.getByText('Catalog item', { exact: true })).toBeVisible();
+	await expect(page.getByText('book', { exact: true })).toBeVisible();
 });
 
 test('character detail route supports deleting a draft', async ({ page }) => {
@@ -177,7 +200,8 @@ async function fillCharacterForm(
 		speed: string;
 		hitDice: string;
 		attackItems: Array<{
-			name: string;
+			catalogWeaponName?: string;
+			name?: string;
 			attackBonus?: string;
 			damage?: string;
 			damageType?: string;
@@ -202,7 +226,8 @@ async function fillCharacterForm(
 			description?: string;
 		}>;
 		inventoryItems: Array<{
-			name: string;
+			catalogItemName?: string;
+			name?: string;
 			quantity?: string;
 			description?: string;
 			weight?: string;
@@ -236,11 +261,8 @@ async function fillCharacterForm(
 		hitDice: '3d6',
 		attackItems: [
 			{
-				name: 'Quarterstaff',
+				catalogWeaponName: 'Quarterstaff',
 				attackBonus: '+4',
-				damage: '1d6',
-				damageType: 'bludgeoning',
-				range: 'Melee'
 			}
 		],
 		spellItems: [
@@ -256,7 +278,7 @@ async function fillCharacterForm(
 		],
 		inventoryItems: [
 			{
-				name: 'Spellbook',
+				catalogItemName: 'Spellbook',
 				quantity: '1'
 			}
 		],
@@ -320,27 +342,30 @@ async function fillCharacterForm(
 
 	for (let index = 0; index < values.attackItems.length; index += 1) {
 		const item = values.attackItems[index];
-		await attackSection.getByLabel('Attack name').nth(index).fill(item.name);
+		if (item.catalogWeaponName) {
+			await attackSection.getByLabel('Catalog weapon').nth(index).selectOption({
+				label: item.catalogWeaponName
+			});
+		}
+		if (item.name !== undefined) {
+			await attackSection.getByLabel('Attack name').nth(index).fill(item.name);
+		}
 		await attackSection
 			.getByLabel('Attack bonus')
 			.nth(index)
 			.fill(item.attackBonus ?? '');
-		await attackSection
-			.getByLabel('Damage')
-			.nth(index)
-			.fill(item.damage ?? '');
-		await attackSection
-			.getByLabel('Damage type')
-			.nth(index)
-			.fill(item.damageType ?? '');
-		await attackSection
-			.getByLabel('Range')
-			.nth(index)
-			.fill(item.range ?? '');
-		await attackSection
-			.getByLabel('Description')
-			.nth(index)
-			.fill(item.description ?? '');
+		if (item.damage !== undefined) {
+			await attackSection.getByLabel('Damage').nth(index).fill(item.damage);
+		}
+		if (item.damageType !== undefined) {
+			await attackSection.getByLabel('Damage type').nth(index).fill(item.damageType);
+		}
+		if (item.range !== undefined) {
+			await attackSection.getByLabel('Range').nth(index).fill(item.range);
+		}
+		if (item.description !== undefined) {
+			await attackSection.getByLabel('Description').nth(index).fill(item.description);
+		}
 	}
 
 	let currentSpellItemCount = await spellSection.getByLabel('Spell name').count();
@@ -438,10 +463,14 @@ async function fillCharacterForm(
 
 	for (let index = 0; index < values.inventoryItems.length; index += 1) {
 		const item = values.inventoryItems[index];
-		await inventorySection
-			.getByLabel('Description')
-			.nth(index)
-			.fill(item.description ?? '');
+		if (item.catalogItemName) {
+			await inventorySection.getByLabel('Catalog item').nth(index).selectOption({
+				label: item.catalogItemName
+			});
+		}
+		if (item.description !== undefined) {
+			await inventorySection.getByLabel('Description').nth(index).fill(item.description);
+		}
 
 		if (item.isEquipped) {
 			await inventorySection.getByLabel('Currently equipped').nth(index).check();
@@ -449,19 +478,19 @@ async function fillCharacterForm(
 			await inventorySection.getByLabel('Currently equipped').nth(index).uncheck();
 		}
 
-		await inventorySection.getByLabel('Item name').nth(index).fill(item.name);
+		if (item.name !== undefined) {
+			await inventorySection.getByLabel('Item name').nth(index).fill(item.name);
+		}
 		await inventorySection
 			.getByLabel('Quantity')
 			.nth(index)
 			.fill(item.quantity ?? '1');
-		await inventorySection
-			.getByLabel('Value')
-			.nth(index)
-			.fill(item.value ?? '');
-		await inventorySection
-			.getByLabel('Weight')
-			.nth(index)
-			.fill(item.weight ?? '');
+		if (item.value !== undefined) {
+			await inventorySection.getByLabel('Value').nth(index).fill(item.value);
+		}
+		if (item.weight !== undefined) {
+			await inventorySection.getByLabel('Weight').nth(index).fill(item.weight);
+		}
 	}
 }
 

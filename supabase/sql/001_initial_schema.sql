@@ -184,6 +184,33 @@ create table if not exists feats (
 	unique (source_id, owner_user_id, slug)
 );
 
+create table if not exists equipment (
+	id uuid primary key default gen_random_uuid(),
+	owner_user_id uuid references auth.users (id) on delete cascade,
+	source_id uuid not null references content_sources (id),
+	visibility text not null default 'private' check (
+		visibility in ('private', 'campaign', 'shared', 'public')
+	),
+	slug text not null,
+	name text not null,
+	category text not null,
+	summary text,
+	description text,
+	weight numeric check (weight is null or weight >= 0),
+	value text,
+	damage text,
+	damage_type text,
+	range_text text,
+	properties text[] not null default '{}',
+	is_weapon boolean not null default false,
+	is_equippable boolean not null default false,
+	mechanics jsonb not null default '[]'::jsonb,
+	is_system_content boolean not null default false,
+	created_at timestamptz not null default now(),
+	updated_at timestamptz not null default now(),
+	unique (source_id, owner_user_id, slug)
+);
+
 create table if not exists characters (
 	id uuid primary key default gen_random_uuid(),
 	user_id uuid not null references auth.users (id) on delete cascade,
@@ -253,6 +280,7 @@ create table if not exists character_text_sections (
 create table if not exists character_inventory_items (
 	id uuid primary key default gen_random_uuid(),
 	character_id uuid not null references characters (id) on delete cascade,
+	equipment_id uuid references equipment (id),
 	name text not null,
 	quantity integer not null default 1 check (quantity >= 0),
 	description text,
@@ -266,6 +294,7 @@ create table if not exists character_inventory_items (
 create table if not exists character_attacks (
 	id uuid primary key default gen_random_uuid(),
 	character_id uuid not null references characters (id) on delete cascade,
+	equipment_id uuid references equipment (id),
 	name text not null,
 	attack_bonus text,
 	damage text,

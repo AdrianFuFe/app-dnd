@@ -25,7 +25,7 @@ describe('validateContentDataDirectory', () => {
 		const result = validateContentDataDirectory(dataDirectoryPath);
 
 		expect(result.issues).toHaveLength(0);
-		expect(result.validFiles).toHaveLength(12);
+		expect(result.validFiles).toHaveLength(13);
 	});
 
 	it('reports unsupported content types', () => {

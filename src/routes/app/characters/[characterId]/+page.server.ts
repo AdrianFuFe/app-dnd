@@ -1,5 +1,6 @@
 import { error, fail, isRedirect, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
+import { listExpandedContentCatalog } from '$lib/server/repositories/catalog';
 import { deleteCharacter, getCharacterForUser } from '$lib/server/repositories/characters';
 
 export const load: PageServerLoad = async ({ locals, params, url }) => {
@@ -11,11 +12,10 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 		throw error(500, 'Supabase is not configured yet.');
 	}
 
-	const character = await getCharacterForUser(
-		locals.supabase,
-		locals.session.user.id,
-		params.characterId
-	);
+	const [character, expandedContentCatalog] = await Promise.all([
+		getCharacterForUser(locals.supabase, locals.session.user.id, params.characterId),
+		listExpandedContentCatalog(locals.supabase)
+	]);
 
 	if (!character) {
 		throw error(404, 'Character not found.');
@@ -23,6 +23,7 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 
 	return {
 		character,
+		equipmentCatalog: expandedContentCatalog.equipment,
 		updatedName: url.searchParams.get('updated')
 	};
 };

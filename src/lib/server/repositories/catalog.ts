@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
 	getE2EBackgroundOption,
 	getE2EClassOption,
+	getE2EEquipmentCatalogEntry,
 	getE2EFeatCatalogEntry,
 	getE2ESpellCatalogEntry,
 	listE2EExpandedContentCatalog,
@@ -22,10 +23,16 @@ import type {
 } from '$lib/types/content/character-catalog';
 import type {
 	ExpandedContentCatalog,
+	EquipmentCatalogEntry,
 	FeatCatalogEntry,
 	SpellCatalogEntry
 } from '$lib/types/content/expanded-content-catalog';
-import type { CharacterFeatItem, CharacterSpellItem } from '$lib/types/domain/character';
+import type {
+	CharacterAttackItem,
+	CharacterFeatItem,
+	CharacterInventoryItem,
+	CharacterSpellItem
+} from '$lib/types/domain/character';
 
 type SpeciesRow = {
 	id: string;
@@ -92,6 +99,23 @@ type FeatRow = {
 	description: string | null;
 };
 
+type EquipmentRow = {
+	id: string;
+	slug: string;
+	name: string;
+	category: string;
+	summary: string | null;
+	description: string | null;
+	weight: number | null;
+	value: string | null;
+	damage: string | null;
+	damage_type: string | null;
+	range_text: string | null;
+	properties: string[];
+	is_weapon: boolean;
+	is_equippable: boolean;
+};
+
 export async function listCharacterCreationCatalog(
 	supabase: SupabaseClient<Database>
 ): Promise<CharacterCreationCatalog> {
@@ -124,14 +148,16 @@ export async function listExpandedContentCatalog(
 		return listE2EExpandedContentCatalog();
 	}
 
-	const [spells, feats] = await Promise.all([
+	const [spells, feats, equipment] = await Promise.all([
 		listSpellCatalogEntries(supabase),
-		listFeatCatalogEntries(supabase)
+		listFeatCatalogEntries(supabase),
+		listEquipmentCatalogEntries(supabase)
 	]);
 
 	return {
 		spells,
-		feats
+		feats,
+		equipment
 	};
 }
 
@@ -315,6 +341,70 @@ export async function resolveCharacterFeatCatalogSelections(
 		normalizeCharacterFeatItem(
 			item,
 			item.featId ? featEntriesById.get(item.featId) : undefined
+		)
+	);
+}
+
+export async function resolveCharacterInventoryCatalogSelections(
+	supabase: SupabaseClient<Database>,
+	selection: {
+		inventoryItems: CharacterInventoryItem[];
+	}
+): Promise<CharacterInventoryItem[]> {
+	const linkedEquipmentIds = selection.inventoryItems
+		.map((item) => item.equipmentId)
+		.filter(
+			(equipmentId): equipmentId is string =>
+				typeof equipmentId === 'string' && equipmentId.length > 0
+		);
+
+	if (linkedEquipmentIds.length === 0) {
+		return selection.inventoryItems;
+	}
+
+	const equipmentEntries = isE2EMockSupabaseClient(supabase)
+		? linkedEquipmentIds
+				.map((equipmentId) => getE2EEquipmentCatalogEntry(equipmentId))
+				.filter((entry): entry is EquipmentCatalogEntry => Boolean(entry))
+		: await loadSelectedEquipmentCatalogEntries(supabase, linkedEquipmentIds);
+	const equipmentEntriesById = new Map(equipmentEntries.map((entry) => [entry.id, entry]));
+
+	return selection.inventoryItems.map((item) =>
+		normalizeCharacterInventoryItem(
+			item,
+			item.equipmentId ? equipmentEntriesById.get(item.equipmentId) : undefined
+		)
+	);
+}
+
+export async function resolveCharacterAttackCatalogSelections(
+	supabase: SupabaseClient<Database>,
+	selection: {
+		attackItems: CharacterAttackItem[];
+	}
+): Promise<CharacterAttackItem[]> {
+	const linkedEquipmentIds = selection.attackItems
+		.map((item) => item.equipmentId)
+		.filter(
+			(equipmentId): equipmentId is string =>
+				typeof equipmentId === 'string' && equipmentId.length > 0
+		);
+
+	if (linkedEquipmentIds.length === 0) {
+		return selection.attackItems;
+	}
+
+	const equipmentEntries = isE2EMockSupabaseClient(supabase)
+		? linkedEquipmentIds
+				.map((equipmentId) => getE2EEquipmentCatalogEntry(equipmentId))
+				.filter((entry): entry is EquipmentCatalogEntry => Boolean(entry))
+		: await loadSelectedEquipmentCatalogEntries(supabase, linkedEquipmentIds);
+	const equipmentEntriesById = new Map(equipmentEntries.map((entry) => [entry.id, entry]));
+
+	return selection.attackItems.map((item) =>
+		normalizeCharacterAttackItem(
+			item,
+			item.equipmentId ? equipmentEntriesById.get(item.equipmentId) : undefined
 		)
 	);
 }
@@ -625,6 +715,41 @@ async function loadSelectedFeatCatalogEntries(
 	return data.map(mapFeatCatalogEntry);
 }
 
+async function listEquipmentCatalogEntries(
+	supabase: SupabaseClient<Database>
+): Promise<EquipmentCatalogEntry[]> {
+	const { data, error } = await supabase
+		.from('equipment')
+		.select(
+			'id, slug, name, category, summary, description, weight, value, damage, damage_type, range_text, properties, is_weapon, is_equippable'
+		)
+		.order('name', { ascending: true });
+
+	if (error) {
+		throw new Error('Failed to load equipment catalog entries.');
+	}
+
+	return data.map(mapEquipmentCatalogEntry);
+}
+
+async function loadSelectedEquipmentCatalogEntries(
+	supabase: SupabaseClient<Database>,
+	equipmentIds: string[]
+): Promise<EquipmentCatalogEntry[]> {
+	const { data, error } = await supabase
+		.from('equipment')
+		.select(
+			'id, slug, name, category, summary, description, weight, value, damage, damage_type, range_text, properties, is_weapon, is_equippable'
+		)
+		.in('id', equipmentIds);
+
+	if (error) {
+		throw new Error('Failed to load selected equipment catalog entries.');
+	}
+
+	return data.map(mapEquipmentCatalogEntry);
+}
+
 function mapSpellCatalogEntry(
 	spell: Pick<
 		SpellRow,
@@ -672,6 +797,43 @@ function mapFeatCatalogEntry(
 		prerequisites: feat.prerequisites,
 		summary: feat.summary,
 		description: feat.description
+	};
+}
+
+function mapEquipmentCatalogEntry(
+	equipment: Pick<
+		EquipmentRow,
+		| 'id'
+		| 'slug'
+		| 'name'
+		| 'category'
+		| 'summary'
+		| 'description'
+		| 'weight'
+		| 'value'
+		| 'damage'
+		| 'damage_type'
+		| 'range_text'
+		| 'properties'
+		| 'is_weapon'
+		| 'is_equippable'
+	>
+): EquipmentCatalogEntry {
+	return {
+		id: equipment.id,
+		slug: equipment.slug,
+		name: equipment.name,
+		category: equipment.category,
+		summary: equipment.summary,
+		description: equipment.description,
+		weight: equipment.weight,
+		value: equipment.value,
+		damage: equipment.damage,
+		damageType: equipment.damage_type,
+		range: equipment.range_text,
+		properties: equipment.properties,
+		isWeapon: equipment.is_weapon,
+		isEquippable: equipment.is_equippable
 	};
 }
 
@@ -723,5 +885,50 @@ function normalizeCharacterFeatItem(
 		featId: feat.id,
 		name: feat.name,
 		description: item.description ?? feat.description ?? feat.summary ?? undefined
+	};
+}
+
+function normalizeCharacterInventoryItem(
+	item: CharacterInventoryItem,
+	equipment: EquipmentCatalogEntry | undefined
+): CharacterInventoryItem {
+	if (!item.equipmentId) {
+		return item;
+	}
+
+	if (!equipment) {
+		throw new Error('Please choose a valid inventory item from the catalog.');
+	}
+
+	return {
+		...item,
+		equipmentId: equipment.id,
+		name: equipment.name,
+		description: item.description ?? equipment.description ?? equipment.summary ?? undefined,
+		weight: item.weight ?? equipment.weight ?? undefined,
+		value: item.value ?? equipment.value ?? undefined
+	};
+}
+
+function normalizeCharacterAttackItem(
+	item: CharacterAttackItem,
+	equipment: EquipmentCatalogEntry | undefined
+): CharacterAttackItem {
+	if (!item.equipmentId) {
+		return item;
+	}
+
+	if (!equipment || !equipment.isWeapon) {
+		throw new Error('Please choose a valid attack item from the catalog.');
+	}
+
+	return {
+		...item,
+		equipmentId: equipment.id,
+		name: equipment.name,
+		damage: item.damage ?? equipment.damage ?? undefined,
+		damageType: item.damageType ?? equipment.damageType ?? undefined,
+		range: item.range ?? equipment.range ?? undefined,
+		description: item.description ?? equipment.description ?? equipment.summary ?? undefined
 	};
 }

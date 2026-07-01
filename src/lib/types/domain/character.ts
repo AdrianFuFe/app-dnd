@@ -43,6 +43,7 @@ export type CharacterCombatStats = {
 };
 
 export type CharacterInventoryItem = {
+	equipmentId?: string;
 	name: string;
 	quantity: number;
 	description?: string;
@@ -52,6 +53,7 @@ export type CharacterInventoryItem = {
 };
 
 export type CharacterAttackItem = {
+	equipmentId?: string;
 	name: string;
 	attackBonus?: string;
 	damage?: string;

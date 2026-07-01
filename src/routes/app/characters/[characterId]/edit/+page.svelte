@@ -21,6 +21,7 @@
 
 	<CharacterCreateForm
 		catalog={data.catalog}
+		equipmentCatalog={data.equipmentCatalog}
 		featCatalog={data.featCatalog}
 		spellCatalog={data.spellCatalog}
 		values={form?.values ?? data.values}

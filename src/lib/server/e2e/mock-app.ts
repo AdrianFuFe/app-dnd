@@ -10,6 +10,7 @@ import type {
 } from '$lib/types/content/character-catalog';
 import type {
 	ExpandedContentCatalog,
+	EquipmentCatalogEntry,
 	FeatCatalogEntry,
 	SpellCatalogEntry
 } from '$lib/types/content/expanded-content-catalog';
@@ -45,6 +46,11 @@ const E2E_SPELL_MAGIC_MISSILE_ID = '99999999-9999-4999-8999-999999999999';
 const E2E_SPELL_GUIDING_BOLT_ID = '12121212-1212-4121-8121-121212121212';
 const E2E_FEAT_HEAVILY_ARMORED_ID = '13131313-1313-4131-8131-131313131313';
 const E2E_FEAT_RESILIENT_WISDOM_ID = '14141414-1414-4141-8141-141414141414';
+const E2E_EQUIPMENT_QUARTERSTAFF_ID = '15151515-1515-4151-8151-151515151515';
+const E2E_EQUIPMENT_WARHAMMER_ID = '16161616-1616-4161-8161-161616161616';
+const E2E_EQUIPMENT_SPELLBOOK_ID = '17171717-1717-4171-8171-171717171717';
+const E2E_EQUIPMENT_SMITH_TOOLS_ID = '18181818-1818-4181-8181-181818181818';
+const E2E_EQUIPMENT_LANTERN_ID = '19191919-1919-4191-8191-191919191919';
 
 const initialCharacters: E2ECharacterRecord[] = [
 	{
@@ -79,6 +85,7 @@ const initialCharacters: E2ECharacterRecord[] = [
 		hitDice: '3d6',
 		attackItems: [
 			{
+				equipmentId: E2E_EQUIPMENT_QUARTERSTAFF_ID,
 				name: 'Quarterstaff',
 				attackBonus: '+4',
 				damage: '1d6',
@@ -102,6 +109,7 @@ const initialCharacters: E2ECharacterRecord[] = [
 		featItems: [],
 		inventoryItems: [
 			{
+				equipmentId: E2E_EQUIPMENT_SPELLBOOK_ID,
 				name: 'Spellbook',
 				quantity: 1,
 				isEquipped: false
@@ -282,6 +290,88 @@ const e2eExpandedContentCatalog: ExpandedContentCatalog = {
 			summary: 'Improve Wisdom and gain Wisdom saving throw proficiency.',
 			description: 'A simple defensive feat for casters and support characters.'
 		}
+	],
+	equipment: [
+		{
+			id: E2E_EQUIPMENT_LANTERN_ID,
+			slug: 'lantern',
+			name: 'Lantern',
+			category: 'adventuring-gear',
+			summary: 'A hooded lantern for steady light.',
+			description: 'A lantern useful for long watches, ruins, and coastal fog.',
+			weight: 2,
+			value: '5 gp',
+			damage: null,
+			damageType: null,
+			range: null,
+			properties: [],
+			isWeapon: false,
+			isEquippable: true
+		},
+		{
+			id: E2E_EQUIPMENT_QUARTERSTAFF_ID,
+			slug: 'quarterstaff',
+			name: 'Quarterstaff',
+			category: 'weapon',
+			summary: 'A simple wooden staff usable as a melee weapon.',
+			description: 'A balanced staff favored by travelers, mages, and disciplined scouts.',
+			weight: 4,
+			value: '2 sp',
+			damage: '1d6',
+			damageType: 'bludgeoning',
+			range: 'Melee',
+			properties: ['versatile (1d8)'],
+			isWeapon: true,
+			isEquippable: true
+		},
+		{
+			id: E2E_EQUIPMENT_SMITH_TOOLS_ID,
+			slug: 'smith-tools',
+			name: "Smith's Tools",
+			category: 'tool',
+			summary: 'A forge-ready tool set for metalwork and repair.',
+			description: 'Useful for making camp repairs or working a proper smithy.',
+			weight: 8,
+			value: '20 gp',
+			damage: null,
+			damageType: null,
+			range: null,
+			properties: [],
+			isWeapon: false,
+			isEquippable: true
+		},
+		{
+			id: E2E_EQUIPMENT_SPELLBOOK_ID,
+			slug: 'spellbook',
+			name: 'Spellbook',
+			category: 'book',
+			summary: "A wizard's spellbook filled with arcane notes.",
+			description: 'The written foundation of a prepared caster’s practice.',
+			weight: 3,
+			value: '50 gp',
+			damage: null,
+			damageType: null,
+			range: null,
+			properties: [],
+			isWeapon: false,
+			isEquippable: true
+		},
+		{
+			id: E2E_EQUIPMENT_WARHAMMER_ID,
+			slug: 'warhammer',
+			name: 'Warhammer',
+			category: 'weapon',
+			summary: 'A martial hammer built for crushing hits.',
+			description: 'A versatile melee weapon that rewards strong front-line fighters.',
+			weight: 2,
+			value: '15 gp',
+			damage: '1d8',
+			damageType: 'bludgeoning',
+			range: 'Melee',
+			properties: ['versatile (1d10)'],
+			isWeapon: true,
+			isEquippable: true
+		}
 	]
 };
 
@@ -371,7 +461,8 @@ export function listE2ECatalog(): CharacterCreationCatalog {
 export function listE2EExpandedContentCatalog(): ExpandedContentCatalog {
 	return {
 		spells: e2eExpandedContentCatalog.spells.map(cloneSpellCatalogEntry),
-		feats: e2eExpandedContentCatalog.feats.map(cloneFeatCatalogEntry)
+		feats: e2eExpandedContentCatalog.feats.map(cloneFeatCatalogEntry),
+		equipment: e2eExpandedContentCatalog.equipment.map(cloneEquipmentCatalogEntry)
 	};
 }
 
@@ -405,6 +496,12 @@ export function getE2ESpellCatalogEntry(spellId: string): SpellCatalogEntry | un
 
 export function getE2EFeatCatalogEntry(featId: string): FeatCatalogEntry | undefined {
 	return e2eExpandedContentCatalog.feats.find((entry) => entry.id === featId);
+}
+
+export function getE2EEquipmentCatalogEntry(
+	equipmentId: string
+): EquipmentCatalogEntry | undefined {
+	return e2eExpandedContentCatalog.equipment.find((entry) => entry.id === equipmentId);
 }
 
 export function listE2ECharactersForUser(userId: string) {
@@ -503,5 +600,12 @@ function cloneFeatCatalogEntry(feat: FeatCatalogEntry): FeatCatalogEntry {
 	return {
 		...feat,
 		prerequisites: [...feat.prerequisites]
+	};
+}
+
+function cloneEquipmentCatalogEntry(equipment: EquipmentCatalogEntry): EquipmentCatalogEntry {
+	return {
+		...equipment,
+		properties: [...equipment.properties]
 	};
 }

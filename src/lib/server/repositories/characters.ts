@@ -202,7 +202,7 @@ export async function getCharacterForUser(
 				.maybeSingle(),
 			supabase
 				.from('character_attacks')
-				.select('name, attack_bonus, damage, damage_type, range, description')
+				.select('equipment_id, name, attack_bonus, damage, damage_type, range, description')
 				.eq('character_id', characterId),
 			supabase
 				.from('character_spells')
@@ -216,7 +216,7 @@ export async function getCharacterForUser(
 				.eq('character_id', characterId),
 			supabase
 				.from('character_inventory_items')
-				.select('name, quantity, description, weight, value, is_equipped')
+				.select('equipment_id, name, quantity, description, weight, value, is_equipped')
 				.eq('character_id', characterId)
 		]);
 
@@ -245,6 +245,7 @@ export async function getCharacterForUser(
 	const attackItems =
 		attacksResult.data.length > 0
 			? attacksResult.data.map((item) => ({
+					equipmentId: item.equipment_id ?? undefined,
 					name: item.name,
 					attackBonus: item.attack_bonus ?? undefined,
 					damage: item.damage ?? undefined,
@@ -257,6 +258,7 @@ export async function getCharacterForUser(
 	const inventoryItems =
 		inventoryResult.data.length > 0
 			? inventoryResult.data.map((item) => ({
+					equipmentId: item.equipment_id ?? undefined,
 					name: item.name,
 					quantity: item.quantity,
 					description: item.description ?? undefined,
@@ -514,7 +516,7 @@ async function replaceCharacterAttackItems(
 ) {
 	const { data: existingItems, error: selectError } = await supabase
 		.from('character_attacks')
-		.select('name, attack_bonus, damage, damage_type, range, description')
+		.select('equipment_id, name, attack_bonus, damage, damage_type, range, description')
 		.eq('character_id', characterId);
 
 	if (selectError || !existingItems) {
@@ -705,6 +707,7 @@ function toCharacterInventoryItemInsert(
 ): CharacterInventoryItemInsert {
 	return {
 		character_id: characterId,
+		equipment_id: item.equipmentId ?? null,
 		name: item.name,
 		quantity: item.quantity,
 		description: item.description ?? null,
@@ -720,6 +723,7 @@ function toCharacterAttackItemInsert(
 ): CharacterAttackInsert {
 	return {
 		character_id: characterId,
+		equipment_id: item.equipmentId ?? null,
 		name: item.name,
 		attack_bonus: item.attackBonus ?? null,
 		damage: item.damage ?? null,
@@ -864,10 +868,11 @@ function splitLegacyAttackEntries(value: string): string[] {
 function mapAttackRow(
 	item: Pick<
 		CharacterAttackRow,
-		'name' | 'attack_bonus' | 'damage' | 'damage_type' | 'range' | 'description'
+		'equipment_id' | 'name' | 'attack_bonus' | 'damage' | 'damage_type' | 'range' | 'description'
 	>
 ): CharacterAttackItem {
 	return {
+		equipmentId: item.equipment_id ?? undefined,
 		name: item.name,
 		attackBonus: item.attack_bonus ?? undefined,
 		damage: item.damage ?? undefined,

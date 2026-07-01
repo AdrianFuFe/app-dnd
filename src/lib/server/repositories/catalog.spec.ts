@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import {
 	listCharacterCreationCatalog,
 	listExpandedContentCatalog,
+	resolveCharacterAttackCatalogSelections,
 	resolveCharacterFeatCatalogSelections,
+	resolveCharacterInventoryCatalogSelections,
 	resolveCharacterSpellCatalogSelections,
 	resolveCharacterCreationCatalogSelections
 } from './catalog';
@@ -340,7 +342,7 @@ describe('resolveCharacterCreationCatalogSelections', () => {
 });
 
 describe('listExpandedContentCatalog', () => {
-	it('loads spell and feat entries for shared catalog browsing', async () => {
+	it('loads spell, feat, and equipment entries for shared catalog browsing', async () => {
 		const spellNameOrder = vi.fn().mockResolvedValue({
 			data: [
 				{
@@ -380,6 +382,29 @@ describe('listExpandedContentCatalog', () => {
 		});
 		const featSelect = vi.fn().mockReturnValue({ order: featOrder });
 
+		const equipmentOrder = vi.fn().mockResolvedValue({
+			data: [
+				{
+					id: 'equipment-1',
+					slug: 'quarterstaff',
+					name: 'Quarterstaff',
+					category: 'weapon',
+					summary: 'A simple weapon.',
+					description: 'A sturdy wooden staff.',
+					weight: 4,
+					value: '2 sp',
+					damage: '1d6',
+					damage_type: 'bludgeoning',
+					range_text: 'Melee',
+					properties: ['versatile (1d8)'],
+					is_weapon: true,
+					is_equippable: true
+				}
+			],
+			error: null
+		});
+		const equipmentSelect = vi.fn().mockReturnValue({ order: equipmentOrder });
+
 		const from = vi.fn((table: string) => {
 			if (table === 'spells') {
 				return { select: spellSelect };
@@ -387,6 +412,10 @@ describe('listExpandedContentCatalog', () => {
 
 			if (table === 'feats') {
 				return { select: featSelect };
+			}
+
+			if (table === 'equipment') {
+				return { select: equipmentSelect };
 			}
 
 			throw new Error(`Unexpected table ${table}`);
@@ -421,6 +450,24 @@ describe('listExpandedContentCatalog', () => {
 					prerequisites: ['proficiency:armor:medium-armor'],
 					summary: 'Gain heavy armor training.',
 					description: 'Boosts durability for front-line builds.'
+				}
+			],
+			equipment: [
+				{
+					id: 'equipment-1',
+					slug: 'quarterstaff',
+					name: 'Quarterstaff',
+					category: 'weapon',
+					summary: 'A simple weapon.',
+					description: 'A sturdy wooden staff.',
+					weight: 4,
+					value: '2 sp',
+					damage: '1d6',
+					damageType: 'bludgeoning',
+					range: 'Melee',
+					properties: ['versatile (1d8)'],
+					isWeapon: true,
+					isEquippable: true
 				}
 			]
 		});
@@ -631,5 +678,118 @@ describe('resolveCharacterFeatCatalogSelections', () => {
 				]
 			})
 		).rejects.toThrow('Please choose a valid feat from the catalog.');
+	});
+});
+
+describe('resolveCharacterAttackCatalogSelections', () => {
+	it('normalizes linked attacks from trusted equipment data', async () => {
+		const equipmentIn = vi.fn().mockResolvedValue({
+			data: [
+				{
+					id: 'equipment-1',
+					slug: 'quarterstaff',
+					name: 'Quarterstaff',
+					category: 'weapon',
+					summary: 'A simple weapon.',
+					description: 'A sturdy wooden staff.',
+					weight: 4,
+					value: '2 sp',
+					damage: '1d6',
+					damage_type: 'bludgeoning',
+					range_text: 'Melee',
+					properties: ['versatile (1d8)'],
+					is_weapon: true,
+					is_equippable: true
+				}
+			],
+			error: null
+		});
+		const equipmentSelect = vi.fn().mockReturnValue({ in: equipmentIn });
+		const from = vi.fn((table: string) => {
+			if (table === 'equipment') {
+				return { select: equipmentSelect };
+			}
+
+			throw new Error(`Unexpected table ${table}`);
+		});
+
+		const attackItems = await resolveCharacterAttackCatalogSelections({ from } as never, {
+			attackItems: [
+				{
+					equipmentId: 'equipment-1',
+					name: 'Old Name',
+					attackBonus: '+4'
+				}
+			]
+		});
+
+		expect(attackItems).toEqual([
+			{
+				equipmentId: 'equipment-1',
+				name: 'Quarterstaff',
+				attackBonus: '+4',
+				damage: '1d6',
+				damageType: 'bludgeoning',
+				range: 'Melee',
+				description: 'A sturdy wooden staff.'
+			}
+		]);
+	});
+});
+
+describe('resolveCharacterInventoryCatalogSelections', () => {
+	it('normalizes linked inventory items from trusted equipment data', async () => {
+		const equipmentIn = vi.fn().mockResolvedValue({
+			data: [
+				{
+					id: 'equipment-1',
+					slug: 'spellbook',
+					name: 'Spellbook',
+					category: 'book',
+					summary: 'Arcane notes.',
+					description: 'A wizard spellbook.',
+					weight: 3,
+					value: '50 gp',
+					damage: null,
+					damage_type: null,
+					range_text: null,
+					properties: [],
+					is_weapon: false,
+					is_equippable: true
+				}
+			],
+			error: null
+		});
+		const equipmentSelect = vi.fn().mockReturnValue({ in: equipmentIn });
+		const from = vi.fn((table: string) => {
+			if (table === 'equipment') {
+				return { select: equipmentSelect };
+			}
+
+			throw new Error(`Unexpected table ${table}`);
+		});
+
+		const inventoryItems = await resolveCharacterInventoryCatalogSelections({ from } as never, {
+			inventoryItems: [
+				{
+					equipmentId: 'equipment-1',
+					name: 'Old Name',
+					quantity: 1,
+					isEquipped: false
+				}
+			]
+		});
+
+		expect(inventoryItems).toEqual([
+			{
+				equipmentId: 'equipment-1',
+				name: 'Spellbook',
+				quantity: 1,
+				description: 'A wizard spellbook.',
+				weight: 3,
+				value: '50 gp',
+				isEquipped: false
+			}
+		]);
 	});
 });

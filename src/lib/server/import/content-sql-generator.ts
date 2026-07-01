@@ -107,6 +107,24 @@ interface FeatItem {
 	mechanics?: unknown[];
 }
 
+interface EquipmentItem {
+	slug: string;
+	name: string;
+	category: string;
+	summary?: string | null;
+	description?: string | null;
+	weight?: number | null;
+	value?: string | null;
+	damage?: string | null;
+	damageType?: string | null;
+	range?: string | null;
+	properties?: string[];
+	isWeapon?: boolean;
+	isEquippable?: boolean;
+	visibility?: Visibility;
+	mechanics?: unknown[];
+}
+
 interface ContentFile<T> {
 	items: T[];
 }
@@ -185,6 +203,7 @@ export function generateSrdCatalogSeedSql(): string {
 	const backgroundsFile = readJsonFile<ContentFile<BackgroundItem>>('data/srd-5-1/backgrounds.json');
 	const spellsFile = readJsonFile<ContentFile<SpellItem>>('data/srd-5-1/spells.json');
 	const featsFile = readJsonFile<ContentFile<FeatItem>>('data/srd-5-1/feats.json');
+	const equipmentFile = readJsonFile<ContentFile<EquipmentItem>>('data/srd-5-1/equipment.json');
 
 	const sourceId = sourceIdSql('srd-5-1');
 
@@ -452,6 +471,52 @@ export function generateSrdCatalogSeedSql(): string {
 		)
 	);
 
+	const equipmentSql = buildInsert(
+		'equipment',
+		[
+			'owner_user_id',
+			'source_id',
+			'visibility',
+			'slug',
+			'name',
+			'category',
+			'summary',
+			'description',
+			'weight',
+			'value',
+			'damage',
+			'damage_type',
+			'range_text',
+			'properties',
+			'is_weapon',
+			'is_equippable',
+			'mechanics',
+			'is_system_content'
+		],
+		equipmentFile.items.map((item) =>
+			[
+				'null',
+				sourceId,
+				sqlVisibility(item.visibility),
+				sqlString(item.slug),
+				sqlString(item.name),
+				sqlString(item.category),
+				sqlString(item.summary ?? null),
+				sqlString(item.description ?? null),
+				item.weight ?? 'null',
+				sqlString(item.value ?? null),
+				sqlString(item.damage ?? null),
+				sqlString(item.damageType ?? null),
+				sqlString(item.range ?? null),
+				sqlTextArray(item.properties),
+				item.isWeapon ?? false,
+				item.isEquippable ?? false,
+				sqlJson(item.mechanics ?? []),
+				'true'
+			].join(', ')
+		)
+	);
+
 	return [
 		'-- Generated from data/srd-5-1/*.json',
 		'-- Run after 001_initial_schema.sql and 003_content_sources_seed.sql',
@@ -462,6 +527,7 @@ export function generateSrdCatalogSeedSql(): string {
 		subclassesSql,
 		backgroundsSql,
 		spellsSql,
-		featsSql
+		featsSql,
+		equipmentSql
 	].join('\n');
 }

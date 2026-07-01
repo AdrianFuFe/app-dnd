@@ -54,6 +54,7 @@ In that case, it should still name the next recommended block.
     - `S13 - Admin And Test User Workflow`
 - effectively completed beyond the original status notes:
     - expanded catalog wiring now also covers `backgrounds`, `subspecies`, and `subclasses`
+    - equipment catalog wiring now also covers character `attacks` and `inventory`, including linked `equipmentId` persistence, server-side normalization, enriched detail rendering, and targeted E2E coverage for the catalog selectors
     - `inventory` already has a structured workflow with child-table persistence
     - admin/test-user operator tooling is implemented through `scripts/create-test-user.ts`, `scripts/manage-user-role.ts`, and `docs/11-admin-and-test-user-workflow.md`
 - implemented but still intentionally shallow:
@@ -62,11 +63,11 @@ In that case, it should still name the next recommended block.
     - permissions exist mainly as schema and RLS foundation, not as a full admin feature set
 - current project point:
   - the MVP app shell and first character workflow are working
-  - structured character sections now cover `inventory`, `attacks`, and `spells`
+  - structured character sections now cover `inventory`, `attacks`, `spells`, and `feats`
   - the repo is ahead of this plan document in character-flow work, and environment separation is now documented
   - runtime integration behavior is now documented in `README.md` and `docs/10-runtime-integration-check.md`, with request-time status checks in `src/lib/server/runtime/integration.ts`
 - next recommended block:
-  - `S15 - Expanded Spell And Ability Catalogs`
+  - `S15 - Expanded Spell And Ability Catalogs`, using the now-closed equipment character wiring as the stopping point before returning to content-import breadth and quality
 
 ## Session Blocks
 
@@ -346,8 +347,8 @@ In that case, it should still name the next recommended block.
 - closure criterion:
     - more catalog entities such as `spells` and ability-related content are validated and available for future UI wiring
 - current repo note:
-    - the repo already includes initial `spells` and `feats` catalog files plus validation and seed-generation support
-    - use this block to continue expanding that catalog surface or to close any remaining gaps before moving on
+    - the repo already includes initial `spells`, `feats`, and in-progress `equipment` catalog import/validation support
+    - use this block to keep expanding and hardening the shared catalog surface now that the character-facing equipment wiring is effectively closed
 
 ### S16 - Structured Character Sections
 
@@ -368,7 +369,7 @@ In that case, it should still name the next recommended block.
     - at least one currently free-text section such as `spells`, `attacks`, or `inventory` has a structured workflow
     - the change improves editing without breaking MVP ownership rules
 - current repo note:
-  - `inventory`, `attacks`, and `spells` now have structured workflows in the current codebase
+  - `inventory`, `attacks`, `spells`, and `feats` now have structured workflows in the current codebase
 
 ## Notes
 

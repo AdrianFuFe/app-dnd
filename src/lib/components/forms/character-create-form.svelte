@@ -5,15 +5,17 @@
 		createCharacterFormValues,
 		type CharacterCreateFormValues
 	} from '$lib/domain/characters/character-form';
-	import type { CharacterCreationCatalog } from '$lib/types/content/character-catalog';
-	import type {
-		FeatCatalogEntry,
-		SpellCatalogEntry
-	} from '$lib/types/content/expanded-content-catalog';
+import type { CharacterCreationCatalog } from '$lib/types/content/character-catalog';
+import type {
+	EquipmentCatalogEntry,
+	FeatCatalogEntry,
+	SpellCatalogEntry
+} from '$lib/types/content/expanded-content-catalog';
 
 	type CharacterFieldErrors = Partial<Record<keyof CharacterCreateFormValues, string[]>>;
 	type CharacterCancelHref = '/app/characters' | `/app/characters/${string}`;
 	type InventoryFormItem = {
+		equipmentId: string;
 		name: string;
 		quantity: string;
 		description: string;
@@ -22,6 +24,7 @@
 		isEquipped: boolean;
 	};
 	type AttackFormItem = {
+		equipmentId: string;
 		name: string;
 		attackBonus: string;
 		damage: string;
@@ -49,6 +52,7 @@
 
 	let {
 		catalog,
+		equipmentCatalog,
 		featCatalog,
 		spellCatalog,
 		values,
@@ -59,6 +63,7 @@
 		cancelLabel = 'Back to characters'
 	}: {
 		catalog: CharacterCreationCatalog;
+		equipmentCatalog: EquipmentCatalogEntry[];
 		featCatalog: FeatCatalogEntry[];
 		spellCatalog: SpellCatalogEntry[];
 		values: CharacterCreateFormValues;
@@ -234,6 +239,7 @@
 		inventoryItems = [
 			...inventoryItems,
 			{
+				equipmentId: '',
 				name: '',
 				quantity: '1',
 				description: '',
@@ -258,6 +264,7 @@
 		attackItems = [
 			...attackItems,
 			{
+				equipmentId: '',
 				name: '',
 				attackBonus: '',
 				damage: '',
@@ -298,6 +305,65 @@
 
 	function findFeatCatalogEntryById(featId: string) {
 		return featCatalog.find((entry) => entry.id === featId);
+	}
+
+	function availableAttackEquipmentCatalogEntries() {
+		return equipmentCatalog.filter((entry) => entry.isWeapon);
+	}
+
+	function findEquipmentCatalogEntryById(equipmentId: string) {
+		return equipmentCatalog.find((entry) => entry.id === equipmentId);
+	}
+
+	function selectedAttackEquipmentCatalogId(item: AttackFormItem): string {
+		const match = equipmentCatalog.find(
+			(entry) => entry.id === item.equipmentId || entry.name === item.name
+		);
+
+		return match?.id ?? '';
+	}
+
+	function selectedInventoryEquipmentCatalogId(item: InventoryFormItem): string {
+		const match = equipmentCatalog.find(
+			(entry) => entry.id === item.equipmentId || entry.name === item.name
+		);
+
+		return match?.id ?? '';
+	}
+
+	function applyCatalogAttack(index: number, equipmentId: string) {
+		const equipment = findEquipmentCatalogEntryById(equipmentId);
+
+		if (!equipment) {
+			updateAttackItem(index, { equipmentId: '' });
+			return;
+		}
+
+		updateAttackItem(index, {
+			equipmentId: equipment.id,
+			name: equipment.name,
+			damage: equipment.damage ?? '',
+			damageType: equipment.damageType ?? '',
+			range: equipment.range ?? '',
+			description: equipment.description ?? equipment.summary ?? ''
+		});
+	}
+
+	function applyCatalogInventoryItem(index: number, equipmentId: string) {
+		const equipment = findEquipmentCatalogEntryById(equipmentId);
+
+		if (!equipment) {
+			updateInventoryItem(index, { equipmentId: '' });
+			return;
+		}
+
+		updateInventoryItem(index, {
+			equipmentId: equipment.id,
+			name: equipment.name,
+			weight: equipment.weight !== null ? String(equipment.weight) : '',
+			value: equipment.value ?? '',
+			description: equipment.description ?? equipment.summary ?? ''
+		});
 	}
 
 	function selectedFeatCatalogId(item: FeatFormItem): string {
@@ -357,6 +423,7 @@
 	function attackItemsFieldValue(): string {
 		return JSON.stringify(
 			attackItems.map((item) => ({
+				equipmentId: item.equipmentId.trim().length > 0 ? item.equipmentId : undefined,
 				name: item.name,
 				attackBonus: item.attackBonus,
 				damage: item.damage,
@@ -370,6 +437,7 @@
 	function inventoryItemsFieldValue(): string {
 		return JSON.stringify(
 			inventoryItems.map((item) => ({
+				equipmentId: item.equipmentId.trim().length > 0 ? item.equipmentId : undefined,
 				name: item.name,
 				quantity: item.quantity.trim().length > 0 ? Number(item.quantity) : 1,
 				description: item.description,
@@ -414,6 +482,7 @@
 
 				if (Array.isArray(parsed)) {
 					return parsed.map((item) => ({
+						equipmentId: typeof item?.equipmentId === 'string' ? item.equipmentId : '',
 						name: typeof item?.name === 'string' ? item.name : '',
 						attackBonus: typeof item?.attackBonus === 'string' ? item.attackBonus : '',
 						damage: typeof item?.damage === 'string' ? item.damage : '',
@@ -431,6 +500,7 @@
 			.map((item) => item.trim())
 			.filter((item) => item.length > 0)
 			.map((name) => ({
+				equipmentId: '',
 				name,
 				attackBonus: '',
 				damage: '',
@@ -461,6 +531,7 @@
 			}
 
 			return parsed.map((item) => ({
+				equipmentId: typeof item?.equipmentId === 'string' ? item.equipmentId : '',
 				name: typeof item?.name === 'string' ? item.name : '',
 				quantity:
 					typeof item?.quantity === 'number' || typeof item?.quantity === 'string'
@@ -840,6 +911,26 @@
 						</div>
 
 						<div class="mt-4 grid gap-4 lg:grid-cols-2">
+							<label class="block lg:col-span-2">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Catalog weapon</span
+								>
+								<select
+									class="block w-full rounded-lg border-stone-300"
+									value={selectedAttackEquipmentCatalogId(item)}
+									onchange={(event) =>
+										applyCatalogAttack(
+											index,
+											(event.currentTarget as HTMLSelectElement).value
+										)}
+								>
+									<option value="">Custom attack or choose from catalog</option>
+									{#each availableAttackEquipmentCatalogEntries() as option (option.id)}
+										<option value={option.id}>{option.name}</option>
+									{/each}
+								</select>
+							</label>
+
 							<label class="block">
 								<span class="mb-1 block text-sm font-medium text-stone-700"
 									>Attack name</span
@@ -850,6 +941,7 @@
 									value={item.name}
 									oninput={(event) =>
 										updateAttackItem(index, {
+											equipmentId: '',
 											name: (event.currentTarget as HTMLInputElement).value
 										})}
 								/>
@@ -882,6 +974,7 @@
 									value={item.damage}
 									oninput={(event) =>
 										updateAttackItem(index, {
+											equipmentId: '',
 											damage: (event.currentTarget as HTMLInputElement).value
 										})}
 								/>
@@ -898,6 +991,7 @@
 									value={item.damageType}
 									oninput={(event) =>
 										updateAttackItem(index, {
+											equipmentId: '',
 											damageType: (event.currentTarget as HTMLInputElement).value
 										})}
 								/>
@@ -914,6 +1008,7 @@
 									value={item.range}
 									oninput={(event) =>
 										updateAttackItem(index, {
+											equipmentId: '',
 											range: (event.currentTarget as HTMLInputElement).value
 										})}
 								/>
@@ -928,6 +1023,7 @@
 									value={item.description}
 									oninput={(event) =>
 										updateAttackItem(index, {
+											equipmentId: '',
 											description: (event.currentTarget as HTMLTextAreaElement).value
 										})}></textarea>
 							</label>
@@ -1308,6 +1404,26 @@
 						</div>
 
 						<div class="mt-4 grid gap-4 lg:grid-cols-2">
+							<label class="block lg:col-span-2">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Catalog item</span
+								>
+								<select
+									class="block w-full rounded-lg border-stone-300"
+									value={selectedInventoryEquipmentCatalogId(item)}
+									onchange={(event) =>
+										applyCatalogInventoryItem(
+											index,
+											(event.currentTarget as HTMLSelectElement).value
+										)}
+								>
+									<option value="">Custom item or choose from catalog</option>
+									{#each equipmentCatalog as option (option.id)}
+										<option value={option.id}>{option.name}</option>
+									{/each}
+								</select>
+							</label>
+
 							<label class="block">
 								<span class="mb-1 block text-sm font-medium text-stone-700"
 									>Item name</span
@@ -1318,6 +1434,7 @@
 									value={item.name}
 									oninput={(event) =>
 										updateInventoryItem(index, {
+											equipmentId: '',
 											name: (event.currentTarget as HTMLInputElement).value
 										})}
 								/>
@@ -1349,6 +1466,7 @@
 									value={item.value}
 									oninput={(event) =>
 										updateInventoryItem(index, {
+											equipmentId: '',
 											value: (event.currentTarget as HTMLInputElement).value
 										})}
 								/>
@@ -1366,6 +1484,7 @@
 									value={item.weight}
 									oninput={(event) =>
 										updateInventoryItem(index, {
+											equipmentId: '',
 											weight: (event.currentTarget as HTMLInputElement).value
 										})}
 								/>
@@ -1380,6 +1499,7 @@
 									value={item.description}
 									oninput={(event) =>
 										updateInventoryItem(index, {
+											equipmentId: '',
 											description: (event.currentTarget as HTMLTextAreaElement).value
 										})}></textarea>
 							</label>

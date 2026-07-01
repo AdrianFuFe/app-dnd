@@ -41,6 +41,10 @@
 	function formatSpellMeta(values: Array<string | undefined>): string {
 		return values.filter((value) => value && value.trim().length > 0).join(' | ');
 	}
+
+	function findEquipmentCatalogEntry(equipmentId: string | undefined) {
+		return data.equipmentCatalog.find((entry) => entry.id === equipmentId);
+	}
 </script>
 
 <svelte:head>
@@ -179,6 +183,13 @@
 									<p class="text-base font-semibold text-stone-900">
 										{item.quantity > 1 ? `${item.quantity} x ` : ''}{item.name}
 									</p>
+									{#if item.equipmentId}
+										<span
+											class="rounded-full bg-sky-100 px-2 py-1 text-xs font-medium uppercase tracking-[0.16em] text-sky-800"
+										>
+											Catalog item
+										</span>
+									{/if}
 									{#if item.isEquipped}
 										<span
 											class="rounded-full bg-stone-900 px-2 py-1 text-xs font-medium uppercase tracking-[0.16em] text-white"
@@ -195,6 +206,11 @@
 										]
 											.filter(Boolean)
 											.join(' | ')}
+									</p>
+								{/if}
+								{#if findEquipmentCatalogEntry(item.equipmentId)}
+									<p class="mt-2 text-xs uppercase tracking-[0.16em] text-stone-500">
+										{findEquipmentCatalogEntry(item.equipmentId)?.category}
 									</p>
 								{/if}
 								{#if item.description}
@@ -228,6 +244,18 @@
 										<p class="text-base font-semibold text-stone-900">
 											{attack.name}
 										</p>
+										{#if attack.equipmentId}
+											<span
+												class="rounded-full bg-sky-100 px-2 py-1 text-xs font-medium uppercase tracking-[0.16em] text-sky-800"
+											>
+												Catalog weapon
+											</span>
+										{/if}
+										{#if findEquipmentCatalogEntry(attack.equipmentId)?.properties.length}
+											<p class="mt-2 text-xs uppercase tracking-[0.16em] text-stone-500">
+												{findEquipmentCatalogEntry(attack.equipmentId)?.properties.join(' | ')}
+											</p>
+										{/if}
 										{#if formatAttackMeta( [attack.attackBonus, attack.damageType ? `${attack.damage ?? ''} ${attack.damageType}`.trim() : attack.damage, attack.range] )}
 											<p class="mt-2 text-sm text-stone-600">
 												{formatAttackMeta([

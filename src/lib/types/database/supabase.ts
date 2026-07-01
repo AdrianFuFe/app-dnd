@@ -94,6 +94,7 @@ export interface Database {
 				Row: {
 					id: string;
 					character_id: string;
+					equipment_id: string | null;
 					name: string;
 					quantity: number;
 					description: string | null;
@@ -106,6 +107,7 @@ export interface Database {
 				Insert: {
 					id?: string;
 					character_id: string;
+					equipment_id?: string | null;
 					name: string;
 					quantity?: number;
 					description?: string | null;
@@ -118,6 +120,7 @@ export interface Database {
 				Update: {
 					id?: string;
 					character_id?: string;
+					equipment_id?: string | null;
 					name?: string;
 					quantity?: number;
 					description?: string | null;
@@ -134,6 +137,13 @@ export interface Database {
 						isOneToOne: false;
 						referencedRelation: 'characters';
 						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'character_inventory_items_equipment_id_fkey';
+						columns: ['equipment_id'];
+						isOneToOne: false;
+						referencedRelation: 'equipment';
+						referencedColumns: ['id'];
 					}
 				];
 			};
@@ -141,6 +151,7 @@ export interface Database {
 				Row: {
 					id: string;
 					character_id: string;
+					equipment_id: string | null;
 					name: string;
 					attack_bonus: string | null;
 					damage: string | null;
@@ -153,6 +164,7 @@ export interface Database {
 				Insert: {
 					id?: string;
 					character_id: string;
+					equipment_id?: string | null;
 					name: string;
 					attack_bonus?: string | null;
 					damage?: string | null;
@@ -165,6 +177,7 @@ export interface Database {
 				Update: {
 					id?: string;
 					character_id?: string;
+					equipment_id?: string | null;
 					name?: string;
 					attack_bonus?: string | null;
 					damage?: string | null;
@@ -180,6 +193,13 @@ export interface Database {
 						columns: ['character_id'];
 						isOneToOne: false;
 						referencedRelation: 'characters';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'character_attacks_equipment_id_fkey';
+						columns: ['equipment_id'];
+						isOneToOne: false;
+						referencedRelation: 'equipment';
 						referencedColumns: ['id'];
 					}
 				];
@@ -533,6 +553,78 @@ export interface Database {
 					prerequisites?: string[];
 					summary?: string | null;
 					description?: string | null;
+					mechanics?: JsonValue;
+					is_system_content?: boolean;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Relationships: [];
+			};
+			equipment: {
+				Row: {
+					id: string;
+					owner_user_id: string | null;
+					source_id: string;
+					visibility: string;
+					slug: string;
+					name: string;
+					category: string;
+					summary: string | null;
+					description: string | null;
+					weight: number | null;
+					value: string | null;
+					damage: string | null;
+					damage_type: string | null;
+					range_text: string | null;
+					properties: string[];
+					is_weapon: boolean;
+					is_equippable: boolean;
+					mechanics: JsonValue;
+					is_system_content: boolean;
+					created_at: string;
+					updated_at: string;
+				};
+				Insert: {
+					id?: string;
+					owner_user_id?: string | null;
+					source_id: string;
+					visibility?: string;
+					slug: string;
+					name: string;
+					category: string;
+					summary?: string | null;
+					description?: string | null;
+					weight?: number | null;
+					value?: string | null;
+					damage?: string | null;
+					damage_type?: string | null;
+					range_text?: string | null;
+					properties?: string[];
+					is_weapon?: boolean;
+					is_equippable?: boolean;
+					mechanics?: JsonValue;
+					is_system_content?: boolean;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Update: {
+					id?: string;
+					owner_user_id?: string | null;
+					source_id?: string;
+					visibility?: string;
+					slug?: string;
+					name?: string;
+					category?: string;
+					summary?: string | null;
+					description?: string | null;
+					weight?: number | null;
+					value?: string | null;
+					damage?: string | null;
+					damage_type?: string | null;
+					range_text?: string | null;
+					properties?: string[];
+					is_weapon?: boolean;
+					is_equippable?: boolean;
 					mechanics?: JsonValue;
 					is_system_content?: boolean;
 					created_at?: string;

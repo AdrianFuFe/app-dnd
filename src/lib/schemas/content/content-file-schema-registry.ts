@@ -1,6 +1,7 @@
 import type { ZodType } from 'zod';
 import { backgroundFileSchema } from './background.schema.ts';
 import { characterClassFileSchema } from './character-class.schema.ts';
+import { equipmentFileSchema } from './equipment.schema.ts';
 import { featFileSchema } from './feat.schema.ts';
 import { speciesFileSchema } from './species.schema.ts';
 import { spellFileSchema } from './spell.schema.ts';
@@ -15,6 +16,7 @@ export interface ContentFileSchemaResult {
 export const contentFileSchemaRegistry = {
 	background: backgroundFileSchema,
 	'character-class': characterClassFileSchema,
+	equipment: equipmentFileSchema,
 	feat: featFileSchema,
 	species: speciesFileSchema,
 	spell: spellFileSchema,

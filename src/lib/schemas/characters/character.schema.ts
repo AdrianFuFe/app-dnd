@@ -70,6 +70,7 @@ export const characterCombatStatsSchema = z
 	});
 
 export const characterInventoryItemSchema = z.object({
+	equipmentId: optionalUuidSchema,
 	name: requiredTextSchema,
 	quantity: z.coerce.number().int().min(0),
 	description: optionalTextSchema,
@@ -79,6 +80,7 @@ export const characterInventoryItemSchema = z.object({
 });
 
 export const characterAttackItemSchema = z.object({
+	equipmentId: optionalUuidSchema,
 	name: requiredTextSchema,
 	attackBonus: optionalTextSchema,
 	damage: optionalTextSchema,

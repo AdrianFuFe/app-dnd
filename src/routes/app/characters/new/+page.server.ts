@@ -9,8 +9,10 @@ import { characterCreateInputSchema } from '$lib/schemas/characters/character.sc
 import {
 	listCharacterCreationCatalog,
 	listExpandedContentCatalog,
+	resolveCharacterAttackCatalogSelections,
 	resolveCharacterCreationCatalogSelections,
 	resolveCharacterFeatCatalogSelections,
+	resolveCharacterInventoryCatalogSelections,
 	resolveCharacterSpellCatalogSelections
 } from '$lib/server/repositories/catalog';
 import { createCharacter } from '$lib/server/repositories/characters';
@@ -31,7 +33,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 				},
 				{
 					spells: [],
-					feats: []
+					feats: [],
+					equipment: []
 				}
 			];
 
@@ -39,7 +42,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 		values: createCharacterFormValuesFromInput(createDefaultCharacterInput()),
 		catalog,
 		featCatalog: expandedContentCatalog.feats,
-		spellCatalog: expandedContentCatalog.spells
+		spellCatalog: expandedContentCatalog.spells,
+		equipmentCatalog: expandedContentCatalog.equipment
 	};
 };
 
@@ -84,9 +88,18 @@ export const actions: Actions = {
 				classId: catalogSelection.classId,
 				spellItems: parsed.data.spellItems
 			});
+			const attackItems = await resolveCharacterAttackCatalogSelections(locals.supabase, {
+				attackItems: parsed.data.attackItems
+			});
 			const featItems = await resolveCharacterFeatCatalogSelections(locals.supabase, {
 				featItems: parsed.data.featItems
 			});
+			const inventoryItems = await resolveCharacterInventoryCatalogSelections(
+				locals.supabase,
+				{
+					inventoryItems: parsed.data.inventoryItems
+				}
+			);
 
 			const character = await createCharacter(locals.supabase, locals.session.user.id, {
 				...parsed.data,
@@ -100,8 +113,10 @@ export const actions: Actions = {
 				subclass: catalogSelection.subclass,
 				backgroundId: catalogSelection.backgroundId,
 				background: catalogSelection.background,
+				attackItems,
 				featItems,
-				spellItems
+				spellItems,
+				inventoryItems
 			});
 			const createdName = encodeURIComponent(character.name);
 

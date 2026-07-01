@@ -24,7 +24,25 @@ export type FeatCatalogEntry = {
 	description: string | null;
 };
 
+export type EquipmentCatalogEntry = {
+	id: string;
+	slug: string;
+	name: string;
+	category: string;
+	summary: string | null;
+	description: string | null;
+	weight: number | null;
+	value: string | null;
+	damage: string | null;
+	damageType: string | null;
+	range: string | null;
+	properties: string[];
+	isWeapon: boolean;
+	isEquippable: boolean;
+};
+
 export type ExpandedContentCatalog = {
 	spells: SpellCatalogEntry[];
 	feats: FeatCatalogEntry[];
+	equipment: EquipmentCatalogEntry[];
 };

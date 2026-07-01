@@ -80,6 +80,7 @@ interface CatalogReferenceItem {
 		level: number;
 		spellSlugs: string[];
 	}>;
+	category?: string;
 	features?: Array<{
 		level: number;
 		featureId?: string;
@@ -206,10 +207,11 @@ function validateEquipmentReferences(
 	filePath: string,
 	contentLabel: string,
 	contentSlug: string,
-	equipmentEntries: CatalogReferenceItem['equipment'] | CatalogReferenceItem['startingEquipment']
+	equipmentEntries: CatalogReferenceItem['equipment'] | CatalogReferenceItem['startingEquipment'],
+	knownEquipmentIds: Set<string>
 ): void {
 	for (const entry of equipmentEntries ?? []) {
-		if (entry.type === 'item' && !knownEquipmentReferenceIds.has(entry.id)) {
+		if (entry.type === 'item' && !knownEquipmentIds.has(entry.id)) {
 			result.issues.push({
 				filePath,
 				message: `Unknown equipment id "${entry.id}" referenced by ${contentLabel} "${contentSlug}"`
@@ -218,7 +220,7 @@ function validateEquipmentReferences(
 
 		if (entry.type === 'choice') {
 			for (const option of entry.options) {
-				if (!knownEquipmentReferenceIds.has(option)) {
+				if (!knownEquipmentIds.has(option)) {
 					result.issues.push({
 						filePath,
 						message: `Unknown equipment option id "${option}" referenced by ${contentLabel} "${contentSlug}"`
@@ -361,6 +363,10 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 	const featSlugs = new Set(
 		(validItemsByContentType.get('feat') ?? []).map(({ item }) => item.slug)
 	);
+	const equipmentReferenceIds = new Set([
+		...knownEquipmentReferenceIds,
+		...(validItemsByContentType.get('equipment') ?? []).map(({ item }) => item.slug)
+	]);
 	const subclasses = validItemsByContentType.get('subclass') ?? [];
 	const classItems = validItemsByContentType.get('character-class') ?? [];
 	const featItems = validItemsByContentType.get('feat') ?? [];
@@ -412,7 +418,8 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 			filePath,
 			'class',
 			characterClass.slug,
-			characterClass.startingEquipment
+			characterClass.startingEquipment,
+			equipmentReferenceIds
 		);
 		const progressionFeatureIds = new Set(
 			(characterClass.progression ?? []).flatMap((level) => level.features ?? [])
@@ -767,7 +774,14 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 	}
 
 	for (const { filePath, item: background } of validItemsByContentType.get('background') ?? []) {
-		validateEquipmentReferences(result, filePath, 'background', background.slug, background.equipment);
+		validateEquipmentReferences(
+			result,
+			filePath,
+			'background',
+			background.slug,
+			background.equipment,
+			equipmentReferenceIds
+		);
 		const mechanics = background.mechanics ?? [];
 		const skillProficienciesFromMechanics = toSortedUnique(
 			mechanics

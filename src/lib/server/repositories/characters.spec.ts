@@ -143,6 +143,7 @@ describe('createCharacter', () => {
 			hitDice: '3d6',
 			attackItems: [
 				{
+					equipmentId: undefined,
 					name: 'Quarterstaff',
 					attackBonus: '+4',
 					damage: '1d6',
@@ -168,6 +169,7 @@ describe('createCharacter', () => {
 			],
 			inventoryItems: [
 				{
+					equipmentId: undefined,
 					name: 'Spellbook',
 					quantity: 1,
 					isEquipped: false
@@ -388,6 +390,7 @@ describe('getCharacterForUser', () => {
 		const attacksEq = vi.fn().mockResolvedValue({
 			data: [
 				{
+					equipmentId: undefined,
 					name: 'Quarterstaff',
 					attack_bonus: '+4',
 					damage: '1d6',
@@ -528,6 +531,7 @@ describe('getCharacterForUser', () => {
 			hitDice: '3d6',
 			attackItems: [
 				{
+					equipmentId: undefined,
 					name: 'Quarterstaff',
 					attackBonus: '+4',
 					damage: '1d6',
@@ -559,6 +563,7 @@ describe('getCharacterForUser', () => {
 			],
 			inventoryItems: [
 				{
+					equipmentId: undefined,
 					name: 'Spellbook',
 					quantity: 1,
 					description: undefined,
@@ -887,6 +892,7 @@ describe('updateCharacter', () => {
 		const attacksSelectEq = vi.fn().mockResolvedValue({
 			data: [
 				{
+					equipment_id: null,
 					name: 'Quarterstaff',
 					attack_bonus: '+4',
 					damage: '1d6',
