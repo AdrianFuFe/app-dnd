@@ -101,6 +101,61 @@
 					]
 				}
 			]
+		},
+		{
+			"slug": "knowledge-domain",
+			"name": "Knowledge Domain",
+			"summary": "Dominio clerical enfocado en aprendizaje sagrado, memoria y acceso a saberes ocultos.",
+			"description": "Seed inicial derivado de reglas basicas oficiales. Esta entrada amplia la cobertura de conjuros concedidos por subclase y mantiene los rasgos resumidos hasta completar mas niveles.",
+			"classSlug": "clerigo",
+			"visibility": "public",
+			"grantedSpellsByLevel": [
+				{ "level": 1, "spellSlugs": ["command", "identify"] },
+				{ "level": 3, "spellSlugs": ["augury", "suggestion"] }
+			],
+			"mechanics": [
+				{ "type": "feature", "featureId": "blessings-of-knowledge" },
+				{ "type": "feature", "featureId": "knowledge-of-the-ages" },
+				{ "type": "feature", "featureId": "read-thoughts" }
+			],
+			"features": [
+				{
+					"level": 1,
+					"featureId": "blessings-of-knowledge",
+					"name": "Blessings of Knowledge",
+					"summary": "Aprendes idiomas adicionales y ganas una pericia orientada al conocimiento.",
+					"mechanics": [
+						{
+							"type": "note",
+							"text": "You learn two languages of your choice and become proficient in two of Arcana, History, Nature, or Religion."
+						}
+					]
+				},
+				{
+					"level": 2,
+					"featureId": "knowledge-of-the-ages",
+					"name": "Channel Divinity: Knowledge of the Ages",
+					"summary": "Invocas comprension divina para dominar temporalmente una habilidad o herramienta.",
+					"mechanics": [
+						{
+							"type": "note",
+							"text": "As an action, choose one skill or tool; for 10 minutes, you have proficiency with the chosen skill or tool."
+						}
+					]
+				},
+				{
+					"level": 6,
+					"featureId": "read-thoughts",
+					"name": "Channel Divinity: Read Thoughts",
+					"summary": "Percibes pensamientos superficiales y puedes dirigir la mente de un objetivo con magia.",
+					"mechanics": [
+						{
+							"type": "note",
+							"text": "You can read a creature's surface thoughts and may cast Suggestion on it without expending a spell slot."
+						}
+					]
+				}
+			]
 		}
 	]
 }

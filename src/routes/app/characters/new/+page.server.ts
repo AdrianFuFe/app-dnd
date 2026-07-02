@@ -102,6 +102,7 @@ export const actions: Actions = {
 			);
 			const spellItems = await resolveCharacterSpellCatalogSelections(locals.supabase, {
 				classId: catalogSelection.classId,
+				subclassId: catalogSelection.subclassId,
 				spellItems: parsed.data.spellItems
 			});
 			const attackItems = await resolveCharacterAttackCatalogSelections(locals.supabase, {

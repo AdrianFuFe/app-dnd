@@ -131,11 +131,15 @@ describe('content templates', () => {
 		const file = readJsonFile<unknown>('data/srd-5-1/spells.json');
 
 		const parsed = spellFileSchema.parse(file);
+		const command = expectItemBySlug(parsed.items, 'command');
+		const identify = expectItemBySlug(parsed.items, 'identify');
 		const bless = expectItemBySlug(parsed.items, 'bless');
 		const magicMissile = expectItemBySlug(parsed.items, 'magic-missile');
 		const raiseDead = expectItemBySlug(parsed.items, 'raise-dead');
 
-		expect(parsed.items).toHaveLength(21);
+		expect(parsed.items).toHaveLength(25);
+		expect(command.classSlugs).toContain('clerigo');
+		expect(identify.classSlugs).toContain('mago');
 		expect(bless.classSlugs).toContain('clerigo');
 		expect(magicMissile.classSlugs).toContain('mago');
 		expect(raiseDead.level).toBe(5);
@@ -180,10 +184,15 @@ describe('content templates', () => {
 		const file = readJsonFile<unknown>('data/srd-5-1/subclasses.json');
 
 		const parsed = subclassFileSchema.parse(file);
+		const knowledgeDomain = expectItemBySlug(parsed.items, 'knowledge-domain');
 		const lifeDomain = expectItemBySlug(parsed.items, 'life-domain');
 		const schoolOfEvocation = expectItemBySlug(parsed.items, 'school-of-evocation');
 
-		expect(parsed.items).toHaveLength(2);
+		expect(parsed.items).toHaveLength(3);
+		expect(knowledgeDomain.grantedSpellsByLevel[0]?.spellSlugs).toEqual([
+			'command',
+			'identify'
+		]);
 		expect(lifeDomain.classSlug).toBe('clerigo');
 		expect(lifeDomain.grantedSpellsByLevel).toHaveLength(5);
 		expect(lifeDomain.grantedSpellsByLevel[0]?.spellSlugs).toEqual([

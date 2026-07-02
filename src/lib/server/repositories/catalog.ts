@@ -293,6 +293,7 @@ export async function resolveCharacterSpellCatalogSelections(
 	supabase: SupabaseClient<Database>,
 	selection: {
 		classId?: string;
+		subclassId?: string;
 		spellItems: CharacterSpellItem[];
 	}
 ): Promise<CharacterSpellItem[]> {
@@ -305,22 +306,45 @@ export async function resolveCharacterSpellCatalogSelections(
 	}
 
 	if (isE2EMockSupabaseClient(supabase)) {
-		const classSlug = selection.classId
-			? getE2EClassOption(selection.classId)?.slug
+		const classOption = selection.classId ? getE2EClassOption(selection.classId) : undefined;
+		const subclassOption = selection.subclassId
+			? getE2ESubclassOption(selection.subclassId)
 			: undefined;
+
+		if (subclassOption && (!classOption || subclassOption.classSlug !== classOption.slug)) {
+			throw new Error('Please choose a valid subclass for the selected class.');
+		}
+
+		const grantedSpellSlugs = new Set([
+			...(classOption?.grantedSpellSlugs ?? []),
+			...(subclassOption?.grantedSpellsByLevel ?? []).flatMap((group) => group.spellSlugs)
+		]);
 
 		return selection.spellItems.map((item) =>
 			normalizeCharacterSpellItem(
 				item,
 				item.spellId ? getE2ESpellCatalogEntry(item.spellId) : undefined,
-				classSlug
+				classOption?.slug,
+				grantedSpellSlugs
 			)
 		);
 	}
 
-	const [characterClass, spellEntries] = await Promise.all([
-		loadSelectedCharacterClass(supabase, selection.classId),
+	const [characterClass, subclass, spellEntries] = await Promise.all([
+		loadSelectedCharacterClassForSpellSelection(supabase, selection.classId),
+		loadSelectedSubclassForSpellSelection(supabase, selection.subclassId),
 		loadSelectedSpellCatalogEntries(supabase, linkedSpellIds)
+	]);
+
+	if (subclass && (!characterClass || subclass.class_slug !== characterClass.slug)) {
+		throw new Error('Please choose a valid subclass for the selected class.');
+	}
+
+	const grantedSpellSlugs = new Set([
+		...summarizeGrantedSpellSlugs(characterClass?.mechanics),
+		...summarizeGrantedSpellsByLevel(subclass?.granted_spells_by_level).flatMap(
+			(group) => group.spellSlugs
+		)
 	]);
 	const spellEntriesById = new Map(spellEntries.map((entry) => [entry.id, entry]));
 
@@ -328,7 +352,8 @@ export async function resolveCharacterSpellCatalogSelections(
 		normalizeCharacterSpellItem(
 			item,
 			item.spellId ? spellEntriesById.get(item.spellId) : undefined,
-			characterClass?.slug
+			characterClass?.slug,
+			grantedSpellSlugs
 		)
 	);
 }
@@ -566,6 +591,27 @@ async function loadSelectedCharacterClass(
 	return data;
 }
 
+async function loadSelectedCharacterClassForSpellSelection(
+	supabase: SupabaseClient<Database>,
+	classId?: string
+): Promise<Pick<CharacterClassRow, 'id' | 'slug' | 'name' | 'mechanics'> | undefined> {
+	if (!classId) {
+		return undefined;
+	}
+
+	const { data, error } = await supabase
+		.from('character_classes')
+		.select('id, slug, name, mechanics')
+		.eq('id', classId)
+		.single();
+
+	if (error || !data) {
+		throw new Error('Please choose a valid class from the catalog.');
+	}
+
+	return data;
+}
+
 async function loadSelectedSubclass(
 	supabase: SupabaseClient<Database>,
 	subclassId?: string
@@ -577,6 +623,27 @@ async function loadSelectedSubclass(
 	const { data, error } = await supabase
 		.from('subclasses')
 		.select('id, class_slug, name')
+		.eq('id', subclassId)
+		.single();
+
+	if (error || !data) {
+		throw new Error('Please choose a valid subclass from the catalog.');
+	}
+
+	return data;
+}
+
+async function loadSelectedSubclassForSpellSelection(
+	supabase: SupabaseClient<Database>,
+	subclassId?: string
+): Promise<Pick<SubclassRow, 'id' | 'class_slug' | 'name' | 'granted_spells_by_level'> | undefined> {
+	if (!subclassId) {
+		return undefined;
+	}
+
+	const { data, error } = await supabase
+		.from('subclasses')
+		.select('id, class_slug, name, granted_spells_by_level')
 		.eq('id', subclassId)
 		.single();
 
@@ -875,7 +942,8 @@ function mapEquipmentCatalogEntry(
 function normalizeCharacterSpellItem(
 	item: CharacterSpellItem,
 	spell: SpellCatalogEntry | undefined,
-	classSlug: string | undefined
+	classSlug: string | undefined,
+	grantedSpellSlugs: ReadonlySet<string>
 ): CharacterSpellItem {
 	if (!item.spellId) {
 		return item;
@@ -885,7 +953,12 @@ function normalizeCharacterSpellItem(
 		throw new Error('Please choose a valid spell from the catalog.');
 	}
 
-	if (classSlug && spell.classSlugs.length > 0 && !spell.classSlugs.includes(classSlug)) {
+	if (
+		classSlug &&
+		spell.classSlugs.length > 0 &&
+		!spell.classSlugs.includes(classSlug) &&
+		!grantedSpellSlugs.has(spell.slug)
+	) {
 		throw new Error('Please choose a valid spell for the selected class.');
 	}
 
