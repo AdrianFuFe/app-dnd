@@ -5,12 +5,16 @@
 		createCharacterFormValues,
 		type CharacterCreateFormValues
 	} from '$lib/domain/characters/character-form';
-import type { CharacterCreationCatalog } from '$lib/types/content/character-catalog';
-import type {
-	EquipmentCatalogEntry,
-	FeatCatalogEntry,
-	SpellCatalogEntry
-} from '$lib/types/content/expanded-content-catalog';
+	import {
+		formatMechanicSummaryLines,
+		hasMechanicSummary
+	} from '$lib/domain/content/mechanic-summary-display';
+	import type { CharacterCreationCatalog } from '$lib/types/content/character-catalog';
+	import type {
+		EquipmentCatalogEntry,
+		FeatCatalogEntry,
+		SpellCatalogEntry
+	} from '$lib/types/content/expanded-content-catalog';
 
 	type CharacterFieldErrors = Partial<Record<keyof CharacterCreateFormValues, string[]>>;
 	type CharacterCancelHref = '/app/characters' | `/app/characters/${string}`;
@@ -118,6 +122,13 @@ import type {
 		return selectedSpecies(speciesId)?.summary ?? undefined;
 	}
 
+	function selectedSpeciesMechanicLines(speciesId: string): string[] {
+		const option = selectedSpecies(speciesId);
+		return option && hasMechanicSummary(option.mechanicSummary)
+			? formatMechanicSummaryLines(option.mechanicSummary)
+			: [];
+	}
+
 	function availableSubspeciesOptions(speciesId: string) {
 		const speciesSlug = selectedSpecies(speciesId)?.slug;
 		return speciesSlug
@@ -132,6 +143,13 @@ import type {
 		);
 	}
 
+	function selectedSubspeciesMechanicLines(subspeciesId: string): string[] {
+		const option = catalog.subspeciesOptions.find((entry) => entry.id === subspeciesId);
+		return option && hasMechanicSummary(option.mechanicSummary)
+			? formatMechanicSummaryLines(option.mechanicSummary)
+			: [];
+	}
+
 	function selectedClassDetails(classId: string): string | undefined {
 		const option = catalog.classOptions.find((entry) => entry.id === classId);
 
@@ -141,6 +159,13 @@ import type {
 
 		const hitDie = `Hit die d${option.hitDie}`;
 		return option.summary ? `${hitDie}. ${option.summary}` : hitDie;
+	}
+
+	function selectedClassMechanicLines(classId: string): string[] {
+		const option = catalog.classOptions.find((entry) => entry.id === classId);
+		return option && hasMechanicSummary(option.mechanicSummary)
+			? formatMechanicSummaryLines(option.mechanicSummary)
+			: [];
 	}
 
 	function selectedClass(classId: string) {
@@ -208,11 +233,25 @@ import type {
 		);
 	}
 
+	function selectedSubclassMechanicLines(subclassId: string): string[] {
+		const option = catalog.subclassOptions.find((entry) => entry.id === subclassId);
+		return option && hasMechanicSummary(option.mechanicSummary)
+			? formatMechanicSummaryLines(option.mechanicSummary)
+			: [];
+	}
+
 	function selectedBackgroundSummary(backgroundId: string): string | undefined {
 		return (
 			catalog.backgroundOptions.find((option) => option.id === backgroundId)?.summary ??
 			undefined
 		);
+	}
+
+	function selectedBackgroundMechanicLines(backgroundId: string): string[] {
+		const option = catalog.backgroundOptions.find((entry) => entry.id === backgroundId);
+		return option && hasMechanicSummary(option.mechanicSummary)
+			? formatMechanicSummaryLines(option.mechanicSummary)
+			: [];
 	}
 
 	function handleSpeciesChange(event: Event) {
@@ -664,10 +703,15 @@ import type {
 				</select>
 				{#if firstError('speciesId')}
 					<p class="mt-1 text-sm text-red-700">{firstError('speciesId')}</p>
-				{:else if selectedSpeciesSummary(formValues.speciesId)}
-					<p class="mt-1 text-sm text-stone-500">
-						{selectedSpeciesSummary(formValues.speciesId)}
-					</p>
+				{:else if selectedSpeciesSummary(formValues.speciesId) || selectedSpeciesMechanicLines(formValues.speciesId).length > 0}
+					<div class="mt-1 space-y-1 text-sm text-stone-500">
+						{#if selectedSpeciesSummary(formValues.speciesId)}
+							<p>{selectedSpeciesSummary(formValues.speciesId)}</p>
+						{/if}
+						{#each selectedSpeciesMechanicLines(formValues.speciesId) as line (line)}
+							<p>{line}</p>
+						{/each}
+					</div>
 				{/if}
 			</label>
 
@@ -688,10 +732,15 @@ import type {
 				</select>
 				{#if firstError('subspeciesId')}
 					<p class="mt-1 text-sm text-red-700">{firstError('subspeciesId')}</p>
-				{:else if selectedSubspeciesSummary(formValues.subspeciesId)}
-					<p class="mt-1 text-sm text-stone-500">
-						{selectedSubspeciesSummary(formValues.subspeciesId)}
-					</p>
+				{:else if selectedSubspeciesSummary(formValues.subspeciesId) || selectedSubspeciesMechanicLines(formValues.subspeciesId).length > 0}
+					<div class="mt-1 space-y-1 text-sm text-stone-500">
+						{#if selectedSubspeciesSummary(formValues.subspeciesId)}
+							<p>{selectedSubspeciesSummary(formValues.subspeciesId)}</p>
+						{/if}
+						{#each selectedSubspeciesMechanicLines(formValues.subspeciesId) as line (line)}
+							<p>{line}</p>
+						{/each}
+					</div>
 				{:else if formValues.speciesId && availableSubspeciesOptions(formValues.speciesId).length === 0}
 					<p class="mt-1 text-sm text-stone-500">
 						No catalog subspecies are available for this species yet.
@@ -714,10 +763,15 @@ import type {
 				</select>
 				{#if firstError('classId')}
 					<p class="mt-1 text-sm text-red-700">{firstError('classId')}</p>
-				{:else if selectedClassDetails(formValues.classId)}
-					<p class="mt-1 text-sm text-stone-500">
-						{selectedClassDetails(formValues.classId)}
-					</p>
+				{:else if selectedClassDetails(formValues.classId) || selectedClassMechanicLines(formValues.classId).length > 0}
+					<div class="mt-1 space-y-1 text-sm text-stone-500">
+						{#if selectedClassDetails(formValues.classId)}
+							<p>{selectedClassDetails(formValues.classId)}</p>
+						{/if}
+						{#each selectedClassMechanicLines(formValues.classId) as line (line)}
+							<p>{line}</p>
+						{/each}
+					</div>
 				{/if}
 			</label>
 
@@ -738,10 +792,15 @@ import type {
 				</select>
 				{#if firstError('subclassId')}
 					<p class="mt-1 text-sm text-red-700">{firstError('subclassId')}</p>
-				{:else if selectedSubclassSummary(formValues.subclassId)}
-					<p class="mt-1 text-sm text-stone-500">
-						{selectedSubclassSummary(formValues.subclassId)}
-					</p>
+				{:else if selectedSubclassSummary(formValues.subclassId) || selectedSubclassMechanicLines(formValues.subclassId).length > 0}
+					<div class="mt-1 space-y-1 text-sm text-stone-500">
+						{#if selectedSubclassSummary(formValues.subclassId)}
+							<p>{selectedSubclassSummary(formValues.subclassId)}</p>
+						{/if}
+						{#each selectedSubclassMechanicLines(formValues.subclassId) as line (line)}
+							<p>{line}</p>
+						{/each}
+					</div>
 				{:else if formValues.classId && availableSubclassOptions(formValues.classId).length === 0}
 					<p class="mt-1 text-sm text-stone-500">
 						No catalog subclasses are available for this class yet.
@@ -782,10 +841,15 @@ import type {
 				</select>
 				{#if firstError('backgroundId')}
 					<p class="mt-1 text-sm text-red-700">{firstError('backgroundId')}</p>
-				{:else if selectedBackgroundSummary(formValues.backgroundId)}
-					<p class="mt-1 text-sm text-stone-500">
-						{selectedBackgroundSummary(formValues.backgroundId)}
-					</p>
+				{:else if selectedBackgroundSummary(formValues.backgroundId) || selectedBackgroundMechanicLines(formValues.backgroundId).length > 0}
+					<div class="mt-1 space-y-1 text-sm text-stone-500">
+						{#if selectedBackgroundSummary(formValues.backgroundId)}
+							<p>{selectedBackgroundSummary(formValues.backgroundId)}</p>
+						{/if}
+						{#each selectedBackgroundMechanicLines(formValues.backgroundId) as line (line)}
+							<p>{line}</p>
+						{/each}
+					</div>
 				{/if}
 			</label>
 
@@ -958,7 +1022,8 @@ import type {
 									value={item.attackBonus}
 									oninput={(event) =>
 										updateAttackItem(index, {
-											attackBonus: (event.currentTarget as HTMLInputElement).value
+											attackBonus: (event.currentTarget as HTMLInputElement)
+												.value
 										})}
 								/>
 							</label>
@@ -992,7 +1057,8 @@ import type {
 									oninput={(event) =>
 										updateAttackItem(index, {
 											equipmentId: '',
-											damageType: (event.currentTarget as HTMLInputElement).value
+											damageType: (event.currentTarget as HTMLInputElement)
+												.value
 										})}
 								/>
 							</label>
@@ -1024,7 +1090,9 @@ import type {
 									oninput={(event) =>
 										updateAttackItem(index, {
 											equipmentId: '',
-											description: (event.currentTarget as HTMLTextAreaElement).value
+											description: (
+												event.currentTarget as HTMLTextAreaElement
+											).value
 										})}></textarea>
 							</label>
 						</div>
@@ -1096,13 +1164,16 @@ import type {
 									<option value="">Custom spell or choose from catalog</option>
 									{#each availableSpellCatalogEntries(formValues.classId) as option (option.id)}
 										<option value={option.id}>
-											{option.name} ({option.level === 0 ? 'Cantrip' : `Level ${option.level}`})
+											{option.name} ({option.level === 0
+												? 'Cantrip'
+												: `Level ${option.level}`})
 										</option>
 									{/each}
 								</select>
 								{#if formValues.classId && availableSpellCatalogEntries(formValues.classId).length === 0}
 									<p class="mt-1 text-sm text-stone-500">
-										No shared catalog spells match the currently selected class yet.
+										No shared catalog spells match the currently selected class
+										yet.
 									</p>
 								{/if}
 							</label>
@@ -1171,7 +1242,8 @@ import type {
 									oninput={(event) =>
 										updateSpellItem(index, {
 											spellId: '',
-											castingTime: (event.currentTarget as HTMLInputElement).value
+											castingTime: (event.currentTarget as HTMLInputElement)
+												.value
 										})}
 								/>
 							</label>
@@ -1205,7 +1277,8 @@ import type {
 									oninput={(event) =>
 										updateSpellItem(index, {
 											spellId: '',
-											duration: (event.currentTarget as HTMLInputElement).value
+											duration: (event.currentTarget as HTMLInputElement)
+												.value
 										})}
 								/>
 							</label>
@@ -1222,7 +1295,8 @@ import type {
 									oninput={(event) =>
 										updateSpellItem(index, {
 											spellId: '',
-											components: (event.currentTarget as HTMLInputElement).value
+											components: (event.currentTarget as HTMLInputElement)
+												.value
 										})}
 								/>
 							</label>
@@ -1236,7 +1310,9 @@ import type {
 									value={item.description}
 									oninput={(event) =>
 										updateSpellItem(index, {
-											description: (event.currentTarget as HTMLTextAreaElement).value
+											description: (
+												event.currentTarget as HTMLTextAreaElement
+											).value
 										})}></textarea>
 							</label>
 
@@ -1247,7 +1323,8 @@ import type {
 									checked={item.isPrepared}
 									onchange={(event) =>
 										updateSpellItem(index, {
-											isPrepared: (event.currentTarget as HTMLInputElement).checked
+											isPrepared: (event.currentTarget as HTMLInputElement)
+												.checked
 										})}
 								/>
 								<span class="text-sm font-medium text-stone-700">Prepared</span>
@@ -1313,7 +1390,10 @@ import type {
 									class="block w-full rounded-lg border-stone-300"
 									value={selectedFeatCatalogId(item)}
 									onchange={(event) =>
-										applyCatalogFeat(index, (event.currentTarget as HTMLSelectElement).value)}
+										applyCatalogFeat(
+											index,
+											(event.currentTarget as HTMLSelectElement).value
+										)}
 								>
 									<option value="">Custom feat or choose from catalog</option>
 									{#each featCatalog as option (option.id)}
@@ -1347,7 +1427,9 @@ import type {
 									value={item.description}
 									oninput={(event) =>
 										updateFeatItem(index, {
-											description: (event.currentTarget as HTMLTextAreaElement).value
+											description: (
+												event.currentTarget as HTMLTextAreaElement
+											).value
 										})}></textarea>
 							</label>
 						</div>
@@ -1451,7 +1533,8 @@ import type {
 									value={item.quantity}
 									oninput={(event) =>
 										updateInventoryItem(index, {
-											quantity: (event.currentTarget as HTMLInputElement).value
+											quantity: (event.currentTarget as HTMLInputElement)
+												.value
 										})}
 								/>
 							</label>
@@ -1500,7 +1583,9 @@ import type {
 									oninput={(event) =>
 										updateInventoryItem(index, {
 											equipmentId: '',
-											description: (event.currentTarget as HTMLTextAreaElement).value
+											description: (
+												event.currentTarget as HTMLTextAreaElement
+											).value
 										})}></textarea>
 							</label>
 
@@ -1511,7 +1596,8 @@ import type {
 									checked={item.isEquipped}
 									onchange={(event) =>
 										updateInventoryItem(index, {
-											isEquipped: (event.currentTarget as HTMLInputElement).checked
+											isEquipped: (event.currentTarget as HTMLInputElement)
+												.checked
 										})}
 								/>
 								<span class="text-sm font-medium text-stone-700"

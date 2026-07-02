@@ -53,6 +53,7 @@ type SubspeciesSourceItem = {
 	speciesSlug: string;
 	name: string;
 	summary?: string | null;
+	mechanics?: unknown[];
 };
 
 type ClassSourceItem = {
@@ -68,6 +69,7 @@ type SubclassSourceItem = {
 	classSlug: string;
 	name: string;
 	summary?: string | null;
+	mechanics?: unknown[];
 };
 
 type BackgroundSourceItem = {
@@ -152,7 +154,8 @@ const e2eCatalog: CharacterCreationCatalog = {
 		slug: item.slug,
 		speciesSlug: item.speciesSlug,
 		name: item.name,
-		summary: item.summary ?? null
+		summary: item.summary ?? null,
+		mechanicSummary: summarizeCatalogMechanics(item.mechanics ?? [])
 	})),
 	classOptions: asContentFile<ClassSourceItem>(classesFile).items.map((item) => ({
 		id: buildCatalogId('class', item.slug),
@@ -167,7 +170,8 @@ const e2eCatalog: CharacterCreationCatalog = {
 		slug: item.slug,
 		classSlug: item.classSlug,
 		name: item.name,
-		summary: item.summary ?? null
+		summary: item.summary ?? null,
+		mechanicSummary: summarizeCatalogMechanics(item.mechanics ?? [])
 	})),
 	backgroundOptions: asContentFile<BackgroundSourceItem>(backgroundsFile).items.map((item) => ({
 		id: buildCatalogId('background', item.slug),

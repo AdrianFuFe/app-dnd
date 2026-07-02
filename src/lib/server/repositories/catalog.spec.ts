@@ -39,7 +39,11 @@ describe('listCharacterCreationCatalog', () => {
 					slug: 'high-elf',
 					species_slug: 'elfo',
 					name: 'High Elf',
-					summary: 'Arcane focused.'
+					summary: 'Arcane focused.',
+					mechanics: [
+						{ type: 'choose_language', count: 1 },
+						{ type: 'proficiency', proficiencyType: 'weapon', value: 'longsword' }
+					]
 				}
 			],
 			error: null
@@ -67,7 +71,10 @@ describe('listCharacterCreationCatalog', () => {
 					slug: 'life-domain',
 					class_slug: 'clerigo',
 					name: 'Life Domain',
-					summary: 'Healing focused.'
+					summary: 'Healing focused.',
+					mechanics: [
+						{ type: 'proficiency', proficiencyType: 'armor', value: 'heavy-armor' }
+					]
 				}
 			],
 			error: null
@@ -130,7 +137,13 @@ describe('listCharacterCreationCatalog', () => {
 					slug: 'high-elf',
 					speciesSlug: 'elfo',
 					name: 'High Elf',
-					summary: 'Arcane focused.'
+					summary: 'Arcane focused.',
+					mechanicSummary: {
+						spellcastingAbilities: [],
+						languageGrants: [{ kind: 'choice', count: 1 }],
+						proficiencyGrants: [{ proficiencyType: 'weapon', value: 'longsword' }],
+						proficiencyChoices: []
+					}
 				}
 			],
 			classOptions: [
@@ -149,7 +162,13 @@ describe('listCharacterCreationCatalog', () => {
 					slug: 'life-domain',
 					classSlug: 'clerigo',
 					name: 'Life Domain',
-					summary: 'Healing focused.'
+					summary: 'Healing focused.',
+					mechanicSummary: {
+						spellcastingAbilities: [],
+						languageGrants: [],
+						proficiencyGrants: [{ proficiencyType: 'armor', value: 'heavy-armor' }],
+						proficiencyChoices: []
+					}
 				}
 			],
 			backgroundOptions: [
@@ -378,7 +397,11 @@ describe('listExpandedContentCatalog', () => {
 					slug: 'high-elf',
 					species_slug: 'elfo',
 					name: 'High Elf',
-					summary: 'Arcane focused.'
+					summary: 'Arcane focused.',
+					mechanics: [
+						{ type: 'choose_language', count: 1 },
+						{ type: 'proficiency', proficiencyType: 'weapon', value: 'longbow' }
+					]
 				}
 			],
 			error: null
@@ -410,7 +433,10 @@ describe('listExpandedContentCatalog', () => {
 					slug: 'life-domain',
 					class_slug: 'clerigo',
 					name: 'Life Domain',
-					summary: 'Healing focused.'
+					summary: 'Healing focused.',
+					mechanics: [
+						{ type: 'proficiency', proficiencyType: 'armor', value: 'heavy-armor' }
+					]
 				}
 			],
 			error: null
@@ -556,7 +582,13 @@ describe('listExpandedContentCatalog', () => {
 					slug: 'high-elf',
 					speciesSlug: 'elfo',
 					name: 'High Elf',
-					summary: 'Arcane focused.'
+					summary: 'Arcane focused.',
+					mechanicSummary: {
+						spellcastingAbilities: [],
+						languageGrants: [{ kind: 'choice', count: 1 }],
+						proficiencyGrants: [{ proficiencyType: 'weapon', value: 'longbow' }],
+						proficiencyChoices: []
+					}
 				}
 			],
 			classes: [
@@ -569,9 +601,7 @@ describe('listExpandedContentCatalog', () => {
 					mechanicSummary: {
 						spellcastingAbilities: ['wisdom'],
 						languageGrants: [],
-						proficiencyGrants: [
-							{ proficiencyType: 'saving_throw', value: 'wisdom' }
-						],
+						proficiencyGrants: [{ proficiencyType: 'saving_throw', value: 'wisdom' }],
 						proficiencyChoices: []
 					}
 				}
@@ -582,7 +612,13 @@ describe('listExpandedContentCatalog', () => {
 					slug: 'life-domain',
 					classSlug: 'clerigo',
 					name: 'Life Domain',
-					summary: 'Healing focused.'
+					summary: 'Healing focused.',
+					mechanicSummary: {
+						spellcastingAbilities: [],
+						languageGrants: [],
+						proficiencyGrants: [{ proficiencyType: 'armor', value: 'heavy-armor' }],
+						proficiencyChoices: []
+					}
 				}
 			],
 			backgrounds: [

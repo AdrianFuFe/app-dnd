@@ -15,6 +15,7 @@ export type CharacterSubspeciesOption = {
 	speciesSlug: string;
 	name: string;
 	summary: string | null;
+	mechanicSummary: ContentMechanicSummary;
 };
 
 export type CharacterClassOption = {
@@ -32,6 +33,7 @@ export type CharacterSubclassOption = {
 	classSlug: string;
 	name: string;
 	summary: string | null;
+	mechanicSummary: ContentMechanicSummary;
 };
 
 export type CharacterBackgroundOption = {

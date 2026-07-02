@@ -51,6 +51,7 @@ type SubspeciesRow = {
 	species_slug: string;
 	name: string;
 	summary: string | null;
+	mechanics: unknown;
 };
 
 type CharacterClassRow = {
@@ -68,6 +69,7 @@ type SubclassRow = {
 	class_slug: string;
 	name: string;
 	summary: string | null;
+	mechanics: unknown;
 };
 
 type BackgroundRow = {
@@ -443,7 +445,7 @@ async function listSubspeciesOptions(
 ): Promise<CharacterSubspeciesOption[]> {
 	const { data, error } = await supabase
 		.from('subspecies')
-		.select('id, slug, species_slug, name, summary')
+		.select('id, slug, species_slug, name, summary, mechanics')
 		.order('name', { ascending: true });
 
 	if (error) {
@@ -473,7 +475,7 @@ async function listSubclassOptions(
 ): Promise<CharacterSubclassOption[]> {
 	const { data, error } = await supabase
 		.from('subclasses')
-		.select('id, slug, class_slug, name, summary')
+		.select('id, slug, class_slug, name, summary, mechanics')
 		.order('name', { ascending: true });
 
 	if (error) {
@@ -617,14 +619,18 @@ function mapSpeciesOption(
 }
 
 function mapSubspeciesOption(
-	subspecies: Pick<SubspeciesRow, 'id' | 'slug' | 'species_slug' | 'name' | 'summary'>
+	subspecies: Pick<
+		SubspeciesRow,
+		'id' | 'slug' | 'species_slug' | 'name' | 'summary' | 'mechanics'
+	>
 ): CharacterSubspeciesOption {
 	return {
 		id: subspecies.id,
 		slug: subspecies.slug,
 		speciesSlug: subspecies.species_slug,
 		name: subspecies.name,
-		summary: subspecies.summary
+		summary: subspecies.summary,
+		mechanicSummary: summarizeCatalogMechanics(subspecies.mechanics)
 	};
 }
 
@@ -645,14 +651,15 @@ function mapCharacterClassOption(
 }
 
 function mapSubclassOption(
-	subclass: Pick<SubclassRow, 'id' | 'slug' | 'class_slug' | 'name' | 'summary'>
+	subclass: Pick<SubclassRow, 'id' | 'slug' | 'class_slug' | 'name' | 'summary' | 'mechanics'>
 ): CharacterSubclassOption {
 	return {
 		id: subclass.id,
 		slug: subclass.slug,
 		classSlug: subclass.class_slug,
 		name: subclass.name,
-		summary: subclass.summary
+		summary: subclass.summary,
+		mechanicSummary: summarizeCatalogMechanics(subclass.mechanics)
 	};
 }
 
