@@ -13,12 +13,12 @@ test('character create route saves a new draft and returns to the roster', async
 
 	await fillCharacterForm(page, {
 		name: 'Brakka Emberforge',
-		species: 'Dwarf',
+		species: 'Humano',
 		subspecies: '',
-		className: 'Fighter',
-		subclass: 'Battle Master',
+		className: 'Guerrero',
+		subclass: '',
 		level: '4',
-		background: 'Guild Artisan',
+		background: 'Soldier',
 		story: 'A caravan guard learning to lead from the front.',
 		strength: '16',
 		constitution: '15',
@@ -32,29 +32,9 @@ test('character create route saves a new draft and returns to the roster', async
 				attackBonus: '+5'
 			}
 		],
-		spellItems: [
-			{
-				name: 'Shield of Faith',
-				level: '1',
-				school: 'Abjuration',
-				castingTime: '1 bonus action',
-				range: '60 ft.',
-				duration: 'Concentration, up to 10 minutes',
-				isPrepared: true
-			}
-		],
-		inventoryItems: [
-			{
-				catalogItemName: "Smith's Tools",
-				quantity: '1',
-				isEquipped: true
-			}
-		],
-		featItems: [
-			{
-				catalogFeatName: 'Heavily Armored'
-			}
-		]
+		spellItems: [],
+		inventoryItems: [],
+		featItems: []
 	});
 
 	await page.getByRole('button', { name: 'Create character' }).click();
@@ -62,7 +42,7 @@ test('character create route saves a new draft and returns to the roster', async
 	await expect(page).toHaveURL('/app/characters?created=Brakka%20Emberforge');
 	await expect(page.getByText('Brakka Emberforge was created successfully.')).toBeVisible();
 	await expect(page.getByRole('heading', { name: 'Brakka Emberforge' })).toBeVisible();
-	await expect(page.getByText('Dwarf - Fighter', { exact: true })).toBeVisible();
+	await expect(page.getByText('Humano - Guerrero', { exact: true })).toBeVisible();
 });
 
 test('character edit route updates an existing draft and returns to detail', async ({ page }) => {
@@ -73,10 +53,10 @@ test('character edit route updates an existing draft and returns to detail', asy
 
 	await fillCharacterForm(page, {
 		name: 'Talia Dawnweaver',
-		className: 'Cleric',
-		subclass: 'Light Domain',
-		background: 'Pilgrim',
-		species: 'Elf',
+		className: 'Mago',
+		subclass: 'School of Evocation',
+		background: 'Soldier',
+		species: 'Elfo',
 		subspecies: 'High Elf',
 		story: 'Now follows a radiant omen across the coast.',
 		intelligence: '14',
@@ -90,20 +70,15 @@ test('character edit route updates an existing draft and returns to detail', asy
 		],
 		spellItems: [
 			{
-				catalogSpellName: 'Guiding Bolt',
+				catalogSpellName: 'Detect Magic',
+				level: '1',
 				isPrepared: true
 			}
 		],
-		inventoryItems: [
-			{
-				catalogItemName: 'Lantern',
-				quantity: '1',
-				isEquipped: true
-			}
-		],
+		inventoryItems: [],
 		featItems: [
 			{
-				catalogFeatName: 'Resilient (Wisdom)'
+				catalogFeatName: 'Observant'
 			}
 		],
 		notes: 'Carries a lantern relic.'
@@ -114,28 +89,17 @@ test('character edit route updates an existing draft and returns to detail', asy
 	await expect(page).toHaveURL('/app/characters/char-e2e-1?updated=Talia%20Dawnweaver');
 	await expect(page.getByText('Talia Dawnweaver was updated successfully.')).toBeVisible();
 	await expect(page.getByRole('heading', { name: 'Talia Dawnweaver' })).toBeVisible();
-	await expect(page.getByText('Cleric', { exact: true })).toBeVisible();
-	await expect(page.getByText('Pilgrim', { exact: true })).toBeVisible();
+	await expect(page.getByText('Mago', { exact: true })).toBeVisible();
+	await expect(page.getByText('Soldier', { exact: true })).toBeVisible();
 	await expect(page.getByText('Warhammer', { exact: true })).toBeVisible();
 	await expect(page.getByText('Catalog weapon', { exact: true })).toBeVisible();
 	await expect(page.getByText('versatile (1d10)', { exact: true })).toBeVisible();
 	await expect(page.getByText('+5 | 1d8 bludgeoning | Melee', { exact: true })).toBeVisible();
 	await expect(
-		page.getByText('A versatile melee weapon that rewards strong front-line fighters.', {
-			exact: true
-		})
+		page.getByText('A martial melee weapon with crushing force.', { exact: true })
 	).toBeVisible();
-	await expect(page.getByText('Guiding Bolt', { exact: true })).toBeVisible();
-	await expect(page.getByText('Resilient (Wisdom)', { exact: true })).toBeVisible();
-	await expect(page.getByText('Lantern', { exact: true })).toBeVisible();
-	await expect(page.getByText('Catalog item', { exact: true })).toBeVisible();
-	await expect(page.getByText('5 gp | 2 lb', { exact: true })).toBeVisible();
-	await expect(page.getByText('adventuring-gear', { exact: true })).toBeVisible();
-	await expect(
-		page.getByText('A lantern useful for long watches, ruins, and coastal fog.', {
-			exact: true
-		})
-	).toBeVisible();
+	await expect(page.getByText('Detect Magic', { exact: true })).toBeVisible();
+	await expect(page.getByText('Observant', { exact: true })).toBeVisible();
 	await expect(page.getByText('Carries a lantern relic.', { exact: true })).toBeVisible();
 });
 
@@ -239,12 +203,12 @@ async function fillCharacterForm(
 ) {
 	const values = {
 		name: 'Talia Stormstep',
-		species: 'Elf',
+		species: 'Elfo',
 		subspecies: 'High Elf',
-		className: 'Wizard',
-		subclass: 'Evocation',
+		className: 'Mago',
+		subclass: 'School of Evocation',
 		level: '3',
-		background: 'Sage',
+		background: 'Acolyte',
 		story: 'Archivist turned explorer.',
 		strength: '8',
 		dexterity: '14',

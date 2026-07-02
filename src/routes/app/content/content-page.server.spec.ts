@@ -58,15 +58,15 @@ describe('/app/content load', () => {
 		const supabase = {};
 		const characterCatalog = {
 			speciesOptions: [
-				{ id: 'species-1', slug: 'elf', name: 'Elf', summary: null, baseSpeed: 30 }
+				{ id: 'species-1', slug: 'elfo', name: 'Elfo', summary: null, baseSpeed: 30 }
 			],
 			subspeciesOptions: [],
 			classOptions: [
-				{ id: 'class-1', slug: 'wizard', name: 'Wizard', summary: null, hitDie: 6 }
+				{ id: 'class-1', slug: 'mago', name: 'Mago', summary: null, hitDie: 6 }
 			],
 			subclassOptions: [],
 			backgroundOptions: [
-				{ id: 'background-1', slug: 'sage', name: 'Sage', summary: null }
+				{ id: 'background-1', slug: 'acolyte', name: 'Acolyte', summary: null }
 			]
 		};
 		const sharedCatalog = {
