@@ -130,6 +130,57 @@
 				{ "type": "feature", "featureId": "divine-domain" },
 				{ "type": "feature", "featureId": "channel-divinity" }
 			]
+		},
+		{
+			"slug": "mago",
+			"name": "Mago",
+			"summary": "Clase arcana centrada en estudio, preparacion y control flexible del repertorio de conjuros.",
+			"description": "Seed inicial basada en reglas basicas oficiales. La progresion completa del grimorio y las escuelas se ampliara de forma incremental.",
+			"hitDie": 6,
+			"primaryAbilities": ["intelligence"],
+			"savingThrowProficiencies": ["intelligence", "wisdom"],
+			"armorProficiencies": [],
+			"weaponProficiencies": ["dagger", "dart", "sling", "quarterstaff", "light-crossbow"],
+			"toolProficiencies": [],
+			"skillChoices": {
+				"count": 2,
+				"options": ["arcana", "history", "insight", "investigation", "medicine", "religion"]
+			},
+			"startingEquipment": [
+				{ "type": "choice", "options": ["quarterstaff", "any-simple-weapon"] },
+				{ "type": "item", "id": "spellbook" },
+				{ "type": "choice", "options": ["explorers-pack", "dungeoneers-pack"] },
+				{ "type": "item", "id": "satchel" }
+			],
+			"spellcastingAbility": "intelligence",
+			"visibility": "public",
+			"progression": [
+				{ "level": 1, "features": ["spellcasting", "arcane-recovery"] },
+				{ "level": 2, "features": ["arcane-tradition"] }
+			],
+			"mechanics": [
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "dagger" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "dart" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "sling" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "quarterstaff" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "light-crossbow" },
+				{
+					"type": "proficiency",
+					"proficiencyType": "saving_throw",
+					"value": "intelligence"
+				},
+				{ "type": "proficiency", "proficiencyType": "saving_throw", "value": "wisdom" },
+				{
+					"type": "choose_proficiency",
+					"proficiencyType": "skill",
+					"count": 2,
+					"options": ["arcana", "history", "insight", "investigation", "medicine", "religion"]
+				},
+				{ "type": "spellcasting", "ability": "intelligence" },
+				{ "type": "feature", "featureId": "spellcasting" },
+				{ "type": "feature", "featureId": "arcane-recovery" },
+				{ "type": "feature", "featureId": "arcane-tradition" }
+			]
 		}
 	]
 }

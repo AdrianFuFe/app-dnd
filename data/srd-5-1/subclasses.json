@@ -62,6 +62,45 @@
 					]
 				}
 			]
+		},
+		{
+			"slug": "school-of-evocation",
+			"name": "School of Evocation",
+			"summary": "Escuela arcana enfocada en modelar energia destructiva sin perder control tactico.",
+			"description": "Seed inicial derivado de reglas basicas oficiales. Mantener el detalle mecanico breve hasta ampliar la cobertura de escuelas y rasgos de clase.",
+			"classSlug": "mago",
+			"visibility": "public",
+			"grantedSpellsByLevel": [],
+			"mechanics": [
+				{ "type": "feature", "featureId": "evocation-savant" },
+				{ "type": "feature", "featureId": "sculpt-spells" }
+			],
+			"features": [
+				{
+					"level": 2,
+					"featureId": "evocation-savant",
+					"name": "Evocation Savant",
+					"summary": "Copias conjuros de evocacion en tu grimorio con menos tiempo y coste.",
+					"mechanics": [
+						{
+							"type": "note",
+							"text": "The gold and time you must spend to copy an evocation spell into your spellbook is halved."
+						}
+					]
+				},
+				{
+					"level": 2,
+					"featureId": "sculpt-spells",
+					"name": "Sculpt Spells",
+					"summary": "Proteges a aliados elegidos del pleno impacto de tus conjuros de evocacion.",
+					"mechanics": [
+						{
+							"type": "note",
+							"text": "When you cast an evocation spell that affects other creatures you can see, choose creatures equal to 1 + the spell's level to automatically succeed on their saving throws and take no damage on a successful save."
+						}
+					]
+				}
+			]
 		}
 	]
 }

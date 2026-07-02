@@ -4,6 +4,30 @@
 	"contentType": "feat",
 	"items": [
 		{
+			"slug": "athlete",
+			"name": "Athlete",
+			"summary": "Mejora la capacidad fisica general y agiliza varios movimientos atleticos.",
+			"description": "Seed inicial del SRD para representar una dote con mejora flexible de fuerza o destreza y notas de movilidad.",
+			"prerequisites": [],
+			"visibility": "public",
+			"mechanics": [
+				{
+					"type": "choose_ability_bonus",
+					"count": 1,
+					"value": 1,
+					"allowed": ["strength", "dexterity"]
+				},
+				{
+					"type": "note",
+					"text": "Standing up from prone uses only 5 feet of movement."
+				},
+				{
+					"type": "note",
+					"text": "Climbing no longer costs extra movement, and you can make a running long jump or high jump after moving only 5 feet."
+				}
+			]
+		},
+		{
 			"slug": "heavily-armored",
 			"name": "Heavily Armored",
 			"summary": "Entrenamiento adicional para usar armadura pesada.",
@@ -16,6 +40,37 @@
 			]
 		},
 		{
+			"slug": "keen-mind",
+			"name": "Keen Mind",
+			"summary": "Aumenta la agudeza mental y la capacidad de orientacion y recuerdo.",
+			"description": "Seed inicial del SRD para disponer de una dote centrada en inteligencia y memoria excepcional.",
+			"prerequisites": [],
+			"visibility": "public",
+			"mechanics": [
+				{ "type": "ability_bonus", "ability": "intelligence", "value": 1 },
+				{
+					"type": "note",
+					"text": "You always know which way is north and how many hours remain before the next sunrise or sunset."
+				},
+				{
+					"type": "note",
+					"text": "You can accurately recall anything you have seen or heard within the past month."
+				}
+			]
+		},
+		{
+			"slug": "resilient-constitution",
+			"name": "Resilient (Constitution)",
+			"summary": "Refuerza la resistencia fisica y otorga competencia en salvaciones de constitucion.",
+			"description": "Seed inicial del SRD para ampliar la familia de dotes de resiliencia con una opcion util para concentracion y aguante.",
+			"prerequisites": [],
+			"visibility": "public",
+			"mechanics": [
+				{ "type": "ability_bonus", "ability": "constitution", "value": 1 },
+				{ "type": "proficiency", "proficiencyType": "saving_throw", "value": "constitution" }
+			]
+		},
+		{
 			"slug": "resilient-wisdom",
 			"name": "Resilient (Wisdom)",
 			"summary": "Refuerza la voluntad y otorga competencia en salvaciones de sabiduria.",
@@ -25,6 +80,30 @@
 			"mechanics": [
 				{ "type": "ability_bonus", "ability": "wisdom", "value": 1 },
 				{ "type": "proficiency", "proficiencyType": "saving_throw", "value": "wisdom" }
+			]
+		},
+		{
+			"slug": "observant",
+			"name": "Observant",
+			"summary": "Aumenta la percepcion de detalles y la lectura de labios.",
+			"description": "Seed inicial del SRD para representar una dote con mejora flexible de inteligencia o sabiduria y observacion reforzada.",
+			"prerequisites": [],
+			"visibility": "public",
+			"mechanics": [
+				{
+					"type": "choose_ability_bonus",
+					"count": 1,
+					"value": 1,
+					"allowed": ["intelligence", "wisdom"]
+				},
+				{
+					"type": "note",
+					"text": "You can read lips if you can see a creature's mouth while it is speaking a language you understand."
+				},
+				{
+					"type": "note",
+					"text": "You gain a +5 bonus to passive Wisdom (Perception) and passive Intelligence (Investigation)."
+				}
 			]
 		}
 	]

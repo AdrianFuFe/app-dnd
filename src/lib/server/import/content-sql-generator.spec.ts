@@ -15,11 +15,18 @@ describe('generateSrdCatalogSeedSql', () => {
 		expect(sql).toContain('insert into equipment');
 		expect(sql).toContain("'humano'");
 		expect(sql).toContain("'clerigo'");
+		expect(sql).toContain("'mago'");
 		expect(sql).toContain("'life-domain'");
+		expect(sql).toContain("'school-of-evocation'");
 		expect(sql).toContain("'acolyte'");
 		expect(sql).toContain("'bless'");
+		expect(sql).toContain("'guiding-bolt'");
+		expect(sql).toContain("'magic-missile'");
+		expect(sql).toContain("'athlete'");
 		expect(sql).toContain("'heavily-armored'");
+		expect(sql).toContain("'observant'");
 		expect(sql).toContain("'quarterstaff'");
+		expect(sql).toContain("'spellbook'");
 		expect(sql).toContain('"type":"choice"');
 		expect(sql).toContain('"quantity":5');
 		expect(sql).toContain("array['comun', 'elfico']::text[]");
