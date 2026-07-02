@@ -43,23 +43,57 @@
 		<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Content</p>
 		<h1 class="mt-3 text-3xl font-semibold text-stone-900">Browse the shared rules catalog.</h1>
 		<p class="mt-3 max-w-3xl text-base leading-7 text-stone-600">
-			This protected area now reflects the structured SRD slices already wired into character
-			flows, so we can inspect the live catalog shape the app is actually using.
+			This protected area now reflects the broader structured SRD baseline the app is using,
+			not just the newer spell, feat, and equipment slices.
 		</p>
-		<div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+		<p class="mt-3 max-w-3xl text-sm text-stone-500">
+			The same shared entries below currently feed
+			{formatCountLabel(
+				data.characterCatalog.speciesOptions.length,
+				'species selector',
+				'species selectors'
+			)},
+			{formatCountLabel(
+				data.characterCatalog.classOptions.length,
+				'class selector',
+				'class selectors'
+			)}, and
+			{formatCountLabel(
+				data.characterCatalog.backgroundOptions.length,
+				'background selector',
+				'background selectors'
+			)}
+			in the live character forms.
+		</p>
+		<div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 			<div class="rounded-2xl bg-stone-100 p-4">
-				<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">Species</p>
+				<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">
+					Species
+				</p>
 				<p class="mt-2 text-3xl font-semibold text-stone-900">
-					{data.characterCatalog.speciesOptions.length}
+					{data.sharedCatalog.species.length}
 				</p>
 				<p class="mt-2 text-sm text-stone-600">
-					Supported ancestries currently available in the character form.
+					Shared ancestry entries available across the app.
 				</p>
 			</div>
 			<div class="rounded-2xl bg-stone-100 p-4">
-				<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">Classes</p>
+				<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">
+					Subspecies
+				</p>
 				<p class="mt-2 text-3xl font-semibold text-stone-900">
-					{data.characterCatalog.classOptions.length}
+					{data.sharedCatalog.subspecies.length}
+				</p>
+				<p class="mt-2 text-sm text-stone-600">
+					Nested ancestry options already linked to their parent species.
+				</p>
+			</div>
+			<div class="rounded-2xl bg-stone-100 p-4">
+				<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">
+					Classes
+				</p>
+				<p class="mt-2 text-3xl font-semibold text-stone-900">
+					{data.sharedCatalog.classes.length}
 				</p>
 				<p class="mt-2 text-sm text-stone-600">
 					Class paths with subclass filtering already connected to live forms.
@@ -67,10 +101,21 @@
 			</div>
 			<div class="rounded-2xl bg-stone-100 p-4">
 				<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">
+					Subclasses
+				</p>
+				<p class="mt-2 text-3xl font-semibold text-stone-900">
+					{data.sharedCatalog.subclasses.length}
+				</p>
+				<p class="mt-2 text-sm text-stone-600">
+					Specialized class branches grouped by their parent class.
+				</p>
+			</div>
+			<div class="rounded-2xl bg-stone-100 p-4">
+				<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">
 					Backgrounds
 				</p>
 				<p class="mt-2 text-3xl font-semibold text-stone-900">
-					{data.characterCatalog.backgroundOptions.length}
+					{data.sharedCatalog.backgrounds.length}
 				</p>
 				<p class="mt-2 text-sm text-stone-600">
 					Reusable origins available for structured character selection.
@@ -113,37 +158,49 @@
 			<div class="flex items-center justify-between gap-4">
 				<div>
 					<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
-						Character foundations
+						Foundations
 					</p>
 					<h2 class="mt-2 text-2xl font-semibold text-stone-900">
-						Structured creation catalog
+						Shared ancestry and class baseline
 					</h2>
 				</div>
 				<p class="text-sm text-stone-500">
-					{formatCountLabel(data.characterCatalog.subspeciesOptions.length, 'subspecies', 'subspecies')}
+					{formatCountLabel(
+						data.sharedCatalog.subspecies.length,
+						'subspecies',
+						'subspecies'
+					)}
 					/
-					{formatCountLabel(data.characterCatalog.subclassOptions.length, 'subclass', 'subclasses')}
+					{formatCountLabel(
+						data.sharedCatalog.subclasses.length,
+						'subclass',
+						'subclasses'
+					)}
 				</p>
 			</div>
 
-			<div class="mt-6 grid gap-4 lg:grid-cols-3">
+			<div class="mt-6 grid gap-4 lg:grid-cols-2">
 				<article class="rounded-2xl border border-stone-200 p-4">
 					<div class="flex items-center justify-between gap-3">
 						<h3 class="text-lg font-semibold text-stone-900">Species</h3>
 						<p class="text-xs uppercase tracking-[0.16em] text-stone-500">
-							{data.characterCatalog.speciesOptions.length}
+							{data.sharedCatalog.species.length}
 						</p>
 					</div>
-					{#if data.characterCatalog.speciesOptions.length === 0}
-						<p class="mt-4 text-sm text-stone-600">No species entries are available yet.</p>
+					{#if data.sharedCatalog.species.length === 0}
+						<p class="mt-4 text-sm text-stone-600">
+							No species entries are available yet.
+						</p>
 					{:else}
 						<div class="mt-4 space-y-3">
-							{#each data.characterCatalog.speciesOptions as option (option.id)}
+							{#each data.sharedCatalog.species as option (option.id)}
 								<div class="rounded-2xl bg-stone-50 px-3 py-3">
 									<div class="flex items-center justify-between gap-3">
 										<p class="font-medium text-stone-900">{option.name}</p>
 										{#if option.baseSpeed !== null}
-											<span class="text-xs uppercase tracking-[0.16em] text-stone-500">
+											<span
+												class="text-xs uppercase tracking-[0.16em] text-stone-500"
+											>
 												{option.baseSpeed} ft
 											</span>
 										{/if}
@@ -159,21 +216,25 @@
 
 				<article class="rounded-2xl border border-stone-200 p-4">
 					<div class="flex items-center justify-between gap-3">
-						<h3 class="text-lg font-semibold text-stone-900">Classes</h3>
+						<h3 class="text-lg font-semibold text-stone-900">Subspecies</h3>
 						<p class="text-xs uppercase tracking-[0.16em] text-stone-500">
-							{data.characterCatalog.classOptions.length}
+							{data.sharedCatalog.subspecies.length}
 						</p>
 					</div>
-					{#if data.characterCatalog.classOptions.length === 0}
-						<p class="mt-4 text-sm text-stone-600">No class entries are available yet.</p>
+					{#if data.sharedCatalog.subspecies.length === 0}
+						<p class="mt-4 text-sm text-stone-600">
+							No subspecies entries are available yet.
+						</p>
 					{:else}
 						<div class="mt-4 space-y-3">
-							{#each data.characterCatalog.classOptions as option (option.id)}
+							{#each data.sharedCatalog.subspecies as option (option.id)}
 								<div class="rounded-2xl bg-stone-50 px-3 py-3">
 									<div class="flex items-center justify-between gap-3">
 										<p class="font-medium text-stone-900">{option.name}</p>
-										<span class="text-xs uppercase tracking-[0.16em] text-stone-500">
-											d{option.hitDie}
+										<span
+											class="text-xs uppercase tracking-[0.16em] text-stone-500"
+										>
+											{formatSlugLabel(option.speciesSlug)}
 										</span>
 									</div>
 									<p class="mt-2 text-sm text-stone-600">
@@ -187,16 +248,81 @@
 
 				<article class="rounded-2xl border border-stone-200 p-4">
 					<div class="flex items-center justify-between gap-3">
-						<h3 class="text-lg font-semibold text-stone-900">Backgrounds</h3>
+						<h3 class="text-lg font-semibold text-stone-900">Classes</h3>
 						<p class="text-xs uppercase tracking-[0.16em] text-stone-500">
-							{data.characterCatalog.backgroundOptions.length}
+							{data.sharedCatalog.classes.length}
 						</p>
 					</div>
-					{#if data.characterCatalog.backgroundOptions.length === 0}
-						<p class="mt-4 text-sm text-stone-600">No background entries are available yet.</p>
+					{#if data.sharedCatalog.classes.length === 0}
+						<p class="mt-4 text-sm text-stone-600">
+							No class entries are available yet.
+						</p>
 					{:else}
 						<div class="mt-4 space-y-3">
-							{#each data.characterCatalog.backgroundOptions as option (option.id)}
+							{#each data.sharedCatalog.classes as option (option.id)}
+								<div class="rounded-2xl bg-stone-50 px-3 py-3">
+									<div class="flex items-center justify-between gap-3">
+										<p class="font-medium text-stone-900">{option.name}</p>
+										<span
+											class="text-xs uppercase tracking-[0.16em] text-stone-500"
+										>
+											d{option.hitDie}
+										</span>
+									</div>
+									<p class="mt-2 text-sm text-stone-600">
+										{option.summary ?? 'No summary yet.'}
+									</p>
+								</div>
+							{/each}
+						</div>
+					{/if}
+				</article>
+				<article class="rounded-2xl border border-stone-200 p-4">
+					<div class="flex items-center justify-between gap-3">
+						<h3 class="text-lg font-semibold text-stone-900">Subclasses</h3>
+						<p class="text-xs uppercase tracking-[0.16em] text-stone-500">
+							{data.sharedCatalog.subclasses.length}
+						</p>
+					</div>
+					{#if data.sharedCatalog.subclasses.length === 0}
+						<p class="mt-4 text-sm text-stone-600">
+							No subclass entries are available yet.
+						</p>
+					{:else}
+						<div class="mt-4 space-y-3">
+							{#each data.sharedCatalog.subclasses as option (option.id)}
+								<div class="rounded-2xl bg-stone-50 px-3 py-3">
+									<div class="flex items-center justify-between gap-3">
+										<p class="font-medium text-stone-900">{option.name}</p>
+										<span
+											class="text-xs uppercase tracking-[0.16em] text-stone-500"
+										>
+											{formatSlugLabel(option.classSlug)}
+										</span>
+									</div>
+									<p class="mt-2 text-sm text-stone-600">
+										{option.summary ?? 'No summary yet.'}
+									</p>
+								</div>
+							{/each}
+						</div>
+					{/if}
+				</article>
+
+				<article class="rounded-2xl border border-stone-200 p-4 lg:col-span-2">
+					<div class="flex items-center justify-between gap-3">
+						<h3 class="text-lg font-semibold text-stone-900">Backgrounds</h3>
+						<p class="text-xs uppercase tracking-[0.16em] text-stone-500">
+							{data.sharedCatalog.backgrounds.length}
+						</p>
+					</div>
+					{#if data.sharedCatalog.backgrounds.length === 0}
+						<p class="mt-4 text-sm text-stone-600">
+							No background entries are available yet.
+						</p>
+					{:else}
+						<div class="mt-4 grid gap-3 md:grid-cols-2">
+							{#each data.sharedCatalog.backgrounds as option (option.id)}
 								<div class="rounded-2xl bg-stone-50 px-3 py-3">
 									<p class="font-medium text-stone-900">{option.name}</p>
 									<p class="mt-2 text-sm text-stone-600">
@@ -213,21 +339,29 @@
 		<div class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
 			<div class="flex items-center justify-between gap-4">
 				<div>
-					<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Spells</p>
-					<h2 class="mt-2 text-2xl font-semibold text-stone-900">SRD-backed spell entries</h2>
+					<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
+						Spells
+					</p>
+					<h2 class="mt-2 text-2xl font-semibold text-stone-900">
+						SRD-backed spell entries
+					</h2>
 				</div>
 				<p class="text-sm text-stone-500">{data.sharedCatalog.spells.length} total</p>
 			</div>
 
 			{#if data.sharedCatalog.spells.length === 0}
-				<p class="mt-6 text-sm text-stone-600">No shared spell entries are available yet.</p>
+				<p class="mt-6 text-sm text-stone-600">
+					No shared spell entries are available yet.
+				</p>
 			{:else}
 				<div class="mt-6 space-y-4">
 					{#each data.sharedCatalog.spells as spell (spell.id)}
 						<article class="rounded-2xl border border-stone-200 p-4">
 							<div class="flex flex-wrap items-start justify-between gap-3">
 								<div>
-									<h3 class="text-lg font-semibold text-stone-900">{spell.name}</h3>
+									<h3 class="text-lg font-semibold text-stone-900">
+										{spell.name}
+									</h3>
 									<p class="mt-1 text-sm text-stone-600">
 										{spell.summary ?? 'No summary yet.'}
 									</p>
@@ -235,19 +369,25 @@
 								<div
 									class="flex flex-wrap gap-2 text-xs font-medium uppercase tracking-[0.14em] text-stone-600"
 								>
-									<span class="rounded-full bg-amber-100 px-3 py-1 text-amber-900">
+									<span
+										class="rounded-full bg-amber-100 px-3 py-1 text-amber-900"
+									>
 										{formatSpellLevel(spell.level)}
 									</span>
 									<span class="rounded-full bg-sky-100 px-3 py-1 text-sky-900">
 										{spell.school}
 									</span>
 									{#if spell.concentration}
-										<span class="rounded-full bg-rose-100 px-3 py-1 text-rose-900">
+										<span
+											class="rounded-full bg-rose-100 px-3 py-1 text-rose-900"
+										>
 											Concentration
 										</span>
 									{/if}
 									{#if spell.ritual}
-										<span class="rounded-full bg-emerald-100 px-3 py-1 text-emerald-900">
+										<span
+											class="rounded-full bg-emerald-100 px-3 py-1 text-emerald-900"
+										>
 											Ritual
 										</span>
 									{/if}
@@ -283,8 +423,12 @@
 		<div class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
 			<div class="flex items-center justify-between gap-4">
 				<div>
-					<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Feats</p>
-					<h2 class="mt-2 text-2xl font-semibold text-stone-900">Reusable feat entries</h2>
+					<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
+						Feats
+					</p>
+					<h2 class="mt-2 text-2xl font-semibold text-stone-900">
+						Reusable feat entries
+					</h2>
 				</div>
 				<p class="text-sm text-stone-500">{data.sharedCatalog.feats.length} total</p>
 			</div>
@@ -299,7 +443,9 @@
 							<p class="mt-2 text-sm text-stone-600">
 								{feat.summary ?? feat.description ?? 'No summary yet.'}
 							</p>
-							<p class="mt-4 text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
+							<p
+								class="mt-4 text-xs font-medium uppercase tracking-[0.16em] text-stone-500"
+							>
 								Prerequisites
 							</p>
 							<p class="mt-2 text-sm text-stone-700">
@@ -325,14 +471,18 @@
 			</div>
 
 			{#if data.sharedCatalog.equipment.length === 0}
-				<p class="mt-6 text-sm text-stone-600">No shared equipment entries are available yet.</p>
+				<p class="mt-6 text-sm text-stone-600">
+					No shared equipment entries are available yet.
+				</p>
 			{:else}
 				<div class="mt-6 space-y-4">
 					{#each data.sharedCatalog.equipment as entry (entry.id)}
 						<article class="rounded-2xl border border-stone-200 p-4">
 							<div class="flex flex-wrap items-start justify-between gap-3">
 								<div>
-									<h3 class="text-lg font-semibold text-stone-900">{entry.name}</h3>
+									<h3 class="text-lg font-semibold text-stone-900">
+										{entry.name}
+									</h3>
 									<p class="mt-1 text-sm text-stone-600">
 										{entry.summary ?? entry.description ?? 'No summary yet.'}
 									</p>
@@ -340,23 +490,29 @@
 								<div
 									class="flex flex-wrap gap-2 text-xs font-medium uppercase tracking-[0.14em] text-stone-600"
 								>
-									<span class="rounded-full bg-stone-100 px-3 py-1 text-stone-900">
+									<span
+										class="rounded-full bg-stone-100 px-3 py-1 text-stone-900"
+									>
 										{formatSlugLabel(entry.category)}
 									</span>
 									{#if entry.isWeapon}
-										<span class="rounded-full bg-amber-100 px-3 py-1 text-amber-900">
+										<span
+											class="rounded-full bg-amber-100 px-3 py-1 text-amber-900"
+										>
 											Weapon
 										</span>
 									{/if}
 									{#if entry.isEquippable}
-										<span class="rounded-full bg-sky-100 px-3 py-1 text-sky-900">
+										<span
+											class="rounded-full bg-sky-100 px-3 py-1 text-sky-900"
+										>
 											Equippable
 										</span>
 									{/if}
 								</div>
 							</div>
 
-							{#if formatEquipmentMeta([entry.value, entry.weight !== null ? `${entry.weight} lb` : null, entry.damage, entry.damageType, entry.range])}
+							{#if formatEquipmentMeta( [entry.value, entry.weight !== null ? `${entry.weight} lb` : null, entry.damage, entry.damageType, entry.range] )}
 								<p class="mt-4 text-sm text-stone-600">
 									{formatEquipmentMeta([
 										entry.value,

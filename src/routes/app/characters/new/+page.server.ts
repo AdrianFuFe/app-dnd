@@ -32,6 +32,11 @@ export const load: PageServerLoad = async ({ locals }) => {
 					backgroundOptions: []
 				},
 				{
+					species: [],
+					subspecies: [],
+					classes: [],
+					subclasses: [],
+					backgrounds: [],
 					spells: [],
 					feats: [],
 					equipment: []

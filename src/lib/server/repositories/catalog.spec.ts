@@ -342,7 +342,76 @@ describe('resolveCharacterCreationCatalogSelections', () => {
 });
 
 describe('listExpandedContentCatalog', () => {
-	it('loads spell, feat, and equipment entries for shared catalog browsing', async () => {
+	it('loads the broader shared SRD catalog for live browsing', async () => {
+		const speciesOrder = vi.fn().mockResolvedValue({
+			data: [
+				{
+					id: 'species-1',
+					slug: 'elfo',
+					name: 'Elfo',
+					summary: 'Agile and perceptive.',
+					base_speed: 30
+				}
+			],
+			error: null
+		});
+		const speciesSelect = vi.fn().mockReturnValue({ order: speciesOrder });
+
+		const subspeciesOrder = vi.fn().mockResolvedValue({
+			data: [
+				{
+					id: 'subspecies-1',
+					slug: 'high-elf',
+					species_slug: 'elfo',
+					name: 'High Elf',
+					summary: 'Arcane focused.'
+				}
+			],
+			error: null
+		});
+		const subspeciesSelect = vi.fn().mockReturnValue({ order: subspeciesOrder });
+
+		const classesOrder = vi.fn().mockResolvedValue({
+			data: [
+				{
+					id: 'class-1',
+					slug: 'clerigo',
+					name: 'Clerigo',
+					summary: 'Divine support caster.',
+					hit_die: 8
+				}
+			],
+			error: null
+		});
+		const classesSelect = vi.fn().mockReturnValue({ order: classesOrder });
+
+		const subclassOrder = vi.fn().mockResolvedValue({
+			data: [
+				{
+					id: 'subclass-1',
+					slug: 'life-domain',
+					class_slug: 'clerigo',
+					name: 'Life Domain',
+					summary: 'Healing focused.'
+				}
+			],
+			error: null
+		});
+		const subclassSelect = vi.fn().mockReturnValue({ order: subclassOrder });
+
+		const backgroundOrder = vi.fn().mockResolvedValue({
+			data: [
+				{
+					id: 'background-1',
+					slug: 'sage',
+					name: 'Sage',
+					summary: 'Academic researcher.'
+				}
+			],
+			error: null
+		});
+		const backgroundSelect = vi.fn().mockReturnValue({ order: backgroundOrder });
+
 		const spellNameOrder = vi.fn().mockResolvedValue({
 			data: [
 				{
@@ -406,6 +475,26 @@ describe('listExpandedContentCatalog', () => {
 		const equipmentSelect = vi.fn().mockReturnValue({ order: equipmentOrder });
 
 		const from = vi.fn((table: string) => {
+			if (table === 'species') {
+				return { select: speciesSelect };
+			}
+
+			if (table === 'subspecies') {
+				return { select: subspeciesSelect };
+			}
+
+			if (table === 'character_classes') {
+				return { select: classesSelect };
+			}
+
+			if (table === 'subclasses') {
+				return { select: subclassSelect };
+			}
+
+			if (table === 'backgrounds') {
+				return { select: backgroundSelect };
+			}
+
 			if (table === 'spells') {
 				return { select: spellSelect };
 			}
@@ -424,6 +513,50 @@ describe('listExpandedContentCatalog', () => {
 		const catalog = await listExpandedContentCatalog({ from } as never);
 
 		expect(catalog).toEqual({
+			species: [
+				{
+					id: 'species-1',
+					slug: 'elfo',
+					name: 'Elfo',
+					summary: 'Agile and perceptive.',
+					baseSpeed: 30
+				}
+			],
+			subspecies: [
+				{
+					id: 'subspecies-1',
+					slug: 'high-elf',
+					speciesSlug: 'elfo',
+					name: 'High Elf',
+					summary: 'Arcane focused.'
+				}
+			],
+			classes: [
+				{
+					id: 'class-1',
+					slug: 'clerigo',
+					name: 'Clerigo',
+					summary: 'Divine support caster.',
+					hitDie: 8
+				}
+			],
+			subclasses: [
+				{
+					id: 'subclass-1',
+					slug: 'life-domain',
+					classSlug: 'clerigo',
+					name: 'Life Domain',
+					summary: 'Healing focused.'
+				}
+			],
+			backgrounds: [
+				{
+					id: 'background-1',
+					slug: 'sage',
+					name: 'Sage',
+					summary: 'Academic researcher.'
+				}
+			],
 			spells: [
 				{
 					id: 'spell-1',

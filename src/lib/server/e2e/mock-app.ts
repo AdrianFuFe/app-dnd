@@ -171,6 +171,11 @@ const e2eCatalog: CharacterCreationCatalog = {
 };
 
 const e2eExpandedContentCatalog: ExpandedContentCatalog = {
+	species: e2eCatalog.speciesOptions.map((option) => ({ ...option })),
+	subspecies: e2eCatalog.subspeciesOptions.map((option) => ({ ...option })),
+	classes: e2eCatalog.classOptions.map((option) => ({ ...option })),
+	subclasses: e2eCatalog.subclassOptions.map((option) => ({ ...option })),
+	backgrounds: e2eCatalog.backgroundOptions.map((option) => ({ ...option })),
 	spells: asContentFile<SpellSourceItem>(spellsFile).items.map((item) => ({
 		id: buildCatalogId('spell', item.slug),
 		slug: item.slug,
@@ -367,6 +372,11 @@ export function listE2ECatalog(): CharacterCreationCatalog {
 
 export function listE2EExpandedContentCatalog(): ExpandedContentCatalog {
 	return {
+		species: e2eExpandedContentCatalog.species.map((option) => ({ ...option })),
+		subspecies: e2eExpandedContentCatalog.subspecies.map((option) => ({ ...option })),
+		classes: e2eExpandedContentCatalog.classes.map((option) => ({ ...option })),
+		subclasses: e2eExpandedContentCatalog.subclasses.map((option) => ({ ...option })),
+		backgrounds: e2eExpandedContentCatalog.backgrounds.map((option) => ({ ...option })),
 		spells: e2eExpandedContentCatalog.spells.map(cloneSpellCatalogEntry),
 		feats: e2eExpandedContentCatalog.feats.map(cloneFeatCatalogEntry),
 		equipment: e2eExpandedContentCatalog.equipment.map(cloneEquipmentCatalogEntry)

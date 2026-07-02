@@ -148,13 +148,24 @@ export async function listExpandedContentCatalog(
 		return listE2EExpandedContentCatalog();
 	}
 
-	const [spells, feats, equipment] = await Promise.all([
-		listSpellCatalogEntries(supabase),
-		listFeatCatalogEntries(supabase),
-		listEquipmentCatalogEntries(supabase)
-	]);
+	const [species, subspecies, classes, subclasses, backgrounds, spells, feats, equipment] =
+		await Promise.all([
+			listSpeciesOptions(supabase),
+			listSubspeciesOptions(supabase),
+			listCharacterClassOptions(supabase),
+			listSubclassOptions(supabase),
+			listBackgroundOptions(supabase),
+			listSpellCatalogEntries(supabase),
+			listFeatCatalogEntries(supabase),
+			listEquipmentCatalogEntries(supabase)
+		]);
 
 	return {
+		species,
+		subspecies,
+		classes,
+		subclasses,
+		backgrounds,
 		spells,
 		feats,
 		equipment
@@ -338,10 +349,7 @@ export async function resolveCharacterFeatCatalogSelections(
 	const featEntriesById = new Map(featEntries.map((entry) => [entry.id, entry]));
 
 	return selection.featItems.map((item) =>
-		normalizeCharacterFeatItem(
-			item,
-			item.featId ? featEntriesById.get(item.featId) : undefined
-		)
+		normalizeCharacterFeatItem(item, item.featId ? featEntriesById.get(item.featId) : undefined)
 	);
 }
 

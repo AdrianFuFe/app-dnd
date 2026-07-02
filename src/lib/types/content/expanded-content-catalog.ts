@@ -1,3 +1,11 @@
+import type {
+	CharacterBackgroundOption,
+	CharacterClassOption,
+	CharacterSpeciesOption,
+	CharacterSubclassOption,
+	CharacterSubspeciesOption
+} from './character-catalog';
+
 export type SpellCatalogEntry = {
 	id: string;
 	slug: string;
@@ -42,6 +50,11 @@ export type EquipmentCatalogEntry = {
 };
 
 export type ExpandedContentCatalog = {
+	species: CharacterSpeciesOption[];
+	subspecies: CharacterSubspeciesOption[];
+	classes: CharacterClassOption[];
+	subclasses: CharacterSubclassOption[];
+	backgrounds: CharacterBackgroundOption[];
 	spells: SpellCatalogEntry[];
 	feats: FeatCatalogEntry[];
 	equipment: EquipmentCatalogEntry[];

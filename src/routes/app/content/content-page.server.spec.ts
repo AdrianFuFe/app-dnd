@@ -22,6 +22,11 @@ describe('/app/content load', () => {
 			backgroundOptions: []
 		});
 		listExpandedContentCatalog.mockReset().mockResolvedValue({
+			species: [],
+			subspecies: [],
+			classes: [],
+			subclasses: [],
+			backgrounds: [],
 			spells: [],
 			feats: [],
 			equipment: []
@@ -44,6 +49,11 @@ describe('/app/content load', () => {
 				backgroundOptions: []
 			},
 			sharedCatalog: {
+				species: [],
+				subspecies: [],
+				classes: [],
+				subclasses: [],
+				backgrounds: [],
 				spells: [],
 				feats: [],
 				equipment: []
@@ -61,15 +71,20 @@ describe('/app/content load', () => {
 				{ id: 'species-1', slug: 'elfo', name: 'Elfo', summary: null, baseSpeed: 30 }
 			],
 			subspeciesOptions: [],
-			classOptions: [
-				{ id: 'class-1', slug: 'mago', name: 'Mago', summary: null, hitDie: 6 }
-			],
+			classOptions: [{ id: 'class-1', slug: 'mago', name: 'Mago', summary: null, hitDie: 6 }],
 			subclassOptions: [],
 			backgroundOptions: [
 				{ id: 'background-1', slug: 'acolyte', name: 'Acolyte', summary: null }
 			]
 		};
 		const sharedCatalog = {
+			species: [
+				{ id: 'species-1', slug: 'elfo', name: 'Elfo', summary: null, baseSpeed: 30 }
+			],
+			subspecies: [],
+			classes: [{ id: 'class-1', slug: 'mago', name: 'Mago', summary: null, hitDie: 6 }],
+			subclasses: [],
+			backgrounds: [{ id: 'background-1', slug: 'acolyte', name: 'Acolyte', summary: null }],
 			spells: [],
 			feats: [],
 			equipment: [
