@@ -1,17 +1,29 @@
 import type { PageServerLoad } from './$types';
-import { listExpandedContentCatalog } from '$lib/server/repositories/catalog';
+import {
+	listCharacterCreationCatalog,
+	listExpandedContentCatalog
+} from '$lib/server/repositories/catalog';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.supabase) {
 		return {
-			catalog: {
+			characterCatalog: {
+				speciesOptions: [],
+				subspeciesOptions: [],
+				classOptions: [],
+				subclassOptions: [],
+				backgroundOptions: []
+			},
+			sharedCatalog: {
 				spells: [],
-				feats: []
+				feats: [],
+				equipment: []
 			}
 		};
 	}
 
 	return {
-		catalog: await listExpandedContentCatalog(locals.supabase)
+		characterCatalog: await listCharacterCreationCatalog(locals.supabase),
+		sharedCatalog: await listExpandedContentCatalog(locals.supabase)
 	};
 };

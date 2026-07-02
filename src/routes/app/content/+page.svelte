@@ -3,16 +3,34 @@
 
 	let { data }: { data: PageData } = $props();
 
+	function formatCountLabel(count: number, singular: string, plural: string): string {
+		return `${count} ${count === 1 ? singular : plural}`;
+	}
+
+	function formatSlugLabel(value: string): string {
+		return value
+			.split('-')
+			.map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+			.join(' ');
+	}
+
 	function formatSpellLevel(level: number): string {
 		return level === 0 ? 'Cantrip' : `Level ${level}`;
 	}
 
 	function formatClassList(classSlugs: string[]): string {
-		return classSlugs.length > 0 ? classSlugs.join(', ') : 'General';
+		return classSlugs.length > 0 ? classSlugs.map(formatSlugLabel).join(', ') : 'General';
 	}
 
 	function formatPrerequisites(prerequisites: string[]): string {
 		return prerequisites.length > 0 ? prerequisites.join(' | ') : 'None';
+	}
+
+	function formatEquipmentMeta(values: Array<string | number | null>): string {
+		return values
+			.filter((value) => value !== null && value !== '')
+			.map((value) => String(value))
+			.join(' | ');
 	}
 </script>
 
@@ -25,42 +43,187 @@
 		<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Content</p>
 		<h1 class="mt-3 text-3xl font-semibold text-stone-900">Browse the shared rules catalog.</h1>
 		<p class="mt-3 max-w-3xl text-base leading-7 text-stone-600">
-			This protected area now exposes the structured spell and feat slices already seeded into
-			the app so future character and admin flows can build on a real read model.
+			This protected area now reflects the structured SRD slices already wired into character
+			flows, so we can inspect the live catalog shape the app is actually using.
 		</p>
-		<div class="mt-6 grid gap-4 sm:grid-cols-2">
+		<div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+			<div class="rounded-2xl bg-stone-100 p-4">
+				<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">Species</p>
+				<p class="mt-2 text-3xl font-semibold text-stone-900">
+					{data.characterCatalog.speciesOptions.length}
+				</p>
+				<p class="mt-2 text-sm text-stone-600">
+					Supported ancestries currently available in the character form.
+				</p>
+			</div>
+			<div class="rounded-2xl bg-stone-100 p-4">
+				<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">Classes</p>
+				<p class="mt-2 text-3xl font-semibold text-stone-900">
+					{data.characterCatalog.classOptions.length}
+				</p>
+				<p class="mt-2 text-sm text-stone-600">
+					Class paths with subclass filtering already connected to live forms.
+				</p>
+			</div>
+			<div class="rounded-2xl bg-stone-100 p-4">
+				<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">
+					Backgrounds
+				</p>
+				<p class="mt-2 text-3xl font-semibold text-stone-900">
+					{data.characterCatalog.backgroundOptions.length}
+				</p>
+				<p class="mt-2 text-sm text-stone-600">
+					Reusable origins available for structured character selection.
+				</p>
+			</div>
 			<div class="rounded-2xl bg-stone-100 p-4">
 				<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">Spells</p>
-				<p class="mt-2 text-3xl font-semibold text-stone-900">{data.catalog.spells.length}</p>
+				<p class="mt-2 text-3xl font-semibold text-stone-900">
+					{data.sharedCatalog.spells.length}
+				</p>
 				<p class="mt-2 text-sm text-stone-600">
-					Sorted by level and ready for future selection UI.
+					Sorted by level and already reused in structured spell rows.
 				</p>
 			</div>
 			<div class="rounded-2xl bg-stone-100 p-4">
 				<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">Feats</p>
-				<p class="mt-2 text-3xl font-semibold text-stone-900">{data.catalog.feats.length}</p>
+				<p class="mt-2 text-3xl font-semibold text-stone-900">
+					{data.sharedCatalog.feats.length}
+				</p>
 				<p class="mt-2 text-sm text-stone-600">
-					Includes prerequisite text so later validation can stay catalog-backed.
+					Includes prerequisite text so validation can stay catalog-backed.
+				</p>
+			</div>
+			<div class="rounded-2xl bg-stone-100 p-4">
+				<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">
+					Equipment
+				</p>
+				<p class="mt-2 text-3xl font-semibold text-stone-900">
+					{data.sharedCatalog.equipment.length}
+				</p>
+				<p class="mt-2 text-sm text-stone-600">
+					Shared gear already powering attack and inventory selectors.
 				</p>
 			</div>
 		</div>
 	</section>
 
-	<section class="grid gap-6 xl:grid-cols-[1.4fr,1fr]">
+	<section class="grid gap-6 xl:grid-cols-[1.1fr,0.9fr]">
+		<div class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+			<div class="flex items-center justify-between gap-4">
+				<div>
+					<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
+						Character foundations
+					</p>
+					<h2 class="mt-2 text-2xl font-semibold text-stone-900">
+						Structured creation catalog
+					</h2>
+				</div>
+				<p class="text-sm text-stone-500">
+					{formatCountLabel(data.characterCatalog.subspeciesOptions.length, 'subspecies', 'subspecies')}
+					/
+					{formatCountLabel(data.characterCatalog.subclassOptions.length, 'subclass', 'subclasses')}
+				</p>
+			</div>
+
+			<div class="mt-6 grid gap-4 lg:grid-cols-3">
+				<article class="rounded-2xl border border-stone-200 p-4">
+					<div class="flex items-center justify-between gap-3">
+						<h3 class="text-lg font-semibold text-stone-900">Species</h3>
+						<p class="text-xs uppercase tracking-[0.16em] text-stone-500">
+							{data.characterCatalog.speciesOptions.length}
+						</p>
+					</div>
+					{#if data.characterCatalog.speciesOptions.length === 0}
+						<p class="mt-4 text-sm text-stone-600">No species entries are available yet.</p>
+					{:else}
+						<div class="mt-4 space-y-3">
+							{#each data.characterCatalog.speciesOptions as option (option.id)}
+								<div class="rounded-2xl bg-stone-50 px-3 py-3">
+									<div class="flex items-center justify-between gap-3">
+										<p class="font-medium text-stone-900">{option.name}</p>
+										{#if option.baseSpeed !== null}
+											<span class="text-xs uppercase tracking-[0.16em] text-stone-500">
+												{option.baseSpeed} ft
+											</span>
+										{/if}
+									</div>
+									<p class="mt-2 text-sm text-stone-600">
+										{option.summary ?? 'No summary yet.'}
+									</p>
+								</div>
+							{/each}
+						</div>
+					{/if}
+				</article>
+
+				<article class="rounded-2xl border border-stone-200 p-4">
+					<div class="flex items-center justify-between gap-3">
+						<h3 class="text-lg font-semibold text-stone-900">Classes</h3>
+						<p class="text-xs uppercase tracking-[0.16em] text-stone-500">
+							{data.characterCatalog.classOptions.length}
+						</p>
+					</div>
+					{#if data.characterCatalog.classOptions.length === 0}
+						<p class="mt-4 text-sm text-stone-600">No class entries are available yet.</p>
+					{:else}
+						<div class="mt-4 space-y-3">
+							{#each data.characterCatalog.classOptions as option (option.id)}
+								<div class="rounded-2xl bg-stone-50 px-3 py-3">
+									<div class="flex items-center justify-between gap-3">
+										<p class="font-medium text-stone-900">{option.name}</p>
+										<span class="text-xs uppercase tracking-[0.16em] text-stone-500">
+											d{option.hitDie}
+										</span>
+									</div>
+									<p class="mt-2 text-sm text-stone-600">
+										{option.summary ?? 'No summary yet.'}
+									</p>
+								</div>
+							{/each}
+						</div>
+					{/if}
+				</article>
+
+				<article class="rounded-2xl border border-stone-200 p-4">
+					<div class="flex items-center justify-between gap-3">
+						<h3 class="text-lg font-semibold text-stone-900">Backgrounds</h3>
+						<p class="text-xs uppercase tracking-[0.16em] text-stone-500">
+							{data.characterCatalog.backgroundOptions.length}
+						</p>
+					</div>
+					{#if data.characterCatalog.backgroundOptions.length === 0}
+						<p class="mt-4 text-sm text-stone-600">No background entries are available yet.</p>
+					{:else}
+						<div class="mt-4 space-y-3">
+							{#each data.characterCatalog.backgroundOptions as option (option.id)}
+								<div class="rounded-2xl bg-stone-50 px-3 py-3">
+									<p class="font-medium text-stone-900">{option.name}</p>
+									<p class="mt-2 text-sm text-stone-600">
+										{option.summary ?? 'No summary yet.'}
+									</p>
+								</div>
+							{/each}
+						</div>
+					{/if}
+				</article>
+			</div>
+		</div>
+
 		<div class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
 			<div class="flex items-center justify-between gap-4">
 				<div>
 					<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Spells</p>
 					<h2 class="mt-2 text-2xl font-semibold text-stone-900">SRD-backed spell entries</h2>
 				</div>
-				<p class="text-sm text-stone-500">{data.catalog.spells.length} total</p>
+				<p class="text-sm text-stone-500">{data.sharedCatalog.spells.length} total</p>
 			</div>
 
-			{#if data.catalog.spells.length === 0}
+			{#if data.sharedCatalog.spells.length === 0}
 				<p class="mt-6 text-sm text-stone-600">No shared spell entries are available yet.</p>
 			{:else}
 				<div class="mt-6 space-y-4">
-					{#each data.catalog.spells as spell (spell.id)}
+					{#each data.sharedCatalog.spells as spell (spell.id)}
 						<article class="rounded-2xl border border-stone-200 p-4">
 							<div class="flex flex-wrap items-start justify-between gap-3">
 								<div>
@@ -114,21 +277,23 @@
 				</div>
 			{/if}
 		</div>
+	</section>
 
+	<section class="grid gap-6 xl:grid-cols-[0.8fr,1.2fr]">
 		<div class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
 			<div class="flex items-center justify-between gap-4">
 				<div>
 					<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Feats</p>
 					<h2 class="mt-2 text-2xl font-semibold text-stone-900">Reusable feat entries</h2>
 				</div>
-				<p class="text-sm text-stone-500">{data.catalog.feats.length} total</p>
+				<p class="text-sm text-stone-500">{data.sharedCatalog.feats.length} total</p>
 			</div>
 
-			{#if data.catalog.feats.length === 0}
+			{#if data.sharedCatalog.feats.length === 0}
 				<p class="mt-6 text-sm text-stone-600">No shared feat entries are available yet.</p>
 			{:else}
 				<div class="mt-6 space-y-4">
-					{#each data.catalog.feats as feat (feat.id)}
+					{#each data.sharedCatalog.feats as feat (feat.id)}
 						<article class="rounded-2xl border border-stone-200 p-4">
 							<h3 class="text-lg font-semibold text-stone-900">{feat.name}</h3>
 							<p class="mt-2 text-sm text-stone-600">
@@ -140,6 +305,74 @@
 							<p class="mt-2 text-sm text-stone-700">
 								{formatPrerequisites(feat.prerequisites)}
 							</p>
+						</article>
+					{/each}
+				</div>
+			{/if}
+		</div>
+
+		<div class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+			<div class="flex items-center justify-between gap-4">
+				<div>
+					<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
+						Equipment
+					</p>
+					<h2 class="mt-2 text-2xl font-semibold text-stone-900">
+						Shared gear and weapon entries
+					</h2>
+				</div>
+				<p class="text-sm text-stone-500">{data.sharedCatalog.equipment.length} total</p>
+			</div>
+
+			{#if data.sharedCatalog.equipment.length === 0}
+				<p class="mt-6 text-sm text-stone-600">No shared equipment entries are available yet.</p>
+			{:else}
+				<div class="mt-6 space-y-4">
+					{#each data.sharedCatalog.equipment as entry (entry.id)}
+						<article class="rounded-2xl border border-stone-200 p-4">
+							<div class="flex flex-wrap items-start justify-between gap-3">
+								<div>
+									<h3 class="text-lg font-semibold text-stone-900">{entry.name}</h3>
+									<p class="mt-1 text-sm text-stone-600">
+										{entry.summary ?? entry.description ?? 'No summary yet.'}
+									</p>
+								</div>
+								<div
+									class="flex flex-wrap gap-2 text-xs font-medium uppercase tracking-[0.14em] text-stone-600"
+								>
+									<span class="rounded-full bg-stone-100 px-3 py-1 text-stone-900">
+										{formatSlugLabel(entry.category)}
+									</span>
+									{#if entry.isWeapon}
+										<span class="rounded-full bg-amber-100 px-3 py-1 text-amber-900">
+											Weapon
+										</span>
+									{/if}
+									{#if entry.isEquippable}
+										<span class="rounded-full bg-sky-100 px-3 py-1 text-sky-900">
+											Equippable
+										</span>
+									{/if}
+								</div>
+							</div>
+
+							{#if formatEquipmentMeta([entry.value, entry.weight !== null ? `${entry.weight} lb` : null, entry.damage, entry.damageType, entry.range])}
+								<p class="mt-4 text-sm text-stone-600">
+									{formatEquipmentMeta([
+										entry.value,
+										entry.weight !== null ? `${entry.weight} lb` : null,
+										entry.damage,
+										entry.damageType,
+										entry.range
+									])}
+								</p>
+							{/if}
+
+							{#if entry.properties.length > 0}
+								<p class="mt-3 text-xs uppercase tracking-[0.16em] text-stone-500">
+									Properties: {entry.properties.join(' | ')}
+								</p>
+							{/if}
 						</article>
 					{/each}
 				</div>
