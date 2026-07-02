@@ -25,6 +25,12 @@ export type CharacterClassOption = {
 	summary: string | null;
 	hitDie: number;
 	mechanicSummary: ContentMechanicSummary;
+	grantedSpellSlugs: string[];
+};
+
+export type CharacterGrantedSpellLevelGroup = {
+	level: number;
+	spellSlugs: string[];
 };
 
 export type CharacterSubclassOption = {
@@ -34,6 +40,7 @@ export type CharacterSubclassOption = {
 	name: string;
 	summary: string | null;
 	mechanicSummary: ContentMechanicSummary;
+	grantedSpellsByLevel: CharacterGrantedSpellLevelGroup[];
 };
 
 export type CharacterBackgroundOption = {

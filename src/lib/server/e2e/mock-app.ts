@@ -64,12 +64,18 @@ type ClassSourceItem = {
 	mechanics?: unknown[];
 };
 
+type GrantedSpellLevelSourceItem = {
+	level: number;
+	spellSlugs: string[];
+};
+
 type SubclassSourceItem = {
 	slug: string;
 	classSlug: string;
 	name: string;
 	summary?: string | null;
 	mechanics?: unknown[];
+	grantedSpellsByLevel?: GrantedSpellLevelSourceItem[];
 };
 
 type BackgroundSourceItem = {
@@ -163,7 +169,17 @@ const e2eCatalog: CharacterCreationCatalog = {
 		name: item.name,
 		summary: item.summary ?? null,
 		hitDie: item.hitDie,
-		mechanicSummary: summarizeCatalogMechanics(item.mechanics ?? [])
+		mechanicSummary: summarizeCatalogMechanics(item.mechanics ?? []),
+		grantedSpellSlugs: (item.mechanics ?? []).flatMap((mechanic) =>
+			typeof mechanic === 'object' &&
+			mechanic !== null &&
+			'type' in mechanic &&
+			mechanic.type === 'spell_grant' &&
+			'spellId' in mechanic &&
+			typeof mechanic.spellId === 'string'
+				? [mechanic.spellId]
+				: []
+		)
 	})),
 	subclassOptions: asContentFile<SubclassSourceItem>(subclassesFile).items.map((item) => ({
 		id: buildCatalogId('subclass', item.slug),
@@ -171,7 +187,11 @@ const e2eCatalog: CharacterCreationCatalog = {
 		classSlug: item.classSlug,
 		name: item.name,
 		summary: item.summary ?? null,
-		mechanicSummary: summarizeCatalogMechanics(item.mechanics ?? [])
+		mechanicSummary: summarizeCatalogMechanics(item.mechanics ?? []),
+		grantedSpellsByLevel: (item.grantedSpellsByLevel ?? []).map((group) => ({
+			level: group.level,
+			spellSlugs: [...group.spellSlugs]
+		}))
 	})),
 	backgroundOptions: asContentFile<BackgroundSourceItem>(backgroundsFile).items.map((item) => ({
 		id: buildCatalogId('background', item.slug),
@@ -377,8 +397,17 @@ export function listE2ECatalog(): CharacterCreationCatalog {
 	return {
 		speciesOptions: e2eCatalog.speciesOptions.map((option) => ({ ...option })),
 		subspeciesOptions: e2eCatalog.subspeciesOptions.map((option) => ({ ...option })),
-		classOptions: e2eCatalog.classOptions.map((option) => ({ ...option })),
-		subclassOptions: e2eCatalog.subclassOptions.map((option) => ({ ...option })),
+		classOptions: e2eCatalog.classOptions.map((option) => ({
+			...option,
+			grantedSpellSlugs: [...option.grantedSpellSlugs]
+		})),
+		subclassOptions: e2eCatalog.subclassOptions.map((option) => ({
+			...option,
+			grantedSpellsByLevel: option.grantedSpellsByLevel.map((group) => ({
+				level: group.level,
+				spellSlugs: [...group.spellSlugs]
+			}))
+		})),
 		backgroundOptions: e2eCatalog.backgroundOptions.map((option) => ({ ...option }))
 	};
 }
@@ -387,8 +416,17 @@ export function listE2EExpandedContentCatalog(): ExpandedContentCatalog {
 	return {
 		species: e2eExpandedContentCatalog.species.map((option) => ({ ...option })),
 		subspecies: e2eExpandedContentCatalog.subspecies.map((option) => ({ ...option })),
-		classes: e2eExpandedContentCatalog.classes.map((option) => ({ ...option })),
-		subclasses: e2eExpandedContentCatalog.subclasses.map((option) => ({ ...option })),
+		classes: e2eExpandedContentCatalog.classes.map((option) => ({
+			...option,
+			grantedSpellSlugs: [...option.grantedSpellSlugs]
+		})),
+		subclasses: e2eExpandedContentCatalog.subclasses.map((option) => ({
+			...option,
+			grantedSpellsByLevel: option.grantedSpellsByLevel.map((group) => ({
+				level: group.level,
+				spellSlugs: [...group.spellSlugs]
+			}))
+		})),
 		backgrounds: e2eExpandedContentCatalog.backgrounds.map((option) => ({ ...option })),
 		spells: e2eExpandedContentCatalog.spells.map(cloneSpellCatalogEntry),
 		feats: e2eExpandedContentCatalog.feats.map(cloneFeatCatalogEntry),

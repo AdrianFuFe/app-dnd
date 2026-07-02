@@ -153,7 +153,8 @@ describe('listCharacterCreationCatalog', () => {
 					name: 'Clerigo',
 					summary: 'Divine support caster.',
 					hitDie: 8,
-					mechanicSummary: emptyMechanicSummary
+					mechanicSummary: emptyMechanicSummary,
+					grantedSpellSlugs: []
 				}
 			],
 			subclassOptions: [
@@ -168,7 +169,8 @@ describe('listCharacterCreationCatalog', () => {
 						languageGrants: [],
 						proficiencyGrants: [{ proficiencyType: 'armor', value: 'heavy-armor' }],
 						proficiencyChoices: []
-					}
+					},
+					grantedSpellsByLevel: []
 				}
 			],
 			backgroundOptions: [
@@ -418,6 +420,7 @@ describe('listExpandedContentCatalog', () => {
 					hit_die: 8,
 					mechanics: [
 						{ type: 'spellcasting', ability: 'wisdom' },
+						{ type: 'spell_grant', spellId: 'guiding-bolt' },
 						{ type: 'proficiency', proficiencyType: 'saving_throw', value: 'wisdom' }
 					]
 				}
@@ -436,7 +439,8 @@ describe('listExpandedContentCatalog', () => {
 					summary: 'Healing focused.',
 					mechanics: [
 						{ type: 'proficiency', proficiencyType: 'armor', value: 'heavy-armor' }
-					]
+					],
+					granted_spells_by_level: [{ level: 1, spellSlugs: ['bless', 'cure-wounds'] }]
 				}
 			],
 			error: null
@@ -603,7 +607,8 @@ describe('listExpandedContentCatalog', () => {
 						languageGrants: [],
 						proficiencyGrants: [{ proficiencyType: 'saving_throw', value: 'wisdom' }],
 						proficiencyChoices: []
-					}
+					},
+					grantedSpellSlugs: ['guiding-bolt']
 				}
 			],
 			subclasses: [
@@ -618,7 +623,8 @@ describe('listExpandedContentCatalog', () => {
 						languageGrants: [],
 						proficiencyGrants: [{ proficiencyType: 'armor', value: 'heavy-armor' }],
 						proficiencyChoices: []
-					}
+					},
+					grantedSpellsByLevel: [{ level: 1, spellSlugs: ['bless', 'cure-wounds'] }]
 				}
 			],
 			backgrounds: [

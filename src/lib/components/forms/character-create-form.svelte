@@ -9,7 +9,10 @@
 		formatMechanicSummaryLines,
 		hasMechanicSummary
 	} from '$lib/domain/content/mechanic-summary-display';
-	import type { CharacterCreationCatalog } from '$lib/types/content/character-catalog';
+	import type {
+		CharacterCreationCatalog,
+		CharacterGrantedSpellLevelGroup
+	} from '$lib/types/content/character-catalog';
 	import type {
 		EquipmentCatalogEntry,
 		FeatCatalogEntry,
@@ -52,6 +55,11 @@
 		featId: string;
 		name: string;
 		description: string;
+	};
+	type SpellGrantGroup = {
+		key: string;
+		title: string;
+		entries: SpellCatalogEntry[];
 	};
 
 	let {
@@ -172,6 +180,10 @@
 		return catalog.classOptions.find((entry) => entry.id === classId);
 	}
 
+	function selectedSubclass(subclassId: string) {
+		return catalog.subclassOptions.find((entry) => entry.id === subclassId);
+	}
+
 	function availableSubclassOptions(classId: string) {
 		const classSlug = selectedClass(classId)?.slug;
 		return classSlug
@@ -179,15 +191,79 @@
 			: [];
 	}
 
-	function availableSpellCatalogEntries(classId: string) {
-		const classSlug = selectedClass(classId)?.slug;
+	function findSpellCatalogEntryBySlug(spellSlug: string) {
+		return spellCatalog.find((entry) => entry.slug === spellSlug);
+	}
 
-		if (!classSlug) {
+	function spellEntriesForGrantSlugs(spellSlugs: string[]) {
+		return spellSlugs.flatMap((spellSlug) => {
+			const spell = findSpellCatalogEntryBySlug(spellSlug);
+			return spell ? [spell] : [];
+		});
+	}
+
+	function selectedClassGrantedSpellEntries(classId: string) {
+		return spellEntriesForGrantSlugs(selectedClass(classId)?.grantedSpellSlugs ?? []);
+	}
+
+	function selectedSubclassGrantedSpellGroups(
+		subclassId: string
+	): CharacterGrantedSpellLevelGroup[] {
+		return selectedSubclass(subclassId)?.grantedSpellsByLevel ?? [];
+	}
+
+	function selectedSpellGrantGroups(classId: string, subclassId: string): SpellGrantGroup[] {
+		const classOption = selectedClass(classId);
+		const subclassOption = selectedSubclass(subclassId);
+		const groups: SpellGrantGroup[] = [];
+		const classEntries = selectedClassGrantedSpellEntries(classId);
+
+		if (classOption && classEntries.length > 0) {
+			groups.push({
+				key: `class:${classOption.id}`,
+				title: `${classOption.name} granted spells`,
+				entries: classEntries
+			});
+		}
+
+		if (subclassOption) {
+			for (const grantGroup of selectedSubclassGrantedSpellGroups(subclassId)) {
+				const entries = spellEntriesForGrantSlugs(grantGroup.spellSlugs);
+
+				if (entries.length === 0) {
+					continue;
+				}
+
+				groups.push({
+					key: `subclass:${subclassOption.id}:level:${grantGroup.level}`,
+					title: `${subclassOption.name} granted spells at character level ${grantGroup.level}`,
+					entries
+				});
+			}
+		}
+
+		return groups;
+	}
+
+	function availableSpellCatalogEntries(classId: string, subclassId: string) {
+		const classSlug = selectedClass(classId)?.slug;
+		const grantedSpellIds = new Set([
+			...selectedClassGrantedSpellEntries(classId).map((entry) => entry.id),
+			...selectedSubclassGrantedSpellGroups(subclassId)
+				.flatMap((group) => spellEntriesForGrantSlugs(group.spellSlugs))
+				.map((entry) => entry.id)
+		]);
+
+		if (!classSlug && grantedSpellIds.size === 0) {
 			return spellCatalog;
 		}
 
 		return spellCatalog.filter(
-			(entry) => entry.classSlugs.length === 0 || entry.classSlugs.includes(classSlug)
+			(entry) =>
+				grantedSpellIds.has(entry.id) ||
+				!classSlug ||
+				entry.classSlugs.length === 0 ||
+				entry.classSlugs.includes(classSlug)
 		);
 	}
 
@@ -214,7 +290,17 @@
 			return;
 		}
 
-		updateSpellItem(index, {
+		updateSpellItem(
+			index,
+			createSpellFormItemFromCatalogSpell(spell, spellItems[index]?.isPrepared)
+		);
+	}
+
+	function createSpellFormItemFromCatalogSpell(
+		spell: SpellCatalogEntry,
+		isPrepared = false
+	): SpellFormItem {
+		return {
 			spellId: spell.id,
 			name: spell.name,
 			level: String(spell.level),
@@ -223,8 +309,37 @@
 			range: spell.range ?? '',
 			components: spell.components ?? '',
 			duration: spell.duration ?? '',
-			description: spell.description ?? spell.summary ?? ''
-		});
+			description: spell.description ?? spell.summary ?? '',
+			isPrepared
+		};
+	}
+
+	function hasSpellCatalogEntry(spellId: string) {
+		return spellItems.some(
+			(item) => item.spellId === spellId || selectedSpellCatalogId(item) === spellId
+		);
+	}
+
+	function addGrantedSpell(spellId: string) {
+		const spell = findSpellCatalogEntryById(spellId);
+
+		if (!spell || hasSpellCatalogEntry(spellId)) {
+			return;
+		}
+
+		spellItems = [...spellItems, createSpellFormItemFromCatalogSpell(spell, true)];
+	}
+
+	function addGrantedSpellGroup(spells: SpellCatalogEntry[]) {
+		const newItems = spells
+			.filter((spell) => !hasSpellCatalogEntry(spell.id))
+			.map((spell) => createSpellFormItemFromCatalogSpell(spell, true));
+
+		if (newItems.length === 0) {
+			return;
+		}
+
+		spellItems = [...spellItems, ...newItems];
 	}
 
 	function selectedSubclassSummary(subclassId: string): string | undefined {
@@ -1126,6 +1241,69 @@
 			<p class="mt-4 text-sm text-red-700">{firstError('spellItems')}</p>
 		{/if}
 
+		{#if selectedSpellGrantGroups(formValues.classId, formValues.subclassId).length > 0}
+			<div class="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+				<div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+					<div class="space-y-1">
+						<p class="text-sm font-semibold text-emerald-900">
+							Granted spell suggestions
+						</p>
+						<p class="text-sm text-emerald-800">
+							The selected class path grants these spells directly. Add only the ones
+							this draft should track right now.
+						</p>
+					</div>
+				</div>
+
+				<div class="mt-4 space-y-3">
+					{#each selectedSpellGrantGroups(formValues.classId, formValues.subclassId) as group (group.key)}
+						<div class="rounded-2xl border border-emerald-200 bg-white/70 p-3">
+							<div
+								class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between"
+							>
+								<div class="space-y-2">
+									<p class="text-sm font-medium text-emerald-950">
+										{group.title}
+									</p>
+									<div class="flex flex-wrap gap-2">
+										{#each group.entries as spell (spell.id)}
+											<button
+												class="rounded-full border px-3 py-1 text-sm transition disabled:cursor-default disabled:opacity-70 {hasSpellCatalogEntry(
+													spell.id
+												)
+													? 'border-emerald-200 bg-emerald-100 text-emerald-700'
+													: 'border-emerald-300 bg-white text-emerald-900 hover:border-emerald-400'}"
+												type="button"
+												disabled={hasSpellCatalogEntry(spell.id)}
+												onclick={() => addGrantedSpell(spell.id)}
+											>
+												{spell.name} ({spell.level === 0
+													? 'Cantrip'
+													: `Level ${spell.level}`})
+												{#if hasSpellCatalogEntry(spell.id)}
+													added{/if}
+											</button>
+										{/each}
+									</div>
+								</div>
+
+								<button
+									class="rounded-lg border border-emerald-300 px-3 py-2 text-sm font-medium text-emerald-900 transition hover:border-emerald-400 disabled:cursor-default disabled:opacity-60"
+									type="button"
+									disabled={group.entries.every((spell) =>
+										hasSpellCatalogEntry(spell.id)
+									)}
+									onclick={() => addGrantedSpellGroup(group.entries)}
+								>
+									Add all
+								</button>
+							</div>
+						</div>
+					{/each}
+				</div>
+			</div>
+		{/if}
+
 		{#if spellItems.length === 0}
 			<p
 				class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600"
@@ -1162,7 +1340,7 @@
 										)}
 								>
 									<option value="">Custom spell or choose from catalog</option>
-									{#each availableSpellCatalogEntries(formValues.classId) as option (option.id)}
+									{#each availableSpellCatalogEntries(formValues.classId, formValues.subclassId) as option (option.id)}
 										<option value={option.id}>
 											{option.name} ({option.level === 0
 												? 'Cantrip'
@@ -1170,10 +1348,10 @@
 										</option>
 									{/each}
 								</select>
-								{#if formValues.classId && availableSpellCatalogEntries(formValues.classId).length === 0}
+								{#if (formValues.classId || formValues.subclassId) && availableSpellCatalogEntries(formValues.classId, formValues.subclassId).length === 0}
 									<p class="mt-1 text-sm text-stone-500">
 										No shared catalog spells match the currently selected class
-										yet.
+										path yet.
 									</p>
 								{/if}
 							</label>

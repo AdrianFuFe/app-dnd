@@ -19,6 +19,7 @@ import type {
 	CharacterBackgroundOption,
 	CharacterClassOption,
 	CharacterCreationCatalog,
+	CharacterGrantedSpellLevelGroup,
 	CharacterSpeciesOption,
 	CharacterSubclassOption,
 	CharacterSubspeciesOption
@@ -35,6 +36,7 @@ import type {
 	CharacterInventoryItem,
 	CharacterSpellItem
 } from '$lib/types/domain/character';
+import type { GameMechanic } from '$lib/types/domain/game-mechanics';
 
 type SpeciesRow = {
 	id: string;
@@ -70,6 +72,7 @@ type SubclassRow = {
 	name: string;
 	summary: string | null;
 	mechanics: unknown;
+	granted_spells_by_level?: unknown;
 };
 
 type BackgroundRow = {
@@ -475,7 +478,7 @@ async function listSubclassOptions(
 ): Promise<CharacterSubclassOption[]> {
 	const { data, error } = await supabase
 		.from('subclasses')
-		.select('id, slug, class_slug, name, summary, mechanics')
+		.select('id, slug, class_slug, name, summary, mechanics, granted_spells_by_level')
 		.order('name', { ascending: true });
 
 	if (error) {
@@ -646,12 +649,16 @@ function mapCharacterClassOption(
 		name: characterClass.name,
 		summary: characterClass.summary,
 		hitDie: characterClass.hit_die,
-		mechanicSummary: summarizeCatalogMechanics(characterClass.mechanics)
+		mechanicSummary: summarizeCatalogMechanics(characterClass.mechanics),
+		grantedSpellSlugs: summarizeGrantedSpellSlugs(characterClass.mechanics)
 	};
 }
 
 function mapSubclassOption(
-	subclass: Pick<SubclassRow, 'id' | 'slug' | 'class_slug' | 'name' | 'summary' | 'mechanics'>
+	subclass: Pick<
+		SubclassRow,
+		'id' | 'slug' | 'class_slug' | 'name' | 'summary' | 'mechanics' | 'granted_spells_by_level'
+	>
 ): CharacterSubclassOption {
 	return {
 		id: subclass.id,
@@ -659,7 +666,8 @@ function mapSubclassOption(
 		classSlug: subclass.class_slug,
 		name: subclass.name,
 		summary: subclass.summary,
-		mechanicSummary: summarizeCatalogMechanics(subclass.mechanics)
+		mechanicSummary: summarizeCatalogMechanics(subclass.mechanics),
+		grantedSpellsByLevel: summarizeGrantedSpellsByLevel(subclass.granted_spells_by_level)
 	};
 }
 
@@ -893,6 +901,57 @@ function normalizeCharacterSpellItem(
 		duration: spell.duration ?? undefined,
 		description: item.description ?? spell.description ?? spell.summary ?? undefined
 	};
+}
+
+function summarizeGrantedSpellSlugs(mechanics: unknown): string[] {
+	if (!Array.isArray(mechanics)) {
+		return [];
+	}
+
+	const grantedSpellSlugs: string[] = [];
+
+	for (const mechanic of mechanics as GameMechanic[]) {
+		if (
+			mechanic?.type === 'spell_grant' &&
+			typeof mechanic.spellId === 'string' &&
+			mechanic.spellId.length > 0 &&
+			!grantedSpellSlugs.includes(mechanic.spellId)
+		) {
+			grantedSpellSlugs.push(mechanic.spellId);
+		}
+	}
+
+	return grantedSpellSlugs;
+}
+
+function summarizeGrantedSpellsByLevel(value: unknown): CharacterGrantedSpellLevelGroup[] {
+	if (!Array.isArray(value)) {
+		return [];
+	}
+
+	return value.flatMap((entry) => {
+		if (typeof entry !== 'object' || entry === null) {
+			return [];
+		}
+
+		const level =
+			'level' in entry && typeof entry.level === 'number' && Number.isInteger(entry.level)
+				? entry.level
+				: undefined;
+		const spellSlugs =
+			'spellSlugs' in entry && Array.isArray(entry.spellSlugs)
+				? (entry.spellSlugs as unknown[]).filter(
+						(spellSlug): spellSlug is string =>
+							typeof spellSlug === 'string' && spellSlug.length > 0
+					)
+				: [];
+
+		if (level === undefined || spellSlugs.length === 0) {
+			return [];
+		}
+
+		return [{ level, spellSlugs }];
+	});
 }
 
 function normalizeCharacterFeatItem(
