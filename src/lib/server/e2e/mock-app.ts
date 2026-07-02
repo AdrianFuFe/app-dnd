@@ -1,4 +1,5 @@
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
+import { summarizeCatalogMechanics } from '$lib/server/repositories/catalog-mechanic-summary';
 import { listSharedRulesVocabularies } from '$lib/server/repositories/shared-rules-vocabularies';
 import type { Database } from '$lib/types/database/supabase';
 import type {
@@ -44,6 +45,7 @@ type SpeciesSourceItem = {
 	name: string;
 	summary?: string | null;
 	baseSpeed?: number | null;
+	mechanics?: unknown[];
 };
 
 type SubspeciesSourceItem = {
@@ -58,6 +60,7 @@ type ClassSourceItem = {
 	name: string;
 	summary?: string | null;
 	hitDie: number;
+	mechanics?: unknown[];
 };
 
 type SubclassSourceItem = {
@@ -71,6 +74,7 @@ type BackgroundSourceItem = {
 	slug: string;
 	name: string;
 	summary?: string | null;
+	mechanics?: unknown[];
 };
 
 type SpellSourceItem = {
@@ -140,7 +144,8 @@ const e2eCatalog: CharacterCreationCatalog = {
 		slug: item.slug,
 		name: item.name,
 		summary: item.summary ?? null,
-		baseSpeed: item.baseSpeed ?? null
+		baseSpeed: item.baseSpeed ?? null,
+		mechanicSummary: summarizeCatalogMechanics(item.mechanics ?? [])
 	})),
 	subspeciesOptions: asContentFile<SubspeciesSourceItem>(subspeciesFile).items.map((item) => ({
 		id: buildCatalogId('subspecies', item.slug),
@@ -154,7 +159,8 @@ const e2eCatalog: CharacterCreationCatalog = {
 		slug: item.slug,
 		name: item.name,
 		summary: item.summary ?? null,
-		hitDie: item.hitDie
+		hitDie: item.hitDie,
+		mechanicSummary: summarizeCatalogMechanics(item.mechanics ?? [])
 	})),
 	subclassOptions: asContentFile<SubclassSourceItem>(subclassesFile).items.map((item) => ({
 		id: buildCatalogId('subclass', item.slug),
@@ -167,7 +173,8 @@ const e2eCatalog: CharacterCreationCatalog = {
 		id: buildCatalogId('background', item.slug),
 		slug: item.slug,
 		name: item.name,
-		summary: item.summary ?? null
+		summary: item.summary ?? null,
+		mechanicSummary: summarizeCatalogMechanics(item.mechanics ?? [])
 	}))
 };
 

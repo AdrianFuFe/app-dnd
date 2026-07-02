@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+const emptyMechanicSummary = {
+	spellcastingAbilities: [],
+	languageGrants: [],
+	proficiencyGrants: [],
+	proficiencyChoices: []
+};
+
 const { listCharacterCreationCatalog, listExpandedContentCatalog } = vi.hoisted(() => ({
 	listCharacterCreationCatalog: vi.fn(),
 	listExpandedContentCatalog: vi.fn()
@@ -90,23 +97,69 @@ describe('/app/content load', () => {
 		const supabase = {};
 		const characterCatalog = {
 			speciesOptions: [
-				{ id: 'species-1', slug: 'elfo', name: 'Elfo', summary: null, baseSpeed: 30 }
+				{
+					id: 'species-1',
+					slug: 'elfo',
+					name: 'Elfo',
+					summary: null,
+					baseSpeed: 30,
+					mechanicSummary: emptyMechanicSummary
+				}
 			],
 			subspeciesOptions: [],
-			classOptions: [{ id: 'class-1', slug: 'mago', name: 'Mago', summary: null, hitDie: 6 }],
+			classOptions: [
+				{
+					id: 'class-1',
+					slug: 'mago',
+					name: 'Mago',
+					summary: null,
+					hitDie: 6,
+					mechanicSummary: emptyMechanicSummary
+				}
+			],
 			subclassOptions: [],
 			backgroundOptions: [
-				{ id: 'background-1', slug: 'acolyte', name: 'Acolyte', summary: null }
+				{
+					id: 'background-1',
+					slug: 'acolyte',
+					name: 'Acolyte',
+					summary: null,
+					mechanicSummary: emptyMechanicSummary
+				}
 			]
 		};
 		const sharedCatalog = {
 			species: [
-				{ id: 'species-1', slug: 'elfo', name: 'Elfo', summary: null, baseSpeed: 30 }
+				{
+					id: 'species-1',
+					slug: 'elfo',
+					name: 'Elfo',
+					summary: null,
+					baseSpeed: 30,
+					mechanicSummary: emptyMechanicSummary
+				}
 			],
 			subspecies: [],
-			classes: [{ id: 'class-1', slug: 'mago', name: 'Mago', summary: null, hitDie: 6 }],
+			classes: [
+				{
+					id: 'class-1',
+					slug: 'mago',
+					name: 'Mago',
+					summary: null,
+					hitDie: 6,
+					mechanicSummary: emptyMechanicSummary
+				}
+			],
 			subclasses: [],
-			backgrounds: [{ id: 'background-1', slug: 'acolyte', name: 'Acolyte', summary: null }],
+			backgrounds: [
+				{
+					id: 'background-1',
+					slug: 'acolyte',
+					name: 'Acolyte',
+					summary: null,
+					mechanicSummary: emptyMechanicSummary
+				}
+			],
 			spells: [],
 			feats: [],
 			equipment: [

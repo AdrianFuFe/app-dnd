@@ -9,6 +9,13 @@ import {
 	resolveCharacterCreationCatalogSelections
 } from './catalog';
 
+const emptyMechanicSummary = {
+	spellcastingAbilities: [],
+	languageGrants: [],
+	proficiencyGrants: [],
+	proficiencyChoices: []
+};
+
 describe('listCharacterCreationCatalog', () => {
 	it('loads structured catalog options for character creation', async () => {
 		const speciesOrder = vi.fn().mockResolvedValue({
@@ -113,7 +120,8 @@ describe('listCharacterCreationCatalog', () => {
 					slug: 'elfo',
 					name: 'Elfo',
 					summary: 'Agile and perceptive.',
-					baseSpeed: 30
+					baseSpeed: 30,
+					mechanicSummary: emptyMechanicSummary
 				}
 			],
 			subspeciesOptions: [
@@ -131,7 +139,8 @@ describe('listCharacterCreationCatalog', () => {
 					slug: 'clerigo',
 					name: 'Clerigo',
 					summary: 'Divine support caster.',
-					hitDie: 8
+					hitDie: 8,
+					mechanicSummary: emptyMechanicSummary
 				}
 			],
 			subclassOptions: [
@@ -148,7 +157,8 @@ describe('listCharacterCreationCatalog', () => {
 					id: 'background-1',
 					slug: 'sage',
 					name: 'Sage',
-					summary: 'Academic researcher.'
+					summary: 'Academic researcher.',
+					mechanicSummary: emptyMechanicSummary
 				}
 			]
 		});
@@ -350,7 +360,11 @@ describe('listExpandedContentCatalog', () => {
 					slug: 'elfo',
 					name: 'Elfo',
 					summary: 'Agile and perceptive.',
-					base_speed: 30
+					base_speed: 30,
+					mechanics: [
+						{ type: 'language', mode: 'fixed', language: 'comun' },
+						{ type: 'proficiency', proficiencyType: 'skill', value: 'perception' }
+					]
 				}
 			],
 			error: null
@@ -378,7 +392,11 @@ describe('listExpandedContentCatalog', () => {
 					slug: 'clerigo',
 					name: 'Clerigo',
 					summary: 'Divine support caster.',
-					hit_die: 8
+					hit_die: 8,
+					mechanics: [
+						{ type: 'spellcasting', ability: 'wisdom' },
+						{ type: 'proficiency', proficiencyType: 'saving_throw', value: 'wisdom' }
+					]
 				}
 			],
 			error: null
@@ -405,7 +423,11 @@ describe('listExpandedContentCatalog', () => {
 					id: 'background-1',
 					slug: 'sage',
 					name: 'Sage',
-					summary: 'Academic researcher.'
+					summary: 'Academic researcher.',
+					mechanics: [
+						{ type: 'choose_language', count: 2 },
+						{ type: 'proficiency', proficiencyType: 'skill', value: 'arcana' }
+					]
 				}
 			],
 			error: null
@@ -519,7 +541,13 @@ describe('listExpandedContentCatalog', () => {
 					slug: 'elfo',
 					name: 'Elfo',
 					summary: 'Agile and perceptive.',
-					baseSpeed: 30
+					baseSpeed: 30,
+					mechanicSummary: {
+						spellcastingAbilities: [],
+						languageGrants: [{ kind: 'fixed', language: 'comun' }],
+						proficiencyGrants: [{ proficiencyType: 'skill', value: 'perception' }],
+						proficiencyChoices: []
+					}
 				}
 			],
 			subspecies: [
@@ -537,7 +565,15 @@ describe('listExpandedContentCatalog', () => {
 					slug: 'clerigo',
 					name: 'Clerigo',
 					summary: 'Divine support caster.',
-					hitDie: 8
+					hitDie: 8,
+					mechanicSummary: {
+						spellcastingAbilities: ['wisdom'],
+						languageGrants: [],
+						proficiencyGrants: [
+							{ proficiencyType: 'saving_throw', value: 'wisdom' }
+						],
+						proficiencyChoices: []
+					}
 				}
 			],
 			subclasses: [
@@ -554,7 +590,13 @@ describe('listExpandedContentCatalog', () => {
 					id: 'background-1',
 					slug: 'sage',
 					name: 'Sage',
-					summary: 'Academic researcher.'
+					summary: 'Academic researcher.',
+					mechanicSummary: {
+						spellcastingAbilities: [],
+						languageGrants: [{ kind: 'choice', count: 2 }],
+						proficiencyGrants: [{ proficiencyType: 'skill', value: 'arcana' }],
+						proficiencyChoices: []
+					}
 				}
 			],
 			spells: [

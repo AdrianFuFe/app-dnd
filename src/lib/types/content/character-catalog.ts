@@ -1,9 +1,12 @@
+import type { ContentMechanicSummary } from './mechanic-summary';
+
 export type CharacterSpeciesOption = {
 	id: string;
 	slug: string;
 	name: string;
 	summary: string | null;
 	baseSpeed: number | null;
+	mechanicSummary: ContentMechanicSummary;
 };
 
 export type CharacterSubspeciesOption = {
@@ -20,6 +23,7 @@ export type CharacterClassOption = {
 	name: string;
 	summary: string | null;
 	hitDie: number;
+	mechanicSummary: ContentMechanicSummary;
 };
 
 export type CharacterSubclassOption = {
@@ -35,6 +39,7 @@ export type CharacterBackgroundOption = {
 	slug: string;
 	name: string;
 	summary: string | null;
+	mechanicSummary: ContentMechanicSummary;
 };
 
 export type CharacterCreationCatalog = {

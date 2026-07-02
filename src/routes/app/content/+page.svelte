@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import type { ContentMechanicSummary } from '$lib/types/content/mechanic-summary';
 
 	let { data }: { data: PageData } = $props();
 
@@ -43,6 +44,44 @@
 			vocabularies.toolProficiencies.length +
 			vocabularies.savingThrowProficiencies.length
 		);
+	}
+
+	function formatProficiencyTypeLabel(value: string): string {
+		return value === 'saving_throw' ? 'Saving throw' : formatSlugLabel(value);
+	}
+
+	function formatLanguageGrantSummary(summary: ContentMechanicSummary): string | null {
+		if (summary.languageGrants.length === 0) {
+			return null;
+		}
+
+		return summary.languageGrants
+			.map((grant) =>
+				grant.kind === 'fixed'
+					? formatSlugLabel(grant.language)
+					: `Choose ${grant.count} language${grant.count === 1 ? '' : 's'}`
+			)
+			.join(' | ');
+	}
+
+	function formatProficiencyGrantSummary(summary: ContentMechanicSummary): string | null {
+		const parts = summary.proficiencyGrants.map(
+			(grant) => `${formatProficiencyTypeLabel(grant.proficiencyType)}: ${formatSlugLabel(grant.value)}`
+		);
+
+		for (const choice of summary.proficiencyChoices) {
+			parts.push(
+				`Choose ${choice.count} ${formatProficiencyTypeLabel(choice.proficiencyType).toLowerCase()}${choice.count === 1 ? '' : 's'} from ${choice.options.map(formatSlugLabel).join(', ')}`
+			);
+		}
+
+		return parts.length > 0 ? parts.join(' | ') : null;
+	}
+
+	function formatSpellcastingSummary(summary: ContentMechanicSummary): string | null {
+		return summary.spellcastingAbilities.length > 0
+			? summary.spellcastingAbilities.map(formatSlugLabel).join(' | ')
+			: null;
 	}
 </script>
 
@@ -311,6 +350,16 @@
 									<p class="mt-2 text-sm text-stone-600">
 										{option.summary ?? 'No summary yet.'}
 									</p>
+									{#if formatSpellcastingSummary(option.mechanicSummary)}
+										<p class="mt-2 text-xs uppercase tracking-[0.16em] text-stone-500">
+											Spellcasting: {formatSpellcastingSummary(option.mechanicSummary)}
+										</p>
+									{/if}
+									{#if formatProficiencyGrantSummary(option.mechanicSummary)}
+										<p class="mt-2 text-xs uppercase tracking-[0.16em] text-stone-500">
+											Proficiencies: {formatProficiencyGrantSummary(option.mechanicSummary)}
+										</p>
+									{/if}
 								</div>
 							{/each}
 						</div>
@@ -367,6 +416,16 @@
 									<p class="mt-2 text-sm text-stone-600">
 										{option.summary ?? 'No summary yet.'}
 									</p>
+									{#if formatLanguageGrantSummary(option.mechanicSummary)}
+										<p class="mt-2 text-xs uppercase tracking-[0.16em] text-stone-500">
+											Languages: {formatLanguageGrantSummary(option.mechanicSummary)}
+										</p>
+									{/if}
+									{#if formatProficiencyGrantSummary(option.mechanicSummary)}
+										<p class="mt-2 text-xs uppercase tracking-[0.16em] text-stone-500">
+											Proficiencies: {formatProficiencyGrantSummary(option.mechanicSummary)}
+										</p>
+									{/if}
 								</div>
 							{/each}
 						</div>

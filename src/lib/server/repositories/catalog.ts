@@ -12,6 +12,7 @@ import {
 	isE2EMockSupabaseClient,
 	listE2ECatalog
 } from '$lib/server/e2e/mock-app';
+import { summarizeCatalogMechanics } from '$lib/server/repositories/catalog-mechanic-summary';
 import { listSharedRulesVocabularies } from '$lib/server/repositories/shared-rules-vocabularies';
 import type { Database } from '$lib/types/database/supabase';
 import type {
@@ -41,6 +42,7 @@ type SpeciesRow = {
 	name: string;
 	summary: string | null;
 	base_speed: number | null;
+	mechanics: Database['public']['Tables']['species']['Row']['mechanics'];
 };
 
 type SubspeciesRow = {
@@ -57,6 +59,7 @@ type CharacterClassRow = {
 	name: string;
 	summary: string | null;
 	hit_die: number;
+	mechanics: Database['public']['Tables']['character_classes']['Row']['mechanics'];
 };
 
 type SubclassRow = {
@@ -72,6 +75,7 @@ type BackgroundRow = {
 	slug: string;
 	name: string;
 	summary: string | null;
+	mechanics: unknown;
 };
 
 type SpellRow = {
@@ -424,7 +428,7 @@ async function listSpeciesOptions(
 ): Promise<CharacterSpeciesOption[]> {
 	const { data, error } = await supabase
 		.from('species')
-		.select('id, slug, name, summary, base_speed')
+		.select('id, slug, name, summary, base_speed, mechanics')
 		.order('name', { ascending: true });
 
 	if (error) {
@@ -454,7 +458,7 @@ async function listCharacterClassOptions(
 ): Promise<CharacterClassOption[]> {
 	const { data, error } = await supabase
 		.from('character_classes')
-		.select('id, slug, name, summary, hit_die')
+		.select('id, slug, name, summary, hit_die, mechanics')
 		.order('name', { ascending: true });
 
 	if (error) {
@@ -484,7 +488,7 @@ async function listBackgroundOptions(
 ): Promise<CharacterBackgroundOption[]> {
 	const { data, error } = await supabase
 		.from('backgrounds')
-		.select('id, slug, name, summary')
+		.select('id, slug, name, summary, mechanics')
 		.order('name', { ascending: true });
 
 	if (error) {
@@ -600,14 +604,15 @@ async function loadSelectedBackground(
 }
 
 function mapSpeciesOption(
-	species: Pick<SpeciesRow, 'id' | 'slug' | 'name' | 'summary' | 'base_speed'>
+	species: Pick<SpeciesRow, 'id' | 'slug' | 'name' | 'summary' | 'base_speed' | 'mechanics'>
 ): CharacterSpeciesOption {
 	return {
 		id: species.id,
 		slug: species.slug,
 		name: species.name,
 		summary: species.summary,
-		baseSpeed: species.base_speed
+		baseSpeed: species.base_speed,
+		mechanicSummary: summarizeCatalogMechanics(species.mechanics)
 	};
 }
 
@@ -624,14 +629,18 @@ function mapSubspeciesOption(
 }
 
 function mapCharacterClassOption(
-	characterClass: Pick<CharacterClassRow, 'id' | 'slug' | 'name' | 'summary' | 'hit_die'>
+	characterClass: Pick<
+		CharacterClassRow,
+		'id' | 'slug' | 'name' | 'summary' | 'hit_die' | 'mechanics'
+	>
 ): CharacterClassOption {
 	return {
 		id: characterClass.id,
 		slug: characterClass.slug,
 		name: characterClass.name,
 		summary: characterClass.summary,
-		hitDie: characterClass.hit_die
+		hitDie: characterClass.hit_die,
+		mechanicSummary: summarizeCatalogMechanics(characterClass.mechanics)
 	};
 }
 
@@ -648,13 +657,14 @@ function mapSubclassOption(
 }
 
 function mapBackgroundOption(
-	background: Pick<BackgroundRow, 'id' | 'slug' | 'name' | 'summary'>
+	background: Pick<BackgroundRow, 'id' | 'slug' | 'name' | 'summary' | 'mechanics'>
 ): CharacterBackgroundOption {
 	return {
 		id: background.id,
 		slug: background.slug,
 		name: background.name,
-		summary: background.summary
+		summary: background.summary,
+		mechanicSummary: summarizeCatalogMechanics(background.mechanics)
 	};
 }
 
