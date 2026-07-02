@@ -31,5 +31,9 @@ describe('generateSrdCatalogSeedSql', () => {
 		expect(sql).toContain('"quantity":5');
 		expect(sql).toContain("array['comun', 'elfico']::text[]");
 		expect(sql).toContain("array['choose:any:2']::text[]");
+		expect(sql).toContain("array['dagger', 'dart', 'sling', 'quarterstaff', 'light-crossbow']::text[]");
+		expect(sql).toContain('"featureId":"sculpt-spells"');
+		expect(sql).toContain("'A diamond worth at least 500 gp, which the spell consumes.'");
+		expect(sql).toContain("'proficiency:armor:medium-armor'");
 	});
 });

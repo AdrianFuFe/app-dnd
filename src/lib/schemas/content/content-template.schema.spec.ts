@@ -17,6 +17,14 @@ function readJsonFile<T>(relativePath: string): T {
 	return JSON.parse(fileContents) as T;
 }
 
+function expectItemBySlug<T extends { slug: string }>(items: T[], slug: string): T {
+	const item = items.find((entry) => entry.slug === slug);
+
+	expect(item, `Expected item with slug "${slug}"`).toBeDefined();
+
+	return item!;
+}
+
 describe('content templates', () => {
 	it('validates the background template file', () => {
 		const template = readJsonFile<unknown>(
@@ -64,104 +72,128 @@ describe('content templates', () => {
 		expect(() => speciesFileSchema.parse(template)).not.toThrow();
 	});
 
-	it('validates the SRD species starter file', () => {
+	it('validates the SRD species catalog file', () => {
 		const file = readJsonFile<unknown>('data/srd-5-1/species.json');
 
 		const parsed = speciesFileSchema.parse(file);
+		const elf = expectItemBySlug(parsed.items, 'elfo');
+		const human = expectItemBySlug(parsed.items, 'humano');
 
 		expect(parsed.items).toHaveLength(2);
-		expect(parsed.items[0]?.slug).toBe('elfo');
-		expect(parsed.items[0]?.languages[0]).toEqual({ type: 'fixed', language: 'comun' });
-		expect(parsed.items[0]?.subspeciesSlugs).toEqual(['high-elf']);
-		expect(parsed.items[1]?.slug).toBe('humano');
+		expect(elf.languages[0]).toEqual({ type: 'fixed', language: 'comun' });
+		expect(elf.subspeciesSlugs).toEqual(['high-elf']);
+		expect(human.mechanics).toContainEqual({ type: 'choose_language', count: 1 });
 	});
 
-	it('validates the SRD subspecies starter file', () => {
+	it('validates the SRD subspecies catalog file', () => {
 		const file = readJsonFile<unknown>('data/srd-5-1/subspecies.json');
 
 		const parsed = subspeciesFileSchema.parse(file);
+		const highElf = expectItemBySlug(parsed.items, 'high-elf');
 
 		expect(parsed.items).toHaveLength(1);
-		expect(parsed.items[0]?.slug).toBe('high-elf');
-		expect(parsed.items[0]?.speciesSlug).toBe('elfo');
+		expect(highElf.speciesSlug).toBe('elfo');
 	});
 
-	it('validates the SRD classes starter file', () => {
+	it('validates the SRD classes catalog file', () => {
 		const file = readJsonFile<unknown>('data/srd-5-1/classes.json');
 
 		const parsed = characterClassFileSchema.parse(file);
+		const fighter = expectItemBySlug(parsed.items, 'guerrero');
+		const cleric = expectItemBySlug(parsed.items, 'clerigo');
+		const wizard = expectItemBySlug(parsed.items, 'mago');
 
-		expect(parsed.items).toHaveLength(2);
-		expect(parsed.items[0]?.slug).toBe('guerrero');
-		expect(parsed.items[0]?.startingEquipment[0]).toEqual({ type: 'item', id: 'chain-mail' });
-		expect(parsed.items[1]?.slug).toBe('clerigo');
-		expect(parsed.items[1]?.spellcastingAbility).toBe('wisdom');
-		expect(parsed.items[1]?.mechanics).toContainEqual({
+		expect(parsed.items).toHaveLength(3);
+		expect(fighter.startingEquipment[0]).toEqual({ type: 'item', id: 'chain-mail' });
+		expect(cleric.spellcastingAbility).toBe('wisdom');
+		expect(cleric.mechanics).toContainEqual({
 			type: 'spellcasting',
 			ability: 'wisdom'
 		});
+		expect(wizard.weaponProficiencies).toContain('quarterstaff');
+		expect(wizard.startingEquipment).toContainEqual({ type: 'item', id: 'spellbook' });
 	});
 
-	it('validates the SRD backgrounds starter file', () => {
+	it('validates the SRD backgrounds catalog file', () => {
 		const file = readJsonFile<unknown>('data/srd-5-1/backgrounds.json');
 
 		const parsed = backgroundFileSchema.parse(file);
+		const acolyte = expectItemBySlug(parsed.items, 'acolyte');
+		const soldier = expectItemBySlug(parsed.items, 'soldier');
 
 		expect(parsed.items).toHaveLength(2);
-		expect(parsed.items[0]?.slug).toBe('acolyte');
-		expect(parsed.items[0]?.languages[0]).toEqual({ type: 'choice', count: 2, scope: 'any' });
-		expect(parsed.items[0]?.equipment[0]).toEqual({ type: 'item', id: 'holy-symbol' });
-		expect(parsed.items[1]?.slug).toBe('soldier');
+		expect(acolyte.languages[0]).toEqual({ type: 'choice', count: 2, scope: 'any' });
+		expect(acolyte.equipment[0]).toEqual({ type: 'item', id: 'holy-symbol' });
+		expect(soldier.toolProficiencies).toContain('vehicles-land');
 	});
 
-	it('validates the SRD spells starter file', () => {
+	it('validates the SRD spells catalog file', () => {
 		const file = readJsonFile<unknown>('data/srd-5-1/spells.json');
 
 		const parsed = spellFileSchema.parse(file);
+		const bless = expectItemBySlug(parsed.items, 'bless');
+		const magicMissile = expectItemBySlug(parsed.items, 'magic-missile');
+		const raiseDead = expectItemBySlug(parsed.items, 'raise-dead');
 
-		expect(parsed.items).toHaveLength(10);
-		expect(parsed.items[0]?.slug).toBe('bless');
-		expect(parsed.items[9]?.slug).toBe('raise-dead');
+		expect(parsed.items).toHaveLength(21);
+		expect(bless.classSlugs).toContain('clerigo');
+		expect(magicMissile.classSlugs).toContain('mago');
+		expect(raiseDead.level).toBe(5);
 	});
 
-	it('validates the SRD feats starter file', () => {
+	it('validates the SRD feats catalog file', () => {
 		const file = readJsonFile<unknown>('data/srd-5-1/feats.json');
 
 		const parsed = featFileSchema.parse(file);
+		const heavilyArmored = expectItemBySlug(parsed.items, 'heavily-armored');
+		const resilientWisdom = expectItemBySlug(parsed.items, 'resilient-wisdom');
+		const observant = expectItemBySlug(parsed.items, 'observant');
 
-		expect(parsed.items).toHaveLength(2);
-		expect(parsed.items[0]?.slug).toBe('heavily-armored');
-		expect(parsed.items[1]?.slug).toBe('resilient-wisdom');
-		expect(parsed.items[1]?.mechanics).toContainEqual({
+		expect(parsed.items).toHaveLength(6);
+		expect(heavilyArmored.prerequisites).toContain('proficiency:armor:medium-armor');
+		expect(resilientWisdom.mechanics).toContainEqual({
 			type: 'proficiency',
 			proficiencyType: 'saving_throw',
 			value: 'wisdom'
 		});
+		expect(observant.mechanics).toContainEqual({
+			type: 'choose_ability_bonus',
+			count: 1,
+			value: 1,
+			allowed: ['intelligence', 'wisdom']
+		});
 	});
 
-	it('validates the SRD equipment starter file', () => {
+	it('validates the SRD equipment catalog file', () => {
 		const file = readJsonFile<unknown>('data/srd-5-1/equipment.json');
 
 		const parsed = equipmentFileSchema.parse(file);
+		const anySimpleWeapon = expectItemBySlug(parsed.items, 'any-simple-weapon');
+		const greataxe = expectItemBySlug(parsed.items, 'greataxe');
 
 		expect(parsed.items).toHaveLength(33);
-		expect(parsed.items[0]?.slug).toBe('any-simple-weapon');
-		expect(parsed.items[9]?.damageType).toBe('slashing');
+		expect(anySimpleWeapon.category).toBe('choice-bundle');
+		expect(greataxe.damageType).toBe('slashing');
 	});
 
-	it('validates the SRD subclasses starter file', () => {
+	it('validates the SRD subclasses catalog file', () => {
 		const file = readJsonFile<unknown>('data/srd-5-1/subclasses.json');
 
 		const parsed = subclassFileSchema.parse(file);
+		const lifeDomain = expectItemBySlug(parsed.items, 'life-domain');
+		const schoolOfEvocation = expectItemBySlug(parsed.items, 'school-of-evocation');
 
-		expect(parsed.items).toHaveLength(1);
-		expect(parsed.items[0]?.slug).toBe('life-domain');
-		expect(parsed.items[0]?.classSlug).toBe('clerigo');
-		expect(parsed.items[0]?.grantedSpellsByLevel).toHaveLength(5);
-		expect(parsed.items[0]?.grantedSpellsByLevel[0]?.spellSlugs).toEqual([
+		expect(parsed.items).toHaveLength(2);
+		expect(lifeDomain.classSlug).toBe('clerigo');
+		expect(lifeDomain.grantedSpellsByLevel).toHaveLength(5);
+		expect(lifeDomain.grantedSpellsByLevel[0]?.spellSlugs).toEqual([
 			'bless',
 			'cure-wounds'
 		]);
+		expect(schoolOfEvocation.classSlug).toBe('mago');
+		expect(schoolOfEvocation.features).toContainEqual(
+			expect.objectContaining({ featureId: 'sculpt-spells', level: 2 })
+		);
 	});
 });
 
