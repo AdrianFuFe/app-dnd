@@ -32,6 +32,18 @@
 			.map((value) => String(value))
 			.join(' | ');
 	}
+
+	function countProficiencyVocabularyEntries(): number {
+		const { vocabularies } = data.sharedCatalog;
+
+		return (
+			vocabularies.skillProficiencies.length +
+			vocabularies.armorProficiencies.length +
+			vocabularies.weaponProficiencies.length +
+			vocabularies.toolProficiencies.length +
+			vocabularies.savingThrowProficiencies.length
+		);
+	}
 </script>
 
 <svelte:head>
@@ -45,6 +57,11 @@
 		<p class="mt-3 max-w-3xl text-base leading-7 text-stone-600">
 			This protected area now reflects the broader structured SRD baseline the app is using,
 			not just the newer spell, feat, and equipment slices.
+		</p>
+		<p class="mt-3 max-w-3xl text-sm text-stone-500">
+			It now also exposes shared vocabulary domains like abilities, languages, spell schools,
+			damage types, and proficiency lists so future import and form work can reuse one typed
+			read model.
 		</p>
 		<p class="mt-3 max-w-3xl text-sm text-stone-500">
 			The same shared entries below currently feed
@@ -148,6 +165,28 @@
 				</p>
 				<p class="mt-2 text-sm text-stone-600">
 					Shared gear already powering attack and inventory selectors.
+				</p>
+			</div>
+			<div class="rounded-2xl bg-stone-100 p-4">
+				<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">
+					Languages
+				</p>
+				<p class="mt-2 text-3xl font-semibold text-stone-900">
+					{data.sharedCatalog.vocabularies.languages.length}
+				</p>
+				<p class="mt-2 text-sm text-stone-600">
+					Shared language vocabulary validated alongside SRD species and backgrounds.
+				</p>
+			</div>
+			<div class="rounded-2xl bg-stone-100 p-4">
+				<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">
+					Proficiencies
+				</p>
+				<p class="mt-2 text-3xl font-semibold text-stone-900">
+					{countProficiencyVocabularyEntries()}
+				</p>
+				<p class="mt-2 text-sm text-stone-600">
+					Skill, armor, weapon, tool, and saving throw vocabularies.
 				</p>
 			</div>
 		</div>
@@ -533,6 +572,185 @@
 					{/each}
 				</div>
 			{/if}
+		</div>
+	</section>
+
+	<section class="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
+		<div class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+			<div class="flex items-center justify-between gap-4">
+				<div>
+					<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
+						Vocabularies
+					</p>
+					<h2 class="mt-2 text-2xl font-semibold text-stone-900">
+						Ability-adjacent SRD mechanics
+					</h2>
+				</div>
+				<p class="text-sm text-stone-500">
+					{formatCountLabel(
+						data.sharedCatalog.vocabularies.abilities.length,
+						'ability',
+						'abilities'
+					)}
+					/
+					{formatCountLabel(
+						data.sharedCatalog.vocabularies.languages.length,
+						'language',
+						'languages'
+					)}
+				</p>
+			</div>
+
+			<div class="mt-6 space-y-5">
+				<article class="rounded-2xl border border-stone-200 p-4">
+					<p class="text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
+						Abilities
+					</p>
+					<div class="mt-3 flex flex-wrap gap-2">
+						{#each data.sharedCatalog.vocabularies.abilities as entry (entry.slug)}
+							<span
+								class="rounded-full bg-stone-100 px-3 py-2 text-sm text-stone-700"
+							>
+								{entry.name}
+							</span>
+						{/each}
+					</div>
+				</article>
+
+				<article class="rounded-2xl border border-stone-200 p-4">
+					<p class="text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
+						Languages
+					</p>
+					<div class="mt-3 flex flex-wrap gap-2">
+						{#each data.sharedCatalog.vocabularies.languages as entry (entry.slug)}
+							<span class="rounded-full bg-amber-50 px-3 py-2 text-sm text-amber-900">
+								{entry.name}
+							</span>
+						{/each}
+					</div>
+				</article>
+
+				<div class="grid gap-4 md:grid-cols-2">
+					<article class="rounded-2xl border border-stone-200 p-4">
+						<p class="text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
+							Spell Schools
+						</p>
+						<div class="mt-3 flex flex-wrap gap-2">
+							{#each data.sharedCatalog.vocabularies.spellSchools as entry (entry.slug)}
+								<span class="rounded-full bg-sky-50 px-3 py-2 text-sm text-sky-900">
+									{entry.name}
+								</span>
+							{/each}
+						</div>
+					</article>
+
+					<article class="rounded-2xl border border-stone-200 p-4">
+						<p class="text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
+							Damage Types
+						</p>
+						<div class="mt-3 flex flex-wrap gap-2">
+							{#each data.sharedCatalog.vocabularies.damageTypes as entry (entry.slug)}
+								<span
+									class="rounded-full bg-rose-50 px-3 py-2 text-sm text-rose-900"
+								>
+									{entry.name}
+								</span>
+							{/each}
+						</div>
+					</article>
+				</div>
+			</div>
+		</div>
+
+		<div class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+			<div class="flex items-center justify-between gap-4">
+				<div>
+					<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
+						Proficiencies
+					</p>
+					<h2 class="mt-2 text-2xl font-semibold text-stone-900">
+						Shared proficiency vocabularies
+					</h2>
+				</div>
+				<p class="text-sm text-stone-500">{countProficiencyVocabularyEntries()} total</p>
+			</div>
+
+			<div class="mt-6 grid gap-4 md:grid-cols-2">
+				<article class="rounded-2xl border border-stone-200 p-4">
+					<p class="text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
+						Skills
+					</p>
+					<div class="mt-3 flex flex-wrap gap-2">
+						{#each data.sharedCatalog.vocabularies.skillProficiencies as entry (entry.slug)}
+							<span
+								class="rounded-full bg-emerald-50 px-3 py-2 text-sm text-emerald-900"
+							>
+								{entry.name}
+							</span>
+						{/each}
+					</div>
+				</article>
+
+				<article class="rounded-2xl border border-stone-200 p-4">
+					<p class="text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
+						Saving Throws
+					</p>
+					<div class="mt-3 flex flex-wrap gap-2">
+						{#each data.sharedCatalog.vocabularies.savingThrowProficiencies as entry (entry.slug)}
+							<span
+								class="rounded-full bg-violet-50 px-3 py-2 text-sm text-violet-900"
+							>
+								{entry.name}
+							</span>
+						{/each}
+					</div>
+				</article>
+
+				<article class="rounded-2xl border border-stone-200 p-4">
+					<p class="text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
+						Armor
+					</p>
+					<div class="mt-3 flex flex-wrap gap-2">
+						{#each data.sharedCatalog.vocabularies.armorProficiencies as entry (entry.slug)}
+							<span
+								class="rounded-full bg-stone-100 px-3 py-2 text-sm text-stone-700"
+							>
+								{entry.name}
+							</span>
+						{/each}
+					</div>
+				</article>
+
+				<article class="rounded-2xl border border-stone-200 p-4">
+					<p class="text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
+						Weapons
+					</p>
+					<div class="mt-3 flex flex-wrap gap-2">
+						{#each data.sharedCatalog.vocabularies.weaponProficiencies as entry (entry.slug)}
+							<span
+								class="rounded-full bg-stone-100 px-3 py-2 text-sm text-stone-700"
+							>
+								{entry.name}
+							</span>
+						{/each}
+					</div>
+				</article>
+
+				<article class="rounded-2xl border border-stone-200 p-4 md:col-span-2">
+					<p class="text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
+						Tools
+					</p>
+					<div class="mt-3 flex flex-wrap gap-2">
+						{#each data.sharedCatalog.vocabularies.toolProficiencies as entry (entry.slug)}
+							<span
+								class="rounded-full bg-stone-100 px-3 py-2 text-sm text-stone-700"
+							>
+								{entry.name}
+							</span>
+						{/each}
+					</div>
+				</article>
+			</div>
 		</div>
 	</section>
 </div>

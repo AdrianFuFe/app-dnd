@@ -39,7 +39,18 @@ export const load: PageServerLoad = async ({ locals }) => {
 					backgrounds: [],
 					spells: [],
 					feats: [],
-					equipment: []
+					equipment: [],
+					vocabularies: {
+						abilities: [],
+						languages: [],
+						damageTypes: [],
+						spellSchools: [],
+						skillProficiencies: [],
+						armorProficiencies: [],
+						weaponProficiencies: [],
+						toolProficiencies: [],
+						savingThrowProficiencies: []
+					}
 				}
 			];
 

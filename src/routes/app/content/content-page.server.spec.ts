@@ -29,7 +29,18 @@ describe('/app/content load', () => {
 			backgrounds: [],
 			spells: [],
 			feats: [],
-			equipment: []
+			equipment: [],
+			vocabularies: {
+				abilities: [],
+				languages: [],
+				damageTypes: [],
+				spellSchools: [],
+				skillProficiencies: [],
+				armorProficiencies: [],
+				weaponProficiencies: [],
+				toolProficiencies: [],
+				savingThrowProficiencies: []
+			}
 		});
 	});
 
@@ -56,7 +67,18 @@ describe('/app/content load', () => {
 				backgrounds: [],
 				spells: [],
 				feats: [],
-				equipment: []
+				equipment: [],
+				vocabularies: {
+					abilities: [],
+					languages: [],
+					damageTypes: [],
+					spellSchools: [],
+					skillProficiencies: [],
+					armorProficiencies: [],
+					weaponProficiencies: [],
+					toolProficiencies: [],
+					savingThrowProficiencies: []
+				}
 			}
 		});
 
@@ -104,7 +126,44 @@ describe('/app/content load', () => {
 					isWeapon: true,
 					isEquippable: true
 				}
-			]
+			],
+			vocabularies: {
+				abilities: [{ slug: 'strength', name: 'Strength' }],
+				languages: [{ slug: 'comun', name: 'Comun' }],
+				damageTypes: [{ slug: 'fire', name: 'Fire' }],
+				spellSchools: [{ slug: 'evocation', name: 'Evocation' }],
+				skillProficiencies: [
+					{ slug: 'arcana', name: 'Arcana', proficiencyType: 'skill' as const }
+				],
+				armorProficiencies: [
+					{
+						slug: 'light-armor',
+						name: 'Light Armor',
+						proficiencyType: 'armor' as const
+					}
+				],
+				weaponProficiencies: [
+					{
+						slug: 'simple-weapons',
+						name: 'Simple Weapons',
+						proficiencyType: 'weapon' as const
+					}
+				],
+				toolProficiencies: [
+					{
+						slug: 'thieves-tools',
+						name: 'Thieves Tools',
+						proficiencyType: 'tool' as const
+					}
+				],
+				savingThrowProficiencies: [
+					{
+						slug: 'wisdom',
+						name: 'Wisdom',
+						proficiencyType: 'saving_throw' as const
+					}
+				]
+			}
 		};
 
 		listCharacterCreationCatalog.mockResolvedValueOnce(characterCatalog);

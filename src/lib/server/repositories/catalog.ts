@@ -12,6 +12,7 @@ import {
 	isE2EMockSupabaseClient,
 	listE2ECatalog
 } from '$lib/server/e2e/mock-app';
+import { listSharedRulesVocabularies } from '$lib/server/repositories/shared-rules-vocabularies';
 import type { Database } from '$lib/types/database/supabase';
 import type {
 	CharacterBackgroundOption,
@@ -168,7 +169,8 @@ export async function listExpandedContentCatalog(
 		backgrounds,
 		spells,
 		feats,
-		equipment
+		equipment,
+		vocabularies: listSharedRulesVocabularies()
 	};
 }
 

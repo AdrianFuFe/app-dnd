@@ -49,6 +49,27 @@ export type EquipmentCatalogEntry = {
 	isEquippable: boolean;
 };
 
+export type RulesVocabularyEntry = {
+	slug: string;
+	name: string;
+};
+
+export type ProficiencyVocabularyEntry = RulesVocabularyEntry & {
+	proficiencyType: 'skill' | 'armor' | 'weapon' | 'tool' | 'saving_throw';
+};
+
+export type SharedRulesVocabularyCatalog = {
+	abilities: RulesVocabularyEntry[];
+	languages: RulesVocabularyEntry[];
+	damageTypes: RulesVocabularyEntry[];
+	spellSchools: RulesVocabularyEntry[];
+	skillProficiencies: ProficiencyVocabularyEntry[];
+	armorProficiencies: ProficiencyVocabularyEntry[];
+	weaponProficiencies: ProficiencyVocabularyEntry[];
+	toolProficiencies: ProficiencyVocabularyEntry[];
+	savingThrowProficiencies: ProficiencyVocabularyEntry[];
+};
+
 export type ExpandedContentCatalog = {
 	species: CharacterSpeciesOption[];
 	subspecies: CharacterSubspeciesOption[];
@@ -58,4 +79,5 @@ export type ExpandedContentCatalog = {
 	spells: SpellCatalogEntry[];
 	feats: FeatCatalogEntry[];
 	equipment: EquipmentCatalogEntry[];
+	vocabularies: SharedRulesVocabularyCatalog;
 };

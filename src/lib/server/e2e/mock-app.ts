@@ -1,4 +1,5 @@
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
+import { listSharedRulesVocabularies } from '$lib/server/repositories/shared-rules-vocabularies';
 import type { Database } from '$lib/types/database/supabase';
 import type {
 	CharacterBackgroundOption,
@@ -215,7 +216,8 @@ const e2eExpandedContentCatalog: ExpandedContentCatalog = {
 		properties: item.properties ?? [],
 		isWeapon: item.isWeapon ?? false,
 		isEquippable: item.isEquippable ?? false
-	}))
+	})),
+	vocabularies: listSharedRulesVocabularies()
 };
 
 const initialCharacters: E2ECharacterRecord[] = [
@@ -379,7 +381,8 @@ export function listE2EExpandedContentCatalog(): ExpandedContentCatalog {
 		backgrounds: e2eExpandedContentCatalog.backgrounds.map((option) => ({ ...option })),
 		spells: e2eExpandedContentCatalog.spells.map(cloneSpellCatalogEntry),
 		feats: e2eExpandedContentCatalog.feats.map(cloneFeatCatalogEntry),
-		equipment: e2eExpandedContentCatalog.equipment.map(cloneEquipmentCatalogEntry)
+		equipment: e2eExpandedContentCatalog.equipment.map(cloneEquipmentCatalogEntry),
+		vocabularies: cloneSharedRulesVocabularyCatalog(e2eExpandedContentCatalog.vocabularies)
 	};
 }
 
@@ -524,5 +527,23 @@ function cloneEquipmentCatalogEntry(equipment: EquipmentCatalogEntry): Equipment
 	return {
 		...equipment,
 		properties: [...equipment.properties]
+	};
+}
+
+function cloneSharedRulesVocabularyCatalog(
+	vocabularies: ExpandedContentCatalog['vocabularies']
+): ExpandedContentCatalog['vocabularies'] {
+	return {
+		abilities: vocabularies.abilities.map((entry) => ({ ...entry })),
+		languages: vocabularies.languages.map((entry) => ({ ...entry })),
+		damageTypes: vocabularies.damageTypes.map((entry) => ({ ...entry })),
+		spellSchools: vocabularies.spellSchools.map((entry) => ({ ...entry })),
+		skillProficiencies: vocabularies.skillProficiencies.map((entry) => ({ ...entry })),
+		armorProficiencies: vocabularies.armorProficiencies.map((entry) => ({ ...entry })),
+		weaponProficiencies: vocabularies.weaponProficiencies.map((entry) => ({ ...entry })),
+		toolProficiencies: vocabularies.toolProficiencies.map((entry) => ({ ...entry })),
+		savingThrowProficiencies: vocabularies.savingThrowProficiencies.map((entry) => ({
+			...entry
+		}))
 	};
 }

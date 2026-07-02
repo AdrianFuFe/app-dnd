@@ -602,7 +602,36 @@ describe('listExpandedContentCatalog', () => {
 					isWeapon: true,
 					isEquippable: true
 				}
-			]
+			],
+			vocabularies: expect.any(Object)
+		});
+
+		expect(catalog.vocabularies.abilities).toEqual([
+			{ slug: 'strength', name: 'Strength' },
+			{ slug: 'dexterity', name: 'Dexterity' },
+			{ slug: 'constitution', name: 'Constitution' },
+			{ slug: 'intelligence', name: 'Intelligence' },
+			{ slug: 'wisdom', name: 'Wisdom' },
+			{ slug: 'charisma', name: 'Charisma' }
+		]);
+		expect(catalog.vocabularies.languages).toContainEqual({
+			slug: 'comun',
+			name: 'Comun'
+		});
+		expect(catalog.vocabularies.skillProficiencies).toContainEqual({
+			slug: 'arcana',
+			name: 'Arcana',
+			proficiencyType: 'skill'
+		});
+		expect(catalog.vocabularies.weaponProficiencies).toContainEqual({
+			slug: 'simple-weapons',
+			name: 'Simple Weapons',
+			proficiencyType: 'weapon'
+		});
+		expect(catalog.vocabularies.savingThrowProficiencies).toContainEqual({
+			slug: 'wisdom',
+			name: 'Wisdom',
+			proficiencyType: 'saving_throw'
 		});
 	});
 });
