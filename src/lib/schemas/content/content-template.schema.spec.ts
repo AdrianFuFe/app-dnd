@@ -135,13 +135,15 @@ describe('content templates', () => {
 		const identify = expectItemBySlug(parsed.items, 'identify');
 		const bless = expectItemBySlug(parsed.items, 'bless');
 		const magicMissile = expectItemBySlug(parsed.items, 'magic-missile');
+		const scrying = expectItemBySlug(parsed.items, 'scrying');
 		const raiseDead = expectItemBySlug(parsed.items, 'raise-dead');
 
-		expect(parsed.items).toHaveLength(25);
+		expect(parsed.items).toHaveLength(31);
 		expect(command.classSlugs).toContain('clerigo');
 		expect(identify.classSlugs).toContain('mago');
 		expect(bless.classSlugs).toContain('clerigo');
 		expect(magicMissile.classSlugs).toContain('mago');
+		expect(scrying.level).toBe(5);
 		expect(raiseDead.level).toBe(5);
 	});
 
@@ -193,12 +195,21 @@ describe('content templates', () => {
 			'command',
 			'identify'
 		]);
+		expect(knowledgeDomain.grantedSpellsByLevel).toHaveLength(5);
+		expect(knowledgeDomain.mechanics).toContainEqual({
+			type: 'spell_grant',
+			spellId: 'legend-lore'
+		});
 		expect(lifeDomain.classSlug).toBe('clerigo');
 		expect(lifeDomain.grantedSpellsByLevel).toHaveLength(5);
 		expect(lifeDomain.grantedSpellsByLevel[0]?.spellSlugs).toEqual([
 			'bless',
 			'cure-wounds'
 		]);
+		expect(lifeDomain.mechanics).toContainEqual({
+			type: 'spell_grant',
+			spellId: 'raise-dead'
+		});
 		expect(schoolOfEvocation.classSlug).toBe('mago');
 		expect(schoolOfEvocation.features).toContainEqual(
 			expect.objectContaining({ featureId: 'sculpt-spells', level: 2 })

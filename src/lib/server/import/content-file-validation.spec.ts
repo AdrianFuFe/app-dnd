@@ -990,6 +990,126 @@ describe('validateContentDataDirectory', () => {
 		expect(result.issues).toHaveLength(0);
 	});
 
+	it('reports subclass spell grant drift between grantedSpellsByLevel and spell_grant mechanics', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'classes.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'character-class',
+				items: [
+					{
+						slug: 'clerigo',
+						name: 'Clerigo',
+						hitDie: 8,
+						primaryAbilities: ['wisdom'],
+						savingThrowProficiencies: ['wisdom', 'charisma']
+					}
+				]
+			})
+		);
+		writeFileSync(
+			path.join(srdDirectoryPath, 'spells.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'spell',
+				items: [
+					{ slug: 'bless', name: 'Bless', level: 1, school: 'enchantment' },
+					{ slug: 'cure-wounds', name: 'Cure Wounds', level: 1, school: 'evocation' }
+				]
+			})
+		);
+		writeFileSync(
+			path.join(srdDirectoryPath, 'subclasses.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'subclass',
+				items: [
+					{
+						slug: 'life-domain',
+						name: 'Life Domain',
+						classSlug: 'clerigo',
+						grantedSpellsByLevel: [{ level: 1, spellSlugs: ['bless'] }],
+						mechanics: [{ type: 'spell_grant', spellId: 'cure-wounds' }]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(1);
+		expect(result.issues[0]?.message).toContain(
+			'Subclass "life-domain" grantedSpellsByLevel does not match spell_grant mechanics'
+		);
+	});
+
+	it('accepts matching subclass spell grants across grantedSpellsByLevel and spell_grant mechanics', () => {
+		const tempDirectoryPath = createTemporaryDataDirectory();
+		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');
+		mkdirSync(srdDirectoryPath, { recursive: true });
+		writeFileSync(
+			path.join(srdDirectoryPath, 'classes.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'character-class',
+				items: [
+					{
+						slug: 'clerigo',
+						name: 'Clerigo',
+						hitDie: 8,
+						primaryAbilities: ['wisdom'],
+						savingThrowProficiencies: ['wisdom', 'charisma']
+					}
+				]
+			})
+		);
+		writeFileSync(
+			path.join(srdDirectoryPath, 'spells.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'spell',
+				items: [
+					{ slug: 'bless', name: 'Bless', level: 1, school: 'enchantment' },
+					{ slug: 'cure-wounds', name: 'Cure Wounds', level: 1, school: 'evocation' }
+				]
+			})
+		);
+		writeFileSync(
+			path.join(srdDirectoryPath, 'subclasses.json'),
+			JSON.stringify({
+				schemaVersion: 1,
+				source: 'srd-5-1',
+				contentType: 'subclass',
+				items: [
+					{
+						slug: 'life-domain',
+						name: 'Life Domain',
+						classSlug: 'clerigo',
+						grantedSpellsByLevel: [
+							{ level: 1, spellSlugs: ['bless', 'cure-wounds'] }
+						],
+						mechanics: [
+							{ type: 'spell_grant', spellId: 'cure-wounds' },
+							{ type: 'spell_grant', spellId: 'bless' }
+						]
+					}
+				]
+			})
+		);
+
+		const result = validateContentDataDirectory(tempDirectoryPath);
+
+		expect(result.issues).toHaveLength(0);
+	});
+
 	it('reports missing spell references from feat mechanics', () => {
 		const tempDirectoryPath = createTemporaryDataDirectory();
 		const srdDirectoryPath = path.join(tempDirectoryPath, 'srd-5-1');

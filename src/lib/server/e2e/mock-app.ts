@@ -453,6 +453,23 @@ export function getE2ESubclassOption(subclassId: string): CharacterSubclassOptio
 	return e2eCatalog.subclassOptions.find((option) => option.id === subclassId);
 }
 
+export function getE2ESubclassGrantedSpellSlugs(subclassId: string): string[] {
+	const subclass = asContentFile<SubclassSourceItem>(subclassesFile).items.find(
+		(item) => buildCatalogId('subclass', item.slug) === subclassId
+	);
+
+	return (subclass?.mechanics ?? []).flatMap((mechanic) =>
+		typeof mechanic === 'object' &&
+		mechanic !== null &&
+		'type' in mechanic &&
+		mechanic.type === 'spell_grant' &&
+		'spellId' in mechanic &&
+		typeof mechanic.spellId === 'string'
+			? [mechanic.spellId]
+			: []
+	);
+}
+
 export function getE2EBackgroundOption(
 	backgroundId: string
 ): CharacterBackgroundOption | undefined {

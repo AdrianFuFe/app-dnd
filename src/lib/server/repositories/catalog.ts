@@ -8,6 +8,7 @@ import {
 	listE2EExpandedContentCatalog,
 	getE2ESpeciesOption,
 	getE2ESubclassOption,
+	getE2ESubclassGrantedSpellSlugs,
 	getE2ESubspeciesOption,
 	isE2EMockSupabaseClient,
 	listE2ECatalog
@@ -317,6 +318,7 @@ export async function resolveCharacterSpellCatalogSelections(
 
 		const grantedSpellSlugs = new Set([
 			...(classOption?.grantedSpellSlugs ?? []),
+			...(selection.subclassId ? getE2ESubclassGrantedSpellSlugs(selection.subclassId) : []),
 			...(subclassOption?.grantedSpellsByLevel ?? []).flatMap((group) => group.spellSlugs)
 		]);
 
@@ -342,6 +344,7 @@ export async function resolveCharacterSpellCatalogSelections(
 
 	const grantedSpellSlugs = new Set([
 		...summarizeGrantedSpellSlugs(characterClass?.mechanics),
+		...summarizeGrantedSpellSlugs(subclass?.mechanics),
 		...summarizeGrantedSpellsByLevel(subclass?.granted_spells_by_level).flatMap(
 			(group) => group.spellSlugs
 		)
@@ -636,14 +639,16 @@ async function loadSelectedSubclass(
 async function loadSelectedSubclassForSpellSelection(
 	supabase: SupabaseClient<Database>,
 	subclassId?: string
-): Promise<Pick<SubclassRow, 'id' | 'class_slug' | 'name' | 'granted_spells_by_level'> | undefined> {
+): Promise<
+	Pick<SubclassRow, 'id' | 'class_slug' | 'name' | 'mechanics' | 'granted_spells_by_level'> | undefined
+> {
 	if (!subclassId) {
 		return undefined;
 	}
 
 	const { data, error } = await supabase
 		.from('subclasses')
-		.select('id, class_slug, name, granted_spells_by_level')
+		.select('id, class_slug, name, mechanics, granted_spells_by_level')
 		.eq('id', subclassId)
 		.single();
 

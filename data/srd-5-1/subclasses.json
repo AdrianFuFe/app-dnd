@@ -18,6 +18,16 @@
 				{ "level": 9, "spellSlugs": ["mass-cure-wounds", "raise-dead"] }
 			],
 			"mechanics": [
+				{ "type": "spell_grant", "spellId": "bless" },
+				{ "type": "spell_grant", "spellId": "cure-wounds" },
+				{ "type": "spell_grant", "spellId": "lesser-restoration" },
+				{ "type": "spell_grant", "spellId": "spiritual-weapon" },
+				{ "type": "spell_grant", "spellId": "beacon-of-hope" },
+				{ "type": "spell_grant", "spellId": "revivify" },
+				{ "type": "spell_grant", "spellId": "death-ward" },
+				{ "type": "spell_grant", "spellId": "guardian-of-faith" },
+				{ "type": "spell_grant", "spellId": "mass-cure-wounds" },
+				{ "type": "spell_grant", "spellId": "raise-dead" },
 				{ "type": "proficiency", "proficiencyType": "armor", "value": "heavy-armor" },
 				{ "type": "feature", "featureId": "bonus-proficiency" },
 				{ "type": "feature", "featureId": "disciple-of-life" },
@@ -111,9 +121,22 @@
 			"visibility": "public",
 			"grantedSpellsByLevel": [
 				{ "level": 1, "spellSlugs": ["command", "identify"] },
-				{ "level": 3, "spellSlugs": ["augury", "suggestion"] }
+				{ "level": 3, "spellSlugs": ["augury", "suggestion"] },
+				{ "level": 5, "spellSlugs": ["nondetection", "speak-with-dead"] },
+				{ "level": 7, "spellSlugs": ["arcane-eye", "confusion"] },
+				{ "level": 9, "spellSlugs": ["legend-lore", "scrying"] }
 			],
 			"mechanics": [
+				{ "type": "spell_grant", "spellId": "command" },
+				{ "type": "spell_grant", "spellId": "identify" },
+				{ "type": "spell_grant", "spellId": "augury" },
+				{ "type": "spell_grant", "spellId": "suggestion" },
+				{ "type": "spell_grant", "spellId": "nondetection" },
+				{ "type": "spell_grant", "spellId": "speak-with-dead" },
+				{ "type": "spell_grant", "spellId": "arcane-eye" },
+				{ "type": "spell_grant", "spellId": "confusion" },
+				{ "type": "spell_grant", "spellId": "legend-lore" },
+				{ "type": "spell_grant", "spellId": "scrying" },
 				{ "type": "feature", "featureId": "blessings-of-knowledge" },
 				{ "type": "feature", "featureId": "knowledge-of-the-ages" },
 				{ "type": "feature", "featureId": "read-thoughts" }

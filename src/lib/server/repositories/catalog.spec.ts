@@ -944,6 +944,87 @@ describe('resolveCharacterSpellCatalogSelections', () => {
 		expect(spellItems[0]?.spellId).toBe('spell-1');
 	});
 
+	it('accepts linked spells granted by subclass spell_grant mechanics', async () => {
+		const classesSingle = vi.fn().mockResolvedValue({
+			data: {
+				id: 'class-1',
+				slug: 'clerigo',
+				name: 'Clerigo',
+				mechanics: []
+			},
+			error: null
+		});
+		const classesEq = vi.fn().mockReturnValue({ single: classesSingle });
+		const classesSelect = vi.fn().mockReturnValue({ eq: classesEq });
+
+		const subclassesSingle = vi.fn().mockResolvedValue({
+			data: {
+				id: 'subclass-1',
+				class_slug: 'clerigo',
+				name: 'Knowledge Domain',
+				mechanics: [{ type: 'spell_grant', spellId: 'identify' }],
+				granted_spells_by_level: []
+			},
+			error: null
+		});
+		const subclassesEq = vi.fn().mockReturnValue({ single: subclassesSingle });
+		const subclassesSelect = vi.fn().mockReturnValue({ eq: subclassesEq });
+
+		const spellsIn = vi.fn().mockResolvedValue({
+			data: [
+				{
+					id: 'spell-1',
+					slug: 'identify',
+					name: 'Identify',
+					level: 1,
+					school: 'divination',
+					casting_time: '1 minute',
+					range_text: 'Touch',
+					components: 'V, S, M',
+					duration: 'Instantaneous',
+					class_slugs: ['mago'],
+					summary: 'Learn an item or effect properties.',
+					description: 'You learn whether an object is magical and how to use it.',
+					concentration: false,
+					ritual: true
+				}
+			],
+			error: null
+		});
+		const spellsSelect = vi.fn().mockReturnValue({ in: spellsIn });
+
+		const from = vi.fn((table: string) => {
+			if (table === 'character_classes') {
+				return { select: classesSelect };
+			}
+
+			if (table === 'subclasses') {
+				return { select: subclassesSelect };
+			}
+
+			if (table === 'spells') {
+				return { select: spellsSelect };
+			}
+
+			throw new Error(`Unexpected table ${table}`);
+		});
+
+		const spellItems = await resolveCharacterSpellCatalogSelections({ from } as never, {
+			classId: 'class-1',
+			subclassId: 'subclass-1',
+			spellItems: [
+				{
+					spellId: 'spell-1',
+					name: 'Old Name',
+					isPrepared: true
+				}
+			]
+		});
+
+		expect(spellItems[0]?.name).toBe('Identify');
+		expect(spellItems[0]?.spellId).toBe('spell-1');
+	});
+
 	it('rejects linked spells that do not match the selected class', async () => {
 		const classesSingle = vi.fn().mockResolvedValue({
 			data: {

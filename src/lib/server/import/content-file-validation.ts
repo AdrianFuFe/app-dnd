@@ -113,6 +113,22 @@ function arraysEqual(left: string[], right: string[]): boolean {
 	return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
+function summarizeGrantedSpellSlugsFromLevelGroups(
+	groups: CatalogReferenceItem['grantedSpellsByLevel']
+): string[] {
+	return toSortedUnique((groups ?? []).flatMap((group) => group.spellSlugs ?? []));
+}
+
+function summarizeGrantedSpellSlugsFromMechanics(
+	mechanics: CatalogReferenceItem['mechanics']
+): string[] {
+	return toSortedUnique(
+		(mechanics ?? [])
+			.filter((mechanic) => mechanic.type === 'spell_grant' && mechanic.spellId)
+			.map((mechanic) => mechanic.spellId as string)
+	);
+}
+
 const knownEquipmentReferenceIds = new Set([
 	'any-simple-weapon',
 	'artisan-tools',
@@ -528,6 +544,12 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 				.filter((mechanic) => mechanic.type === 'note' && mechanic.text)
 				.map((mechanic) => mechanic.text as string)
 		);
+		const grantedSpellSlugsFromLevelGroups = summarizeGrantedSpellSlugsFromLevelGroups(
+			subclass.grantedSpellsByLevel
+		);
+		const grantedSpellSlugsFromMechanics = summarizeGrantedSpellSlugsFromMechanics(
+			subclass.mechanics
+		);
 
 		if (subclassFeatureIds.size !== normalizedSubclassFeatureIds.length) {
 			result.issues.push({
@@ -568,6 +590,17 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 			result.issues.push({
 				filePath,
 				message: `Subclass "${subclass.slug}" notes do not match referenced feature mechanics`
+			});
+		}
+
+		if (
+			grantedSpellSlugsFromLevelGroups.length > 0 &&
+			grantedSpellSlugsFromMechanics.length > 0 &&
+			!arraysEqual(grantedSpellSlugsFromLevelGroups, grantedSpellSlugsFromMechanics)
+		) {
+			result.issues.push({
+				filePath,
+				message: `Subclass "${subclass.slug}" grantedSpellsByLevel does not match spell_grant mechanics`
 			});
 		}
 	}
