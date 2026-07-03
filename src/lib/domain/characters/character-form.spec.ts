@@ -12,7 +12,8 @@ describe('createCharacterFormValues', () => {
 			attackItems: [{ name: 'Longsword', attackBonus: '+4' }],
 			spellItems: [{ name: 'Magic Missile', level: 1, isPrepared: true }],
 			featItems: [{ name: 'Alert', description: 'Stay ready.' }],
-			inventoryItems: [{ name: 'Rope', quantity: 1, isEquipped: false }]
+			inventoryItems: [{ name: 'Rope', quantity: 1, isEquipped: false }],
+			noteItems: [{ title: 'Goals', content: 'Protect the caravan.' }]
 		});
 
 		expect(values.name).toBe('Rhea');
@@ -25,6 +26,7 @@ describe('createCharacterFormValues', () => {
 		expect(values.spellItems).toBe('[{"name":"Magic Missile","level":1,"isPrepared":true}]');
 		expect(values.featItems).toBe('[{"name":"Alert","description":"Stay ready."}]');
 		expect(values.inventoryItems).toBe('[{"name":"Rope","quantity":1,"isEquipped":false}]');
+		expect(values.noteItems).toBe('[{"title":"Goals","content":"Protect the caravan."}]');
 		expect(values.notes).toBe('');
 	});
 });
@@ -49,7 +51,8 @@ describe('createCharacterFormValuesFromInput', () => {
 			attackItems: [],
 			spellItems: [],
 			featItems: [],
-			inventoryItems: []
+			inventoryItems: [],
+			noteItems: []
 		});
 
 		expect(values.name).toBe('New Character');
@@ -62,6 +65,7 @@ describe('createCharacterFormValuesFromInput', () => {
 		expect(values.spellItems).toBe('[]');
 		expect(values.featItems).toBe('[]');
 		expect(values.inventoryItems).toBe('[]');
+		expect(values.noteItems).toBe('[]');
 		expect(values.notes).toBe('');
 	});
 });

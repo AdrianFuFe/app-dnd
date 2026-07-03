@@ -13,6 +13,7 @@ import type {
 	CharacterCreateInput,
 	CharacterFeatItem,
 	CharacterInventoryItem,
+	CharacterNoteItem,
 	CharacterSpellItem
 } from '$lib/types/domain/character';
 
@@ -29,6 +30,8 @@ type CharacterFeatInsert = Database['public']['Tables']['character_feats']['Inse
 type CharacterFeatRow = Database['public']['Tables']['character_feats']['Row'];
 type CharacterInventoryItemInsert =
 	Database['public']['Tables']['character_inventory_items']['Insert'];
+type CharacterNoteInsert = Database['public']['Tables']['character_notes']['Insert'];
+type CharacterNoteRow = Database['public']['Tables']['character_notes']['Row'];
 
 export type CharacterListItem = {
 	id: string;
@@ -118,7 +121,8 @@ export async function createCharacter(
 		attacksResult,
 		spellsResult,
 		featsResult,
-		inventoryResult
+		inventoryResult,
+		notesResult
 	] =
 		await Promise.all([
 			supabase.from('character_stats').insert(statsInsert),
@@ -127,7 +131,8 @@ export async function createCharacter(
 			insertCharacterAttackItems(supabase, character.id, input.attackItems),
 			insertCharacterSpellItems(supabase, character.id, input.spellItems),
 			insertCharacterFeatItems(supabase, character.id, input.featItems),
-			insertCharacterInventoryItems(supabase, character.id, input.inventoryItems)
+			insertCharacterInventoryItems(supabase, character.id, input.inventoryItems),
+			insertCharacterNoteItems(supabase, character.id, input.noteItems)
 		]);
 
 	const childError =
@@ -137,7 +142,8 @@ export async function createCharacter(
 		attacksResult.error ??
 		spellsResult.error ??
 		featsResult.error ??
-		inventoryResult.error;
+		inventoryResult.error ??
+		notesResult.error;
 
 	if (childError) {
 		await supabase.from('characters').delete().eq('id', character.id).eq('user_id', userId);
@@ -180,7 +186,8 @@ export async function getCharacterForUser(
 		attacksResult,
 		spellsResult,
 		featsResult,
-		inventoryResult
+		inventoryResult,
+		notesResult
 	] =
 		await Promise.all([
 			supabase
@@ -217,6 +224,10 @@ export async function getCharacterForUser(
 			supabase
 				.from('character_inventory_items')
 				.select('equipment_id, name, quantity, description, weight, value, is_equipped')
+				.eq('character_id', characterId),
+			supabase
+				.from('character_notes')
+				.select('title, content')
 				.eq('character_id', characterId)
 		]);
 
@@ -227,7 +238,8 @@ export async function getCharacterForUser(
 		attacksResult.error ??
 		spellsResult.error ??
 		featsResult.error ??
-		inventoryResult.error;
+		inventoryResult.error ??
+		notesResult.error;
 
 	if (
 		childError ||
@@ -237,7 +249,8 @@ export async function getCharacterForUser(
 		!attacksResult.data ||
 		!spellsResult.data ||
 		!featsResult.data ||
-		!inventoryResult.data
+		!inventoryResult.data ||
+		!notesResult.data
 	) {
 		throw new Error(`Failed to load character details for user ${userId}`);
 	}
@@ -290,6 +303,14 @@ export async function getCharacterForUser(
 		description: item.description ?? undefined
 	}));
 
+	const noteItems =
+		notesResult.data.length > 0
+			? notesResult.data.map((item) => ({
+					title: item.title,
+					content: item.content
+				}))
+			: parseLegacyNoteItems(textResult.data.notes);
+
 	return {
 		id: character.id,
 		name: character.name,
@@ -322,6 +343,7 @@ export async function getCharacterForUser(
 		spellItems,
 		featItems,
 		inventoryItems,
+		noteItems,
 		attacks: textResult.data.attacks ?? undefined,
 		spells: textResult.data.spells ?? undefined,
 		notes: textResult.data.notes ?? undefined,
@@ -368,7 +390,8 @@ export async function updateCharacter(
 		attacksResult,
 		spellsResult,
 		featsResult,
-		inventoryResult
+		inventoryResult,
+		notesResult
 	] =
 		await Promise.all([
 			supabase
@@ -386,7 +409,8 @@ export async function updateCharacter(
 			replaceCharacterAttackItems(supabase, characterId, input.attackItems),
 			replaceCharacterSpellItems(supabase, characterId, input.spellItems),
 			replaceCharacterFeatItems(supabase, characterId, input.featItems),
-			replaceCharacterInventoryItems(supabase, characterId, input.inventoryItems)
+			replaceCharacterInventoryItems(supabase, characterId, input.inventoryItems),
+			replaceCharacterNoteItems(supabase, characterId, input.noteItems)
 		]);
 
 	const childError =
@@ -396,7 +420,8 @@ export async function updateCharacter(
 		attacksResult.error ??
 		spellsResult.error ??
 		featsResult.error ??
-		inventoryResult.error;
+		inventoryResult.error ??
+		notesResult.error;
 
 	if (childError) {
 		throw new Error(`Failed to update character details for user ${userId}`);
@@ -491,7 +516,7 @@ function toCharacterTextSectionsFields(
 		attacks: toLegacyAttackText(input.attackItems, input.attacks),
 		spells: toLegacySpellText(input.spellItems, input.spells),
 		inventory: toLegacyInventoryText(input.inventoryItems),
-		notes: input.notes ?? null
+		notes: toLegacyNoteText(input.noteItems, input.notes)
 	};
 }
 
@@ -600,6 +625,20 @@ async function insertCharacterSpellItems(
 		.insert(items.map((item) => toCharacterSpellItemInsert(characterId, item)));
 }
 
+async function insertCharacterNoteItems(
+	supabase: SupabaseClient<Database>,
+	characterId: string,
+	items: CharacterNoteItem[]
+) {
+	if (items.length === 0) {
+		return { error: null };
+	}
+
+	return supabase
+		.from('character_notes')
+		.insert(items.map((item) => toCharacterNoteItemInsert(characterId, item)));
+}
+
 async function insertCharacterFeatItems(
 	supabase: SupabaseClient<Database>,
 	characterId: string,
@@ -701,6 +740,45 @@ async function replaceCharacterFeatItems(
 	};
 }
 
+async function replaceCharacterNoteItems(
+	supabase: SupabaseClient<Database>,
+	characterId: string,
+	items: CharacterNoteItem[]
+) {
+	const { data: existingItems, error: selectError } = await supabase
+		.from('character_notes')
+		.select('title, content')
+		.eq('character_id', characterId);
+
+	if (selectError || !existingItems) {
+		return { error: selectError ?? new Error('Failed to load current character notes') };
+	}
+
+	const deleteResult = await supabase.from('character_notes').delete().eq('character_id', characterId);
+
+	if (deleteResult.error || items.length === 0) {
+		return deleteResult;
+	}
+
+	const insertResult = await insertCharacterNoteItems(supabase, characterId, items);
+
+	if (!insertResult.error) {
+		return insertResult;
+	}
+
+	if (existingItems.length === 0) {
+		return insertResult;
+	}
+
+	const restoreResult = await supabase
+		.from('character_notes')
+		.insert(existingItems.map((item) => toCharacterNoteItemInsert(characterId, mapNoteRow(item))));
+
+	return {
+		error: restoreResult.error ?? insertResult.error
+	};
+}
+
 function toCharacterInventoryItemInsert(
 	characterId: string,
 	item: CharacterInventoryItem
@@ -749,6 +827,17 @@ function toCharacterSpellItemInsert(
 		duration: item.duration ?? null,
 		description: item.description ?? null,
 		is_prepared: item.isPrepared
+	};
+}
+
+function toCharacterNoteItemInsert(
+	characterId: string,
+	item: CharacterNoteItem
+): CharacterNoteInsert {
+	return {
+		character_id: characterId,
+		title: item.title,
+		content: item.content
 	};
 }
 
@@ -829,6 +918,16 @@ function toLegacySpellText(items: CharacterSpellItem[], fallback?: string): stri
 		.join('\n');
 }
 
+function toLegacyNoteText(items: CharacterNoteItem[], fallback?: string): string | null {
+	if (items.length === 0) {
+		return fallback?.trim() ? fallback : null;
+	}
+
+	return items
+		.map((item) => `${item.title}\n${item.content}`)
+		.join('\n\n');
+}
+
 function parseLegacyAttackItems(value: string | null): CharacterAttackItem[] {
 	if (!value?.trim()) {
 		return [];
@@ -855,6 +954,19 @@ function parseLegacySpellItems(value: string | null): CharacterSpellItem[] {
 			name,
 			isPrepared: false
 		}));
+}
+
+function parseLegacyNoteItems(value: string | null): CharacterNoteItem[] {
+	if (!value?.trim()) {
+		return [];
+	}
+
+	return [
+		{
+			title: 'General Notes',
+			content: value.trim()
+		}
+	];
 }
 
 function splitLegacyAttackEntries(value: string): string[] {
@@ -918,6 +1030,13 @@ function mapFeatRow(
 		featId: item.feat_id ?? undefined,
 		name: item.name,
 		description: item.description ?? undefined
+	};
+}
+
+function mapNoteRow(item: Pick<CharacterNoteRow, 'title' | 'content'>): CharacterNoteItem {
+	return {
+		title: item.title,
+		content: item.content
 	};
 }
 

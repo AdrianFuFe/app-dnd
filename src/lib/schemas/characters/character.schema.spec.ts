@@ -68,6 +68,12 @@ describe('characterCreateInputSchema', () => {
 					isEquipped: false
 				}
 			]),
+			noteItems: JSON.stringify([
+				{
+					title: 'Goals',
+					content: 'Looking for traces of a lost tower.'
+				}
+			]),
 			attacks: 'Quarterstaff +4 to hit, 1d6 bludgeoning',
 			spells: 'Magic Missile, Shield, Detect Magic',
 			notes: 'Looking for traces of a lost tower.'
@@ -83,6 +89,7 @@ describe('characterCreateInputSchema', () => {
 		expect(result.spellItems[0]?.school).toBe('Evocation');
 		expect(result.featItems[0]?.featId).toBe('aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa');
 		expect(result.inventoryItems[0]?.name).toBe('Spellbook');
+		expect(result.noteItems[0]?.title).toBe('Goals');
 		expect(result.spells).toContain('Shield');
 	});
 
@@ -118,6 +125,7 @@ describe('characterCreateInputSchema', () => {
 			spellItems: '',
 			featItems: '',
 			inventoryItems: '',
+			noteItems: '',
 			attacks: ' ',
 			spells: '',
 			notes: ' '
@@ -131,6 +139,7 @@ describe('characterCreateInputSchema', () => {
 		expect(result.spellItems).toEqual([]);
 		expect(result.featItems).toEqual([]);
 		expect(result.inventoryItems).toEqual([]);
+		expect(result.noteItems).toEqual([]);
 		expect(result.attacks).toBeUndefined();
 	});
 

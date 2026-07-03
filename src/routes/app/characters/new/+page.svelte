@@ -15,8 +15,8 @@
 		<h1 class="mt-3 text-3xl font-semibold text-stone-900">Create your first draft.</h1>
 		<p class="mt-3 max-w-3xl text-base leading-7 text-stone-600">
 			This MVP flow stores identity, ability scores, combat basics, structured attacks,
-			structured spells, and a structured inventory so you can start building owned characters
-			before deeper rules automation arrives.
+			structured spells, structured notes, and a structured inventory so you can start
+			building owned characters before deeper rules automation arrives.
 		</p>
 	</section>
 

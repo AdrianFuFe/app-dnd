@@ -314,6 +314,12 @@ const initialCharacters: E2ECharacterRecord[] = [
 				isEquipped: false
 			}
 		],
+		noteItems: [
+			{
+				title: 'Research',
+				content: 'Tracks ley lines.'
+			}
+		],
 		attacks: 'Quarterstaff',
 		spells: 'Magic Missile',
 		notes: 'Tracks ley lines.'

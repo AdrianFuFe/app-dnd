@@ -227,7 +227,7 @@
 			</article>
 
 			<article class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
-				<h2 class="text-xl font-semibold text-stone-900">Attacks, Spells, And Notes</h2>
+				<h2 class="text-xl font-semibold text-stone-900">Attacks, Spells, Feats, And Notes</h2>
 				<div class="mt-6 space-y-6">
 					<div>
 						<p class="text-sm font-medium text-stone-500">Attacks</p>
@@ -368,9 +368,22 @@
 					</div>
 					<div>
 						<p class="text-sm font-medium text-stone-500">Notes</p>
-						<p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700">
-							{optionalText(data.character.notes)}
-						</p>
+						{#if data.character.noteItems.length === 0}
+							<p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700">
+								{optionalText(data.character.notes)}
+							</p>
+						{:else}
+							<div class="mt-3 space-y-3">
+								{#each data.character.noteItems as note (`${note.title}-${note.content}`)}
+									<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4">
+										<p class="text-base font-semibold text-stone-900">{note.title}</p>
+										<p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700">
+											{note.content}
+										</p>
+									</div>
+								{/each}
+							</div>
+						{/if}
 					</div>
 				</div>
 			</article>

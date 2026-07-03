@@ -19,6 +19,7 @@ export function createDefaultCharacterInput(): CharacterCreateInput {
 		attackItems: [],
 		spellItems: [],
 		featItems: [],
-		inventoryItems: []
+		inventoryItems: [],
+		noteItems: []
 	};
 }

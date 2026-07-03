@@ -56,6 +56,10 @@
 		name: string;
 		description: string;
 	};
+	type NoteFormItem = {
+		title: string;
+		content: string;
+	};
 	type SpellGrantGroup = {
 		key: string;
 		title: string;
@@ -109,6 +113,13 @@
 	let spellItems = $state<SpellFormItem[]>([]);
 	let featItems = $state<FeatFormItem[]>([]);
 	let inventoryItems = $state<InventoryFormItem[]>([]);
+	let noteItems = $state<NoteFormItem[]>([]);
+	let attackItemsField: HTMLInputElement | null = null;
+	let spellItemsField: HTMLInputElement | null = null;
+	let featItemsField: HTMLInputElement | null = null;
+	let inventoryItemsField: HTMLInputElement | null = null;
+	let noteItemsField: HTMLInputElement | null = null;
+	let notesField: HTMLInputElement | null = null;
 
 	$effect(() => {
 		formValues = { ...values };
@@ -116,6 +127,7 @@
 		spellItems = parseSpellItems(values.spellItems, values.spells);
 		featItems = parseFeatItems(values.featItems);
 		inventoryItems = parseInventoryItems(values.inventoryItems);
+		noteItems = parseNoteItems(values.noteItems, values.notes);
 	});
 
 	function firstError(field: keyof CharacterCreateFormValues): string | undefined {
@@ -564,6 +576,26 @@
 		);
 	}
 
+	function addNoteItem() {
+		noteItems = [
+			...noteItems,
+			{
+				title: '',
+				content: ''
+			}
+		];
+	}
+
+	function removeNoteItem(index: number) {
+		noteItems = noteItems.filter((_, itemIndex) => itemIndex !== index);
+	}
+
+	function updateNoteItem(index: number, patch: Partial<NoteFormItem>) {
+		noteItems = noteItems.map((item, itemIndex) =>
+			itemIndex === index ? { ...item, ...patch } : item
+		);
+	}
+
 	function removeSpellItem(index: number) {
 		spellItems = spellItems.filter((_, itemIndex) => itemIndex !== index);
 	}
@@ -627,6 +659,23 @@
 				description: item.description
 			}))
 		);
+	}
+
+	function noteItemsFieldValue(): string {
+		return JSON.stringify(
+			noteItems.map((item) => ({
+				title: item.title,
+				content: item.content
+			}))
+		);
+	}
+
+	function notesFieldValue(): string {
+		if (noteItems.length === 0) {
+			return formValues.notes;
+		}
+
+		return noteItems.map((item) => `${item.title}\n${item.content}`).join('\n\n');
 	}
 
 	function parseAttackItems(value: string, fallbackText: string): AttackFormItem[] {
@@ -704,6 +753,34 @@
 		}
 	}
 
+	function parseNoteItems(value: string, fallbackText: string): NoteFormItem[] {
+		if (value.trim()) {
+			try {
+				const parsed = JSON.parse(value);
+
+				if (Array.isArray(parsed)) {
+					return parsed.map((item) => ({
+						title: typeof item?.title === 'string' ? item.title : '',
+						content: typeof item?.content === 'string' ? item.content : ''
+					}));
+				}
+			} catch {
+				// Fall back to the legacy text mirror below.
+			}
+		}
+
+		if (!fallbackText.trim()) {
+			return [];
+		}
+
+		return [
+			{
+				title: 'General Notes',
+				content: fallbackText.trim()
+			}
+		];
+	}
+
 	function parseSpellItems(value: string, fallbackText: string): SpellFormItem[] {
 		if (value.trim()) {
 			try {
@@ -770,9 +847,50 @@
 			return [];
 		}
 	}
+
+	function syncStructuredFieldValues(event: SubmitEvent) {
+		if (attackItemsField) {
+			attackItemsField.value = attackItemsFieldValue();
+		}
+
+		if (spellItemsField) {
+			spellItemsField.value = spellItemsFieldValue();
+		}
+
+		if (featItemsField) {
+			featItemsField.value = featItemsFieldValue();
+		}
+
+		if (inventoryItemsField) {
+			inventoryItemsField.value = inventoryItemsFieldValue();
+		}
+
+		const form = event.currentTarget instanceof HTMLFormElement ? event.currentTarget : null;
+		const noteRows = form
+			? Array.from(
+					form.querySelectorAll<HTMLElement>('[data-note-row]')
+				).map((row) => ({
+					title:
+						row.querySelector<HTMLInputElement>('[data-note-title]')?.value ?? '',
+					content:
+						row.querySelector<HTMLTextAreaElement>('[data-note-content]')?.value ?? ''
+				}))
+			: noteItems;
+
+		if (noteItemsField) {
+			noteItemsField.value = JSON.stringify(noteRows);
+		}
+
+		if (notesField) {
+			notesField.value =
+				noteRows.length === 0
+					? formValues.notes
+					: noteRows.map((item) => `${item.title}\n${item.content}`).join('\n\n');
+		}
+	}
 </script>
 
-<form method="POST" class="space-y-8">
+<form method="POST" class="space-y-8" onsubmit={syncStructuredFieldValues}>
 	{#if formError}
 		<p class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
 			{formError}
@@ -1061,7 +1179,12 @@
 			</button>
 		</div>
 
-		<input type="hidden" name="attackItems" value={attackItemsFieldValue()} />
+		<input
+			type="hidden"
+			name="attackItems"
+			value={attackItemsFieldValue()}
+			bind:this={attackItemsField}
+		/>
 
 		{#if firstError('attackItems')}
 			<p class="mt-4 text-sm text-red-700">{firstError('attackItems')}</p>
@@ -1077,7 +1200,7 @@
 		{:else}
 			<div class="mt-6 space-y-4">
 				{#each attackItems as item, index (index)}
-					<div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+					<div class="rounded-2xl border border-stone-200 bg-stone-50 p-4" data-note-row>
 						<div class="flex items-center justify-between gap-3">
 							<p class="text-sm font-semibold text-stone-900">Attack {index + 1}</p>
 							<button
@@ -1235,7 +1358,12 @@
 			</button>
 		</div>
 
-		<input type="hidden" name="spellItems" value={spellItemsFieldValue()} />
+		<input
+			type="hidden"
+			name="spellItems"
+			value={spellItemsFieldValue()}
+			bind:this={spellItemsField}
+		/>
 
 		{#if firstError('spellItems')}
 			<p class="mt-4 text-sm text-red-700">{firstError('spellItems')}</p>
@@ -1532,7 +1660,12 @@
 			</button>
 		</div>
 
-		<input type="hidden" name="featItems" value={featItemsFieldValue()} />
+		<input
+			type="hidden"
+			name="featItems"
+			value={featItemsFieldValue()}
+			bind:this={featItemsField}
+		/>
 
 		{#if firstError('featItems')}
 			<p class="mt-4 text-sm text-red-700">{firstError('featItems')}</p>
@@ -1635,7 +1768,12 @@
 			</button>
 		</div>
 
-		<input type="hidden" name="inventoryItems" value={inventoryItemsFieldValue()} />
+		<input
+			type="hidden"
+			name="inventoryItems"
+			value={inventoryItemsFieldValue()}
+			bind:this={inventoryItemsField}
+		/>
 
 		{#if firstError('inventoryItems')}
 			<p class="mt-4 text-sm text-red-700">{firstError('inventoryItems')}</p>
@@ -1790,23 +1928,97 @@
 	</section>
 
 	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
-		<div class="space-y-1">
-			<h2 class="text-xl font-semibold text-stone-900">Notes</h2>
-			<p class="text-sm text-stone-600">
-				Keep freeform notes for anything that does not belong in the structured combat,
-				spell, or inventory sections yet.
-			</p>
+		<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+			<div class="space-y-1">
+				<h2 class="text-xl font-semibold text-stone-900">Notes</h2>
+				<p class="text-sm text-stone-600">
+					Break loose character notes into named sections so goals, contacts, and open
+					threads stay easier to scan than one long text blob.
+				</p>
+			</div>
+			<button
+				class="rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-900 transition hover:border-stone-400"
+				type="button"
+				onclick={addNoteItem}
+			>
+				Add note section
+			</button>
 		</div>
 
-		<div class="mt-6 grid gap-4">
-			<label class="block lg:col-span-2">
-				<span class="mb-1 block text-sm font-medium text-stone-700">Notes</span>
-				<textarea
-					class="block min-h-32 w-full rounded-lg border-stone-300"
-					name="notes"
-					bind:value={formValues.notes}></textarea>
-			</label>
-		</div>
+		<input
+			type="hidden"
+			name="noteItems"
+			value={noteItemsFieldValue()}
+			bind:this={noteItemsField}
+		/>
+		<input type="hidden" name="notes" value={notesFieldValue()} bind:this={notesField} />
+
+		{#if firstError('noteItems')}
+			<p class="mt-4 text-sm text-red-700">{firstError('noteItems')}</p>
+		{/if}
+
+		{#if noteItems.length === 0}
+			<p
+				class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600"
+			>
+				No note sections yet. Add only the sections this draft really needs.
+			</p>
+		{:else}
+			<div class="mt-6 space-y-4">
+				{#each noteItems as item, index (index)}
+					<div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+						<div class="flex items-center justify-between gap-3">
+							<p class="text-sm font-semibold text-stone-900">
+								Note section {index + 1}
+							</p>
+							<button
+								class="text-sm font-medium text-rose-700 transition hover:text-rose-900"
+								type="button"
+								onclick={() => removeNoteItem(index)}
+							>
+								Remove
+							</button>
+						</div>
+
+						<div class="mt-4 grid gap-4">
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Section title</span
+								>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									data-note-title
+									type="text"
+									placeholder="Allies, Goals, Hooks..."
+									value={item.title}
+									oninput={(event) =>
+										updateNoteItem(index, {
+											title: (event.currentTarget as HTMLInputElement).value
+										})}
+								/>
+							</label>
+
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Details</span
+								>
+								<textarea
+									class="block min-h-28 w-full rounded-lg border-stone-300"
+									data-note-content
+									placeholder="Write the details for this section."
+									value={item.content}
+									oninput={(event) =>
+										updateNoteItem(index, {
+											content: (
+												event.currentTarget as HTMLTextAreaElement
+											).value
+										})}></textarea>
+							</label>
+						</div>
+					</div>
+				{/each}
+			</div>
+		{/if}
 	</section>
 
 	<div class="flex flex-wrap gap-3">

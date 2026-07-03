@@ -31,6 +31,7 @@ export const characterCreateFormFieldNames = [
 	'spellItems',
 	'featItems',
 	'inventoryItems',
+	'noteItems',
 	'attacks',
 	'spells',
 	'notes'
@@ -76,6 +77,7 @@ export function createCharacterFormValues(
 		spellItems: toStructuredItemsFormString(source.spellItems),
 		featItems: toStructuredItemsFormString(source.featItems),
 		inventoryItems: toInventoryItemsFormString(source.inventoryItems),
+		noteItems: toStructuredItemsFormString(source.noteItems),
 		attacks: toFormString(source.attacks),
 		spells: toFormString(source.spells),
 		notes: toFormString(source.notes)

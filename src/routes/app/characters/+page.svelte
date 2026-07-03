@@ -63,7 +63,7 @@
 			<h2 class="text-lg font-semibold text-stone-900">No characters yet</h2>
 			<p class="mt-3 max-w-2xl text-sm leading-6 text-stone-600">
 				Your private roster is empty. Start with one draft and the app will keep the first
-				identity, stats, combat, and notes slices together.
+				identity, stats, combat, and structured notes slices together.
 			</p>
 		</section>
 	{:else}

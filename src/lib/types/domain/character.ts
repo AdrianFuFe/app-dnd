@@ -81,6 +81,11 @@ export type CharacterFeatItem = {
 	description?: string;
 };
 
+export type CharacterNoteItem = {
+	title: string;
+	content: string;
+};
+
 export type CharacterTextSections = {
 	attacks?: string;
 	spells?: string;
@@ -95,4 +100,5 @@ export type CharacterCreateInput = CharacterIdentity &
 		spellItems: CharacterSpellItem[];
 		featItems: CharacterFeatItem[];
 		inventoryItems: CharacterInventoryItem[];
+		noteItems: CharacterNoteItem[];
 	};

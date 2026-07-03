@@ -15,6 +15,7 @@ alter table character_stats enable row level security;
 alter table character_combat_stats enable row level security;
 alter table character_text_sections enable row level security;
 alter table character_inventory_items enable row level security;
+alter table character_notes enable row level security;
 alter table character_attacks enable row level security;
 alter table character_spells enable row level security;
 
@@ -707,6 +708,78 @@ using (
 		select 1
 		from characters
 		where characters.id = character_inventory_items.character_id
+			and (
+				characters.user_id = auth.uid()
+				or public.has_global_role('admin')
+			)
+	)
+);
+
+create policy "character_notes_select_own"
+on character_notes
+for select
+to authenticated
+using (
+	exists (
+		select 1
+		from characters
+		where characters.id = character_notes.character_id
+			and (
+				characters.user_id = auth.uid()
+				or public.has_global_role('admin')
+			)
+	)
+);
+
+create policy "character_notes_insert_own"
+on character_notes
+for insert
+to authenticated
+with check (
+	exists (
+		select 1
+		from characters
+		where characters.id = character_notes.character_id
+			and characters.user_id = auth.uid()
+	)
+);
+
+create policy "character_notes_update_own"
+on character_notes
+for update
+to authenticated
+using (
+	exists (
+		select 1
+		from characters
+		where characters.id = character_notes.character_id
+			and (
+				characters.user_id = auth.uid()
+				or public.has_global_role('admin')
+			)
+	)
+)
+with check (
+	exists (
+		select 1
+		from characters
+		where characters.id = character_notes.character_id
+			and (
+				characters.user_id = auth.uid()
+				or public.has_global_role('admin')
+			)
+	)
+);
+
+create policy "character_notes_delete_own"
+on character_notes
+for delete
+to authenticated
+using (
+	exists (
+		select 1
+		from characters
+		where characters.id = character_notes.character_id
 			and (
 				characters.user_id = auth.uid()
 				or public.has_global_role('admin')

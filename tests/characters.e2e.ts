@@ -34,7 +34,13 @@ test('character create route saves a new draft and returns to the roster', async
 		],
 		spellItems: [],
 		inventoryItems: [],
-		featItems: []
+		featItems: [],
+		noteItems: [
+			{
+				title: 'Orders',
+				content: 'Keeps a marching ledger for the caravan.'
+			}
+		]
 	});
 
 	await page.getByRole('button', { name: 'Create character' }).click();
@@ -80,8 +86,7 @@ test('character edit route updates an existing draft and returns to detail', asy
 			{
 				catalogFeatName: 'Observant'
 			}
-		],
-		notes: 'Carries a lantern relic.'
+		]
 	});
 
 	await page.getByRole('button', { name: 'Save changes' }).click();
@@ -100,7 +105,8 @@ test('character edit route updates an existing draft and returns to detail', asy
 	).toBeVisible();
 	await expect(page.getByText('Detect Magic', { exact: true })).toBeVisible();
 	await expect(page.getByText('Observant', { exact: true })).toBeVisible();
-	await expect(page.getByText('Carries a lantern relic.', { exact: true })).toBeVisible();
+	await expect(page.getByText('Research', { exact: true })).toBeVisible();
+	await expect(page.getByText('Tracks ley lines.', { exact: true })).toBeVisible();
 });
 
 test('character detail route shows enriched catalog-linked attacks and inventory', async ({ page }) => {
@@ -115,6 +121,8 @@ test('character detail route shows enriched catalog-linked attacks and inventory
 	await expect(page.getByText('Spellbook', { exact: true })).toBeVisible();
 	await expect(page.getByText('Catalog item', { exact: true })).toBeVisible();
 	await expect(page.getByText('book', { exact: true })).toBeVisible();
+	await expect(page.getByText('Research', { exact: true })).toBeVisible();
+	await expect(page.getByText('Tracks ley lines.', { exact: true })).toBeVisible();
 });
 
 test('character detail route supports deleting a draft', async ({ page }) => {
@@ -198,9 +206,13 @@ async function fillCharacterForm(
 			value?: string;
 			isEquipped?: boolean;
 		}>;
-		notes: string;
+		noteItems: Array<{
+			title?: string;
+			content?: string;
+		}>;
 	}> = {}
 ) {
+	const shouldSyncNoteItems = 'noteItems' in overrides;
 	const values = {
 		name: 'Talia Stormstep',
 		species: 'Elfo',
@@ -247,7 +259,7 @@ async function fillCharacterForm(
 			}
 		],
 		featItems: [],
-		notes: 'Tracks ley lines.',
+		noteItems: [],
 		...overrides
 	};
 
@@ -277,8 +289,6 @@ async function fillCharacterForm(
 	await page.locator('input[name="initiative"]').fill(values.initiative);
 	await page.locator('input[name="speed"]').fill(values.speed);
 	await page.locator('input[name="hitDice"]').fill(values.hitDice);
-	await page.locator('textarea[name="notes"]').fill(values.notes);
-
 	const attackSection = page
 		.locator('section')
 		.filter({ has: page.getByRole('heading', { name: 'Attacks' }) });
@@ -291,6 +301,9 @@ async function fillCharacterForm(
 	const featSection = page
 		.locator('section')
 		.filter({ has: page.getByRole('heading', { name: 'Feats' }) });
+	const notesSection = page
+		.locator('section')
+		.filter({ has: page.getByRole('heading', { name: 'Notes' }) });
 
 	let currentAttackItemCount = await attackSection.getByLabel('Attack name').count();
 
@@ -454,6 +467,30 @@ async function fillCharacterForm(
 		}
 		if (item.weight !== undefined) {
 			await inventorySection.getByLabel('Weight').nth(index).fill(item.weight);
+		}
+	}
+
+	if (shouldSyncNoteItems) {
+		let currentNoteItemCount = await notesSection.getByLabel('Section title').count();
+
+		while (currentNoteItemCount > values.noteItems.length) {
+			await notesSection.getByRole('button', { name: 'Remove' }).first().click();
+			currentNoteItemCount -= 1;
+		}
+
+		while (currentNoteItemCount < values.noteItems.length) {
+			await notesSection.getByRole('button', { name: 'Add note section' }).click();
+			currentNoteItemCount += 1;
+		}
+
+		for (let index = 0; index < values.noteItems.length; index += 1) {
+			const item = values.noteItems[index];
+			if (item.title !== undefined) {
+				await notesSection.getByLabel('Section title').nth(index).fill(item.title);
+			}
+			if (item.content !== undefined) {
+				await notesSection.getByLabel('Details').nth(index).fill(item.content);
+			}
 		}
 	}
 }

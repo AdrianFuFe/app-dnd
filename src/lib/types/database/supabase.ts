@@ -147,6 +147,41 @@ export interface Database {
 					}
 				];
 			};
+			character_notes: {
+				Row: {
+					id: string;
+					character_id: string;
+					title: string;
+					content: string;
+					created_at: string;
+					updated_at: string;
+				};
+				Insert: {
+					id?: string;
+					character_id: string;
+					title: string;
+					content: string;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Update: {
+					id?: string;
+					character_id?: string;
+					title?: string;
+					content?: string;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'character_notes_character_id_fkey';
+						columns: ['character_id'];
+						isOneToOne: false;
+						referencedRelation: 'characters';
+						referencedColumns: ['id'];
+					}
+				];
+			};
 			character_attacks: {
 				Row: {
 					id: string;

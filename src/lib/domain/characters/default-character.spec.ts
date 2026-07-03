@@ -24,7 +24,8 @@ describe('createDefaultCharacterInput', () => {
 			attackItems: [],
 			spellItems: [],
 			featItems: [],
-			inventoryItems: []
+			inventoryItems: [],
+			noteItems: []
 		});
 
 		expect(characterCreateInputSchema.parse(draft)).toEqual(draft);

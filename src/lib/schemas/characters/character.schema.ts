@@ -114,6 +114,11 @@ export const characterFeatItemSchema = z.object({
 	description: optionalTextSchema
 });
 
+export const characterNoteItemSchema = z.object({
+	title: requiredTextSchema,
+	content: requiredTextSchema
+});
+
 export const characterInventoryItemsSchema = z.preprocess((value) => {
 	if (typeof value === 'string') {
 		const trimmed = value.trim();
@@ -202,6 +207,28 @@ export const characterFeatItemsSchema = z.preprocess((value) => {
 	return value;
 }, z.array(characterFeatItemSchema));
 
+export const characterNoteItemsSchema = z.preprocess((value) => {
+	if (typeof value === 'string') {
+		const trimmed = value.trim();
+
+		if (trimmed.length === 0) {
+			return [];
+		}
+
+		try {
+			return JSON.parse(trimmed);
+		} catch {
+			return value;
+		}
+	}
+
+	if (value === undefined || value === null) {
+		return [];
+	}
+
+	return value;
+}, z.array(characterNoteItemSchema));
+
 export const characterIdentitySchema = z.object({
 	name: requiredTextSchema,
 	speciesId: optionalUuidSchema,
@@ -233,7 +260,8 @@ export const characterCreateInputSchema = z
 		attackItems: characterAttackItemsSchema.default([]),
 		spellItems: characterSpellItemsSchema.default([]),
 		featItems: characterFeatItemsSchema.default([]),
-		inventoryItems: characterInventoryItemsSchema.default([])
+		inventoryItems: characterInventoryItemsSchema.default([]),
+		noteItems: characterNoteItemsSchema.default([])
 	})
 	.refine(({ currentHp, maxHp }) => currentHp <= maxHp, {
 		message: 'Current HP cannot exceed max HP.',
@@ -248,6 +276,7 @@ export type CharacterInventoryItemInput = z.infer<typeof characterInventoryItemS
 export type CharacterAttackItemInput = z.infer<typeof characterAttackItemSchema>;
 export type CharacterSpellItemInput = z.infer<typeof characterSpellItemSchema>;
 export type CharacterFeatItemInput = z.infer<typeof characterFeatItemSchema>;
+export type CharacterNoteItemInput = z.infer<typeof characterNoteItemSchema>;
 export type CharacterTextSectionsInput = z.infer<typeof characterTextSectionsSchema>;
 
 export { abilityNames };
