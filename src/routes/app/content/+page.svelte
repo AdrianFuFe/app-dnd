@@ -1,8 +1,19 @@
 <script lang="ts">
-	import type { PageData } from './$types';
+	import type { ActionData, PageData } from './$types';
 	import type { ContentMechanicSummary } from '$lib/types/content/mechanic-summary';
+	import type {
+		PrivateFeatFormFieldErrors,
+		PrivateFeatFormFieldName,
+		PrivateFeatFormValues
+	} from '$lib/schemas/content/private-feat-form.schema';
 
-	let { data }: { data: PageData } = $props();
+	let { data, form }: { data: PageData; form?: ActionData } = $props();
+	const createFeatFieldErrors = $derived(
+		(form?.createPrivateFeatFieldErrors ?? {}) as PrivateFeatFormFieldErrors
+	);
+	const createFeatValues = $derived(
+		(form?.createPrivateFeatValues ?? data.createPrivateFeatValues) as PrivateFeatFormValues
+	);
 
 	function formatCountLabel(count: number, singular: string, plural: string): string {
 		return `${count} ${count === 1 ? singular : plural}`;
@@ -82,6 +93,14 @@
 		return summary.spellcastingAbilities.length > 0
 			? summary.spellcastingAbilities.map(formatSlugLabel).join(' | ')
 			: null;
+	}
+
+	function createPrivateFeatFieldError(field: PrivateFeatFormFieldName) {
+		return createFeatFieldErrors[field]?.[0];
+	}
+
+	function createPrivateFeatValue(field: PrivateFeatFormFieldName) {
+		return createFeatValues[field];
 	}
 </script>
 
@@ -228,6 +247,150 @@
 					Skill, armor, weapon, tool, and saving throw vocabularies.
 				</p>
 			</div>
+		</div>
+	</section>
+
+	<section class="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
+		<div class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+			<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
+				Private feats
+			</p>
+			<h2 class="mt-2 text-2xl font-semibold text-stone-900">
+				Create your own feat draft
+			</h2>
+			<p class="mt-3 max-w-2xl text-sm leading-7 text-stone-600">
+				This first private content workflow is owner-scoped. New feats created here stay
+				private to your account and do not modify the shared SRD catalog.
+			</p>
+
+			{#if data.createdPrivateFeatName}
+				<p class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+					{data.createdPrivateFeatName} was created as a private feat.
+				</p>
+			{/if}
+
+			{#if form?.createPrivateFeatFormError}
+				<p class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+					{form.createPrivateFeatFormError}
+				</p>
+			{/if}
+
+			<form method="POST" class="mt-6 space-y-4">
+				<label class="block">
+					<span class="mb-1 block text-sm font-medium text-stone-700">Feat name</span>
+					<input
+						class="block w-full rounded-lg border-stone-300"
+						name="name"
+						type="text"
+						value={createPrivateFeatValue('name')}
+						placeholder="Observant Echo"
+					/>
+					{#if createPrivateFeatFieldError('name')}
+						<p class="mt-1 text-sm text-red-700">{createPrivateFeatFieldError('name')}</p>
+					{/if}
+				</label>
+
+				<label class="block">
+					<span class="mb-1 block text-sm font-medium text-stone-700">Summary</span>
+					<input
+						class="block w-full rounded-lg border-stone-300"
+						name="summary"
+						type="text"
+						value={createPrivateFeatValue('summary')}
+						placeholder="Short player-facing summary"
+					/>
+					{#if createPrivateFeatFieldError('summary')}
+						<p class="mt-1 text-sm text-red-700">{createPrivateFeatFieldError('summary')}</p>
+					{/if}
+				</label>
+
+				<label class="block">
+					<span class="mb-1 block text-sm font-medium text-stone-700">Description</span>
+					<textarea
+						class="block min-h-28 w-full rounded-lg border-stone-300"
+						name="description"
+						placeholder="Describe what this feat changes for the character."
+					>{createPrivateFeatValue('description')}</textarea>
+					{#if createPrivateFeatFieldError('description')}
+						<p class="mt-1 text-sm text-red-700">{createPrivateFeatFieldError('description')}</p>
+					{/if}
+				</label>
+
+				<label class="block">
+					<span class="mb-1 block text-sm font-medium text-stone-700">
+						Prerequisites
+					</span>
+					<textarea
+						class="block min-h-28 w-full rounded-lg border-stone-300"
+						name="prerequisitesText"
+						placeholder="One per line, for example:&#10;level:4&#10;ability:intelligence:13&#10;spellcasting"
+					>{createPrivateFeatValue('prerequisitesText')}</textarea>
+					<p class="mt-1 text-sm text-stone-500">
+						Use one prerequisite per line. Supported formats match the validated content
+						schema.
+					</p>
+					{#if createPrivateFeatFieldError('prerequisitesText')}
+						<p class="mt-1 text-sm text-red-700">
+							{createPrivateFeatFieldError('prerequisitesText')}
+						</p>
+					{/if}
+				</label>
+
+				<button
+					class="rounded-lg bg-stone-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-stone-700"
+					type="submit"
+				>
+					Create private feat
+				</button>
+			</form>
+		</div>
+
+		<div class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+			<div class="flex items-center justify-between gap-4">
+				<div>
+					<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
+						Your private feats
+					</p>
+					<h2 class="mt-2 text-2xl font-semibold text-stone-900">
+						Owner-scoped content
+					</h2>
+				</div>
+				<p class="text-sm text-stone-500">{data.privateFeats.length} total</p>
+			</div>
+
+			{#if data.privateFeats.length === 0}
+				<p class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600">
+					No private feats yet. Create one from the form to start building personal
+					content without touching the shared SRD baseline.
+				</p>
+			{:else}
+				<div class="mt-6 space-y-4">
+					{#each data.privateFeats as feat (feat.id)}
+						<article class="rounded-2xl border border-stone-200 p-4">
+							<div class="flex flex-wrap items-start justify-between gap-3">
+								<div>
+									<h3 class="text-lg font-semibold text-stone-900">{feat.name}</h3>
+									<p class="mt-1 text-sm text-stone-500">slug: {feat.slug}</p>
+								</div>
+								<span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-amber-900">
+									Private
+								</span>
+							</div>
+
+							<p class="mt-3 text-sm text-stone-600">
+								{feat.summary ?? feat.description ?? 'No summary yet.'}
+							</p>
+
+							<p class="mt-4 text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
+								Prerequisites
+							</p>
+							<p class="mt-2 text-sm text-stone-700">
+								{formatPrerequisites(feat.prerequisites)}
+							</p>
+						</article>
+					{/each}
+				</div>
+			{/if}
 		</div>
 	</section>
 

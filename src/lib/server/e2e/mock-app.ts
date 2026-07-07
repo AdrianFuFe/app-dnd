@@ -36,6 +36,18 @@ type E2ECharacterRecord = CharacterCreateInput & {
 	userId: string;
 };
 
+type E2EPrivateFeatRecord = {
+	id: string;
+	userId: string;
+	slug: string;
+	name: string;
+	prerequisites: string[];
+	summary: string | null;
+	description: string | null;
+	createdAt: string;
+	updatedAt: string;
+};
+
 type ContentFile<T> = {
 	items: T[];
 };
@@ -328,7 +340,9 @@ const initialCharacters: E2ECharacterRecord[] = [
 
 const state = {
 	characters: [] as E2ECharacterRecord[],
+	privateFeats: [] as E2EPrivateFeatRecord[],
 	nextCharacterSequence: 2,
+	nextPrivateFeatSequence: 1,
 	nextUpdatedMinute: 0
 };
 
@@ -395,7 +409,9 @@ export function getE2EMockSession(): Session {
 
 export function resetE2EMockState() {
 	state.characters = initialCharacters.map((character) => ({ ...character }));
+	state.privateFeats = [];
 	state.nextCharacterSequence = 2;
+	state.nextPrivateFeatSequence = 1;
 	state.nextUpdatedMinute = 0;
 }
 
@@ -573,6 +589,50 @@ export function deleteE2ECharacterForUser(userId: string, characterId: string) {
 		id: deletedCharacter.id,
 		name: deletedCharacter.name
 	};
+}
+
+export function listE2EPrivateFeatsForUser(userId: string) {
+	return state.privateFeats
+		.filter((feat) => feat.userId === userId)
+		.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+		.map((feat) => ({ ...feat }));
+}
+
+export function createE2EPrivateFeatForUser(
+	userId: string,
+	input: {
+		slug: string;
+		name: string;
+		prerequisites: string[];
+		summary?: string;
+		description?: string;
+	}
+) {
+	const duplicate = state.privateFeats.find(
+		(feat) => feat.userId === userId && feat.slug === input.slug
+	);
+
+	if (duplicate) {
+		throw new Error('You already have a private feat with that slug. Try a different name.');
+	}
+
+	const timestamp = nextUpdatedAt();
+	const feat: E2EPrivateFeatRecord = {
+		id: `private-feat-e2e-${state.nextPrivateFeatSequence}`,
+		userId,
+		slug: input.slug,
+		name: input.name,
+		prerequisites: [...input.prerequisites],
+		summary: input.summary ?? null,
+		description: input.description ?? null,
+		createdAt: timestamp,
+		updatedAt: timestamp
+	};
+
+	state.nextPrivateFeatSequence += 1;
+	state.privateFeats.unshift(feat);
+
+	return { ...feat };
 }
 
 function nextUpdatedAt(): string {

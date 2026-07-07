@@ -214,8 +214,9 @@ export const characterNoteItemsSchema = z.preprocess((value) => {
 				return true;
 			}
 
-			const title = typeof item.title === 'string' ? item.title.trim() : '';
-			const content = typeof item.content === 'string' ? item.content.trim() : '';
+			const noteItem = item as { title?: unknown; content?: unknown };
+			const title = typeof noteItem.title === 'string' ? noteItem.title.trim() : '';
+			const content = typeof noteItem.content === 'string' ? noteItem.content.trim() : '';
 
 			return title.length > 0 || content.length > 0;
 		});

@@ -796,14 +796,16 @@ async function listFeatCatalogEntries(
 ): Promise<FeatCatalogEntry[]> {
 	const { data, error } = await supabase
 		.from('feats')
-		.select('id, slug, name, prerequisites, summary, description')
+		.select('id, slug, name, visibility, prerequisites, summary, description')
 		.order('name', { ascending: true });
 
 	if (error) {
 		throw new Error('Failed to load feat catalog entries.');
 	}
 
-	return data.map(mapFeatCatalogEntry);
+	return data
+		.filter((feat) => feat.visibility !== 'private' && feat.visibility !== 'campaign')
+		.map(mapFeatCatalogEntry);
 }
 
 async function loadSelectedFeatCatalogEntries(
@@ -812,14 +814,16 @@ async function loadSelectedFeatCatalogEntries(
 ): Promise<FeatCatalogEntry[]> {
 	const { data, error } = await supabase
 		.from('feats')
-		.select('id, slug, name, prerequisites, summary, description')
+		.select('id, slug, name, visibility, prerequisites, summary, description')
 		.in('id', featIds);
 
 	if (error) {
 		throw new Error('Failed to load selected feat catalog entries.');
 	}
 
-	return data.map(mapFeatCatalogEntry);
+	return data
+		.filter((feat) => feat.visibility !== 'private' && feat.visibility !== 'campaign')
+		.map(mapFeatCatalogEntry);
 }
 
 async function listEquipmentCatalogEntries(
