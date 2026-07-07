@@ -40,6 +40,30 @@
 
 ## Iteration 6
 
+- stabilize the completed character create/edit workflow with green E2E coverage
+- keep session planning documents aligned with the current implementation
+- treat broken workflow tests as the first priority before adding wider product scope
+
+## Iteration 7
+
+- create the first user-facing private/manual content CRUD workflow
+- start with one bounded content family such as spells or feats
+- preserve clear boundaries between SRD/system content and user-private content
+
+## Iteration 8
+
+- support copying SRD entries into private editable content
+- track source metadata for derived private entries
+- keep original SRD entries read-only in normal user flows
+
+## Iteration 9
+
+- expose role-aware content behavior for `user`, `content_editor`, and `admin`
+- keep role assignment in explicit operator tooling unless a hardened admin console is deliberately added
+- add focused tests for permission-sensitive content operations
+
+## Future Iterations
+
 - advanced permissions and sharing
 - campaign-aware visibility
 - future campaign and companion features

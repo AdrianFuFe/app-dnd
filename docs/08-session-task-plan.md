@@ -39,7 +39,12 @@ In that case, it should still name the next recommended block.
 
 ## Current Status
 
-- completed foundations already reflected in the repo:
+- verified on 2026-07-07:
+    - `pnpm check` passes
+    - `pnpm test:unit run` passes with 164 tests
+    - `pnpm validate:content` passes with 14 JSON files validated and 0 issues
+    - `pnpm test:e2e` currently fails in the character create/edit submit flow because structured note rows can be submitted empty
+- completed foundations reflected in the repo:
     - `S1 - Auth Guard For /app`
     - `S2 - Logout Flow`
     - `S3 - Profile Sync`
@@ -52,22 +57,25 @@ In that case, it should still name the next recommended block.
     - `S11 - Character Create/Edit E2E`
     - `S12 - Role Enforcement Foundations`
     - `S13 - Admin And Test User Workflow`
+    - `S14 - Expanded Character Catalog Wiring`
+    - `S15 - Expanded Spell And Ability Catalogs`
+    - `S16 - Structured Character Sections`
 - effectively completed beyond the original status notes:
     - expanded catalog wiring now also covers `backgrounds`, `subspecies`, and `subclasses`
     - equipment catalog wiring now also covers character `attacks` and `inventory`, including linked `equipmentId` persistence, server-side normalization, enriched detail rendering, and targeted E2E coverage for the catalog selectors
-    - `inventory` already has a structured workflow with child-table persistence
+    - `inventory`, `attacks`, `spells`, `feats`, and `notes` have structured character workflows
     - admin/test-user operator tooling is implemented through `scripts/create-test-user.ts`, `scripts/manage-user-role.ts`, and `docs/11-admin-and-test-user-workflow.md`
 - implemented but still intentionally shallow:
     - real character CRUD exists
-    - spell workflows are still free-text
-    - permissions exist mainly as schema and RLS foundation, not as a full admin feature set
+    - the shared catalog is browseable and importable, but private/homebrew content has no user-facing CRUD yet
+    - permissions exist as schema, RLS, server helpers, and operator scripts, not as a full admin/editor product surface
 - current project point:
-  - the MVP app shell and first character workflow are working
-  - structured character sections now cover `inventory`, `attacks`, `spells`, and `feats`
-  - the repo is ahead of this plan document in character-flow work, and environment separation is now documented
+  - the MVP app shell and first character workflow are implemented but need E2E stabilization before new product breadth
+  - structured character sections cover the highest-value MVP slices
+  - environment separation is documented
   - runtime integration behavior is now documented in `README.md` and `docs/10-runtime-integration-check.md`, with request-time status checks in `src/lib/server/runtime/integration.ts`
 - next recommended block:
-  - `S15 - Expanded Spell And Ability Catalogs`, using the now-closed equipment character wiring as the stopping point before returning to content-import breadth and quality
+  - `S17 - Character Flow Stabilization`, because the current E2E failure is the first thing that can erode confidence in the already-built MVP flow
 
 ## Session Blocks
 
@@ -371,11 +379,131 @@ In that case, it should still name the next recommended block.
 - current repo note:
   - `inventory`, `attacks`, `spells`, and `feats` now have structured workflows in the current codebase
 
+### S17 - Character Flow Stabilization
+
+- objective: restore confidence in the completed character workflow before adding new product scope
+- read context:
+    - `docs/context/10_PRODUCT_SCOPE.md`
+    - `docs/context/20_ARCHITECTURE_AND_STACK.md`
+    - `docs/context/50_WORKFLOW_RULES.md`
+- likely files:
+    - `src/lib/components/forms/character-create-form.svelte`
+    - `src/lib/schemas/characters/character.schema.ts`
+    - `src/lib/domain/characters/character-form.ts`
+    - `tests/characters.e2e.ts`
+    - character create/edit route actions if server normalization needs adjustment
+- minimum validation:
+    - `pnpm check`
+    - `pnpm test:unit run`
+    - `pnpm test:e2e`
+- closure criterion:
+    - character create and edit E2E tests pass again
+    - structured note rows do not submit empty placeholder data
+    - no regression is introduced in attacks, spells, feats, inventory, or delete flows
+- current repo note:
+    - on 2026-07-07, `pnpm test:e2e` failed in create/edit with `Please correct the highlighted character fields.`
+    - the visible validation issue was `Too small: expected string to have >=1 characters` in the structured notes section
+
+### S18 - Session Plan And Roadmap Realignment
+
+- objective: keep the project planning docs aligned with the codebase after S17 is green
+- read context:
+    - `docs/08-session-task-plan.md`
+    - `docs/05-roadmap.md`
+    - `docs/context/00_INDEX.md`
+    - `docs/context/10_PRODUCT_SCOPE.md`
+    - `docs/context/30_CONTENT_AND_PERMISSIONS.md`
+- likely files:
+    - `docs/08-session-task-plan.md`
+    - `docs/05-roadmap.md`
+    - any context slice whose summary is materially stale
+- minimum validation:
+    - docs review
+    - `pnpm check` only if code-adjacent references are changed
+- closure criterion:
+    - completed session blocks match the repository state
+    - the next recommended block is unambiguous
+    - stale implementation-order notes are removed or replaced
+
+### S19 - Private Content CRUD Foundation
+
+- objective: create the first user-facing workflow for private/manual content
+- read context:
+    - `docs/context/10_PRODUCT_SCOPE.md`
+    - `docs/context/30_CONTENT_AND_PERMISSIONS.md`
+    - `docs/context/40_AUTH_AND_DATA.md`
+    - `docs/context/50_WORKFLOW_RULES.md`
+- likely files:
+    - `src/routes/app/content/...`
+    - `src/lib/server/repositories/...`
+    - `src/lib/schemas/content/...`
+    - `src/lib/server/permissions/authorization.ts`
+    - relevant tests near the new repository or route code
+- minimum validation:
+    - `pnpm check`
+    - targeted unit tests
+    - targeted E2E only if a full browser workflow is added
+- closure criterion:
+    - authenticated users can list and create one private content family, preferably `spells` or `feats`
+    - created entries are owner-scoped and do not weaken SRD/system content boundaries
+    - the UI clearly distinguishes shared SRD entries from user-private entries
+- current repo note:
+    - schemas, SQL, RLS, templates, and catalog browsing exist
+    - user-facing private/homebrew content creation does not exist yet
+
+### S20 - SRD To Private Derivation
+
+- objective: let users start from a trusted SRD entry and save an editable private copy
+- read context:
+    - `docs/context/30_CONTENT_AND_PERMISSIONS.md`
+    - `docs/context/40_AUTH_AND_DATA.md`
+    - `docs/context/50_WORKFLOW_RULES.md`
+    - `docs/rules/05_GUIA_CARGA_CONTENIDO_DESDE_ARCHIVOS.md`
+    - `docs/rules/06_MODELO_DATOS_CONTENIDO_Y_PERMISOS.md`
+- likely files:
+    - content route files created in S19
+    - content repositories and schemas
+    - permission helpers if derivation needs a named capability
+- minimum validation:
+    - `pnpm check`
+    - targeted unit tests for derivation and ownership rules
+    - targeted E2E if the copy flow is implemented in the browser
+- closure criterion:
+    - a shared SRD entry can be copied into private user-owned content
+    - the derived entry keeps enough source metadata to explain where it came from
+    - the original SRD entry remains read-only in normal user flows
+
+### S21 - Role-Aware Content Operations
+
+- objective: turn the existing role foundation into visible editor/admin behavior without exposing unsafe role management
+- read context:
+    - `docs/context/30_CONTENT_AND_PERMISSIONS.md`
+    - `docs/context/40_AUTH_AND_DATA.md`
+    - `docs/context/50_WORKFLOW_RULES.md`
+    - `docs/11-admin-and-test-user-workflow.md`
+- likely files:
+    - `src/routes/app/content/...`
+    - `src/lib/server/permissions/authorization.ts`
+    - content repositories
+    - tests for user, content_editor, and admin behavior
+- minimum validation:
+    - `pnpm check`
+    - targeted permission tests
+    - targeted E2E if role-visible UI branches are added
+- closure criterion:
+    - normal users remain limited to their own private content
+    - `content_editor` behavior is explicitly enforced for shared editable content
+    - `admin` behavior is explicitly enforced for privileged operations
+    - role assignment remains outside normal runtime UI unless a later block deliberately creates a hardened admin console
+
 ## Notes
 
 - this plan is intentionally session-oriented, not milestone-oriented
 - each block should fit comfortably in one focused chat
 - if a block grows during implementation, split it rather than stretching the session
 - recommended implementation order from the current project state:
-    - `S12 - Role Enforcement Foundations`
-    - `S13 - Admin And Test User Workflow`
+    - `S17 - Character Flow Stabilization`
+    - `S18 - Session Plan And Roadmap Realignment`
+    - `S19 - Private Content CRUD Foundation`
+    - `S20 - SRD To Private Derivation`
+    - `S21 - Role-Aware Content Operations`
