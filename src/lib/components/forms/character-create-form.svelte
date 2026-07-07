@@ -662,20 +662,17 @@
 	}
 
 	function noteItemsFieldValue(): string {
-		return JSON.stringify(
-			noteItems.map((item) => ({
-				title: item.title,
-				content: item.content
-			}))
-		);
+		return JSON.stringify(serializeNoteItems(noteItems));
 	}
 
 	function notesFieldValue(): string {
-		if (noteItems.length === 0) {
+		const sanitizedNoteItems = sanitizeNoteItems(noteItems);
+
+		if (sanitizedNoteItems.length === 0) {
 			return formValues.notes;
 		}
 
-		return noteItems.map((item) => `${item.title}\n${item.content}`).join('\n\n');
+		return sanitizedNoteItems.map((item) => `${item.title}\n${item.content}`).join('\n\n');
 	}
 
 	function parseAttackItems(value: string, fallbackText: string): AttackFormItem[] {
@@ -781,6 +778,17 @@
 		];
 	}
 
+	function sanitizeNoteItems(items: NoteFormItem[]): NoteFormItem[] {
+		return items.filter((item) => item.title.trim().length > 0 || item.content.trim().length > 0);
+	}
+
+	function serializeNoteItems(items: NoteFormItem[]) {
+		return sanitizeNoteItems(items).map((item) => ({
+			title: item.title,
+			content: item.content
+		}));
+	}
+
 	function parseSpellItems(value: string, fallbackText: string): SpellFormItem[] {
 		if (value.trim()) {
 			try {
@@ -865,17 +873,7 @@
 			inventoryItemsField.value = inventoryItemsFieldValue();
 		}
 
-		const form = event.currentTarget instanceof HTMLFormElement ? event.currentTarget : null;
-		const noteRows = form
-			? Array.from(
-					form.querySelectorAll<HTMLElement>('[data-note-row]')
-				).map((row) => ({
-					title:
-						row.querySelector<HTMLInputElement>('[data-note-title]')?.value ?? '',
-					content:
-						row.querySelector<HTMLTextAreaElement>('[data-note-content]')?.value ?? ''
-				}))
-			: noteItems;
+		const noteRows = serializeNoteItems(noteItems);
 
 		if (noteItemsField) {
 			noteItemsField.value = JSON.stringify(noteRows);

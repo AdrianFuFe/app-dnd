@@ -208,6 +208,18 @@ export const characterFeatItemsSchema = z.preprocess((value) => {
 }, z.array(characterFeatItemSchema));
 
 export const characterNoteItemsSchema = z.preprocess((value) => {
+	const filterBlankNoteRows = (items: unknown[]) =>
+		items.filter((item) => {
+			if (typeof item !== 'object' || item === null) {
+				return true;
+			}
+
+			const title = typeof item.title === 'string' ? item.title.trim() : '';
+			const content = typeof item.content === 'string' ? item.content.trim() : '';
+
+			return title.length > 0 || content.length > 0;
+		});
+
 	if (typeof value === 'string') {
 		const trimmed = value.trim();
 
@@ -216,7 +228,8 @@ export const characterNoteItemsSchema = z.preprocess((value) => {
 		}
 
 		try {
-			return JSON.parse(trimmed);
+			const parsed = JSON.parse(trimmed);
+			return Array.isArray(parsed) ? filterBlankNoteRows(parsed) : parsed;
 		} catch {
 			return value;
 		}
@@ -224,6 +237,10 @@ export const characterNoteItemsSchema = z.preprocess((value) => {
 
 	if (value === undefined || value === null) {
 		return [];
+	}
+
+	if (Array.isArray(value)) {
+		return filterBlankNoteRows(value);
 	}
 
 	return value;

@@ -143,6 +143,42 @@ describe('characterCreateInputSchema', () => {
 		expect(result.attacks).toBeUndefined();
 	});
 
+	it('ignores fully blank structured note placeholder rows', () => {
+		const result = characterCreateInputSchema.parse({
+			name: 'Bran',
+			level: 1,
+			strength: 10,
+			dexterity: 10,
+			constitution: 10,
+			intelligence: 10,
+			wisdom: 10,
+			charisma: 10,
+			maxHp: 1,
+			currentHp: 1,
+			temporaryHp: 0,
+			armorClass: 10,
+			initiative: 0,
+			speed: 30,
+			noteItems: JSON.stringify([
+				{
+					title: '',
+					content: ''
+				},
+				{
+					title: 'Goals',
+					content: 'Find the missing scout.'
+				}
+			])
+		});
+
+		expect(result.noteItems).toEqual([
+			{
+				title: 'Goals',
+				content: 'Find the missing scout.'
+			}
+		]);
+	});
+
 	it('rejects levels outside the 1 to 20 range', () => {
 		const result = characterCreateInputSchema.safeParse({
 			name: 'Invalid Hero',
