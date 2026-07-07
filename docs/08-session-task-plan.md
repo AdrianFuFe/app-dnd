@@ -41,9 +41,9 @@ In that case, it should still name the next recommended block.
 
 - verified on 2026-07-07:
     - `pnpm check` passes
-    - `pnpm test:unit run` passes with 164 tests
+    - `pnpm test:unit run` passes with 165 tests
     - `pnpm validate:content` passes with 14 JSON files validated and 0 issues
-    - `pnpm test:e2e` currently fails in the character create/edit submit flow because structured note rows can be submitted empty
+    - `pnpm test:e2e -- tests/characters.e2e.ts` passes with 4 tests
 - completed foundations reflected in the repo:
     - `S1 - Auth Guard For /app`
     - `S2 - Logout Flow`
@@ -60,22 +60,25 @@ In that case, it should still name the next recommended block.
     - `S14 - Expanded Character Catalog Wiring`
     - `S15 - Expanded Spell And Ability Catalogs`
     - `S16 - Structured Character Sections`
+    - `S17 - Character Flow Stabilization`
 - effectively completed beyond the original status notes:
     - expanded catalog wiring now also covers `backgrounds`, `subspecies`, and `subclasses`
     - equipment catalog wiring now also covers character `attacks` and `inventory`, including linked `equipmentId` persistence, server-side normalization, enriched detail rendering, and targeted E2E coverage for the catalog selectors
     - `inventory`, `attacks`, `spells`, `feats`, and `notes` have structured character workflows
     - admin/test-user operator tooling is implemented through `scripts/create-test-user.ts`, `scripts/manage-user-role.ts`, and `docs/11-admin-and-test-user-workflow.md`
+    - structured note placeholder rows are filtered during submit normalization and schema parsing, restoring green character create/edit E2E confidence
 - implemented but still intentionally shallow:
     - real character CRUD exists
     - the shared catalog is browseable and importable, but private/homebrew content has no user-facing CRUD yet
     - permissions exist as schema, RLS, server helpers, and operator scripts, not as a full admin/editor product surface
 - current project point:
-  - the MVP app shell and first character workflow are implemented but need E2E stabilization before new product breadth
+  - the MVP app shell and first character workflow are implemented and E2E-stable
   - structured character sections cover the highest-value MVP slices
   - environment separation is documented
   - runtime integration behavior is now documented in `README.md` and `docs/10-runtime-integration-check.md`, with request-time status checks in `src/lib/server/runtime/integration.ts`
+  - the highest-value missing product slice is now the first user-facing private content CRUD workflow
 - next recommended block:
-  - `S17 - Character Flow Stabilization`, because the current E2E failure is the first thing that can erode confidence in the already-built MVP flow
+  - `S19 - Private Content CRUD Foundation`, because the core character workflow is stable again and the largest remaining MVP gap is user-owned content creation
 
 ## Session Blocks
 
@@ -401,8 +404,8 @@ In that case, it should still name the next recommended block.
     - structured note rows do not submit empty placeholder data
     - no regression is introduced in attacks, spells, feats, inventory, or delete flows
 - current repo note:
-    - on 2026-07-07, `pnpm test:e2e` failed in create/edit with `Please correct the highlighted character fields.`
-    - the visible validation issue was `Too small: expected string to have >=1 characters` in the structured notes section
+    - completed on 2026-07-07
+    - `pnpm test:e2e -- tests/characters.e2e.ts` now passes after filtering fully blank structured note rows in form submit normalization and schema parsing
 
 ### S18 - Session Plan And Roadmap Realignment
 
@@ -502,7 +505,6 @@ In that case, it should still name the next recommended block.
 - each block should fit comfortably in one focused chat
 - if a block grows during implementation, split it rather than stretching the session
 - recommended implementation order from the current project state:
-    - `S17 - Character Flow Stabilization`
     - `S18 - Session Plan And Roadmap Realignment`
     - `S19 - Private Content CRUD Foundation`
     - `S20 - SRD To Private Derivation`

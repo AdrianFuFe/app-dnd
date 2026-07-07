@@ -44,6 +44,12 @@
 - keep session planning documents aligned with the current implementation
 - treat broken workflow tests as the first priority before adding wider product scope
 
+Status on 2026-07-07:
+
+- character create/edit/delete E2E flows are green again
+- structured note placeholder rows no longer block submit
+- the next development focus moves back to product breadth instead of workflow repair
+
 ## Iteration 7
 
 - create the first user-facing private/manual content CRUD workflow

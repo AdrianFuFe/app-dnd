@@ -13,8 +13,8 @@
 - stable auth and session flow
 - ownership-safe data model
 - structured catalog content
-- private user content
-- gradual character creation/editing flows
+- E2E-stable character creation and editing flows
+- first user-facing private user content workflow
 
 ## Deferred Scope
 

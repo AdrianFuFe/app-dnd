@@ -25,7 +25,10 @@ SRD content is structured reusable catalog data and should remain distinct from 
 - subclasses
 - backgrounds
 - spells
+- feats
+- equipment
 - character ownership
+- private user-authored content is still the next missing user-facing workflow
 
 ## Import Rule
 
