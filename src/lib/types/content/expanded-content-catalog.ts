@@ -30,6 +30,8 @@ export type FeatCatalogEntry = {
 	prerequisites: string[];
 	summary: string | null;
 	description: string | null;
+	visibility?: 'shared' | 'public';
+	isSystemContent?: boolean;
 };
 
 export type EquipmentCatalogEntry = {

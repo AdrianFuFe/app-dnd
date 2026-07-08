@@ -12,12 +12,21 @@ const { listCharacterCreationCatalog, listExpandedContentCatalog } = vi.hoisted(
 	listExpandedContentCatalog: vi.fn()
 }));
 
-const { createPrivateFeat, createSharedFeat, derivePrivateFeatFromSharedCatalog, listPrivateFeatsForUser } =
+const {
+	createPrivateFeat,
+	createSharedFeat,
+	derivePrivateFeatFromSharedCatalog,
+	listManagedSharedFeats,
+	listPrivateFeatsForUser,
+	updateManagedSharedFeat
+} =
 	vi.hoisted(() => ({
 	createPrivateFeat: vi.fn(),
 	createSharedFeat: vi.fn(),
 	derivePrivateFeatFromSharedCatalog: vi.fn(),
-	listPrivateFeatsForUser: vi.fn()
+	listManagedSharedFeats: vi.fn(),
+	listPrivateFeatsForUser: vi.fn(),
+	updateManagedSharedFeat: vi.fn()
 	}));
 
 const { getAuthorizationContext, requirePermissionScopeAccess } = vi.hoisted(() => ({
@@ -34,7 +43,9 @@ vi.mock('$lib/server/repositories/private-feats', () => ({
 	createPrivateFeat,
 	createSharedFeat,
 	derivePrivateFeatFromSharedCatalog,
-	listPrivateFeatsForUser
+	listManagedSharedFeats,
+	listPrivateFeatsForUser,
+	updateManagedSharedFeat
 }));
 
 vi.mock('$lib/server/permissions/authorization', () => ({
@@ -75,6 +86,7 @@ describe('/app/content load', () => {
 			}
 		});
 		listPrivateFeatsForUser.mockReset().mockResolvedValue([]);
+		listManagedSharedFeats.mockReset().mockResolvedValue([]);
 	});
 
 	it('returns empty catalog slices when Supabase is unavailable', async () => {
@@ -90,7 +102,15 @@ describe('/app/content load', () => {
 			derivedPrivateFeatName: null,
 			publishedSharedFeatName: null,
 			publishedSystemFeatName: null,
+			updatedSharedFeatName: null,
 			createPrivateFeatValues: {
+				name: '',
+				summary: '',
+				description: '',
+				prerequisitesText: ''
+			},
+			editSharedFeatId: null,
+			editSharedFeatValues: {
 				name: '',
 				summary: '',
 				description: '',
@@ -98,7 +118,9 @@ describe('/app/content load', () => {
 			},
 			roleOperations: {
 				canPublishSharedFeats: false,
-				canPublishSystemFeats: false
+				canPublishSystemFeats: false,
+				canMaintainSharedFeats: false,
+				canMaintainSystemFeats: false
 			},
 			characterCatalog: {
 				speciesOptions: [],
@@ -107,6 +129,7 @@ describe('/app/content load', () => {
 				subclassOptions: [],
 				backgroundOptions: []
 			},
+			manageableSharedFeats: [],
 			privateFeats: [],
 			sharedCatalog: {
 				species: [],
@@ -280,10 +303,27 @@ describe('/app/content load', () => {
 				updatedAt: '2026-07-07T20:00:00.000Z'
 			}
 		];
+		const manageableSharedFeats = [
+			{
+				id: 'shared-feat-1',
+				ownerUserId: 'user-1',
+				sourceCode: 'homebrew',
+				slug: 'battle-lore',
+				name: 'Battle Lore',
+				prerequisites: ['level:4'],
+				summary: 'Shared training doctrine.',
+				description: null,
+				visibility: 'shared' as const,
+				isSystemContent: false,
+				createdAt: '2026-07-08T09:15:00.000Z',
+				updatedAt: '2026-07-08T09:15:00.000Z'
+			}
+		];
 
 		listCharacterCreationCatalog.mockResolvedValueOnce(characterCatalog);
 		listExpandedContentCatalog.mockResolvedValueOnce(sharedCatalog);
 		listPrivateFeatsForUser.mockResolvedValueOnce(privateFeats);
+		listManagedSharedFeats.mockResolvedValueOnce(manageableSharedFeats);
 
 		await expect(
 			load({
@@ -299,7 +339,7 @@ describe('/app/content load', () => {
 					}
 				}),
 				url: new URL(
-					'http://localhost/app/content?createdPrivateFeat=Observant%20Echo&derivedPrivateFeat=Alert&publishedSharedFeat=Battle%20Lore'
+					'http://localhost/app/content?createdPrivateFeat=Observant%20Echo&derivedPrivateFeat=Alert&publishedSharedFeat=Battle%20Lore&editSharedFeat=shared-feat-1&updatedSharedFeat=Battle%20Lore'
 				)
 			} as never)
 		).resolves.toEqual({
@@ -307,17 +347,28 @@ describe('/app/content load', () => {
 			derivedPrivateFeatName: 'Alert',
 			publishedSharedFeatName: 'Battle Lore',
 			publishedSystemFeatName: null,
+			updatedSharedFeatName: 'Battle Lore',
 			createPrivateFeatValues: {
 				name: '',
 				summary: '',
 				description: '',
 				prerequisitesText: ''
 			},
+			editSharedFeatId: 'shared-feat-1',
+			editSharedFeatValues: {
+				name: 'Battle Lore',
+				summary: 'Shared training doctrine.',
+				description: '',
+				prerequisitesText: 'level:4'
+			},
 			roleOperations: {
 				canPublishSharedFeats: true,
-				canPublishSystemFeats: false
+				canPublishSystemFeats: false,
+				canMaintainSharedFeats: true,
+				canMaintainSystemFeats: false
 			},
 			characterCatalog,
+			manageableSharedFeats,
 			privateFeats,
 			sharedCatalog
 		});
@@ -328,6 +379,7 @@ describe('/app/content load', () => {
 		expect(listExpandedContentCatalog).toHaveBeenCalledWith(supabase);
 		expect(listPrivateFeatsForUser).toHaveBeenCalledOnce();
 		expect(listPrivateFeatsForUser).toHaveBeenCalledWith(supabase, session.user.id);
+		expect(listManagedSharedFeats).toHaveBeenCalledOnce();
 	});
 });
 
@@ -336,6 +388,8 @@ describe('/app/content actions', () => {
 		createPrivateFeat.mockReset();
 		createSharedFeat.mockReset();
 		derivePrivateFeatFromSharedCatalog.mockReset();
+		listManagedSharedFeats.mockReset();
+		updateManagedSharedFeat.mockReset();
 		getAuthorizationContext.mockReset().mockResolvedValue({
 			userId: 'user-1',
 			globalRole: 'user',
@@ -675,5 +729,161 @@ describe('/app/content actions', () => {
 		});
 
 		expect(createSharedFeat).not.toHaveBeenCalled();
+	});
+
+	it('updates a managed shared feat for content editors', async () => {
+		getAuthorizationContext.mockResolvedValueOnce({
+			userId: 'user-1',
+			globalRole: 'content_editor',
+			capabilities: [
+				'read_shared_catalog',
+				'manage_own_characters',
+				'manage_private_content',
+				'edit_shared_content'
+			]
+		});
+		updateManagedSharedFeat.mockResolvedValueOnce({
+			id: 'shared-feat-1',
+			ownerUserId: 'user-1',
+			sourceCode: 'homebrew',
+			slug: 'battle-lore-revised',
+			name: 'Battle Lore Revised',
+			prerequisites: ['level:8'],
+			summary: 'Revised training doctrine.',
+			description: null,
+			visibility: 'shared',
+			isSystemContent: false,
+			createdAt: '2026-07-08T09:15:00.000Z',
+			updatedAt: '2026-07-08T09:45:00.000Z'
+		});
+
+		await expect(
+			actions.updateSharedFeat?.({
+				locals: {
+					session: {
+						user: {
+							id: 'user-1'
+						}
+					},
+					supabase: {}
+				},
+				request: new Request('http://localhost/app/content?/updateSharedFeat', {
+					method: 'POST',
+					body: new URLSearchParams({
+						featId: 'shared-feat-1',
+						name: 'Battle Lore Revised',
+						summary: 'Revised training doctrine.',
+						description: '',
+						prerequisitesText: 'level:8'
+					})
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 303,
+			location:
+				'/app/content?editSharedFeat=shared-feat-1&updatedSharedFeat=Battle%20Lore%20Revised'
+		});
+
+		expect(requirePermissionScopeAccess).toHaveBeenCalledWith(
+			expect.objectContaining({ globalRole: 'content_editor' }),
+			'shared_content'
+		);
+		expect(updateManagedSharedFeat).toHaveBeenCalledWith(
+			{},
+			expect.objectContaining({ globalRole: 'content_editor', userId: 'user-1' }),
+			{
+				featId: 'shared-feat-1',
+				slug: 'battle-lore-revised',
+				name: 'Battle Lore Revised',
+				summary: 'Revised training doctrine.',
+				description: undefined,
+				prerequisites: ['level:8']
+			}
+		);
+	});
+
+	it('returns edit-form validation errors for invalid shared feat updates', async () => {
+		getAuthorizationContext.mockResolvedValueOnce({
+			userId: 'user-1',
+			globalRole: 'content_editor',
+			capabilities: [
+				'read_shared_catalog',
+				'manage_own_characters',
+				'manage_private_content',
+				'edit_shared_content'
+			]
+		});
+
+		const response = await actions.updateSharedFeat?.({
+			locals: {
+				session: {
+					user: {
+						id: 'user-1'
+					}
+				},
+				supabase: {}
+			},
+			request: new Request('http://localhost/app/content?/updateSharedFeat', {
+				method: 'POST',
+				body: new URLSearchParams({
+					featId: 'shared-feat-1',
+					name: 'Battle Lore',
+					summary: '',
+					description: '',
+					prerequisitesText: 'medium-armor proficiency'
+				})
+			})
+		} as never);
+
+		expect(response?.status).toBe(400);
+		expect(response?.data.editSharedFeatId).toBe('shared-feat-1');
+		expect(response?.data.editSharedFeatFormError).toBe(
+			'Please correct the highlighted private feat fields.'
+		);
+		expect(response?.data.editSharedFeatFieldErrors.prerequisitesText?.[0]).toContain(
+			'Use prerequisite format'
+		);
+		expect(updateManagedSharedFeat).not.toHaveBeenCalled();
+	});
+
+	it('blocks content editors from admin-only managed feat updates', async () => {
+		getAuthorizationContext.mockResolvedValueOnce({
+			userId: 'user-1',
+			globalRole: 'content_editor',
+			capabilities: [
+				'read_shared_catalog',
+				'manage_own_characters',
+				'manage_private_content',
+				'edit_shared_content'
+			]
+		});
+		updateManagedSharedFeat.mockRejectedValueOnce(
+			Object.assign(new Error('forbidden'), { status: 403 })
+		);
+
+		await expect(
+			actions.updateSharedFeat?.({
+				locals: {
+					session: {
+						user: {
+							id: 'user-1'
+						}
+					},
+					supabase: {}
+				},
+				request: new Request('http://localhost/app/content?/updateSharedFeat', {
+					method: 'POST',
+					body: new URLSearchParams({
+						featId: 'shared-feat-1',
+						name: 'Warden Sigil',
+						summary: 'System-governed feat.',
+						description: '',
+						prerequisitesText: ''
+					})
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 403
+		});
 	});
 });

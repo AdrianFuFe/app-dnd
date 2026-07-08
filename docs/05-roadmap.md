@@ -82,6 +82,20 @@ Status on 2026-07-08:
 - keep normal users read-only for shared and system-owned content
 - add focused tests for shared-content update behavior and visibility rules
 
+Status on 2026-07-08:
+
+- editor/admin users can now review shared homebrew feats they are allowed to maintain
+- `content_editor` users can update their own shared homebrew feats
+- `admin` users can update both shared and system-owned homebrew feats
+- shared-content maintenance is still feat-only and does not yet include delete/archive controls
+
+## Iteration 11
+
+- add explicit lifecycle controls for maintained shared feats
+- let trusted roles retire or delete shared homebrew entries through guarded app-side authorization
+- keep system-owned lifecycle operations admin-only
+- preserve normal-user read-only behavior for shared and system-owned content
+
 ## Future Iterations
 
 - advanced permissions and sharing

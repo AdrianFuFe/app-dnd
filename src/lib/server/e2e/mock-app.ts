@@ -532,7 +532,10 @@ export function getE2ESpellCatalogEntry(spellId: string): SpellCatalogEntry | un
 }
 
 export function getE2EFeatCatalogEntry(featId: string): FeatCatalogEntry | undefined {
-	return e2eExpandedContentCatalog.feats.find((entry) => entry.id === featId);
+	return (
+		state.sharedFeats.find((entry) => entry.id === featId) ??
+		e2eExpandedContentCatalog.feats.find((entry) => entry.id === featId)
+	);
 }
 
 export function getE2EEquipmentCatalogEntry(
@@ -707,6 +710,56 @@ export function createE2ESharedFeatForUser(
 
 	state.nextPrivateFeatSequence += 1;
 	state.sharedFeats.unshift(feat);
+
+	return { ...feat };
+}
+
+export function listE2EManagedSharedFeatsForUser(userId: string, includeSystemContent: boolean) {
+	return state.sharedFeats
+		.filter((feat) => (includeSystemContent ? true : !feat.isSystemContent))
+		.filter((feat) => (includeSystemContent ? true : feat.userId === userId))
+		.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+		.map((feat) => ({ ...feat }));
+}
+
+export function updateE2EManagedSharedFeatForUser(
+	userId: string,
+	input: {
+		featId: string;
+		name: string;
+		slug: string;
+		prerequisites: string[];
+		summary?: string;
+		description?: string;
+		includeSystemContent: boolean;
+	}
+) {
+	const feat = state.sharedFeats.find((entry) => entry.id === input.featId);
+
+	if (!feat) {
+		throw new Error('Please choose a valid shared feat to maintain.');
+	}
+
+	if (!input.includeSystemContent && (feat.isSystemContent || feat.userId !== userId)) {
+		throw new Error('Please choose a valid shared feat to maintain.');
+	}
+
+	const duplicate = state.sharedFeats.find(
+		(entry) => entry.id !== feat.id && entry.slug === input.slug
+	);
+
+	if (duplicate) {
+		throw new Error('A shared feat with that slug already exists. Try a different name.');
+	}
+
+	Object.assign(feat, {
+		name: input.name,
+		slug: input.slug,
+		prerequisites: [...input.prerequisites],
+		summary: input.summary ?? null,
+		description: input.description ?? null,
+		updatedAt: nextUpdatedAt()
+	});
 
 	return { ...feat };
 }

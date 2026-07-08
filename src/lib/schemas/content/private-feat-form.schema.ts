@@ -44,6 +44,20 @@ export function createPrivateFeatFormValues(
 	};
 }
 
+export function createPrivateFeatFormValuesFromInput(input: {
+	name: string;
+	summary: string | null;
+	description: string | null;
+	prerequisites: string[];
+}): PrivateFeatFormValues {
+	return createPrivateFeatFormValues({
+		name: input.name,
+		summary: input.summary ?? '',
+		description: input.description ?? '',
+		prerequisitesText: input.prerequisites.join('\n')
+	});
+}
+
 function toFormString(value: unknown): string {
 	return typeof value === 'string' ? value : '';
 }

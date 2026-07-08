@@ -1,13 +1,17 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { error as httpError } from '@sveltejs/kit';
 import {
 	createE2EPrivateFeatForUser,
 	createE2ESharedFeatForUser,
 	getE2EFeatCatalogEntry,
 	isE2EMockSupabaseClient,
-	listE2EPrivateFeatsForUser
+	listE2EManagedSharedFeatsForUser,
+	listE2EPrivateFeatsForUser,
+	updateE2EManagedSharedFeatForUser
 } from '$lib/server/e2e/mock-app';
 import type { Database } from '$lib/types/database/supabase';
 import type { GameMechanic } from '$lib/types/domain/game-mechanics';
+import type { AuthorizationContext } from '$lib/types/permissions/permissions';
 
 type FeatRow = Database['public']['Tables']['feats']['Row'];
 type FeatInsert = Database['public']['Tables']['feats']['Insert'];
@@ -68,6 +72,10 @@ export type SharedFeatRecord = {
 	updatedAt: string;
 };
 
+export type ManagedSharedFeatRecord = SharedFeatRecord & {
+	ownerUserId: string | null;
+};
+
 type PrivateFeatRow = Pick<
 	FeatRow,
 	| 'id'
@@ -85,6 +93,7 @@ type PrivateFeatRow = Pick<
 type SharedFeatRow = Pick<
 	FeatRow,
 	| 'id'
+	| 'owner_user_id'
 	| 'source_id'
 	| 'visibility'
 	| 'slug'
@@ -93,6 +102,7 @@ type SharedFeatRow = Pick<
 	| 'summary'
 	| 'description'
 	| 'mechanics'
+	| 'is_system_content'
 >;
 
 export async function listPrivateFeatsForUser(
@@ -278,6 +288,101 @@ export async function createSharedFeat(
 	return mapSharedFeatRecord(data, sourceIds);
 }
 
+export async function listManagedSharedFeats(
+	supabase: SupabaseClient<Database>,
+	authorization: AuthorizationContext
+): Promise<ManagedSharedFeatRecord[]> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		return listE2EManagedSharedFeatsForUser(
+			authorization.userId,
+			authorization.globalRole === 'admin'
+		).map((feat) => ({
+			...feat,
+			ownerUserId: feat.userId
+		}));
+	}
+
+	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
+	const query = supabase
+		.from('feats')
+		.select(
+			'id, owner_user_id, source_id, slug, name, prerequisites, summary, description, visibility, is_system_content, created_at, updated_at'
+		)
+		.eq('source_id', sourceIds.homebrew)
+		.not('visibility', 'in', '(private,campaign)')
+		.order('updated_at', { ascending: false });
+
+	const { data, error } =
+		authorization.globalRole === 'admin'
+			? await query
+			: await query.eq('owner_user_id', authorization.userId).eq('is_system_content', false);
+
+	if (error) {
+		throw new Error(`Failed to load managed shared feats for user ${authorization.userId}`);
+	}
+
+	return data.map((feat) => mapManagedSharedFeatRecord(feat, sourceIds));
+}
+
+export async function updateManagedSharedFeat(
+	supabase: SupabaseClient<Database>,
+	authorization: AuthorizationContext,
+	input: CreatePrivateFeatInput & {
+		featId: string;
+	}
+): Promise<ManagedSharedFeatRecord> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		const updated = updateE2EManagedSharedFeatForUser(authorization.userId, {
+			featId: input.featId,
+			name: input.name,
+			slug: input.slug,
+			prerequisites: input.prerequisites,
+			summary: input.summary,
+			description: input.description,
+			includeSystemContent: authorization.globalRole === 'admin'
+		});
+
+		return {
+			...updated,
+			ownerUserId: updated.userId
+		};
+	}
+
+	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
+	const feat = await loadManagedSharedFeatById(supabase, input.featId, sourceIds);
+
+	if (feat.is_system_content) {
+		if (authorization.globalRole !== 'admin') {
+			throw httpError(403, 'Admin role required to update system-owned feats.');
+		}
+	} else if (authorization.globalRole !== 'admin' && feat.owner_user_id !== authorization.userId) {
+		throw httpError(403, 'You can only maintain your own shared feats.');
+	}
+
+	await assertNoExistingSharedFeatSlug(supabase, input.slug, sourceIds, feat.id);
+
+	const { data, error } = await supabase
+		.from('feats')
+		.update({
+			slug: input.slug,
+			name: input.name,
+			prerequisites: input.prerequisites,
+			summary: input.summary ?? null,
+			description: input.description ?? null
+		})
+		.eq('id', feat.id)
+		.select(
+			'id, owner_user_id, source_id, slug, name, prerequisites, summary, description, visibility, is_system_content, created_at, updated_at'
+		)
+		.single();
+
+	if (error) {
+		throw new Error(`Failed to update shared feat ${feat.id}`);
+	}
+
+	return mapManagedSharedFeatRecord(data, sourceIds);
+}
+
 export function buildPrivateFeatDerivationMechanic(input: {
 	source: ContentSourceCode;
 	slug: string;
@@ -338,12 +443,35 @@ async function loadSharedFeatForDerivation(
 ): Promise<SharedFeatRow> {
 	const { data, error } = await supabase
 		.from('feats')
-		.select('id, source_id, visibility, slug, name, prerequisites, summary, description, mechanics')
+		.select(
+			'id, owner_user_id, source_id, visibility, slug, name, prerequisites, summary, description, mechanics, is_system_content'
+		)
 		.eq('id', featId)
 		.single();
 
 	if (error || !data || data.visibility === 'private' || data.visibility === 'campaign') {
 		throw new Error('Please choose a valid shared feat to copy.');
+	}
+
+	return data;
+}
+
+async function loadManagedSharedFeatById(
+	supabase: SupabaseClient<Database>,
+	featId: string,
+	sourceIds: Record<SharedFeatSourceCode, string>
+): Promise<SharedFeatRow> {
+	const { data, error } = await supabase
+		.from('feats')
+		.select(
+			'id, owner_user_id, source_id, visibility, slug, name, prerequisites, summary, description, mechanics, is_system_content'
+		)
+		.eq('id', featId)
+		.eq('source_id', sourceIds.homebrew)
+		.single();
+
+	if (error || !data || data.visibility === 'private' || data.visibility === 'campaign') {
+		throw new Error('Please choose a valid shared feat to maintain.');
 	}
 
 	return data;
@@ -375,15 +503,20 @@ async function assertNoExistingPrivateFeatSlug(
 async function assertNoExistingSharedFeatSlug(
 	supabase: SupabaseClient<Database>,
 	slug: string,
-	sourceIds: Record<SharedFeatSourceCode, string>
+	sourceIds: Record<SharedFeatSourceCode, string>,
+	excludeFeatId?: string
 ) {
-	const { data, error } = await supabase
+	const query = supabase
 		.from('feats')
 		.select('id')
 		.eq('slug', slug)
 		.eq('source_id', sourceIds.homebrew)
 		.not('visibility', 'in', '(private,campaign)')
-		.limit(1);
+		.limit(2);
+
+	const { data, error } = excludeFeatId
+		? await query.neq('id', excludeFeatId)
+		: await query;
 
 	if (error) {
 		throw new Error(`Failed to check shared feat slug "${slug}"`);
@@ -441,6 +574,30 @@ function mapSharedFeatRecord(
 		isSystemContent: feat.is_system_content,
 		createdAt: feat.created_at,
 		updatedAt: feat.updated_at
+	};
+}
+
+function mapManagedSharedFeatRecord(
+	feat: Pick<
+		FeatRow,
+		| 'id'
+		| 'owner_user_id'
+		| 'source_id'
+		| 'slug'
+		| 'name'
+		| 'prerequisites'
+		| 'summary'
+		| 'description'
+		| 'visibility'
+		| 'is_system_content'
+		| 'created_at'
+		| 'updated_at'
+	>,
+	sourceIds: Record<SharedFeatSourceCode, string>
+): ManagedSharedFeatRecord {
+	return {
+		...mapSharedFeatRecord(feat, sourceIds),
+		ownerUserId: feat.owner_user_id
 	};
 }
 

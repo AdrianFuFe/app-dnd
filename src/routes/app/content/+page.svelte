@@ -14,6 +14,13 @@
 	const createFeatValues = $derived(
 		(form?.createPrivateFeatValues ?? data.createPrivateFeatValues) as PrivateFeatFormValues
 	);
+	const editFeatFieldErrors = $derived(
+		(form?.editSharedFeatFieldErrors ?? {}) as PrivateFeatFormFieldErrors
+	);
+	const editFeatValues = $derived(
+		(form?.editSharedFeatValues ?? data.editSharedFeatValues) as PrivateFeatFormValues
+	);
+	const editSharedFeatId = $derived((form?.editSharedFeatId ?? data.editSharedFeatId) as string | null);
 
 	function formatCountLabel(count: number, singular: string, plural: string): string {
 		return `${count} ${count === 1 ? singular : plural}`;
@@ -101,6 +108,14 @@
 
 	function createPrivateFeatValue(field: PrivateFeatFormFieldName) {
 		return createFeatValues[field];
+	}
+
+	function editSharedFeatFieldError(field: PrivateFeatFormFieldName) {
+		return editFeatFieldErrors[field]?.[0];
+	}
+
+	function editSharedFeatValue(field: PrivateFeatFormFieldName) {
+		return editFeatValues[field];
 	}
 </script>
 
@@ -263,6 +278,176 @@
 			</div>
 		</div>
 	</section>
+
+	{#if data.roleOperations.canMaintainSharedFeats}
+		<section class="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
+			<div class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+				<div class="flex items-center justify-between gap-4">
+					<div>
+						<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
+							Shared feat maintenance
+						</p>
+						<h2 class="mt-2 text-2xl font-semibold text-stone-900">
+							Review trusted shared entries
+						</h2>
+					</div>
+					<p class="text-sm text-stone-500">{data.manageableSharedFeats.length} total</p>
+				</div>
+				<p class="mt-3 max-w-2xl text-sm leading-7 text-stone-600">
+					This queue only shows shared homebrew feats your current role is allowed to
+					maintain. Normal users never see this workflow.
+				</p>
+
+				{#if data.manageableSharedFeats.length === 0}
+					<p class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600">
+						No maintainable shared feats yet. Publish one first, or use an admin account to
+						review system-owned entries.
+					</p>
+				{:else}
+					<div class="mt-6 space-y-4">
+						{#each data.manageableSharedFeats as feat (feat.id)}
+							<article class="rounded-2xl border border-stone-200 p-4">
+								<div class="flex flex-wrap items-start justify-between gap-3">
+									<div>
+										<h3 class="text-lg font-semibold text-stone-900">{feat.name}</h3>
+										<p class="mt-1 text-sm text-stone-500">slug: {feat.slug}</p>
+									</div>
+									<div class="flex flex-wrap items-center gap-2">
+										<span
+											class={`rounded-full px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] ${
+												feat.isSystemContent
+													? 'bg-fuchsia-100 text-fuchsia-900'
+													: 'bg-indigo-100 text-indigo-900'
+											}`}
+										>
+											{feat.isSystemContent ? 'System' : 'Shared'}
+										</span>
+										<a
+											class={`rounded-full px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-white transition ${
+												editSharedFeatId === feat.id
+													? 'bg-stone-500 hover:bg-stone-500'
+													: 'bg-stone-900 hover:bg-stone-700'
+											}`}
+											href={`?editSharedFeat=${feat.id}`}
+										>
+											{editSharedFeatId === feat.id ? 'Editing' : 'Edit'}
+										</a>
+									</div>
+								</div>
+								<p class="mt-3 text-sm text-stone-600">
+									{feat.summary ?? feat.description ?? 'No summary yet.'}
+								</p>
+								<p class="mt-4 text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
+									Prerequisites
+								</p>
+								<p class="mt-2 text-sm text-stone-700">
+									{formatPrerequisites(feat.prerequisites)}
+								</p>
+							</article>
+						{/each}
+					</div>
+				{/if}
+			</div>
+
+			<div class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+				<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
+					Maintenance editor
+				</p>
+				<h2 class="mt-2 text-2xl font-semibold text-stone-900">
+					Update a managed shared feat
+				</h2>
+				<p class="mt-3 max-w-2xl text-sm leading-7 text-stone-600">
+					Editors can update their own shared homebrew feats. Admins can also update
+					system-owned entries.
+				</p>
+
+				{#if data.updatedSharedFeatName}
+					<p class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+						{data.updatedSharedFeatName} was updated successfully.
+					</p>
+				{/if}
+
+				{#if form?.editSharedFeatFormError}
+					<p class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+						{form.editSharedFeatFormError}
+					</p>
+				{/if}
+
+				{#if !editSharedFeatId}
+					<p class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600">
+						Choose a shared feat from the maintenance list to load it into this editor.
+					</p>
+				{:else}
+					<form method="POST" class="mt-6 space-y-4">
+						<input type="hidden" name="featId" value={editSharedFeatId} />
+
+						<label class="block">
+							<span class="mb-1 block text-sm font-medium text-stone-700">Feat name</span>
+							<input
+								class="block w-full rounded-lg border-stone-300"
+								name="name"
+								type="text"
+								value={editSharedFeatValue('name')}
+							/>
+							{#if editSharedFeatFieldError('name')}
+								<p class="mt-1 text-sm text-red-700">{editSharedFeatFieldError('name')}</p>
+							{/if}
+						</label>
+
+						<label class="block">
+							<span class="mb-1 block text-sm font-medium text-stone-700">Summary</span>
+							<input
+								class="block w-full rounded-lg border-stone-300"
+								name="summary"
+								type="text"
+								value={editSharedFeatValue('summary')}
+							/>
+							{#if editSharedFeatFieldError('summary')}
+								<p class="mt-1 text-sm text-red-700">{editSharedFeatFieldError('summary')}</p>
+							{/if}
+						</label>
+
+						<label class="block">
+							<span class="mb-1 block text-sm font-medium text-stone-700">Description</span>
+							<textarea
+								class="block min-h-28 w-full rounded-lg border-stone-300"
+								name="description"
+							>{editSharedFeatValue('description')}</textarea>
+							{#if editSharedFeatFieldError('description')}
+								<p class="mt-1 text-sm text-red-700">
+									{editSharedFeatFieldError('description')}
+								</p>
+							{/if}
+						</label>
+
+						<label class="block">
+							<span class="mb-1 block text-sm font-medium text-stone-700">Prerequisites</span>
+							<textarea
+								class="block min-h-28 w-full rounded-lg border-stone-300"
+								name="prerequisitesText"
+							>{editSharedFeatValue('prerequisitesText')}</textarea>
+							<p class="mt-1 text-sm text-stone-500">
+								Use one prerequisite per line. Updates are revalidated before saving.
+							</p>
+							{#if editSharedFeatFieldError('prerequisitesText')}
+								<p class="mt-1 text-sm text-red-700">
+									{editSharedFeatFieldError('prerequisitesText')}
+								</p>
+							{/if}
+						</label>
+
+						<button
+							class="rounded-lg bg-stone-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-stone-700"
+							type="submit"
+							formaction="?/updateSharedFeat"
+						>
+							Save shared feat changes
+						</button>
+					</form>
+				{/if}
+			</div>
+		</section>
+	{/if}
 
 	<section class="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
 		<div class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">

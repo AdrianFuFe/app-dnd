@@ -65,6 +65,7 @@ In that case, it should still name the next recommended block.
     - `S19 - Private Content CRUD Foundation`
     - `S20 - SRD To Private Derivation`
     - `S21 - Role-Aware Content Operations`
+    - `S22 - Shared Content Maintenance`
 - effectively completed beyond the original status notes:
     - expanded catalog wiring now also covers `backgrounds`, `subspecies`, and `subclasses`
     - equipment catalog wiring now also covers character `attacks` and `inventory`, including linked `equipmentId` persistence, server-side normalization, enriched detail rendering, and targeted E2E coverage for the catalog selectors
@@ -72,9 +73,10 @@ In that case, it should still name the next recommended block.
     - admin/test-user operator tooling is implemented through `scripts/create-test-user.ts`, `scripts/manage-user-role.ts`, and `docs/11-admin-and-test-user-workflow.md`
     - structured note placeholder rows are filtered during submit normalization and schema parsing, restoring green character create/edit E2E confidence
     - `/app/content` now supports private feat creation, SRD-to-private feat derivation, and role-aware shared/system feat publishing
+    - trusted editor/admin users can now review and update shared homebrew feats from `/app/content`
 - implemented but still intentionally shallow:
     - real character CRUD exists
-    - the shared catalog is browseable and now has a first guarded shared/system feat publishing path, but no editor-facing maintenance workflow yet
+    - the shared catalog is browseable and now has guarded publish/update workflows for feats, but not a full shared-content lifecycle yet
     - permissions exist as schema, RLS, server helpers, operator scripts, and a first visible content surface, not as a full admin/editor product surface
 - current project point:
   - the MVP app shell and first character workflow are implemented and E2E-stable
@@ -82,9 +84,9 @@ In that case, it should still name the next recommended block.
   - environment separation is documented
   - runtime integration behavior is now documented in `README.md` and `docs/10-runtime-integration-check.md`, with request-time status checks in `src/lib/server/runtime/integration.ts`
   - the first private content workflow and first role-aware shared publishing workflow are now in place
-  - the highest-value missing content slice is editor/admin maintenance of shared content after creation
+  - the highest-value missing content slice is explicit lifecycle control for maintained shared feats after create/update
 - next recommended block:
-  - `S22 - Shared Content Maintenance`, because shared and system feat publishing now exists but trusted editors/admins still lack an in-app way to review and update shared entries safely
+  - `S23 - Shared Content Lifecycle Controls`, because shared feat publishing and maintenance now exist but trusted roles still lack a bounded in-app delete/archive path
 
 ## Session Blocks
 
@@ -529,10 +531,34 @@ In that case, it should still name the next recommended block.
     - system-owned feats remain admin-only for update operations
     - normal users remain unable to edit shared or system-owned catalog content
 
+### S23 - Shared Content Lifecycle Controls
+
+- objective: add the first bounded delete/archive workflow for maintained shared feats
+- read context:
+    - `docs/context/10_PRODUCT_SCOPE.md`
+    - `docs/context/30_CONTENT_AND_PERMISSIONS.md`
+    - `docs/context/40_AUTH_AND_DATA.md`
+    - `docs/context/50_WORKFLOW_RULES.md`
+    - `docs/11-admin-and-test-user-workflow.md`
+- likely files:
+    - `src/routes/app/content/...`
+    - `src/lib/server/repositories/private-feats.ts`
+    - `src/lib/server/permissions/authorization.ts`
+    - relevant tests near the content route/repository code
+- minimum validation:
+    - `pnpm check`
+    - targeted unit tests for shared/system delete or archive rules
+    - targeted E2E only if a browser delete/archive workflow is added
+- closure criterion:
+    - `content_editor` users can retire or delete only their own shared non-system feats
+    - `admin` users can retire or delete shared and system-owned homebrew feats
+    - normal users remain unable to mutate shared or system-owned catalog content
+    - the UI explains destructive scope clearly before applying the action
+
 ## Notes
 
 - this plan is intentionally session-oriented, not milestone-oriented
 - each block should fit comfortably in one focused chat
 - if a block grows during implementation, split it rather than stretching the session
 - recommended implementation order from the current project state:
-    - `S22 - Shared Content Maintenance`
+    - `S23 - Shared Content Lifecycle Controls`
