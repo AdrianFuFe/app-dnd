@@ -55,6 +55,28 @@ type E2EPrivateFeatRecord = {
 	updatedAt: string;
 };
 
+type E2EPrivateSpellRecord = {
+	id: string;
+	userId: string;
+	sourceCode: 'user-private' | 'homebrew';
+	slug: string;
+	name: string;
+	level: number;
+	school: string;
+	castingTime: string | null;
+	range: string | null;
+	components: string | null;
+	materials: string | null;
+	duration: string | null;
+	classSlugs: string[];
+	summary: string | null;
+	description: string | null;
+	concentration: boolean;
+	ritual: boolean;
+	createdAt: string;
+	updatedAt: string;
+};
+
 type E2ESharedFeatRecord = {
 	id: string;
 	userId: string | null;
@@ -363,9 +385,11 @@ const initialCharacters: E2ECharacterRecord[] = [
 const state = {
 	characters: [] as E2ECharacterRecord[],
 	privateFeats: [] as E2EPrivateFeatRecord[],
+	privateSpells: [] as E2EPrivateSpellRecord[],
 	sharedFeats: [] as E2ESharedFeatRecord[],
 	nextCharacterSequence: 2,
 	nextPrivateFeatSequence: 1,
+	nextPrivateSpellSequence: 1,
 	nextUpdatedMinute: 0
 };
 
@@ -433,9 +457,11 @@ export function getE2EMockSession(): Session {
 export function resetE2EMockState() {
 	state.characters = initialCharacters.map((character) => ({ ...character }));
 	state.privateFeats = [];
+	state.privateSpells = [];
 	state.sharedFeats = [];
 	state.nextCharacterSequence = 2;
 	state.nextPrivateFeatSequence = 1;
+	state.nextPrivateSpellSequence = 1;
 	state.nextUpdatedMinute = 0;
 }
 
@@ -677,6 +703,16 @@ export function listE2EPrivateFeatsForUser(userId: string) {
 		.map((feat) => ({ ...feat }));
 }
 
+export function listE2EPrivateSpellsForUser(userId: string) {
+	return state.privateSpells
+		.filter((spell) => spell.userId === userId)
+		.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+		.map((spell) => ({
+			...spell,
+			classSlugs: [...spell.classSlugs]
+		}));
+}
+
 export function createE2EPrivateFeatForUser(
 	userId: string,
 	input: {
@@ -716,6 +752,66 @@ export function createE2EPrivateFeatForUser(
 	state.privateFeats.unshift(feat);
 
 	return { ...feat };
+}
+
+export function createE2EPrivateSpellForUser(
+	userId: string,
+	input: {
+		sourceCode?: 'user-private' | 'homebrew';
+		slug: string;
+		name: string;
+		level: number;
+		school: string;
+		castingTime?: string;
+		range?: string;
+		components?: string;
+		materials?: string;
+		duration?: string;
+		classSlugs: string[];
+		summary?: string;
+		description?: string;
+		concentration: boolean;
+		ritual: boolean;
+	}
+) {
+	const duplicate = state.privateSpells.find(
+		(spell) => spell.userId === userId && spell.slug === input.slug
+	);
+
+	if (duplicate) {
+		throw new Error('You already have a private spell with that slug. Try a different name.');
+	}
+
+	const timestamp = nextUpdatedAt();
+	const spell: E2EPrivateSpellRecord = {
+		id: `private-spell-e2e-${state.nextPrivateSpellSequence}`,
+		userId,
+		sourceCode: input.sourceCode ?? 'user-private',
+		slug: input.slug,
+		name: input.name,
+		level: input.level,
+		school: input.school,
+		castingTime: input.castingTime ?? null,
+		range: input.range ?? null,
+		components: input.components ?? null,
+		materials: input.materials ?? null,
+		duration: input.duration ?? null,
+		classSlugs: [...input.classSlugs],
+		summary: input.summary ?? null,
+		description: input.description ?? null,
+		concentration: input.concentration,
+		ritual: input.ritual,
+		createdAt: timestamp,
+		updatedAt: timestamp
+	};
+
+	state.nextPrivateSpellSequence += 1;
+	state.privateSpells.unshift(spell);
+
+	return {
+		...spell,
+		classSlugs: [...spell.classSlugs]
+	};
 }
 
 export function createE2ESharedFeatForUser(

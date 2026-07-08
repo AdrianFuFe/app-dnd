@@ -24,11 +24,21 @@ import {
 	flattenPrivateFeatFormErrors,
 	privateFeatFormSchema
 } from '$lib/schemas/content/private-feat-form.schema';
+import {
+	createPrivateSpell,
+	listPrivateSpellsForUser
+} from '$lib/server/repositories/private-spells';
+import {
+	createPrivateSpellFormValues,
+	flattenPrivateSpellFormErrors,
+	privateSpellFormSchema
+} from '$lib/schemas/content/private-spell-form.schema';
 
 export const load: PageServerLoad = async ({ locals, url, parent }) => {
 	if (!locals.supabase) {
 		return {
 			createdPrivateFeatName: url.searchParams.get('createdPrivateFeat'),
+			createdPrivateSpellName: url.searchParams.get('createdPrivateSpell'),
 			derivedPrivateFeatName: url.searchParams.get('derivedPrivateFeat'),
 			publishedSharedFeatName: url.searchParams.get('publishedSharedFeat'),
 			publishedSystemFeatName: url.searchParams.get('publishedSystemFeat'),
@@ -36,6 +46,7 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 			retiredSharedFeatName: url.searchParams.get('retiredSharedFeat'),
 			deletedSharedFeatName: url.searchParams.get('deletedSharedFeat'),
 			createPrivateFeatValues: createPrivateFeatFormValues(),
+			createPrivateSpellValues: createPrivateSpellFormValues(),
 			editSharedFeatId: null,
 			editSharedFeatValues: createPrivateFeatFormValues(),
 			roleOperations: {
@@ -53,6 +64,7 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 			},
 			manageableSharedFeats: [],
 			privateFeats: [],
+			privateSpells: [],
 			sharedCatalog: {
 				species: [],
 				subspecies: [],
@@ -92,6 +104,7 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 
 	return {
 		createdPrivateFeatName: url.searchParams.get('createdPrivateFeat'),
+		createdPrivateSpellName: url.searchParams.get('createdPrivateSpell'),
 		derivedPrivateFeatName: url.searchParams.get('derivedPrivateFeat'),
 		publishedSharedFeatName: url.searchParams.get('publishedSharedFeat'),
 		publishedSystemFeatName: url.searchParams.get('publishedSystemFeat'),
@@ -99,6 +112,7 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 		retiredSharedFeatName: url.searchParams.get('retiredSharedFeat'),
 		deletedSharedFeatName: url.searchParams.get('deletedSharedFeat'),
 		createPrivateFeatValues: createPrivateFeatFormValues(),
+		createPrivateSpellValues: createPrivateSpellFormValues(),
 		editSharedFeatId: editableSharedFeat?.id ?? null,
 		editSharedFeatValues: editableSharedFeat
 			? createPrivateFeatFormValuesFromInput(editableSharedFeat)
@@ -117,6 +131,9 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 		manageableSharedFeats,
 		privateFeats: parentData.session
 			? await listPrivateFeatsForUser(locals.supabase, parentData.session.user.id)
+			: [],
+		privateSpells: parentData.session
+			? await listPrivateSpellsForUser(locals.supabase, parentData.session.user.id)
 			: [],
 		sharedCatalog: await listExpandedContentCatalog(locals.supabase)
 	};
@@ -167,6 +184,53 @@ export const actions: Actions = {
 				createPrivateFeatFieldErrors: {},
 				createPrivateFeatFormError: formError,
 				createPrivateFeatValues: parsedForm.values
+			});
+		}
+	},
+	createPrivateSpell: async ({ locals, request }) => {
+		if (!locals.session) {
+			throw redirect(302, '/auth/login?redirectTo=/app/content');
+		}
+
+		if (!locals.supabase) {
+			return fail(500, {
+				createPrivateSpellFieldErrors: {},
+				createPrivateSpellFormError: 'Supabase is not configured yet.',
+				createPrivateSpellValues: createPrivateSpellFormValues()
+			});
+		}
+
+		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		requirePermissionScopeAccess(authorization, 'private_content');
+		const parsedForm = await parsePrivateSpellCreateForm(request);
+
+		if (parsedForm.response) {
+			return parsedForm.response;
+		}
+
+		try {
+			const spell = await createPrivateSpell(
+				locals.supabase,
+				locals.session.user.id,
+				parsedForm.data
+			);
+			const createdPrivateSpell = encodeURIComponent(spell.name);
+
+			throw redirect(303, `/app/content?createdPrivateSpell=${createdPrivateSpell}`);
+		} catch (error) {
+			if (isRedirect(error)) {
+				throw error;
+			}
+
+			const formError =
+				error instanceof Error
+					? error.message
+					: 'The private spell could not be created. Please try again.';
+
+			return fail(400, {
+				createPrivateSpellFieldErrors: {},
+				createPrivateSpellFormError: formError,
+				createPrivateSpellValues: parsedForm.values
 			});
 		}
 	},
@@ -506,6 +570,31 @@ function parsePrivateFeatCreateValues(rawValues: Record<string, FormDataEntryVal
 				createPrivateFeatFieldErrors: flattenPrivateFeatFormErrors(parsed.error),
 				createPrivateFeatFormError: 'Please correct the highlighted private feat fields.',
 				createPrivateFeatValues: values
+			})
+		};
+	}
+
+	return {
+		data: parsed.data,
+		values
+	};
+}
+
+async function parsePrivateSpellCreateForm(request: Request) {
+	return parsePrivateSpellCreateValues(Object.fromEntries(await request.formData()));
+}
+
+function parsePrivateSpellCreateValues(rawValues: Record<string, FormDataEntryValue>) {
+	const values = createPrivateSpellFormValues(rawValues);
+	const parsed = privateSpellFormSchema.safeParse(values);
+
+	if (!parsed.success) {
+		return {
+			values,
+			response: fail(400, {
+				createPrivateSpellFieldErrors: flattenPrivateSpellFormErrors(parsed.error),
+				createPrivateSpellFormError: 'Please correct the highlighted private spell fields.',
+				createPrivateSpellValues: values
 			})
 		};
 	}

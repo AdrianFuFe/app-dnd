@@ -14,21 +14,25 @@ const { listCharacterCreationCatalog, listExpandedContentCatalog } = vi.hoisted(
 
 const {
 	createPrivateFeat,
+	createPrivateSpell,
 	createSharedFeat,
 	deleteManagedSharedFeat,
 	derivePrivateFeatFromSharedCatalog,
 	listManagedSharedFeats,
 	listPrivateFeatsForUser,
+	listPrivateSpellsForUser,
 	retireManagedSharedFeat,
 	updateManagedSharedFeat
 } =
 	vi.hoisted(() => ({
 	createPrivateFeat: vi.fn(),
+	createPrivateSpell: vi.fn(),
 	createSharedFeat: vi.fn(),
 	deleteManagedSharedFeat: vi.fn(),
 	derivePrivateFeatFromSharedCatalog: vi.fn(),
 	listManagedSharedFeats: vi.fn(),
 	listPrivateFeatsForUser: vi.fn(),
+	listPrivateSpellsForUser: vi.fn(),
 	retireManagedSharedFeat: vi.fn(),
 	updateManagedSharedFeat: vi.fn()
 	}));
@@ -52,6 +56,11 @@ vi.mock('$lib/server/repositories/private-feats', () => ({
 	listPrivateFeatsForUser,
 	retireManagedSharedFeat,
 	updateManagedSharedFeat
+}));
+
+vi.mock('$lib/server/repositories/private-spells', () => ({
+	createPrivateSpell,
+	listPrivateSpellsForUser
 }));
 
 vi.mock('$lib/server/permissions/authorization', () => ({
@@ -92,6 +101,7 @@ describe('/app/content load', () => {
 			}
 		});
 		listPrivateFeatsForUser.mockReset().mockResolvedValue([]);
+		listPrivateSpellsForUser.mockReset().mockResolvedValue([]);
 		listManagedSharedFeats.mockReset().mockResolvedValue([]);
 	});
 
@@ -105,6 +115,7 @@ describe('/app/content load', () => {
 			} as never)
 		).resolves.toEqual({
 			createdPrivateFeatName: null,
+			createdPrivateSpellName: null,
 			derivedPrivateFeatName: null,
 			publishedSharedFeatName: null,
 			publishedSystemFeatName: null,
@@ -116,6 +127,21 @@ describe('/app/content load', () => {
 				summary: '',
 				description: '',
 				prerequisitesText: ''
+			},
+			createPrivateSpellValues: {
+				name: '',
+				level: '',
+				school: '',
+				summary: '',
+				description: '',
+				castingTime: '',
+				range: '',
+				components: '',
+				materials: '',
+				duration: '',
+				classSlugsText: '',
+				concentration: false,
+				ritual: false
 			},
 			editSharedFeatId: null,
 			editSharedFeatValues: {
@@ -139,6 +165,7 @@ describe('/app/content load', () => {
 			},
 			manageableSharedFeats: [],
 			privateFeats: [],
+			privateSpells: [],
 			sharedCatalog: {
 				species: [],
 				subspecies: [],
@@ -165,6 +192,7 @@ describe('/app/content load', () => {
 		expect(listCharacterCreationCatalog).not.toHaveBeenCalled();
 		expect(listExpandedContentCatalog).not.toHaveBeenCalled();
 		expect(listPrivateFeatsForUser).not.toHaveBeenCalled();
+		expect(listPrivateSpellsForUser).not.toHaveBeenCalled();
 	});
 
 	it('loads both shared and private content slices', async () => {
@@ -311,6 +339,28 @@ describe('/app/content load', () => {
 				updatedAt: '2026-07-07T20:00:00.000Z'
 			}
 		];
+		const privateSpells = [
+			{
+				id: 'private-spell-1',
+				sourceCode: 'user-private',
+				slug: 'arc-light',
+				name: 'Arc Light',
+				level: 1,
+				school: 'evocation',
+				castingTime: '1 action',
+				range: '60 feet',
+				components: 'V, S, M',
+				materials: 'A polished copper wire.',
+				duration: 'Instantaneous',
+				classSlugs: ['mago'],
+				summary: 'Focused arcane flash.',
+				description: null,
+				concentration: false,
+				ritual: false,
+				createdAt: '2026-07-07T21:00:00.000Z',
+				updatedAt: '2026-07-07T21:00:00.000Z'
+			}
+		];
 		const manageableSharedFeats = [
 			{
 				id: 'shared-feat-1',
@@ -331,6 +381,7 @@ describe('/app/content load', () => {
 		listCharacterCreationCatalog.mockResolvedValueOnce(characterCatalog);
 		listExpandedContentCatalog.mockResolvedValueOnce(sharedCatalog);
 		listPrivateFeatsForUser.mockResolvedValueOnce(privateFeats);
+		listPrivateSpellsForUser.mockResolvedValueOnce(privateSpells);
 		listManagedSharedFeats.mockResolvedValueOnce(manageableSharedFeats);
 
 		await expect(
@@ -347,11 +398,12 @@ describe('/app/content load', () => {
 					}
 				}),
 				url: new URL(
-					'http://localhost/app/content?createdPrivateFeat=Observant%20Echo&derivedPrivateFeat=Alert&publishedSharedFeat=Battle%20Lore&editSharedFeat=shared-feat-1&updatedSharedFeat=Battle%20Lore'
+					'http://localhost/app/content?createdPrivateFeat=Observant%20Echo&createdPrivateSpell=Arc%20Light&derivedPrivateFeat=Alert&publishedSharedFeat=Battle%20Lore&editSharedFeat=shared-feat-1&updatedSharedFeat=Battle%20Lore'
 				)
 			} as never)
 		).resolves.toEqual({
 			createdPrivateFeatName: 'Observant Echo',
+			createdPrivateSpellName: 'Arc Light',
 			derivedPrivateFeatName: 'Alert',
 			publishedSharedFeatName: 'Battle Lore',
 			publishedSystemFeatName: null,
@@ -363,6 +415,21 @@ describe('/app/content load', () => {
 				summary: '',
 				description: '',
 				prerequisitesText: ''
+			},
+			createPrivateSpellValues: {
+				name: '',
+				level: '',
+				school: '',
+				summary: '',
+				description: '',
+				castingTime: '',
+				range: '',
+				components: '',
+				materials: '',
+				duration: '',
+				classSlugsText: '',
+				concentration: false,
+				ritual: false
 			},
 			editSharedFeatId: 'shared-feat-1',
 			editSharedFeatValues: {
@@ -380,6 +447,7 @@ describe('/app/content load', () => {
 			characterCatalog,
 			manageableSharedFeats,
 			privateFeats,
+			privateSpells,
 			sharedCatalog
 		});
 
@@ -389,6 +457,8 @@ describe('/app/content load', () => {
 		expect(listExpandedContentCatalog).toHaveBeenCalledWith(supabase);
 		expect(listPrivateFeatsForUser).toHaveBeenCalledOnce();
 		expect(listPrivateFeatsForUser).toHaveBeenCalledWith(supabase, session.user.id);
+		expect(listPrivateSpellsForUser).toHaveBeenCalledOnce();
+		expect(listPrivateSpellsForUser).toHaveBeenCalledWith(supabase, session.user.id);
 		expect(listManagedSharedFeats).toHaveBeenCalledOnce();
 	});
 });
@@ -396,6 +466,7 @@ describe('/app/content load', () => {
 describe('/app/content actions', () => {
 	beforeEach(() => {
 		createPrivateFeat.mockReset();
+		createPrivateSpell.mockReset();
 		createSharedFeat.mockReset();
 		deleteManagedSharedFeat.mockReset();
 		derivePrivateFeatFromSharedCatalog.mockReset();
@@ -439,6 +510,46 @@ describe('/app/content actions', () => {
 			'Use prerequisite format'
 		);
 		expect(createPrivateFeat).not.toHaveBeenCalled();
+	});
+
+	it('returns field errors for invalid private spell input', async () => {
+		const response = await actions.createPrivateSpell?.({
+			locals: {
+				session: {
+					user: {
+						id: 'user-1'
+					}
+				},
+				supabase: {}
+			},
+			request: new Request('http://localhost/app/content?/createPrivateSpell', {
+				method: 'POST',
+				body: new URLSearchParams({
+					name: 'Arc Light',
+					level: '1',
+					school: 'evocation',
+					summary: '',
+					description: '',
+					castingTime: '',
+					range: '',
+					components: 'V, S',
+					materials: 'A polished copper wire.',
+					duration: '',
+					classSlugsText: '',
+					concentration: '',
+					ritual: ''
+				})
+			})
+		} as never);
+
+		expect(response?.status).toBe(400);
+		expect(response?.data.createPrivateSpellFormError).toBe(
+			'Please correct the highlighted private spell fields.'
+		);
+		expect(response?.data.createPrivateSpellFieldErrors.materials?.[0]).toContain(
+			'only allowed when spell components include M'
+		);
+		expect(createPrivateSpell).not.toHaveBeenCalled();
 	});
 
 	it('creates a private feat for the current user', async () => {
@@ -488,6 +599,80 @@ describe('/app/content actions', () => {
 			summary: 'Sharper pattern recall.',
 			description: undefined,
 			prerequisites: ['level:4']
+		});
+	});
+
+	it('creates a private spell for the current user', async () => {
+		createPrivateSpell.mockResolvedValueOnce({
+			id: 'private-spell-1',
+			sourceCode: 'user-private',
+			slug: 'arc-light',
+			name: 'Arc Light',
+			level: 1,
+			school: 'evocation',
+			castingTime: '1 action',
+			range: '60 feet',
+			components: 'V, S, M',
+			materials: 'A polished copper wire.',
+			duration: 'Instantaneous',
+			classSlugs: ['mago'],
+			summary: 'Focused arcane flash.',
+			description: null,
+			concentration: false,
+			ritual: false,
+			createdAt: '2026-07-07T21:00:00.000Z',
+			updatedAt: '2026-07-07T21:00:00.000Z'
+		});
+
+		await expect(
+			actions.createPrivateSpell?.({
+				locals: {
+					session: {
+						user: {
+							id: 'user-1'
+						}
+					},
+					supabase: {}
+				},
+				request: new Request('http://localhost/app/content?/createPrivateSpell', {
+					method: 'POST',
+					body: new URLSearchParams({
+						name: 'Arc Light',
+						level: '1',
+						school: 'evocation',
+						summary: 'Focused arcane flash.',
+						description: '',
+						castingTime: '1 action',
+						range: '60 feet',
+						components: 'V, S, M',
+						materials: 'A polished copper wire.',
+						duration: 'Instantaneous',
+						classSlugsText: 'mago',
+						concentration: '',
+						ritual: ''
+					})
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 303,
+			location: '/app/content?createdPrivateSpell=Arc%20Light'
+		});
+
+		expect(createPrivateSpell).toHaveBeenCalledWith({}, 'user-1', {
+			slug: 'arc-light',
+			name: 'Arc Light',
+			level: 1,
+			school: 'evocation',
+			summary: 'Focused arcane flash.',
+			description: undefined,
+			castingTime: '1 action',
+			range: '60 feet',
+			components: 'V, S, M',
+			materials: 'A polished copper wire.',
+			duration: 'Instantaneous',
+			classSlugs: ['mago'],
+			concentration: false,
+			ritual: false
 		});
 	});
 

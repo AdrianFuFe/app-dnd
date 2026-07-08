@@ -6,6 +6,11 @@
 		PrivateFeatFormFieldName,
 		PrivateFeatFormValues
 	} from '$lib/schemas/content/private-feat-form.schema';
+	import type {
+		PrivateSpellFormFieldErrors,
+		PrivateSpellFormFieldName,
+		PrivateSpellFormValues
+	} from '$lib/schemas/content/private-spell-form.schema';
 
 	let { data, form }: { data: PageData; form?: ActionData } = $props();
 	const createFeatFieldErrors = $derived(
@@ -19,6 +24,12 @@
 	);
 	const editFeatValues = $derived(
 		(form?.editSharedFeatValues ?? data.editSharedFeatValues) as PrivateFeatFormValues
+	);
+	const createSpellFieldErrors = $derived(
+		(form?.createPrivateSpellFieldErrors ?? {}) as PrivateSpellFormFieldErrors
+	);
+	const createSpellValues = $derived(
+		(form?.createPrivateSpellValues ?? data.createPrivateSpellValues) as PrivateSpellFormValues
 	);
 	const editSharedFeatId = $derived((form?.editSharedFeatId ?? data.editSharedFeatId) as string | null);
 	const selectedManagedSharedFeat = $derived(
@@ -121,6 +132,14 @@
 
 	function editSharedFeatValue(field: PrivateFeatFormFieldName) {
 		return editFeatValues[field];
+	}
+
+	function createPrivateSpellFieldError(field: PrivateSpellFormFieldName) {
+		return createSpellFieldErrors[field]?.[0];
+	}
+
+	function createPrivateSpellValue(field: PrivateSpellFormFieldName) {
+		return createSpellValues[field];
 	}
 </script>
 
@@ -985,6 +1004,320 @@
 							<p class="mt-4 text-xs uppercase tracking-[0.16em] text-stone-500">
 								Classes: {formatClassList(spell.classSlugs)}
 							</p>
+						</article>
+					{/each}
+				</div>
+			{/if}
+		</div>
+	</section>
+
+	<section class="grid gap-6 xl:grid-cols-[0.8fr,1.2fr]">
+		<div class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+			<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
+				Private spells
+			</p>
+			<h2 class="mt-2 text-2xl font-semibold text-stone-900">
+				Create your own spell draft
+			</h2>
+			<p class="mt-3 max-w-2xl text-sm leading-7 text-stone-600">
+				This first spell workflow stays owner-scoped. Shared SRD spells remain browseable
+				below, while new drafts created here stay private to your account.
+			</p>
+
+			{#if data.createdPrivateSpellName}
+				<p class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+					{data.createdPrivateSpellName} was created as a private spell.
+				</p>
+			{/if}
+
+			{#if form?.createPrivateSpellFormError}
+				<p class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+					{form.createPrivateSpellFormError}
+				</p>
+			{/if}
+
+			<form method="POST" class="mt-6 space-y-4">
+				<div class="grid gap-4 sm:grid-cols-2">
+					<label class="block sm:col-span-2">
+						<span class="mb-1 block text-sm font-medium text-stone-700">Spell name</span>
+						<input
+							class="block w-full rounded-lg border-stone-300"
+							name="name"
+							type="text"
+							value={createPrivateSpellValue('name')}
+							placeholder="Arc Light"
+						/>
+						{#if createPrivateSpellFieldError('name')}
+							<p class="mt-1 text-sm text-red-700">{createPrivateSpellFieldError('name')}</p>
+						{/if}
+					</label>
+
+					<label class="block">
+						<span class="mb-1 block text-sm font-medium text-stone-700">Level</span>
+						<input
+							class="block w-full rounded-lg border-stone-300"
+							name="level"
+							type="number"
+							min="0"
+							max="9"
+							value={createPrivateSpellValue('level')}
+						/>
+						{#if createPrivateSpellFieldError('level')}
+							<p class="mt-1 text-sm text-red-700">{createPrivateSpellFieldError('level')}</p>
+						{/if}
+					</label>
+
+					<label class="block">
+						<span class="mb-1 block text-sm font-medium text-stone-700">School</span>
+						<select
+							class="block w-full rounded-lg border-stone-300"
+							name="school"
+							value={createPrivateSpellValue('school')}
+						>
+							<option value="">Choose a spell school</option>
+							{#each data.sharedCatalog.vocabularies.spellSchools as school (school.slug)}
+								<option value={school.slug}>{school.name}</option>
+							{/each}
+						</select>
+						{#if createPrivateSpellFieldError('school')}
+							<p class="mt-1 text-sm text-red-700">{createPrivateSpellFieldError('school')}</p>
+						{/if}
+					</label>
+
+					<label class="block">
+						<span class="mb-1 block text-sm font-medium text-stone-700">Casting time</span>
+						<input
+							class="block w-full rounded-lg border-stone-300"
+							name="castingTime"
+							type="text"
+							value={createPrivateSpellValue('castingTime')}
+							placeholder="1 action"
+						/>
+						{#if createPrivateSpellFieldError('castingTime')}
+							<p class="mt-1 text-sm text-red-700">
+								{createPrivateSpellFieldError('castingTime')}
+							</p>
+						{/if}
+					</label>
+
+					<label class="block">
+						<span class="mb-1 block text-sm font-medium text-stone-700">Range</span>
+						<input
+							class="block w-full rounded-lg border-stone-300"
+							name="range"
+							type="text"
+							value={createPrivateSpellValue('range')}
+							placeholder="60 feet"
+						/>
+						{#if createPrivateSpellFieldError('range')}
+							<p class="mt-1 text-sm text-red-700">{createPrivateSpellFieldError('range')}</p>
+						{/if}
+					</label>
+
+					<label class="block">
+						<span class="mb-1 block text-sm font-medium text-stone-700">Components</span>
+						<input
+							class="block w-full rounded-lg border-stone-300"
+							name="components"
+							type="text"
+							value={createPrivateSpellValue('components')}
+							placeholder="V, S, M"
+						/>
+						<p class="mt-1 text-sm text-stone-500">Use a comma-separated list of V, S, and M.</p>
+						{#if createPrivateSpellFieldError('components')}
+							<p class="mt-1 text-sm text-red-700">
+								{createPrivateSpellFieldError('components')}
+							</p>
+						{/if}
+					</label>
+
+					<label class="block">
+						<span class="mb-1 block text-sm font-medium text-stone-700">Duration</span>
+						<input
+							class="block w-full rounded-lg border-stone-300"
+							name="duration"
+							type="text"
+							value={createPrivateSpellValue('duration')}
+							placeholder="Instantaneous"
+						/>
+						{#if createPrivateSpellFieldError('duration')}
+							<p class="mt-1 text-sm text-red-700">{createPrivateSpellFieldError('duration')}</p>
+						{/if}
+					</label>
+
+					<label class="block sm:col-span-2">
+						<span class="mb-1 block text-sm font-medium text-stone-700">Materials</span>
+						<input
+							class="block w-full rounded-lg border-stone-300"
+							name="materials"
+							type="text"
+							value={createPrivateSpellValue('materials')}
+							placeholder="Only when components include M"
+						/>
+						{#if createPrivateSpellFieldError('materials')}
+							<p class="mt-1 text-sm text-red-700">{createPrivateSpellFieldError('materials')}</p>
+						{/if}
+					</label>
+
+					<label class="block sm:col-span-2">
+						<span class="mb-1 block text-sm font-medium text-stone-700">
+							Class slugs
+						</span>
+						<textarea
+							class="block min-h-24 w-full rounded-lg border-stone-300"
+							name="classSlugsText"
+							placeholder="One per line, for example:&#10;mago&#10;clerigo"
+						>{createPrivateSpellValue('classSlugsText')}</textarea>
+						<p class="mt-1 text-sm text-stone-500">
+							Optional. Leave blank for a general spell draft.
+						</p>
+						{#if createPrivateSpellFieldError('classSlugsText')}
+							<p class="mt-1 text-sm text-red-700">
+								{createPrivateSpellFieldError('classSlugsText')}
+							</p>
+						{/if}
+					</label>
+
+					<label class="block sm:col-span-2">
+						<span class="mb-1 block text-sm font-medium text-stone-700">Summary</span>
+						<input
+							class="block w-full rounded-lg border-stone-300"
+							name="summary"
+							type="text"
+							value={createPrivateSpellValue('summary')}
+							placeholder="Short player-facing summary"
+						/>
+						{#if createPrivateSpellFieldError('summary')}
+							<p class="mt-1 text-sm text-red-700">{createPrivateSpellFieldError('summary')}</p>
+						{/if}
+					</label>
+
+					<label class="block sm:col-span-2">
+						<span class="mb-1 block text-sm font-medium text-stone-700">Description</span>
+						<textarea
+							class="block min-h-28 w-full rounded-lg border-stone-300"
+							name="description"
+							placeholder="Describe the spell effect in player-facing terms."
+						>{createPrivateSpellValue('description')}</textarea>
+						{#if createPrivateSpellFieldError('description')}
+							<p class="mt-1 text-sm text-red-700">
+								{createPrivateSpellFieldError('description')}
+							</p>
+						{/if}
+					</label>
+				</div>
+
+				<div class="flex flex-wrap gap-6">
+					<label class="flex items-center gap-3 text-sm text-stone-700">
+						<input
+							class="rounded border-stone-300"
+							name="concentration"
+							type="checkbox"
+							checked={createSpellValues.concentration}
+						/>
+						<span>Requires concentration</span>
+					</label>
+					<label class="flex items-center gap-3 text-sm text-stone-700">
+						<input
+							class="rounded border-stone-300"
+							name="ritual"
+							type="checkbox"
+							checked={createSpellValues.ritual}
+						/>
+						<span>Can be cast as a ritual</span>
+					</label>
+				</div>
+
+				<button
+					class="rounded-lg bg-stone-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-stone-700"
+					type="submit"
+					formaction="?/createPrivateSpell"
+				>
+					Create private spell
+				</button>
+			</form>
+		</div>
+
+		<div class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+			<div class="flex items-center justify-between gap-4">
+				<div>
+					<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
+						Your private spells
+					</p>
+					<h2 class="mt-2 text-2xl font-semibold text-stone-900">
+						Owner-scoped spell drafts
+					</h2>
+				</div>
+				<p class="text-sm text-stone-500">{data.privateSpells.length} total</p>
+			</div>
+
+			{#if data.privateSpells.length === 0}
+				<p class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600">
+					No private spells yet. Create one from the form to start building personal
+					spell content without changing the shared SRD spell catalog.
+				</p>
+			{:else}
+				<div class="mt-6 space-y-4">
+					{#each data.privateSpells as spell (spell.id)}
+						<article class="rounded-2xl border border-stone-200 p-4">
+							<div class="flex flex-wrap items-start justify-between gap-3">
+								<div>
+									<h3 class="text-lg font-semibold text-stone-900">{spell.name}</h3>
+									<p class="mt-1 text-sm text-stone-500">slug: {spell.slug}</p>
+								</div>
+								<div class="flex flex-wrap gap-2 text-xs font-medium uppercase tracking-[0.14em]">
+									<span class="rounded-full bg-amber-100 px-3 py-1 text-amber-900">
+										Private
+									</span>
+									<span class="rounded-full bg-sky-100 px-3 py-1 text-sky-900">
+										{formatSpellLevel(spell.level)}
+									</span>
+									<span class="rounded-full bg-stone-100 px-3 py-1 text-stone-900">
+										{formatSlugLabel(spell.school)}
+									</span>
+									{#if spell.concentration}
+										<span class="rounded-full bg-rose-100 px-3 py-1 text-rose-900">
+											Concentration
+										</span>
+									{/if}
+									{#if spell.ritual}
+										<span class="rounded-full bg-emerald-100 px-3 py-1 text-emerald-900">
+											Ritual
+										</span>
+									{/if}
+								</div>
+							</div>
+
+							<p class="mt-3 text-sm text-stone-600">
+								{spell.summary ?? spell.description ?? 'No summary yet.'}
+							</p>
+
+							<dl class="mt-4 grid gap-3 text-sm text-stone-600 sm:grid-cols-3">
+								<div>
+									<dt class="font-medium text-stone-900">Casting time</dt>
+									<dd class="mt-1">{spell.castingTime ?? 'Not specified'}</dd>
+								</div>
+								<div>
+									<dt class="font-medium text-stone-900">Range</dt>
+									<dd class="mt-1">{spell.range ?? 'Not specified'}</dd>
+								</div>
+								<div>
+									<dt class="font-medium text-stone-900">Duration</dt>
+									<dd class="mt-1">{spell.duration ?? 'Not specified'}</dd>
+								</div>
+							</dl>
+
+							<p class="mt-4 text-xs uppercase tracking-[0.16em] text-stone-500">
+								Classes: {formatClassList(spell.classSlugs)}
+							</p>
+							{#if spell.components}
+								<p class="mt-2 text-xs uppercase tracking-[0.16em] text-stone-500">
+									Components: {spell.components}
+									{#if spell.materials}
+										| Materials: {spell.materials}
+									{/if}
+								</p>
+							{/if}
 						</article>
 					{/each}
 				</div>
