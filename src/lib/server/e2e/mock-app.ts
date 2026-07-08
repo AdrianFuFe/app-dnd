@@ -64,7 +64,7 @@ type E2ESharedFeatRecord = {
 	prerequisites: string[];
 	summary: string | null;
 	description: string | null;
-	visibility: 'shared' | 'public';
+	visibility: 'private' | 'campaign' | 'shared' | 'public';
 	isSystemContent: boolean;
 	createdAt: string;
 	updatedAt: string;
@@ -477,8 +477,19 @@ export function listE2EExpandedContentCatalog(): ExpandedContentCatalog {
 		spells: e2eExpandedContentCatalog.spells.map(cloneSpellCatalogEntry),
 		feats: [
 			...state.sharedFeats
+				.filter(isSharedCatalogFeat)
 				.sort((left, right) => left.name.localeCompare(right.name))
-				.map((feat) => cloneFeatCatalogEntry(feat)),
+				.map((feat) =>
+					cloneFeatCatalogEntry({
+						id: feat.id,
+						slug: feat.slug,
+						name: feat.name,
+						prerequisites: [...feat.prerequisites],
+						summary: feat.summary,
+						description: feat.description,
+						visibility: feat.visibility
+					})
+				),
 			...e2eExpandedContentCatalog.feats.map(cloneFeatCatalogEntry)
 		],
 		equipment: e2eExpandedContentCatalog.equipment.map(cloneEquipmentCatalogEntry),
@@ -532,10 +543,27 @@ export function getE2ESpellCatalogEntry(spellId: string): SpellCatalogEntry | un
 }
 
 export function getE2EFeatCatalogEntry(featId: string): FeatCatalogEntry | undefined {
-	return (
-		state.sharedFeats.find((entry) => entry.id === featId) ??
-		e2eExpandedContentCatalog.feats.find((entry) => entry.id === featId)
-	);
+	const sharedFeat = state.sharedFeats.find((entry) => entry.id === featId);
+
+	if (sharedFeat && isSharedCatalogFeat(sharedFeat)) {
+		return {
+			id: sharedFeat.id,
+			slug: sharedFeat.slug,
+			name: sharedFeat.name,
+			prerequisites: [...sharedFeat.prerequisites],
+			summary: sharedFeat.summary,
+			description: sharedFeat.description,
+			visibility: sharedFeat.visibility
+		};
+	}
+
+	return e2eExpandedContentCatalog.feats.find((entry) => entry.id === featId);
+}
+
+export function getE2EManagedSharedFeatById(featId: string) {
+	const feat = state.sharedFeats.find((entry) => entry.id === featId);
+
+	return feat ? { ...feat } : null;
 }
 
 export function getE2EEquipmentCatalogEntry(
@@ -624,8 +652,27 @@ export function deleteE2ECharacterForUser(userId: string, characterId: string) {
 }
 
 export function listE2EPrivateFeatsForUser(userId: string) {
-	return state.privateFeats
-		.filter((feat) => feat.userId === userId)
+	return [
+		...state.privateFeats.filter((feat) => feat.userId === userId),
+		...state.sharedFeats
+			.filter(
+				(feat) =>
+					feat.userId === userId && !feat.isSystemContent && feat.visibility === 'private'
+			)
+			.map((feat) => ({
+				id: feat.id,
+				userId,
+				sourceCode: feat.sourceCode,
+				slug: feat.slug,
+				name: feat.name,
+				prerequisites: [...feat.prerequisites],
+				summary: feat.summary,
+				description: feat.description,
+				derivation: null,
+				createdAt: feat.createdAt,
+				updatedAt: feat.updatedAt
+			}))
+	]
 		.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
 		.map((feat) => ({ ...feat }));
 }
@@ -716,6 +763,7 @@ export function createE2ESharedFeatForUser(
 
 export function listE2EManagedSharedFeatsForUser(userId: string, includeSystemContent: boolean) {
 	return state.sharedFeats
+		.filter((feat) => feat.visibility !== 'private' && feat.visibility !== 'campaign')
 		.filter((feat) => (includeSystemContent ? true : !feat.isSystemContent))
 		.filter((feat) => (includeSystemContent ? true : feat.userId === userId))
 		.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
@@ -740,6 +788,10 @@ export function updateE2EManagedSharedFeatForUser(
 		throw new Error('Please choose a valid shared feat to maintain.');
 	}
 
+	if (feat.visibility === 'private' || feat.visibility === 'campaign') {
+		throw new Error('Please choose a valid shared feat to maintain.');
+	}
+
 	if (!input.includeSystemContent && (feat.isSystemContent || feat.userId !== userId)) {
 		throw new Error('Please choose a valid shared feat to maintain.');
 	}
@@ -760,6 +812,59 @@ export function updateE2EManagedSharedFeatForUser(
 		description: input.description ?? null,
 		updatedAt: nextUpdatedAt()
 	});
+
+	return { ...feat };
+}
+
+export function retireE2EManagedSharedFeatForUser(
+	userId: string,
+	input: {
+		featId: string;
+		includeSystemContent: boolean;
+	}
+) {
+	const feat = state.sharedFeats.find((entry) => entry.id === input.featId);
+
+	if (!feat || feat.visibility === 'private' || feat.visibility === 'campaign') {
+		throw new Error('Please choose a valid shared feat to maintain.');
+	}
+
+	if (!input.includeSystemContent && (feat.isSystemContent || feat.userId !== userId)) {
+		throw new Error('Please choose a valid shared feat to maintain.');
+	}
+
+	Object.assign(feat, {
+		visibility: 'private',
+		updatedAt: nextUpdatedAt()
+	});
+
+	return { ...feat };
+}
+
+export function deleteE2EManagedSharedFeatForUser(
+	userId: string,
+	input: {
+		featId: string;
+		includeSystemContent: boolean;
+	}
+) {
+	const index = state.sharedFeats.findIndex((entry) => entry.id === input.featId);
+
+	if (index === -1) {
+		throw new Error('Please choose a valid shared feat to maintain.');
+	}
+
+	const feat = state.sharedFeats[index];
+
+	if (feat.visibility === 'private' || feat.visibility === 'campaign') {
+		throw new Error('Please choose a valid shared feat to maintain.');
+	}
+
+	if (!input.includeSystemContent && (feat.isSystemContent || feat.userId !== userId)) {
+		throw new Error('Please choose a valid shared feat to maintain.');
+	}
+
+	state.sharedFeats.splice(index, 1);
 
 	return { ...feat };
 }
@@ -807,4 +912,10 @@ function cloneSharedRulesVocabularyCatalog(
 			...entry
 		}))
 	};
+}
+
+function isSharedCatalogFeat(
+	feat: E2ESharedFeatRecord
+): feat is E2ESharedFeatRecord & { visibility: 'shared' | 'public' } {
+	return feat.visibility === 'shared' || feat.visibility === 'public';
 }

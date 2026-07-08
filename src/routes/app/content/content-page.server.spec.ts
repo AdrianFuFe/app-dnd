@@ -15,17 +15,21 @@ const { listCharacterCreationCatalog, listExpandedContentCatalog } = vi.hoisted(
 const {
 	createPrivateFeat,
 	createSharedFeat,
+	deleteManagedSharedFeat,
 	derivePrivateFeatFromSharedCatalog,
 	listManagedSharedFeats,
 	listPrivateFeatsForUser,
+	retireManagedSharedFeat,
 	updateManagedSharedFeat
 } =
 	vi.hoisted(() => ({
 	createPrivateFeat: vi.fn(),
 	createSharedFeat: vi.fn(),
+	deleteManagedSharedFeat: vi.fn(),
 	derivePrivateFeatFromSharedCatalog: vi.fn(),
 	listManagedSharedFeats: vi.fn(),
 	listPrivateFeatsForUser: vi.fn(),
+	retireManagedSharedFeat: vi.fn(),
 	updateManagedSharedFeat: vi.fn()
 	}));
 
@@ -42,9 +46,11 @@ vi.mock('$lib/server/repositories/catalog', () => ({
 vi.mock('$lib/server/repositories/private-feats', () => ({
 	createPrivateFeat,
 	createSharedFeat,
+	deleteManagedSharedFeat,
 	derivePrivateFeatFromSharedCatalog,
 	listManagedSharedFeats,
 	listPrivateFeatsForUser,
+	retireManagedSharedFeat,
 	updateManagedSharedFeat
 }));
 
@@ -103,6 +109,8 @@ describe('/app/content load', () => {
 			publishedSharedFeatName: null,
 			publishedSystemFeatName: null,
 			updatedSharedFeatName: null,
+			retiredSharedFeatName: null,
+			deletedSharedFeatName: null,
 			createPrivateFeatValues: {
 				name: '',
 				summary: '',
@@ -348,6 +356,8 @@ describe('/app/content load', () => {
 			publishedSharedFeatName: 'Battle Lore',
 			publishedSystemFeatName: null,
 			updatedSharedFeatName: 'Battle Lore',
+			retiredSharedFeatName: null,
+			deletedSharedFeatName: null,
 			createPrivateFeatValues: {
 				name: '',
 				summary: '',
@@ -387,8 +397,10 @@ describe('/app/content actions', () => {
 	beforeEach(() => {
 		createPrivateFeat.mockReset();
 		createSharedFeat.mockReset();
+		deleteManagedSharedFeat.mockReset();
 		derivePrivateFeatFromSharedCatalog.mockReset();
 		listManagedSharedFeats.mockReset();
+		retireManagedSharedFeat.mockReset();
 		updateManagedSharedFeat.mockReset();
 		getAuthorizationContext.mockReset().mockResolvedValue({
 			userId: 'user-1',
@@ -879,6 +891,135 @@ describe('/app/content actions', () => {
 						summary: 'System-governed feat.',
 						description: '',
 						prerequisitesText: ''
+					})
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 403
+		});
+	});
+
+	it('retires a managed shared feat for content editors', async () => {
+		getAuthorizationContext.mockResolvedValueOnce({
+			userId: 'user-1',
+			globalRole: 'content_editor',
+			capabilities: [
+				'read_shared_catalog',
+				'manage_own_characters',
+				'manage_private_content',
+				'edit_shared_content'
+			]
+		});
+		retireManagedSharedFeat.mockResolvedValueOnce({
+			id: 'shared-feat-1',
+			name: 'Battle Lore'
+		});
+
+		await expect(
+			actions.retireSharedFeat?.({
+				locals: {
+					session: {
+						user: {
+							id: 'user-1'
+						}
+					},
+					supabase: {}
+				},
+				request: new Request('http://localhost/app/content?/retireSharedFeat', {
+					method: 'POST',
+					body: new URLSearchParams({
+						featId: 'shared-feat-1'
+					})
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 303,
+			location: '/app/content?retiredSharedFeat=Battle%20Lore'
+		});
+
+		expect(retireManagedSharedFeat).toHaveBeenCalledWith(
+			{},
+			expect.objectContaining({ globalRole: 'content_editor', userId: 'user-1' }),
+			'shared-feat-1'
+		);
+	});
+
+	it('deletes a managed shared feat for admins', async () => {
+		getAuthorizationContext.mockResolvedValueOnce({
+			userId: 'user-1',
+			globalRole: 'admin',
+			capabilities: [
+				'read_shared_catalog',
+				'manage_own_characters',
+				'manage_private_content',
+				'edit_shared_content',
+				'manage_system_content',
+				'manage_users_and_roles'
+			]
+		});
+		deleteManagedSharedFeat.mockResolvedValueOnce({
+			id: 'system-feat-1',
+			name: 'Warden Sigil'
+		});
+
+		await expect(
+			actions.deleteSharedFeat?.({
+				locals: {
+					session: {
+						user: {
+							id: 'user-1'
+						}
+					},
+					supabase: {}
+				},
+				request: new Request('http://localhost/app/content?/deleteSharedFeat', {
+					method: 'POST',
+					body: new URLSearchParams({
+						featId: 'system-feat-1'
+					})
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 303,
+			location: '/app/content?deletedSharedFeat=Warden%20Sigil'
+		});
+
+		expect(deleteManagedSharedFeat).toHaveBeenCalledWith(
+			{},
+			expect.objectContaining({ globalRole: 'admin', userId: 'user-1' }),
+			'system-feat-1'
+		);
+	});
+
+	it('blocks content editors from admin-only lifecycle actions', async () => {
+		getAuthorizationContext.mockResolvedValueOnce({
+			userId: 'user-1',
+			globalRole: 'content_editor',
+			capabilities: [
+				'read_shared_catalog',
+				'manage_own_characters',
+				'manage_private_content',
+				'edit_shared_content'
+			]
+		});
+		retireManagedSharedFeat.mockRejectedValueOnce(
+			Object.assign(new Error('forbidden'), { status: 403 })
+		);
+
+		await expect(
+			actions.retireSharedFeat?.({
+				locals: {
+					session: {
+						user: {
+							id: 'user-1'
+						}
+					},
+					supabase: {}
+				},
+				request: new Request('http://localhost/app/content?/retireSharedFeat', {
+					method: 'POST',
+					body: new URLSearchParams({
+						featId: 'system-feat-1'
 					})
 				})
 			} as never)

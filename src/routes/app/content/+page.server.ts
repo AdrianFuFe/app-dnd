@@ -11,9 +11,11 @@ import {
 import {
 	createPrivateFeat,
 	createSharedFeat,
+	deleteManagedSharedFeat,
 	derivePrivateFeatFromSharedCatalog,
 	listManagedSharedFeats,
 	listPrivateFeatsForUser,
+	retireManagedSharedFeat,
 	updateManagedSharedFeat
 } from '$lib/server/repositories/private-feats';
 import {
@@ -31,6 +33,8 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 			publishedSharedFeatName: url.searchParams.get('publishedSharedFeat'),
 			publishedSystemFeatName: url.searchParams.get('publishedSystemFeat'),
 			updatedSharedFeatName: url.searchParams.get('updatedSharedFeat'),
+			retiredSharedFeatName: url.searchParams.get('retiredSharedFeat'),
+			deletedSharedFeatName: url.searchParams.get('deletedSharedFeat'),
 			createPrivateFeatValues: createPrivateFeatFormValues(),
 			editSharedFeatId: null,
 			editSharedFeatValues: createPrivateFeatFormValues(),
@@ -92,6 +96,8 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 		publishedSharedFeatName: url.searchParams.get('publishedSharedFeat'),
 		publishedSystemFeatName: url.searchParams.get('publishedSystemFeat'),
 		updatedSharedFeatName: url.searchParams.get('updatedSharedFeat'),
+		retiredSharedFeatName: url.searchParams.get('retiredSharedFeat'),
+		deletedSharedFeatName: url.searchParams.get('deletedSharedFeat'),
 		createPrivateFeatValues: createPrivateFeatFormValues(),
 		editSharedFeatId: editableSharedFeat?.id ?? null,
 		editSharedFeatValues: editableSharedFeat
@@ -233,6 +239,110 @@ export const actions: Actions = {
 						: 'The shared feat could not be updated.',
 				editSharedFeatId: featId,
 				editSharedFeatValues: parsedForm.values
+			});
+		}
+	},
+	retireSharedFeat: async ({ locals, request }) => {
+		if (!locals.session) {
+			throw redirect(302, '/auth/login?redirectTo=/app/content');
+		}
+
+		if (!locals.supabase) {
+			return fail(500, {
+				editSharedFeatFieldErrors: {},
+				editSharedFeatFormError: 'Supabase is not configured yet.',
+				editSharedFeatId: null,
+				editSharedFeatValues: createPrivateFeatFormValues()
+			});
+		}
+
+		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		requirePermissionScopeAccess(authorization, 'shared_content');
+
+		const formData = await request.formData();
+		const featId = formData.get('featId');
+
+		if (typeof featId !== 'string' || featId.trim().length === 0) {
+			return fail(400, {
+				editSharedFeatFieldErrors: {},
+				editSharedFeatFormError: 'Please choose a valid shared feat to maintain.',
+				editSharedFeatId: null,
+				editSharedFeatValues: createPrivateFeatFormValues()
+			});
+		}
+
+		try {
+			const feat = await retireManagedSharedFeat(locals.supabase, authorization, featId);
+			const retiredSharedFeat = encodeURIComponent(feat.name);
+
+			throw redirect(303, `/app/content?retiredSharedFeat=${retiredSharedFeat}`);
+		} catch (error) {
+			if (isRedirect(error)) {
+				throw error;
+			}
+
+			if (typeof error === 'object' && error !== null && 'status' in error && error.status === 403) {
+				throw error;
+			}
+
+			return fail(400, {
+				editSharedFeatFieldErrors: {},
+				editSharedFeatFormError:
+					error instanceof Error ? error.message : 'The shared feat could not be retired.',
+				editSharedFeatId: featId,
+				editSharedFeatValues: createPrivateFeatFormValues()
+			});
+		}
+	},
+	deleteSharedFeat: async ({ locals, request }) => {
+		if (!locals.session) {
+			throw redirect(302, '/auth/login?redirectTo=/app/content');
+		}
+
+		if (!locals.supabase) {
+			return fail(500, {
+				editSharedFeatFieldErrors: {},
+				editSharedFeatFormError: 'Supabase is not configured yet.',
+				editSharedFeatId: null,
+				editSharedFeatValues: createPrivateFeatFormValues()
+			});
+		}
+
+		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		requirePermissionScopeAccess(authorization, 'shared_content');
+
+		const formData = await request.formData();
+		const featId = formData.get('featId');
+
+		if (typeof featId !== 'string' || featId.trim().length === 0) {
+			return fail(400, {
+				editSharedFeatFieldErrors: {},
+				editSharedFeatFormError: 'Please choose a valid shared feat to maintain.',
+				editSharedFeatId: null,
+				editSharedFeatValues: createPrivateFeatFormValues()
+			});
+		}
+
+		try {
+			const feat = await deleteManagedSharedFeat(locals.supabase, authorization, featId);
+			const deletedSharedFeat = encodeURIComponent(feat.name);
+
+			throw redirect(303, `/app/content?deletedSharedFeat=${deletedSharedFeat}`);
+		} catch (error) {
+			if (isRedirect(error)) {
+				throw error;
+			}
+
+			if (typeof error === 'object' && error !== null && 'status' in error && error.status === 403) {
+				throw error;
+			}
+
+			return fail(400, {
+				editSharedFeatFieldErrors: {},
+				editSharedFeatFormError:
+					error instanceof Error ? error.message : 'The shared feat could not be deleted.',
+				editSharedFeatId: featId,
+				editSharedFeatValues: createPrivateFeatFormValues()
 			});
 		}
 	},

@@ -21,6 +21,11 @@
 		(form?.editSharedFeatValues ?? data.editSharedFeatValues) as PrivateFeatFormValues
 	);
 	const editSharedFeatId = $derived((form?.editSharedFeatId ?? data.editSharedFeatId) as string | null);
+	const selectedManagedSharedFeat = $derived(
+		editSharedFeatId
+			? data.manageableSharedFeats.find((feat) => feat.id === editSharedFeatId) ?? null
+			: null
+	);
 
 	function formatCountLabel(count: number, singular: string, plural: string): string {
 		return `${count} ${count === 1 ? singular : plural}`;
@@ -357,13 +362,23 @@
 					Update a managed shared feat
 				</h2>
 				<p class="mt-3 max-w-2xl text-sm leading-7 text-stone-600">
-					Editors can update their own shared homebrew feats. Admins can also update
-					system-owned entries.
+					Editors can update, retire, or delete their own shared homebrew feats. Admins
+					can apply the same lifecycle controls to system-owned entries.
 				</p>
 
 				{#if data.updatedSharedFeatName}
 					<p class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
 						{data.updatedSharedFeatName} was updated successfully.
+					</p>
+				{/if}
+				{#if data.retiredSharedFeatName}
+					<p class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+						{data.retiredSharedFeatName} was retired from the shared catalog.
+					</p>
+				{/if}
+				{#if data.deletedSharedFeatName}
+					<p class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+						{data.deletedSharedFeatName} was deleted from shared content.
 					</p>
 				{/if}
 
@@ -444,6 +459,45 @@
 							Save shared feat changes
 						</button>
 					</form>
+
+					<div class="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+						<p class="text-sm font-medium text-amber-950">Lifecycle controls</p>
+						<p class="mt-2 text-sm leading-6 text-amber-900">
+							Retiring removes this feat from shared browsing without permanently deleting
+							the stored row. Deleting removes it permanently from managed shared content.
+						</p>
+						<p class="mt-2 text-sm leading-6 text-amber-900">
+							{#if selectedManagedSharedFeat?.isSystemContent}
+								This entry is system-owned, so only admin users should apply destructive
+								actions here.
+							{:else}
+								This action scope is limited to the shared feat you selected and should be
+								used only when it should no longer stay in the shared catalog.
+							{/if}
+						</p>
+						<div class="mt-4 flex flex-wrap gap-3">
+							<form method="POST">
+								<input type="hidden" name="featId" value={editSharedFeatId} />
+								<button
+									class="rounded-lg border border-amber-300 bg-white px-4 py-3 text-sm font-medium text-amber-950 transition hover:bg-amber-100"
+									type="submit"
+									formaction="?/retireSharedFeat"
+								>
+									Retire from shared catalog
+								</button>
+							</form>
+							<form method="POST">
+								<input type="hidden" name="featId" value={editSharedFeatId} />
+								<button
+									class="rounded-lg bg-rose-700 px-4 py-3 text-sm font-medium text-white transition hover:bg-rose-600"
+									type="submit"
+									formaction="?/deleteSharedFeat"
+								>
+									Delete permanently
+								</button>
+							</form>
+						</div>
+					</div>
 				{/if}
 			</div>
 		</section>

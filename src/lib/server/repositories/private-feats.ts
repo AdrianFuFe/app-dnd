@@ -3,10 +3,13 @@ import { error as httpError } from '@sveltejs/kit';
 import {
 	createE2EPrivateFeatForUser,
 	createE2ESharedFeatForUser,
+	deleteE2EManagedSharedFeatForUser,
 	getE2EFeatCatalogEntry,
+	getE2EManagedSharedFeatById,
 	isE2EMockSupabaseClient,
 	listE2EManagedSharedFeatsForUser,
 	listE2EPrivateFeatsForUser,
+	retireE2EManagedSharedFeatForUser,
 	updateE2EManagedSharedFeatForUser
 } from '$lib/server/e2e/mock-app';
 import type { Database } from '$lib/types/database/supabase';
@@ -74,6 +77,11 @@ export type SharedFeatRecord = {
 
 export type ManagedSharedFeatRecord = SharedFeatRecord & {
 	ownerUserId: string | null;
+};
+
+export type ManagedSharedFeatLifecycleResult = {
+	id: string;
+	name: string;
 };
 
 type PrivateFeatRow = Pick<
@@ -250,7 +258,21 @@ export async function createSharedFeat(
 	input: CreateSharedFeatInput
 ): Promise<SharedFeatRecord> {
 	if (isE2EMockSupabaseClient(supabase)) {
-		return createE2ESharedFeatForUser(userId, input);
+		const created = createE2ESharedFeatForUser(userId, input);
+
+		return {
+			id: created.id,
+			sourceCode: created.sourceCode,
+			slug: created.slug,
+			name: created.name,
+			prerequisites: [...created.prerequisites],
+			summary: created.summary,
+			description: created.description,
+			visibility: created.visibility === 'public' ? 'public' : 'shared',
+			isSystemContent: created.isSystemContent,
+			createdAt: created.createdAt,
+			updatedAt: created.updatedAt
+		};
 	}
 
 	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
@@ -297,7 +319,17 @@ export async function listManagedSharedFeats(
 			authorization.userId,
 			authorization.globalRole === 'admin'
 		).map((feat) => ({
-			...feat,
+			id: feat.id,
+			sourceCode: feat.sourceCode,
+			slug: feat.slug,
+			name: feat.name,
+			prerequisites: [...feat.prerequisites],
+			summary: feat.summary,
+			description: feat.description,
+			visibility: feat.visibility === 'public' ? 'public' : 'shared',
+			isSystemContent: feat.isSystemContent,
+			createdAt: feat.createdAt,
+			updatedAt: feat.updatedAt,
 			ownerUserId: feat.userId
 		}));
 	}
@@ -332,6 +364,8 @@ export async function updateManagedSharedFeat(
 	}
 ): Promise<ManagedSharedFeatRecord> {
 	if (isE2EMockSupabaseClient(supabase)) {
+		const feat = loadE2EManagedSharedFeatById(input.featId);
+		assertManagedSharedFeatAccess(authorization, feat, 'update');
 		const updated = updateE2EManagedSharedFeatForUser(authorization.userId, {
 			featId: input.featId,
 			name: input.name,
@@ -343,21 +377,24 @@ export async function updateManagedSharedFeat(
 		});
 
 		return {
-			...updated,
+			id: updated.id,
+			sourceCode: updated.sourceCode,
+			slug: updated.slug,
+			name: updated.name,
+			prerequisites: [...updated.prerequisites],
+			summary: updated.summary,
+			description: updated.description,
+			visibility: updated.visibility === 'public' ? 'public' : 'shared',
+			isSystemContent: updated.isSystemContent,
+			createdAt: updated.createdAt,
+			updatedAt: updated.updatedAt,
 			ownerUserId: updated.userId
 		};
 	}
 
 	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
 	const feat = await loadManagedSharedFeatById(supabase, input.featId, sourceIds);
-
-	if (feat.is_system_content) {
-		if (authorization.globalRole !== 'admin') {
-			throw httpError(403, 'Admin role required to update system-owned feats.');
-		}
-	} else if (authorization.globalRole !== 'admin' && feat.owner_user_id !== authorization.userId) {
-		throw httpError(403, 'You can only maintain your own shared feats.');
-	}
+	assertManagedSharedFeatAccess(authorization, feat, 'update');
 
 	await assertNoExistingSharedFeatSlug(supabase, input.slug, sourceIds, feat.id);
 
@@ -381,6 +418,76 @@ export async function updateManagedSharedFeat(
 	}
 
 	return mapManagedSharedFeatRecord(data, sourceIds);
+}
+
+export async function retireManagedSharedFeat(
+	supabase: SupabaseClient<Database>,
+	authorization: AuthorizationContext,
+	featId: string
+): Promise<ManagedSharedFeatLifecycleResult> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		const feat = loadE2EManagedSharedFeatById(featId);
+		assertManagedSharedFeatAccess(authorization, feat, 'retire');
+		const retired = retireE2EManagedSharedFeatForUser(authorization.userId, {
+			featId,
+			includeSystemContent: authorization.globalRole === 'admin'
+		});
+
+		return {
+			id: retired.id,
+			name: retired.name
+		};
+	}
+
+	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
+	const feat = await loadManagedSharedFeatById(supabase, featId, sourceIds);
+	assertManagedSharedFeatAccess(authorization, feat, 'retire');
+
+	const { error } = await supabase.from('feats').update({ visibility: 'private' }).eq('id', feat.id);
+
+	if (error) {
+		throw new Error(`Failed to retire shared feat ${feat.id}`);
+	}
+
+	return {
+		id: feat.id,
+		name: feat.name
+	};
+}
+
+export async function deleteManagedSharedFeat(
+	supabase: SupabaseClient<Database>,
+	authorization: AuthorizationContext,
+	featId: string
+): Promise<ManagedSharedFeatLifecycleResult> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		const feat = loadE2EManagedSharedFeatById(featId);
+		assertManagedSharedFeatAccess(authorization, feat, 'delete');
+		const deleted = deleteE2EManagedSharedFeatForUser(authorization.userId, {
+			featId,
+			includeSystemContent: authorization.globalRole === 'admin'
+		});
+
+		return {
+			id: deleted.id,
+			name: deleted.name
+		};
+	}
+
+	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
+	const feat = await loadManagedSharedFeatById(supabase, featId, sourceIds);
+	assertManagedSharedFeatAccess(authorization, feat, 'delete');
+
+	const { error } = await supabase.from('feats').delete().eq('id', feat.id);
+
+	if (error) {
+		throw new Error(`Failed to delete shared feat ${feat.id}`);
+	}
+
+	return {
+		id: feat.id,
+		name: feat.name
+	};
 }
 
 export function buildPrivateFeatDerivationMechanic(input: {
@@ -603,6 +710,38 @@ function mapManagedSharedFeatRecord(
 
 function normalizeMechanics(mechanics: unknown): GameMechanic[] {
 	return Array.isArray(mechanics) ? (mechanics as GameMechanic[]) : [];
+}
+
+function loadE2EManagedSharedFeatById(featId: string) {
+	const feat = getE2EManagedSharedFeatById(featId);
+
+	if (!feat || feat.visibility === 'private' || feat.visibility === 'campaign') {
+		throw new Error('Please choose a valid shared feat to maintain.');
+	}
+
+	return {
+		...feat,
+		owner_user_id: feat.userId,
+		is_system_content: feat.isSystemContent
+	};
+}
+
+function assertManagedSharedFeatAccess(
+	authorization: AuthorizationContext,
+	feat: Pick<SharedFeatRow, 'owner_user_id' | 'is_system_content'>,
+	operation: 'update' | 'retire' | 'delete'
+) {
+	if (feat.is_system_content) {
+		if (authorization.globalRole !== 'admin') {
+			throw httpError(403, `Admin role required to ${operation} system-owned feats.`);
+		}
+
+		return;
+	}
+
+	if (authorization.globalRole !== 'admin' && feat.owner_user_id !== authorization.userId) {
+		throw httpError(403, `You can only ${operation} your own shared feats.`);
+	}
 }
 
 function findSourceCodeById(
