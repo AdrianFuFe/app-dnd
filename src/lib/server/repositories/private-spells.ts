@@ -1,8 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
+	createE2ESharedSpellForUser,
+	isE2EMockSupabaseClient,
 	createE2EPrivateSpellForUser,
 	getE2ESpellCatalogEntry,
-	isE2EMockSupabaseClient,
 	listE2EPrivateSpellsForUser
 } from '$lib/server/e2e/mock-app';
 import type { Database } from '$lib/types/database/supabase';
@@ -12,6 +13,8 @@ type SpellRow = Database['public']['Tables']['spells']['Row'];
 type SpellInsert = Database['public']['Tables']['spells']['Insert'];
 type ContentSourceCode = 'user-private' | 'homebrew' | 'srd-5-1' | 'srd-5-2';
 type PrivateSpellSourceCode = 'user-private' | 'homebrew';
+type SharedSpellSourceCode = 'homebrew';
+type ManagedSpellVisibility = 'shared' | 'public';
 
 export type PrivateSpellDerivation = {
 	source: ContentSourceCode;
@@ -63,6 +66,35 @@ export type DerivePrivateSpellInput = {
 	sharedSpellId: string;
 };
 
+export type CreateSharedSpellInput = CreatePrivateSpellInput & {
+	sourceCode?: SharedSpellSourceCode;
+	visibility: ManagedSpellVisibility;
+	isSystemContent: boolean;
+};
+
+export type SharedSpellRecord = {
+	id: string;
+	sourceCode: SharedSpellSourceCode;
+	slug: string;
+	name: string;
+	level: number;
+	school: string;
+	castingTime: string | null;
+	range: string | null;
+	components: string | null;
+	materials: string | null;
+	duration: string | null;
+	classSlugs: string[];
+	summary: string | null;
+	description: string | null;
+	visibility: ManagedSpellVisibility;
+	isSystemContent: boolean;
+	concentration: boolean;
+	ritual: boolean;
+	createdAt: string;
+	updatedAt: string;
+};
+
 type PrivateSpellRow = Pick<
 	SpellRow,
 	| 'id'
@@ -82,6 +114,30 @@ type PrivateSpellRow = Pick<
 	| 'mechanics'
 	| 'concentration'
 	| 'ritual'
+	| 'created_at'
+	| 'updated_at'
+>;
+
+type SharedSpellRow = Pick<
+	SpellRow,
+	| 'id'
+	| 'source_id'
+	| 'slug'
+	| 'name'
+	| 'level'
+	| 'school'
+	| 'casting_time'
+	| 'range_text'
+	| 'components'
+	| 'materials'
+	| 'duration'
+	| 'class_slugs'
+	| 'summary'
+	| 'description'
+	| 'visibility'
+	| 'concentration'
+	| 'ritual'
+	| 'is_system_content'
 	| 'created_at'
 	| 'updated_at'
 >;
@@ -253,6 +309,82 @@ export async function derivePrivateSpellFromSharedCatalog(
 	return mapPrivateSpellRecord(data, privateSourceIds);
 }
 
+export async function createSharedSpell(
+	supabase: SupabaseClient<Database>,
+	userId: string,
+	input: CreateSharedSpellInput
+): Promise<SharedSpellRecord> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		const created = createE2ESharedSpellForUser(userId, input);
+
+		return {
+			id: created.id,
+			sourceCode: created.sourceCode,
+			slug: created.slug,
+			name: created.name,
+			level: created.level,
+			school: created.school,
+			castingTime: created.castingTime,
+			range: created.range,
+			components: created.components,
+			materials: created.materials,
+			duration: created.duration,
+			classSlugs: [...created.classSlugs],
+			summary: created.summary,
+			description: created.description,
+			visibility: created.visibility === 'public' ? 'public' : 'shared',
+			isSystemContent: created.isSystemContent,
+			concentration: created.concentration,
+			ritual: created.ritual,
+			createdAt: created.createdAt,
+			updatedAt: created.updatedAt
+		};
+	}
+
+	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
+	await assertNoExistingSharedSpellSlug(supabase, input.slug, sourceIds);
+
+	const insert: SpellInsert = {
+		owner_user_id: input.isSystemContent ? null : userId,
+		source_id: sourceIds.homebrew,
+		visibility: input.visibility,
+		slug: input.slug,
+		name: input.name,
+		level: input.level,
+		school: input.school,
+		casting_time: input.castingTime ?? null,
+		range_text: input.range ?? null,
+		components: input.components ?? null,
+		materials: input.materials ?? null,
+		duration: input.duration ?? null,
+		class_slugs: input.classSlugs,
+		summary: input.summary ?? null,
+		description: input.description ?? null,
+		concentration: input.concentration,
+		ritual: input.ritual,
+		mechanics: [],
+		is_system_content: input.isSystemContent
+	};
+
+	const { data, error } = await supabase
+		.from('spells')
+		.insert(insert)
+		.select(
+			'id, source_id, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, visibility, concentration, ritual, is_system_content, created_at, updated_at'
+		)
+		.single();
+
+	if (error) {
+		throw new Error(
+			input.isSystemContent
+				? `Failed to create system spell for user ${userId}`
+				: `Failed to create shared spell for user ${userId}`
+		);
+	}
+
+	return mapSharedSpellRecord(data, sourceIds);
+}
+
 export function buildPrivateSpellDerivationMechanic(input: {
 	source: ContentSourceCode;
 	slug: string;
@@ -330,6 +462,28 @@ async function assertNoExistingPrivateSpellSlug(
 	}
 }
 
+async function assertNoExistingSharedSpellSlug(
+	supabase: SupabaseClient<Database>,
+	slug: string,
+	sourceIds: Record<SharedSpellSourceCode, string>
+) {
+	const { data, error } = await supabase
+		.from('spells')
+		.select('id')
+		.eq('slug', slug)
+		.eq('source_id', sourceIds.homebrew)
+		.not('visibility', 'in', '(private,campaign)')
+		.limit(1);
+
+	if (error) {
+		throw new Error(`Failed to check shared spell slug "${slug}"`);
+	}
+
+	if (data.length > 0) {
+		throw new Error('A shared spell with that slug already exists. Try a different name.');
+	}
+}
+
 async function loadSharedSpellForDerivation(
 	supabase: SupabaseClient<Database>,
 	spellId: string
@@ -391,6 +545,34 @@ function mapPrivateSpellRecord(
 		summary: spell.summary,
 		description: spell.description,
 		derivation: extractPrivateSpellDerivation(spell.mechanics),
+		concentration: spell.concentration,
+		ritual: spell.ritual,
+		createdAt: spell.created_at,
+		updatedAt: spell.updated_at
+	};
+}
+
+function mapSharedSpellRecord(
+	spell: SharedSpellRow,
+	sourceIds: Record<SharedSpellSourceCode, string>
+): SharedSpellRecord {
+	return {
+		id: spell.id,
+		sourceCode: spell.source_id === sourceIds.homebrew ? 'homebrew' : 'homebrew',
+		slug: spell.slug,
+		name: spell.name,
+		level: spell.level,
+		school: spell.school,
+		castingTime: spell.casting_time,
+		range: spell.range_text,
+		components: spell.components,
+		materials: spell.materials,
+		duration: spell.duration,
+		classSlugs: spell.class_slugs,
+		summary: spell.summary,
+		description: spell.description,
+		visibility: spell.visibility === 'public' ? 'public' : 'shared',
+		isSystemContent: spell.is_system_content,
 		concentration: spell.concentration,
 		ritual: spell.ritual,
 		createdAt: spell.created_at,

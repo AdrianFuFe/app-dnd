@@ -16,6 +16,7 @@ const {
 	createPrivateFeat,
 	createPrivateSpell,
 	createSharedFeat,
+	createSharedSpell,
 	deleteManagedSharedFeat,
 	derivePrivateFeatFromSharedCatalog,
 	derivePrivateSpellFromSharedCatalog,
@@ -29,6 +30,7 @@ const {
 	createPrivateFeat: vi.fn(),
 	createPrivateSpell: vi.fn(),
 	createSharedFeat: vi.fn(),
+	createSharedSpell: vi.fn(),
 	deleteManagedSharedFeat: vi.fn(),
 	derivePrivateFeatFromSharedCatalog: vi.fn(),
 	derivePrivateSpellFromSharedCatalog: vi.fn(),
@@ -62,6 +64,7 @@ vi.mock('$lib/server/repositories/private-feats', () => ({
 
 vi.mock('$lib/server/repositories/private-spells', () => ({
 	createPrivateSpell,
+	createSharedSpell,
 	derivePrivateSpellFromSharedCatalog,
 	listPrivateSpellsForUser
 }));
@@ -123,6 +126,8 @@ describe('/app/content load', () => {
 			derivedPrivateSpellName: null,
 			publishedSharedFeatName: null,
 			publishedSystemFeatName: null,
+			publishedSharedSpellName: null,
+			publishedSystemSpellName: null,
 			updatedSharedFeatName: null,
 			retiredSharedFeatName: null,
 			deletedSharedFeatName: null,
@@ -157,6 +162,8 @@ describe('/app/content load', () => {
 			roleOperations: {
 				canPublishSharedFeats: false,
 				canPublishSystemFeats: false,
+				canPublishSharedSpells: false,
+				canPublishSystemSpells: false,
 				canMaintainSharedFeats: false,
 				canMaintainSystemFeats: false
 			},
@@ -404,6 +411,7 @@ describe('/app/content load', () => {
 				}),
 				url: new URL(
 					'http://localhost/app/content?createdPrivateFeat=Observant%20Echo&createdPrivateSpell=Arc%20Light&derivedPrivateFeat=Alert&derivedPrivateSpell=Magic%20Missile&publishedSharedFeat=Battle%20Lore&editSharedFeat=shared-feat-1&updatedSharedFeat=Battle%20Lore'
+					+ '&publishedSharedSpell=Arc%20Light%20Nova&publishedSystemSpell=Solar%20Ward'
 				)
 			} as never)
 		).resolves.toEqual({
@@ -413,6 +421,8 @@ describe('/app/content load', () => {
 			derivedPrivateSpellName: 'Magic Missile',
 			publishedSharedFeatName: 'Battle Lore',
 			publishedSystemFeatName: null,
+			publishedSharedSpellName: 'Arc Light Nova',
+			publishedSystemSpellName: 'Solar Ward',
 			updatedSharedFeatName: 'Battle Lore',
 			retiredSharedFeatName: null,
 			deletedSharedFeatName: null,
@@ -447,6 +457,8 @@ describe('/app/content load', () => {
 			roleOperations: {
 				canPublishSharedFeats: true,
 				canPublishSystemFeats: false,
+				canPublishSharedSpells: true,
+				canPublishSystemSpells: false,
 				canMaintainSharedFeats: true,
 				canMaintainSystemFeats: false
 			},
@@ -474,6 +486,7 @@ describe('/app/content actions', () => {
 		createPrivateFeat.mockReset();
 		createPrivateSpell.mockReset();
 		createSharedFeat.mockReset();
+		createSharedSpell.mockReset();
 		deleteManagedSharedFeat.mockReset();
 		derivePrivateFeatFromSharedCatalog.mockReset();
 		derivePrivateSpellFromSharedCatalog.mockReset();
@@ -850,6 +863,98 @@ describe('/app/content actions', () => {
 		});
 	});
 
+	it('publishes a shared spell for content editors', async () => {
+		getAuthorizationContext.mockResolvedValueOnce({
+			userId: 'user-1',
+			globalRole: 'content_editor',
+			capabilities: [
+				'read_shared_catalog',
+				'manage_own_characters',
+				'manage_private_content',
+				'edit_shared_content'
+			]
+		});
+		createSharedSpell.mockResolvedValueOnce({
+			id: 'shared-spell-1',
+			sourceCode: 'homebrew',
+			slug: 'arc-light-nova',
+			name: 'Arc Light Nova',
+			level: 3,
+			school: 'evocation',
+			castingTime: '1 action',
+			range: '90 feet',
+			components: 'V, S, M',
+			materials: 'A copper lens.',
+			duration: 'Instantaneous',
+			classSlugs: ['mago'],
+			summary: 'Shared arcane detonation.',
+			description: null,
+			visibility: 'shared',
+			isSystemContent: false,
+			concentration: false,
+			ritual: false,
+			createdAt: '2026-07-08T10:15:00.000Z',
+			updatedAt: '2026-07-08T10:15:00.000Z'
+		});
+
+		await expect(
+			actions.publishSharedSpell?.({
+				locals: {
+					session: {
+						user: {
+							id: 'user-1'
+						}
+					},
+					supabase: {}
+				},
+				request: new Request('http://localhost/app/content?/publishSharedSpell', {
+					method: 'POST',
+					body: new URLSearchParams({
+						name: 'Arc Light Nova',
+						level: '3',
+						school: 'evocation',
+						summary: 'Shared arcane detonation.',
+						description: '',
+						castingTime: '1 action',
+						range: '90 feet',
+						components: 'V, S, M',
+						materials: 'A copper lens.',
+						duration: 'Instantaneous',
+						classSlugsText: 'mago',
+						concentration: '',
+						ritual: ''
+					})
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 303,
+			location: '/app/content?publishedSharedSpell=Arc%20Light%20Nova'
+		});
+
+		expect(requirePermissionScopeAccess).toHaveBeenCalledWith(
+			expect.objectContaining({ globalRole: 'content_editor' }),
+			'shared_content'
+		);
+		expect(createSharedSpell).toHaveBeenCalledWith({}, 'user-1', {
+			slug: 'arc-light-nova',
+			name: 'Arc Light Nova',
+			level: 3,
+			school: 'evocation',
+			summary: 'Shared arcane detonation.',
+			description: undefined,
+			castingTime: '1 action',
+			range: '90 feet',
+			components: 'V, S, M',
+			materials: 'A copper lens.',
+			duration: 'Instantaneous',
+			classSlugs: ['mago'],
+			concentration: false,
+			ritual: false,
+			visibility: 'shared',
+			isSystemContent: false
+		});
+	});
+
 	it('publishes system content only for admins', async () => {
 		getAuthorizationContext.mockResolvedValueOnce({
 			userId: 'user-1',
@@ -917,6 +1022,100 @@ describe('/app/content actions', () => {
 		});
 	});
 
+	it('publishes system spells only for admins', async () => {
+		getAuthorizationContext.mockResolvedValueOnce({
+			userId: 'user-1',
+			globalRole: 'admin',
+			capabilities: [
+				'read_shared_catalog',
+				'manage_own_characters',
+				'manage_private_content',
+				'edit_shared_content',
+				'manage_system_content',
+				'manage_users_and_roles'
+			]
+		});
+		createSharedSpell.mockResolvedValueOnce({
+			id: 'system-spell-1',
+			sourceCode: 'homebrew',
+			slug: 'solar-ward',
+			name: 'Solar Ward',
+			level: 4,
+			school: 'abjuration',
+			castingTime: '1 action',
+			range: 'Self',
+			components: 'V, S',
+			materials: null,
+			duration: '10 minutes',
+			classSlugs: ['clerigo'],
+			summary: 'System-governed radiant barrier.',
+			description: null,
+			visibility: 'public',
+			isSystemContent: true,
+			concentration: true,
+			ritual: false,
+			createdAt: '2026-07-08T10:20:00.000Z',
+			updatedAt: '2026-07-08T10:20:00.000Z'
+		});
+
+		await expect(
+			actions.publishSystemSpell?.({
+				locals: {
+					session: {
+						user: {
+							id: 'user-1'
+						}
+					},
+					supabase: {}
+				},
+				request: new Request('http://localhost/app/content?/publishSystemSpell', {
+					method: 'POST',
+					body: new URLSearchParams({
+						name: 'Solar Ward',
+						level: '4',
+						school: 'abjuration',
+						summary: 'System-governed radiant barrier.',
+						description: '',
+						castingTime: '1 action',
+						range: 'Self',
+						components: 'V, S',
+						materials: '',
+						duration: '10 minutes',
+						classSlugsText: 'clerigo',
+						concentration: 'on',
+						ritual: ''
+					})
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 303,
+			location: '/app/content?publishedSystemSpell=Solar%20Ward'
+		});
+
+		expect(requirePermissionScopeAccess).toHaveBeenCalledWith(
+			expect.objectContaining({ globalRole: 'admin' }),
+			'system_content'
+		);
+		expect(createSharedSpell).toHaveBeenCalledWith({}, 'user-1', {
+			slug: 'solar-ward',
+			name: 'Solar Ward',
+			level: 4,
+			school: 'abjuration',
+			summary: 'System-governed radiant barrier.',
+			description: undefined,
+			castingTime: '1 action',
+			range: 'Self',
+			components: 'V, S',
+			materials: undefined,
+			duration: '10 minutes',
+			classSlugs: ['clerigo'],
+			concentration: true,
+			ritual: false,
+			visibility: 'public',
+			isSystemContent: true
+		});
+	});
+
 	it('blocks standard users from shared publishing', async () => {
 		requirePermissionScopeAccess.mockImplementationOnce(() => {
 			throw Object.assign(new Error('forbidden'), { status: 403 });
@@ -947,6 +1146,37 @@ describe('/app/content actions', () => {
 		});
 
 		expect(createSharedFeat).not.toHaveBeenCalled();
+	});
+
+	it('blocks standard users from shared spell publishing', async () => {
+		requirePermissionScopeAccess.mockImplementationOnce(() => {
+			throw Object.assign(new Error('forbidden'), { status: 403 });
+		});
+
+		await expect(
+			actions.publishSharedSpell?.({
+				locals: {
+					session: {
+						user: {
+							id: 'user-1'
+						}
+					},
+					supabase: {}
+				},
+				request: new Request('http://localhost/app/content?/publishSharedSpell', {
+					method: 'POST',
+					body: new URLSearchParams({
+						name: 'Arc Light Nova',
+						level: '3',
+						school: 'evocation'
+					})
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 403
+		});
+
+		expect(createSharedSpell).not.toHaveBeenCalled();
 	});
 
 	it('blocks content editors from system publishing', async () => {
@@ -989,6 +1219,47 @@ describe('/app/content actions', () => {
 		});
 
 		expect(createSharedFeat).not.toHaveBeenCalled();
+	});
+
+	it('blocks content editors from system spell publishing', async () => {
+		getAuthorizationContext.mockResolvedValueOnce({
+			userId: 'user-1',
+			globalRole: 'content_editor',
+			capabilities: [
+				'read_shared_catalog',
+				'manage_own_characters',
+				'manage_private_content',
+				'edit_shared_content'
+			]
+		});
+		requirePermissionScopeAccess.mockImplementationOnce(() => {
+			throw Object.assign(new Error('forbidden'), { status: 403 });
+		});
+
+		await expect(
+			actions.publishSystemSpell?.({
+				locals: {
+					session: {
+						user: {
+							id: 'user-1'
+						}
+					},
+					supabase: {}
+				},
+				request: new Request('http://localhost/app/content?/publishSystemSpell', {
+					method: 'POST',
+					body: new URLSearchParams({
+						name: 'Solar Ward',
+						level: '4',
+						school: 'abjuration'
+					})
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 403
+		});
+
+		expect(createSharedSpell).not.toHaveBeenCalled();
 	});
 
 	it('updates a managed shared feat for content editors', async () => {

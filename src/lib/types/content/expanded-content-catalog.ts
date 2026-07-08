@@ -21,6 +21,8 @@ export type SpellCatalogEntry = {
 	description: string | null;
 	concentration: boolean;
 	ritual: boolean;
+	visibility?: 'shared' | 'public';
+	isSystemContent?: boolean;
 };
 
 export type FeatCatalogEntry = {

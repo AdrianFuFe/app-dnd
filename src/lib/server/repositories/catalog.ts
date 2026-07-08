@@ -88,6 +88,7 @@ type SpellRow = {
 	id: string;
 	slug: string;
 	name: string;
+	visibility: string;
 	level: number;
 	school: string;
 	casting_time: string | null;
@@ -99,6 +100,7 @@ type SpellRow = {
 	description: string | null;
 	concentration: boolean;
 	ritual: boolean;
+	is_system_content: boolean | undefined;
 };
 
 type FeatRow = {
@@ -761,7 +763,7 @@ async function listSpellCatalogEntries(
 	const { data, error } = await supabase
 		.from('spells')
 		.select(
-			'id, slug, name, level, school, casting_time, range_text, components, duration, class_slugs, summary, description, concentration, ritual'
+			'id, slug, name, visibility, level, school, casting_time, range_text, components, duration, class_slugs, summary, description, concentration, ritual, is_system_content'
 		)
 		.order('level', { ascending: true })
 		.order('name', { ascending: true });
@@ -770,7 +772,9 @@ async function listSpellCatalogEntries(
 		throw new Error('Failed to load spell catalog entries.');
 	}
 
-	return data.map(mapSpellCatalogEntry);
+	return data
+		.filter((spell) => spell.visibility !== 'private' && spell.visibility !== 'campaign')
+		.map(mapSpellCatalogEntry);
 }
 
 async function loadSelectedSpellCatalogEntries(
@@ -780,7 +784,7 @@ async function loadSelectedSpellCatalogEntries(
 	const { data, error } = await supabase
 		.from('spells')
 		.select(
-			'id, slug, name, level, school, casting_time, range_text, components, duration, class_slugs, summary, description, concentration, ritual'
+			'id, slug, name, visibility, level, school, casting_time, range_text, components, duration, class_slugs, summary, description, concentration, ritual, is_system_content'
 		)
 		.in('id', spellIds);
 
@@ -788,7 +792,9 @@ async function loadSelectedSpellCatalogEntries(
 		throw new Error('Failed to load selected spell catalog entries.');
 	}
 
-	return data.map(mapSpellCatalogEntry);
+	return data
+		.filter((spell) => spell.visibility !== 'private' && spell.visibility !== 'campaign')
+		.map(mapSpellCatalogEntry);
 }
 
 async function listFeatCatalogEntries(
@@ -867,6 +873,7 @@ function mapSpellCatalogEntry(
 		| 'id'
 		| 'slug'
 		| 'name'
+		| 'visibility'
 		| 'level'
 		| 'school'
 		| 'casting_time'
@@ -878,6 +885,7 @@ function mapSpellCatalogEntry(
 		| 'description'
 		| 'concentration'
 		| 'ritual'
+		| 'is_system_content'
 	>
 ): SpellCatalogEntry {
 	return {
@@ -894,7 +902,9 @@ function mapSpellCatalogEntry(
 		summary: spell.summary,
 		description: spell.description,
 		concentration: spell.concentration,
-		ritual: spell.ritual
+		ritual: spell.ritual,
+		visibility: spell.visibility === 'public' ? 'public' : 'shared',
+		isSystemContent: spell.is_system_content
 	};
 }
 

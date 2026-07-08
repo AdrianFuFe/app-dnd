@@ -26,6 +26,7 @@ import {
 } from '$lib/schemas/content/private-feat-form.schema';
 import {
 	createPrivateSpell,
+	createSharedSpell,
 	derivePrivateSpellFromSharedCatalog,
 	listPrivateSpellsForUser
 } from '$lib/server/repositories/private-spells';
@@ -44,6 +45,8 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 			derivedPrivateSpellName: url.searchParams.get('derivedPrivateSpell'),
 			publishedSharedFeatName: url.searchParams.get('publishedSharedFeat'),
 			publishedSystemFeatName: url.searchParams.get('publishedSystemFeat'),
+			publishedSharedSpellName: url.searchParams.get('publishedSharedSpell'),
+			publishedSystemSpellName: url.searchParams.get('publishedSystemSpell'),
 			updatedSharedFeatName: url.searchParams.get('updatedSharedFeat'),
 			retiredSharedFeatName: url.searchParams.get('retiredSharedFeat'),
 			deletedSharedFeatName: url.searchParams.get('deletedSharedFeat'),
@@ -54,6 +57,8 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 			roleOperations: {
 				canPublishSharedFeats: false,
 				canPublishSystemFeats: false,
+				canPublishSharedSpells: false,
+				canPublishSystemSpells: false,
 				canMaintainSharedFeats: false,
 				canMaintainSystemFeats: false
 			},
@@ -111,6 +116,8 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 		derivedPrivateSpellName: url.searchParams.get('derivedPrivateSpell'),
 		publishedSharedFeatName: url.searchParams.get('publishedSharedFeat'),
 		publishedSystemFeatName: url.searchParams.get('publishedSystemFeat'),
+		publishedSharedSpellName: url.searchParams.get('publishedSharedSpell'),
+		publishedSystemSpellName: url.searchParams.get('publishedSystemSpell'),
 		updatedSharedFeatName: url.searchParams.get('updatedSharedFeat'),
 		retiredSharedFeatName: url.searchParams.get('retiredSharedFeat'),
 		deletedSharedFeatName: url.searchParams.get('deletedSharedFeat'),
@@ -125,6 +132,10 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 				parentData.authorization?.globalRole === 'content_editor' ||
 				parentData.authorization?.globalRole === 'admin',
 			canPublishSystemFeats: parentData.authorization?.globalRole === 'admin',
+			canPublishSharedSpells:
+				parentData.authorization?.globalRole === 'content_editor' ||
+				parentData.authorization?.globalRole === 'admin',
+			canPublishSystemSpells: parentData.authorization?.globalRole === 'admin',
 			canMaintainSharedFeats:
 				parentData.authorization?.globalRole === 'content_editor' ||
 				parentData.authorization?.globalRole === 'admin',
@@ -285,6 +296,98 @@ export const actions: Actions = {
 						? error.message
 						: 'The shared spell could not be copied into your private content.',
 				createPrivateSpellValues: createPrivateSpellFormValues()
+			});
+		}
+	},
+	publishSharedSpell: async ({ locals, request }) => {
+		if (!locals.session) {
+			throw redirect(302, '/auth/login?redirectTo=/app/content');
+		}
+
+		if (!locals.supabase) {
+			return fail(500, {
+				createPrivateSpellFieldErrors: {},
+				createPrivateSpellFormError: 'Supabase is not configured yet.',
+				createPrivateSpellValues: createPrivateSpellFormValues()
+			});
+		}
+
+		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		requirePermissionScopeAccess(authorization, 'shared_content');
+
+		const parsedForm = await parsePrivateSpellCreateForm(request);
+
+		if (parsedForm.response) {
+			return parsedForm.response;
+		}
+
+		try {
+			const spell = await createSharedSpell(locals.supabase, locals.session.user.id, {
+				...parsedForm.data,
+				visibility: 'shared',
+				isSystemContent: false
+			});
+			const publishedSharedSpell = encodeURIComponent(spell.name);
+
+			throw redirect(303, `/app/content?publishedSharedSpell=${publishedSharedSpell}`);
+		} catch (error) {
+			if (isRedirect(error)) {
+				throw error;
+			}
+
+			return fail(400, {
+				createPrivateSpellFieldErrors: {},
+				createPrivateSpellFormError:
+					error instanceof Error
+						? error.message
+						: 'The spell could not be published to shared content.',
+				createPrivateSpellValues: parsedForm.values
+			});
+		}
+	},
+	publishSystemSpell: async ({ locals, request }) => {
+		if (!locals.session) {
+			throw redirect(302, '/auth/login?redirectTo=/app/content');
+		}
+
+		if (!locals.supabase) {
+			return fail(500, {
+				createPrivateSpellFieldErrors: {},
+				createPrivateSpellFormError: 'Supabase is not configured yet.',
+				createPrivateSpellValues: createPrivateSpellFormValues()
+			});
+		}
+
+		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		requirePermissionScopeAccess(authorization, 'system_content');
+
+		const parsedForm = await parsePrivateSpellCreateForm(request);
+
+		if (parsedForm.response) {
+			return parsedForm.response;
+		}
+
+		try {
+			const spell = await createSharedSpell(locals.supabase, locals.session.user.id, {
+				...parsedForm.data,
+				visibility: 'public',
+				isSystemContent: true
+			});
+			const publishedSystemSpell = encodeURIComponent(spell.name);
+
+			throw redirect(303, `/app/content?publishedSystemSpell=${publishedSystemSpell}`);
+		} catch (error) {
+			if (isRedirect(error)) {
+				throw error;
+			}
+
+			return fail(400, {
+				createPrivateSpellFieldErrors: {},
+				createPrivateSpellFormError:
+					error instanceof Error
+						? error.message
+						: 'The spell could not be published as system content.',
+				createPrivateSpellValues: parsedForm.values
 			});
 		}
 	},

@@ -179,16 +179,16 @@
 			)}
 			in the live character forms.
 		</p>
-		{#if data.roleOperations.canPublishSharedFeats || data.roleOperations.canPublishSystemFeats}
+		{#if data.roleOperations.canPublishSharedFeats || data.roleOperations.canPublishSystemFeats || data.roleOperations.canPublishSharedSpells || data.roleOperations.canPublishSystemSpells}
 			<div class="mt-5 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-4 text-sm text-indigo-900">
 				<p class="font-medium">Role-aware content operations are active for this account.</p>
 				<p class="mt-2">
-					{#if data.roleOperations.canPublishSystemFeats}
-						You can publish shared homebrew feats and promote approved entries into
-						system-owned catalog content.
+					{#if data.roleOperations.canPublishSystemFeats || data.roleOperations.canPublishSystemSpells}
+						You can publish shared homebrew spells and feats, and promote approved entries
+						into system-owned catalog content.
 					{:else}
-						You can publish shared homebrew feats for broader reuse, but system-owned
-						catalog content remains admin-only.
+						You can publish shared homebrew spells and feats for broader reuse, but
+						system-owned catalog content remains admin-only.
 					{/if}
 				</p>
 			</div>
@@ -959,9 +959,18 @@
 									</p>
 								</div>
 								<div class="flex flex-wrap items-start justify-end gap-3">
-									<div
-										class="flex flex-wrap gap-2 text-xs font-medium uppercase tracking-[0.14em] text-stone-600"
-									>
+								<div
+									class="flex flex-wrap gap-2 text-xs font-medium uppercase tracking-[0.14em] text-stone-600"
+								>
+									{#if spell.isSystemContent}
+										<span class="rounded-full bg-fuchsia-100 px-3 py-1 text-fuchsia-900">
+											System
+										</span>
+									{:else if spell.visibility === 'shared'}
+										<span class="rounded-full bg-indigo-100 px-3 py-1 text-indigo-900">
+											Shared
+										</span>
+									{/if}
 										<span
 											class="rounded-full bg-amber-100 px-3 py-1 text-amber-900"
 										>
@@ -1045,6 +1054,16 @@
 				<p class="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
 					{data.derivedPrivateSpellName} was copied from the shared SRD spell catalog into your
 					private spells.
+				</p>
+			{/if}
+			{#if data.publishedSharedSpellName}
+				<p class="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
+					{data.publishedSharedSpellName} was published to the shared homebrew catalog.
+				</p>
+			{/if}
+			{#if data.publishedSystemSpellName}
+				<p class="mt-4 rounded-2xl border border-fuchsia-200 bg-fuchsia-50 px-4 py-3 text-sm text-fuchsia-800">
+					{data.publishedSystemSpellName} was published as system-owned content.
 				</p>
 			{/if}
 
@@ -1253,6 +1272,37 @@
 				>
 					Create private spell
 				</button>
+				{#if data.roleOperations.canPublishSharedSpells || data.roleOperations.canPublishSystemSpells}
+					<div class="rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4">
+						<p class="text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
+							Privileged publishing
+						</p>
+						<p class="mt-2 text-sm text-stone-600">
+							These actions reuse the same validated spell draft, but publish it beyond your
+							private workspace. Role assignment still stays outside the runtime UI.
+						</p>
+						<div class="mt-4 flex flex-wrap gap-3">
+							{#if data.roleOperations.canPublishSharedSpells}
+								<button
+									class="rounded-lg bg-indigo-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-indigo-500"
+									type="submit"
+									formaction="?/publishSharedSpell"
+								>
+									Publish shared spell
+								</button>
+							{/if}
+							{#if data.roleOperations.canPublishSystemSpells}
+								<button
+									class="rounded-lg bg-fuchsia-700 px-5 py-3 text-sm font-medium text-white transition hover:bg-fuchsia-600"
+									type="submit"
+									formaction="?/publishSystemSpell"
+								>
+									Publish system spell
+								</button>
+							{/if}
+						</div>
+					</div>
+				{/if}
 			</form>
 		</div>
 

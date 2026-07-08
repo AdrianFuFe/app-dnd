@@ -6,6 +6,7 @@ import {
 } from '$lib/server/e2e/mock-app';
 import {
 	buildPrivateSpellDerivationMechanic,
+	createSharedSpell,
 	createPrivateSpell,
 	derivePrivateSpellFromSharedCatalog,
 	extractPrivateSpellDerivation,
@@ -135,5 +136,82 @@ describe('private spells repository', () => {
 				}
 			})
 		);
+	});
+
+	it('publishes a shared spell in the E2E repository path and exposes it in the shared catalog only', async () => {
+		resetE2EMockState();
+		const supabase = createE2EMockSupabaseClient();
+
+		await expect(
+			createSharedSpell(supabase, 'user-1', {
+				slug: 'arc-light-nova',
+				name: 'Arc Light Nova',
+				level: 3,
+				school: 'evocation',
+				castingTime: '1 action',
+				range: '90 feet',
+				components: 'V, S, M',
+				materials: 'A copper lens.',
+				duration: 'Instantaneous',
+				classSlugs: ['mago'],
+				summary: 'Shared arcane detonation.',
+				description: undefined,
+				concentration: false,
+				ritual: false,
+				visibility: 'shared',
+				isSystemContent: false
+			})
+		).resolves.toEqual(
+			expect.objectContaining({
+				sourceCode: 'homebrew',
+				slug: 'arc-light-nova',
+				visibility: 'shared',
+				isSystemContent: false
+			})
+		);
+
+		await expect(listPrivateSpellsForUser(supabase, 'user-1')).resolves.not.toEqual(
+			expect.arrayContaining([expect.objectContaining({ slug: 'arc-light-nova' })])
+		);
+		expect(
+			listE2EExpandedContentCatalog().spells.find((spell) => spell.slug === 'arc-light-nova')
+		).toEqual(
+			expect.objectContaining({
+				name: 'Arc Light Nova',
+				visibility: 'shared',
+				isSystemContent: false
+			})
+		);
+	});
+
+	it('rejects duplicate shared spell slugs in the E2E repository path', async () => {
+		resetE2EMockState();
+		const supabase = createE2EMockSupabaseClient();
+
+		await createSharedSpell(supabase, 'user-1', {
+			slug: 'arc-light-nova',
+			name: 'Arc Light Nova',
+			level: 3,
+			school: 'evocation',
+			classSlugs: [],
+			concentration: false,
+			ritual: false,
+			visibility: 'shared',
+			isSystemContent: false
+		});
+
+		await expect(
+			createSharedSpell(supabase, 'user-2', {
+				slug: 'arc-light-nova',
+				name: 'Arc Light Nova II',
+				level: 4,
+				school: 'evocation',
+				classSlugs: [],
+				concentration: false,
+				ritual: false,
+				visibility: 'public',
+				isSystemContent: true
+			})
+		).rejects.toThrow('A shared spell with that slug already exists. Try a different name.');
 	});
 });

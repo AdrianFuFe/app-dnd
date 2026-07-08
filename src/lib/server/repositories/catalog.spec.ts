@@ -647,6 +647,8 @@ describe('listExpandedContentCatalog', () => {
 					id: 'spell-1',
 					slug: 'bless',
 					name: 'Bless',
+					visibility: 'shared',
+					isSystemContent: undefined,
 					level: 1,
 					school: 'enchantment',
 					castingTime: '1 action',

@@ -83,6 +83,30 @@ type E2EPrivateSpellRecord = {
 	updatedAt: string;
 };
 
+type E2ESharedSpellRecord = {
+	id: string;
+	userId: string | null;
+	sourceCode: 'homebrew';
+	slug: string;
+	name: string;
+	level: number;
+	school: string;
+	castingTime: string | null;
+	range: string | null;
+	components: string | null;
+	materials: string | null;
+	duration: string | null;
+	classSlugs: string[];
+	summary: string | null;
+	description: string | null;
+	visibility: 'private' | 'campaign' | 'shared' | 'public';
+	isSystemContent: boolean;
+	concentration: boolean;
+	ritual: boolean;
+	createdAt: string;
+	updatedAt: string;
+};
+
 type E2ESharedFeatRecord = {
 	id: string;
 	userId: string | null;
@@ -392,6 +416,7 @@ const state = {
 	characters: [] as E2ECharacterRecord[],
 	privateFeats: [] as E2EPrivateFeatRecord[],
 	privateSpells: [] as E2EPrivateSpellRecord[],
+	sharedSpells: [] as E2ESharedSpellRecord[],
 	sharedFeats: [] as E2ESharedFeatRecord[],
 	nextCharacterSequence: 2,
 	nextPrivateFeatSequence: 1,
@@ -464,6 +489,7 @@ export function resetE2EMockState() {
 	state.characters = initialCharacters.map((character) => ({ ...character }));
 	state.privateFeats = [];
 	state.privateSpells = [];
+	state.sharedSpells = [];
 	state.sharedFeats = [];
 	state.nextCharacterSequence = 2;
 	state.nextPrivateFeatSequence = 1;
@@ -506,7 +532,36 @@ export function listE2EExpandedContentCatalog(): ExpandedContentCatalog {
 			}))
 		})),
 		backgrounds: e2eExpandedContentCatalog.backgrounds.map((option) => ({ ...option })),
-		spells: e2eExpandedContentCatalog.spells.map(cloneSpellCatalogEntry),
+		spells: [
+			...state.sharedSpells
+				.filter(isSharedCatalogSpell)
+				.sort((left, right) =>
+					left.level === right.level
+						? left.name.localeCompare(right.name)
+						: left.level - right.level
+				)
+				.map((spell) =>
+					cloneSpellCatalogEntry({
+						id: spell.id,
+						slug: spell.slug,
+						name: spell.name,
+						level: spell.level,
+						school: spell.school,
+						castingTime: spell.castingTime,
+						range: spell.range,
+						components: spell.components,
+						duration: spell.duration,
+						classSlugs: [...spell.classSlugs],
+						summary: spell.summary,
+						description: spell.description,
+						concentration: spell.concentration,
+						ritual: spell.ritual,
+						visibility: spell.visibility,
+						isSystemContent: spell.isSystemContent
+					})
+				),
+			...e2eExpandedContentCatalog.spells.map(cloneSpellCatalogEntry)
+		],
 		feats: [
 			...state.sharedFeats
 				.filter(isSharedCatalogFeat)
@@ -571,6 +626,29 @@ export function getE2EBackgroundOption(
 }
 
 export function getE2ESpellCatalogEntry(spellId: string): SpellCatalogEntry | undefined {
+	const sharedSpell = state.sharedSpells.find((entry) => entry.id === spellId);
+
+	if (sharedSpell && isSharedCatalogSpell(sharedSpell)) {
+		return {
+			id: sharedSpell.id,
+			slug: sharedSpell.slug,
+			name: sharedSpell.name,
+			level: sharedSpell.level,
+			school: sharedSpell.school,
+			castingTime: sharedSpell.castingTime,
+			range: sharedSpell.range,
+			components: sharedSpell.components,
+			duration: sharedSpell.duration,
+			classSlugs: [...sharedSpell.classSlugs],
+			summary: sharedSpell.summary,
+			description: sharedSpell.description,
+			concentration: sharedSpell.concentration,
+			ritual: sharedSpell.ritual,
+			visibility: sharedSpell.visibility,
+			isSystemContent: sharedSpell.isSystemContent
+		};
+	}
+
 	return e2eExpandedContentCatalog.spells.find((entry) => entry.id === spellId);
 }
 
@@ -822,6 +900,70 @@ export function createE2EPrivateSpellForUser(
 	};
 }
 
+export function createE2ESharedSpellForUser(
+	userId: string,
+	input: {
+		sourceCode?: 'homebrew';
+		slug: string;
+		name: string;
+		level: number;
+		school: string;
+		castingTime?: string;
+		range?: string;
+		components?: string;
+		materials?: string;
+		duration?: string;
+		classSlugs: string[];
+		summary?: string;
+		description?: string;
+		visibility: 'shared' | 'public';
+		isSystemContent: boolean;
+		concentration: boolean;
+		ritual: boolean;
+	}
+) {
+	const duplicate =
+		state.sharedSpells.find((spell) => spell.slug === input.slug) ??
+		e2eExpandedContentCatalog.spells.find((spell) => spell.slug === input.slug);
+
+	if (duplicate) {
+		throw new Error('A shared spell with that slug already exists. Try a different name.');
+	}
+
+	const timestamp = nextUpdatedAt();
+	const spell: E2ESharedSpellRecord = {
+		id: `shared-spell-e2e-${state.nextPrivateSpellSequence}`,
+		userId: input.isSystemContent ? null : userId,
+		sourceCode: input.sourceCode ?? 'homebrew',
+		slug: input.slug,
+		name: input.name,
+		level: input.level,
+		school: input.school,
+		castingTime: input.castingTime ?? null,
+		range: input.range ?? null,
+		components: input.components ?? null,
+		materials: input.materials ?? null,
+		duration: input.duration ?? null,
+		classSlugs: [...input.classSlugs],
+		summary: input.summary ?? null,
+		description: input.description ?? null,
+		visibility: input.visibility,
+		isSystemContent: input.isSystemContent,
+		concentration: input.concentration,
+		ritual: input.ritual,
+		createdAt: timestamp,
+		updatedAt: timestamp
+	};
+
+	state.nextPrivateSpellSequence += 1;
+	state.sharedSpells.unshift(spell);
+
+	return {
+		...spell,
+		classSlugs: [...spell.classSlugs]
+	};
+}
+
 export function createE2ESharedFeatForUser(
 	userId: string,
 	input: {
@@ -1022,4 +1164,10 @@ function isSharedCatalogFeat(
 	feat: E2ESharedFeatRecord
 ): feat is E2ESharedFeatRecord & { visibility: 'shared' | 'public' } {
 	return feat.visibility === 'shared' || feat.visibility === 'public';
+}
+
+function isSharedCatalogSpell(
+	spell: E2ESharedSpellRecord
+): spell is E2ESharedSpellRecord & { visibility: 'shared' | 'public' } {
+	return spell.visibility === 'shared' || spell.visibility === 'public';
 }
