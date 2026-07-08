@@ -26,6 +26,7 @@ import {
 } from '$lib/schemas/content/private-feat-form.schema';
 import {
 	createPrivateSpell,
+	derivePrivateSpellFromSharedCatalog,
 	listPrivateSpellsForUser
 } from '$lib/server/repositories/private-spells';
 import {
@@ -40,6 +41,7 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 			createdPrivateFeatName: url.searchParams.get('createdPrivateFeat'),
 			createdPrivateSpellName: url.searchParams.get('createdPrivateSpell'),
 			derivedPrivateFeatName: url.searchParams.get('derivedPrivateFeat'),
+			derivedPrivateSpellName: url.searchParams.get('derivedPrivateSpell'),
 			publishedSharedFeatName: url.searchParams.get('publishedSharedFeat'),
 			publishedSystemFeatName: url.searchParams.get('publishedSystemFeat'),
 			updatedSharedFeatName: url.searchParams.get('updatedSharedFeat'),
@@ -106,6 +108,7 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 		createdPrivateFeatName: url.searchParams.get('createdPrivateFeat'),
 		createdPrivateSpellName: url.searchParams.get('createdPrivateSpell'),
 		derivedPrivateFeatName: url.searchParams.get('derivedPrivateFeat'),
+		derivedPrivateSpellName: url.searchParams.get('derivedPrivateSpell'),
 		publishedSharedFeatName: url.searchParams.get('publishedSharedFeat'),
 		publishedSystemFeatName: url.searchParams.get('publishedSystemFeat'),
 		updatedSharedFeatName: url.searchParams.get('updatedSharedFeat'),
@@ -231,6 +234,57 @@ export const actions: Actions = {
 				createPrivateSpellFieldErrors: {},
 				createPrivateSpellFormError: formError,
 				createPrivateSpellValues: parsedForm.values
+			});
+		}
+	},
+	deriveSpell: async ({ locals, request }) => {
+		if (!locals.session) {
+			throw redirect(302, '/auth/login?redirectTo=/app/content');
+		}
+
+		if (!locals.supabase) {
+			return fail(500, {
+				createPrivateSpellFieldErrors: {},
+				createPrivateSpellFormError: 'Supabase is not configured yet.',
+				createPrivateSpellValues: createPrivateSpellFormValues()
+			});
+		}
+
+		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		requirePermissionScopeAccess(authorization, 'private_content');
+
+		const formData = await request.formData();
+		const sharedSpellId = formData.get('sharedSpellId');
+
+		if (typeof sharedSpellId !== 'string' || sharedSpellId.trim().length === 0) {
+			return fail(400, {
+				createPrivateSpellFieldErrors: {},
+				createPrivateSpellFormError: 'Please choose a valid shared spell to copy.',
+				createPrivateSpellValues: createPrivateSpellFormValues()
+			});
+		}
+
+		try {
+			const spell = await derivePrivateSpellFromSharedCatalog(
+				locals.supabase,
+				locals.session.user.id,
+				{ sharedSpellId }
+			);
+			const derivedPrivateSpell = encodeURIComponent(spell.name);
+
+			throw redirect(303, `/app/content?derivedPrivateSpell=${derivedPrivateSpell}`);
+		} catch (error) {
+			if (isRedirect(error)) {
+				throw error;
+			}
+
+			return fail(400, {
+				createPrivateSpellFieldErrors: {},
+				createPrivateSpellFormError:
+					error instanceof Error
+						? error.message
+						: 'The shared spell could not be copied into your private content.',
+				createPrivateSpellValues: createPrivateSpellFormValues()
 			});
 		}
 	},

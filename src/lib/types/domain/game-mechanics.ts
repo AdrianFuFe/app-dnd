@@ -32,7 +32,7 @@ export type GameMechanic =
 	| {
 			type: 'source_derivation';
 			source: 'srd-5-1' | 'srd-5-2' | 'user-private' | 'homebrew';
-			contentType: 'feat';
+			contentType: 'feat' | 'spell';
 			slug: string;
 			name: string;
 	  }

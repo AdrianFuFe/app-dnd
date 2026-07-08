@@ -18,6 +18,7 @@ const {
 	createSharedFeat,
 	deleteManagedSharedFeat,
 	derivePrivateFeatFromSharedCatalog,
+	derivePrivateSpellFromSharedCatalog,
 	listManagedSharedFeats,
 	listPrivateFeatsForUser,
 	listPrivateSpellsForUser,
@@ -30,6 +31,7 @@ const {
 	createSharedFeat: vi.fn(),
 	deleteManagedSharedFeat: vi.fn(),
 	derivePrivateFeatFromSharedCatalog: vi.fn(),
+	derivePrivateSpellFromSharedCatalog: vi.fn(),
 	listManagedSharedFeats: vi.fn(),
 	listPrivateFeatsForUser: vi.fn(),
 	listPrivateSpellsForUser: vi.fn(),
@@ -60,6 +62,7 @@ vi.mock('$lib/server/repositories/private-feats', () => ({
 
 vi.mock('$lib/server/repositories/private-spells', () => ({
 	createPrivateSpell,
+	derivePrivateSpellFromSharedCatalog,
 	listPrivateSpellsForUser
 }));
 
@@ -117,6 +120,7 @@ describe('/app/content load', () => {
 			createdPrivateFeatName: null,
 			createdPrivateSpellName: null,
 			derivedPrivateFeatName: null,
+			derivedPrivateSpellName: null,
 			publishedSharedFeatName: null,
 			publishedSystemFeatName: null,
 			updatedSharedFeatName: null,
@@ -355,6 +359,7 @@ describe('/app/content load', () => {
 				classSlugs: ['mago'],
 				summary: 'Focused arcane flash.',
 				description: null,
+				derivation: null,
 				concentration: false,
 				ritual: false,
 				createdAt: '2026-07-07T21:00:00.000Z',
@@ -398,13 +403,14 @@ describe('/app/content load', () => {
 					}
 				}),
 				url: new URL(
-					'http://localhost/app/content?createdPrivateFeat=Observant%20Echo&createdPrivateSpell=Arc%20Light&derivedPrivateFeat=Alert&publishedSharedFeat=Battle%20Lore&editSharedFeat=shared-feat-1&updatedSharedFeat=Battle%20Lore'
+					'http://localhost/app/content?createdPrivateFeat=Observant%20Echo&createdPrivateSpell=Arc%20Light&derivedPrivateFeat=Alert&derivedPrivateSpell=Magic%20Missile&publishedSharedFeat=Battle%20Lore&editSharedFeat=shared-feat-1&updatedSharedFeat=Battle%20Lore'
 				)
 			} as never)
 		).resolves.toEqual({
 			createdPrivateFeatName: 'Observant Echo',
 			createdPrivateSpellName: 'Arc Light',
 			derivedPrivateFeatName: 'Alert',
+			derivedPrivateSpellName: 'Magic Missile',
 			publishedSharedFeatName: 'Battle Lore',
 			publishedSystemFeatName: null,
 			updatedSharedFeatName: 'Battle Lore',
@@ -470,6 +476,7 @@ describe('/app/content actions', () => {
 		createSharedFeat.mockReset();
 		deleteManagedSharedFeat.mockReset();
 		derivePrivateFeatFromSharedCatalog.mockReset();
+		derivePrivateSpellFromSharedCatalog.mockReset();
 		listManagedSharedFeats.mockReset();
 		retireManagedSharedFeat.mockReset();
 		updateManagedSharedFeat.mockReset();
@@ -618,6 +625,7 @@ describe('/app/content actions', () => {
 			classSlugs: ['mago'],
 			summary: 'Focused arcane flash.',
 			description: null,
+			derivation: null,
 			concentration: false,
 			ritual: false,
 			createdAt: '2026-07-07T21:00:00.000Z',
@@ -673,6 +681,61 @@ describe('/app/content actions', () => {
 			classSlugs: ['mago'],
 			concentration: false,
 			ritual: false
+		});
+	});
+
+	it('derives a private spell from a shared SRD spell', async () => {
+		derivePrivateSpellFromSharedCatalog.mockResolvedValueOnce({
+			id: 'private-spell-2',
+			sourceCode: 'homebrew',
+			slug: 'magic-missile',
+			name: 'Magic Missile',
+			level: 1,
+			school: 'evocation',
+			castingTime: '1 action',
+			range: '120 feet',
+			components: 'V, S',
+			materials: null,
+			duration: 'Instantaneous',
+			classSlugs: ['mago'],
+			summary: 'Darts of force.',
+			description: null,
+			derivation: {
+				source: 'srd-5-1',
+				contentType: 'spell',
+				slug: 'magic-missile',
+				name: 'Magic Missile'
+			},
+			concentration: false,
+			ritual: false,
+			createdAt: '2026-07-08T09:05:00.000Z',
+			updatedAt: '2026-07-08T09:05:00.000Z'
+		});
+
+		await expect(
+			actions.deriveSpell?.({
+				locals: {
+					session: {
+						user: {
+							id: 'user-1'
+						}
+					},
+					supabase: {}
+				},
+				request: new Request('http://localhost/app/content?/deriveSpell', {
+					method: 'POST',
+					body: new URLSearchParams({
+						sharedSpellId: 'shared-spell-1'
+					})
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 303,
+			location: '/app/content?derivedPrivateSpell=Magic%20Missile'
+		});
+
+		expect(derivePrivateSpellFromSharedCatalog).toHaveBeenCalledWith({}, 'user-1', {
+			sharedSpellId: 'shared-spell-1'
 		});
 	});
 

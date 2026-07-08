@@ -958,31 +958,43 @@
 										{spell.summary ?? 'No summary yet.'}
 									</p>
 								</div>
-								<div
-									class="flex flex-wrap gap-2 text-xs font-medium uppercase tracking-[0.14em] text-stone-600"
-								>
-									<span
-										class="rounded-full bg-amber-100 px-3 py-1 text-amber-900"
+								<div class="flex flex-wrap items-start justify-end gap-3">
+									<div
+										class="flex flex-wrap gap-2 text-xs font-medium uppercase tracking-[0.14em] text-stone-600"
 									>
-										{formatSpellLevel(spell.level)}
-									</span>
-									<span class="rounded-full bg-sky-100 px-3 py-1 text-sky-900">
-										{spell.school}
-									</span>
-									{#if spell.concentration}
 										<span
-											class="rounded-full bg-rose-100 px-3 py-1 text-rose-900"
+											class="rounded-full bg-amber-100 px-3 py-1 text-amber-900"
 										>
-											Concentration
+											{formatSpellLevel(spell.level)}
 										</span>
-									{/if}
-									{#if spell.ritual}
-										<span
-											class="rounded-full bg-emerald-100 px-3 py-1 text-emerald-900"
+										<span class="rounded-full bg-sky-100 px-3 py-1 text-sky-900">
+											{spell.school}
+										</span>
+										{#if spell.concentration}
+											<span
+												class="rounded-full bg-rose-100 px-3 py-1 text-rose-900"
+											>
+												Concentration
+											</span>
+										{/if}
+										{#if spell.ritual}
+											<span
+												class="rounded-full bg-emerald-100 px-3 py-1 text-emerald-900"
+											>
+												Ritual
+											</span>
+										{/if}
+									</div>
+									<form method="POST">
+										<input type="hidden" name="sharedSpellId" value={spell.id} />
+										<button
+											class="rounded-full bg-stone-900 px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-white transition hover:bg-stone-700"
+											type="submit"
+											formaction="?/deriveSpell"
 										>
-											Ritual
-										</span>
-									{/if}
+											Copy to private
+										</button>
+									</form>
 								</div>
 							</div>
 
@@ -1027,6 +1039,12 @@
 			{#if data.createdPrivateSpellName}
 				<p class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
 					{data.createdPrivateSpellName} was created as a private spell.
+				</p>
+			{/if}
+			{#if data.derivedPrivateSpellName}
+				<p class="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+					{data.derivedPrivateSpellName} was copied from the shared SRD spell catalog into your
+					private spells.
 				</p>
 			{/if}
 
@@ -1269,6 +1287,11 @@
 									<span class="rounded-full bg-amber-100 px-3 py-1 text-amber-900">
 										Private
 									</span>
+									{#if spell.derivation}
+										<span class="rounded-full bg-sky-100 px-3 py-1 text-sky-900">
+											Derived
+										</span>
+									{/if}
 									<span class="rounded-full bg-sky-100 px-3 py-1 text-sky-900">
 										{formatSpellLevel(spell.level)}
 									</span>
@@ -1291,6 +1314,11 @@
 							<p class="mt-3 text-sm text-stone-600">
 								{spell.summary ?? spell.description ?? 'No summary yet.'}
 							</p>
+							{#if spell.derivation}
+								<p class="mt-3 text-xs uppercase tracking-[0.16em] text-stone-500">
+									Derived from {spell.derivation.source}: {spell.derivation.name}
+								</p>
+							{/if}
 
 							<dl class="mt-4 grid gap-3 text-sm text-stone-600 sm:grid-cols-3">
 								<div>

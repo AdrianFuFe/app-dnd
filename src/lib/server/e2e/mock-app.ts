@@ -71,6 +71,12 @@ type E2EPrivateSpellRecord = {
 	classSlugs: string[];
 	summary: string | null;
 	description: string | null;
+	derivation: {
+		source: 'srd-5-1' | 'srd-5-2' | 'user-private' | 'homebrew';
+		contentType: 'spell';
+		slug: string;
+		name: string;
+	} | null;
 	concentration: boolean;
 	ritual: boolean;
 	createdAt: string;
@@ -770,6 +776,7 @@ export function createE2EPrivateSpellForUser(
 		classSlugs: string[];
 		summary?: string;
 		description?: string;
+		derivation?: E2EPrivateSpellRecord['derivation'];
 		concentration: boolean;
 		ritual: boolean;
 	}
@@ -799,6 +806,7 @@ export function createE2EPrivateSpellForUser(
 		classSlugs: [...input.classSlugs],
 		summary: input.summary ?? null,
 		description: input.description ?? null,
+		derivation: input.derivation ?? null,
 		concentration: input.concentration,
 		ritual: input.ritual,
 		createdAt: timestamp,

@@ -1,6 +1,42 @@
 import { describe, expect, it } from 'vitest';
-import { createE2EMockSupabaseClient, resetE2EMockState } from '$lib/server/e2e/mock-app';
-import { createPrivateSpell, listPrivateSpellsForUser } from './private-spells';
+import {
+	createE2EMockSupabaseClient,
+	listE2EExpandedContentCatalog,
+	resetE2EMockState
+} from '$lib/server/e2e/mock-app';
+import {
+	buildPrivateSpellDerivationMechanic,
+	createPrivateSpell,
+	derivePrivateSpellFromSharedCatalog,
+	extractPrivateSpellDerivation,
+	listPrivateSpellsForUser
+} from './private-spells';
+
+describe('private spell derivation metadata', () => {
+	it('extracts the first spell derivation mechanic from mixed mechanics', () => {
+		const derivation = extractPrivateSpellDerivation([
+			{ type: 'note', text: 'Custom tweak.' },
+			buildPrivateSpellDerivationMechanic({
+				source: 'srd-5-1',
+				slug: 'magic-missile',
+				name: 'Magic Missile'
+			})
+		]);
+
+		expect(derivation).toEqual({
+			source: 'srd-5-1',
+			contentType: 'spell',
+			slug: 'magic-missile',
+			name: 'Magic Missile'
+		});
+	});
+
+	it('ignores non-derivation mechanics', () => {
+		expect(extractPrivateSpellDerivation([{ type: 'note', text: 'No provenance here.' }])).toBe(
+			null
+		);
+	});
+});
 
 describe('private spells repository', () => {
 	it('creates and lists private spells in the E2E repository path', async () => {
@@ -39,7 +75,8 @@ describe('private spells repository', () => {
 			expect.arrayContaining([
 				expect.objectContaining({
 					slug: 'arc-light',
-					name: 'Arc Light'
+					name: 'Arc Light',
+					derivation: null
 				})
 			])
 		);
@@ -70,5 +107,33 @@ describe('private spells repository', () => {
 				ritual: false
 			})
 		).rejects.toThrow('You already have a private spell with that slug. Try a different name.');
+	});
+
+	it('derives a private spell from a shared SRD spell in the E2E repository path', async () => {
+		resetE2EMockState();
+		const supabase = createE2EMockSupabaseClient();
+		const magicMissileId = listE2EExpandedContentCatalog().spells.find(
+			(spell) => spell.slug === 'magic-missile'
+		)?.id;
+
+		expect(magicMissileId).toBeDefined();
+
+		await expect(
+			derivePrivateSpellFromSharedCatalog(supabase, 'user-1', {
+				sharedSpellId: magicMissileId!
+			})
+		).resolves.toEqual(
+			expect.objectContaining({
+				sourceCode: 'homebrew',
+				slug: 'magic-missile',
+				name: 'Magic Missile',
+				derivation: {
+					source: 'srd-5-1',
+					contentType: 'spell',
+					slug: 'magic-missile',
+					name: 'Magic Missile'
+				}
+			})
+		);
 	});
 });

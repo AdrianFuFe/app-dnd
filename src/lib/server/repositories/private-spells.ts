@@ -1,18 +1,28 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
 	createE2EPrivateSpellForUser,
+	getE2ESpellCatalogEntry,
 	isE2EMockSupabaseClient,
 	listE2EPrivateSpellsForUser
 } from '$lib/server/e2e/mock-app';
 import type { Database } from '$lib/types/database/supabase';
+import type { GameMechanic } from '$lib/types/domain/game-mechanics';
 
 type SpellRow = Database['public']['Tables']['spells']['Row'];
 type SpellInsert = Database['public']['Tables']['spells']['Insert'];
-type ContentSourceCode = 'user-private' | 'homebrew';
+type ContentSourceCode = 'user-private' | 'homebrew' | 'srd-5-1' | 'srd-5-2';
+type PrivateSpellSourceCode = 'user-private' | 'homebrew';
+
+export type PrivateSpellDerivation = {
+	source: ContentSourceCode;
+	contentType: 'spell';
+	slug: string;
+	name: string;
+};
 
 export type PrivateSpellRecord = {
 	id: string;
-	sourceCode: ContentSourceCode;
+	sourceCode: PrivateSpellSourceCode;
 	slug: string;
 	name: string;
 	level: number;
@@ -25,6 +35,7 @@ export type PrivateSpellRecord = {
 	classSlugs: string[];
 	summary: string | null;
 	description: string | null;
+	derivation: PrivateSpellDerivation | null;
 	concentration: boolean;
 	ritual: boolean;
 	createdAt: string;
@@ -48,6 +59,10 @@ export type CreatePrivateSpellInput = {
 	ritual: boolean;
 };
 
+export type DerivePrivateSpellInput = {
+	sharedSpellId: string;
+};
+
 type PrivateSpellRow = Pick<
 	SpellRow,
 	| 'id'
@@ -64,6 +79,7 @@ type PrivateSpellRow = Pick<
 	| 'class_slugs'
 	| 'summary'
 	| 'description'
+	| 'mechanics'
 	| 'concentration'
 	| 'ritual'
 	| 'created_at'
@@ -82,7 +98,7 @@ export async function listPrivateSpellsForUser(
 	const { data, error } = await supabase
 		.from('spells')
 		.select(
-			'id, source_id, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, concentration, ritual, created_at, updated_at'
+			'id, source_id, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, mechanics, concentration, ritual, created_at, updated_at'
 		)
 		.eq('owner_user_id', userId)
 		.in('source_id', [sourceIds['user-private'], sourceIds.homebrew])
@@ -135,7 +151,7 @@ export async function createPrivateSpell(
 		.from('spells')
 		.insert(insert)
 		.select(
-			'id, source_id, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, concentration, ritual, created_at, updated_at'
+			'id, source_id, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, mechanics, concentration, ritual, created_at, updated_at'
 		)
 		.single();
 
@@ -144,6 +160,126 @@ export async function createPrivateSpell(
 	}
 
 	return mapPrivateSpellRecord(data, sourceIds);
+}
+
+export async function derivePrivateSpellFromSharedCatalog(
+	supabase: SupabaseClient<Database>,
+	userId: string,
+	input: DerivePrivateSpellInput
+): Promise<PrivateSpellRecord> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		const sharedSpell = getE2ESpellCatalogEntry(input.sharedSpellId);
+
+		if (!sharedSpell) {
+			throw new Error('Please choose a valid shared spell to copy.');
+		}
+
+		return createE2EPrivateSpellForUser(userId, {
+			sourceCode: 'homebrew',
+			slug: sharedSpell.slug,
+			name: sharedSpell.name,
+			level: sharedSpell.level,
+			school: sharedSpell.school,
+			castingTime: sharedSpell.castingTime ?? undefined,
+			range: sharedSpell.range ?? undefined,
+			components: sharedSpell.components ?? undefined,
+			materials: undefined,
+			duration: sharedSpell.duration ?? undefined,
+			classSlugs: [...sharedSpell.classSlugs],
+			summary: sharedSpell.summary ?? undefined,
+			description: sharedSpell.description ?? undefined,
+			derivation: {
+				source: 'srd-5-1',
+				contentType: 'spell',
+				slug: sharedSpell.slug,
+				name: sharedSpell.name
+			},
+			concentration: sharedSpell.concentration,
+			ritual: sharedSpell.ritual
+		});
+	}
+
+	const [privateSourceIds, allSourceIds, sharedSpell] = await Promise.all([
+		loadContentSourceIds(supabase, ['user-private', 'homebrew']),
+		loadContentSourceIds(supabase, ['user-private', 'homebrew', 'srd-5-1', 'srd-5-2']),
+		loadSharedSpellForDerivation(supabase, input.sharedSpellId)
+	]);
+
+	await assertNoExistingPrivateSpellSlug(supabase, userId, sharedSpell.slug, privateSourceIds);
+
+	const sharedSourceCode =
+		findSourceCodeById(allSourceIds, sharedSpell.source_id) === 'srd-5-2' ? 'srd-5-2' : 'srd-5-1';
+	const insert: SpellInsert = {
+		owner_user_id: userId,
+		source_id: privateSourceIds.homebrew,
+		visibility: 'private',
+		slug: sharedSpell.slug,
+		name: sharedSpell.name,
+		level: sharedSpell.level,
+		school: sharedSpell.school,
+		casting_time: sharedSpell.casting_time,
+		range_text: sharedSpell.range_text,
+		components: sharedSpell.components,
+		materials: sharedSpell.materials,
+		duration: sharedSpell.duration,
+		class_slugs: sharedSpell.class_slugs,
+		summary: sharedSpell.summary,
+		description: sharedSpell.description,
+		mechanics: [
+			...normalizeMechanics(sharedSpell.mechanics),
+			buildPrivateSpellDerivationMechanic({
+				source: sharedSourceCode,
+				slug: sharedSpell.slug,
+				name: sharedSpell.name
+			})
+		],
+		concentration: sharedSpell.concentration,
+		ritual: sharedSpell.ritual,
+		is_system_content: false
+	};
+
+	const { data, error } = await supabase
+		.from('spells')
+		.insert(insert)
+		.select(
+			'id, source_id, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, mechanics, concentration, ritual, created_at, updated_at'
+		)
+		.single();
+
+	if (error) {
+		throw new Error(`Failed to derive private spell for user ${userId}`);
+	}
+
+	return mapPrivateSpellRecord(data, privateSourceIds);
+}
+
+export function buildPrivateSpellDerivationMechanic(input: {
+	source: ContentSourceCode;
+	slug: string;
+	name: string;
+}): GameMechanic {
+	return {
+		type: 'source_derivation',
+		source: input.source,
+		contentType: 'spell',
+		slug: input.slug,
+		name: input.name
+	};
+}
+
+export function extractPrivateSpellDerivation(mechanics: unknown): PrivateSpellDerivation | null {
+	for (const mechanic of normalizeMechanics(mechanics)) {
+		if (mechanic.type === 'source_derivation' && mechanic.contentType === 'spell') {
+			return {
+				source: mechanic.source,
+				contentType: mechanic.contentType,
+				slug: mechanic.slug,
+				name: mechanic.name
+			};
+		}
+	}
+
+	return null;
 }
 
 async function loadContentSourceIds<TCode extends ContentSourceCode>(
@@ -175,7 +311,7 @@ async function assertNoExistingPrivateSpellSlug(
 	supabase: SupabaseClient<Database>,
 	userId: string,
 	slug: string,
-	sourceIds: Record<ContentSourceCode, string>
+	sourceIds: Record<PrivateSpellSourceCode, string>
 ) {
 	const { data, error } = await supabase
 		.from('spells')
@@ -194,9 +330,50 @@ async function assertNoExistingPrivateSpellSlug(
 	}
 }
 
+async function loadSharedSpellForDerivation(
+	supabase: SupabaseClient<Database>,
+	spellId: string
+): Promise<
+	Pick<
+		SpellRow,
+		| 'id'
+		| 'source_id'
+		| 'visibility'
+		| 'slug'
+		| 'name'
+		| 'level'
+		| 'school'
+		| 'casting_time'
+		| 'range_text'
+		| 'components'
+		| 'materials'
+		| 'duration'
+		| 'class_slugs'
+		| 'summary'
+		| 'description'
+		| 'mechanics'
+		| 'concentration'
+		| 'ritual'
+	>
+> {
+	const { data, error } = await supabase
+		.from('spells')
+		.select(
+			'id, source_id, visibility, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, mechanics, concentration, ritual'
+		)
+		.eq('id', spellId)
+		.single();
+
+	if (error || !data || data.visibility === 'private' || data.visibility === 'campaign') {
+		throw new Error('Please choose a valid shared spell to copy.');
+	}
+
+	return data;
+}
+
 function mapPrivateSpellRecord(
 	spell: PrivateSpellRow,
-	sourceIds: Record<ContentSourceCode, string>
+	sourceIds: Record<PrivateSpellSourceCode, string>
 ): PrivateSpellRecord {
 	return {
 		id: spell.id,
@@ -213,9 +390,27 @@ function mapPrivateSpellRecord(
 		classSlugs: spell.class_slugs,
 		summary: spell.summary,
 		description: spell.description,
+		derivation: extractPrivateSpellDerivation(spell.mechanics),
 		concentration: spell.concentration,
 		ritual: spell.ritual,
 		createdAt: spell.created_at,
 		updatedAt: spell.updated_at
 	};
+}
+
+function normalizeMechanics(mechanics: unknown): GameMechanic[] {
+	return Array.isArray(mechanics) ? (mechanics as GameMechanic[]) : [];
+}
+
+function findSourceCodeById(
+	sourceIds: Partial<Record<ContentSourceCode, string>>,
+	sourceId: string
+): ContentSourceCode | null {
+	for (const [code, id] of Object.entries(sourceIds)) {
+		if (id === sourceId) {
+			return code as ContentSourceCode;
+		}
+	}
+
+	return null;
 }

@@ -67,6 +67,8 @@ In that case, it should still name the next recommended block.
     - `S21 - Role-Aware Content Operations`
     - `S22 - Shared Content Maintenance`
     - `S23 - Shared Content Lifecycle Controls`
+    - `S24 - Private Spell CRUD Foundation`
+    - `S25 - SRD To Private Spell Derivation`
 - effectively completed beyond the original status notes:
     - expanded catalog wiring now also covers `backgrounds`, `subspecies`, and `subclasses`
     - equipment catalog wiring now also covers character `attacks` and `inventory`, including linked `equipmentId` persistence, server-side normalization, enriched detail rendering, and targeted E2E coverage for the catalog selectors
@@ -74,21 +76,23 @@ In that case, it should still name the next recommended block.
     - admin/test-user operator tooling is implemented through `scripts/create-test-user.ts`, `scripts/manage-user-role.ts`, and `docs/11-admin-and-test-user-workflow.md`
     - structured note placeholder rows are filtered during submit normalization and schema parsing, restoring green character create/edit E2E confidence
     - `/app/content` now supports private feat creation, SRD-to-private feat derivation, and role-aware shared/system feat publishing
+    - `/app/content` now also supports private spell creation and SRD-to-private spell derivation
     - trusted editor/admin users can now review and update shared homebrew feats from `/app/content`
     - trusted editor/admin users can now also retire or permanently delete maintained shared feats from `/app/content`
 - implemented but still intentionally shallow:
     - real character CRUD exists
-    - the shared catalog is browseable and now has guarded create/update/retire/delete workflows for feats, but those content operations are still feat-only
+    - the shared catalog is browseable and now has guarded create/update/retire/delete workflows for feats plus private create/derive workflows for spells, but trusted shared spell workflows do not exist yet
     - permissions exist as schema, RLS, server helpers, operator scripts, and a first visible content surface, not as a full admin/editor product surface
 - current project point:
   - the MVP app shell and first character workflow are implemented and E2E-stable
   - structured character sections cover the highest-value MVP slices
   - environment separation is documented
   - runtime integration behavior is now documented in `README.md` and `docs/10-runtime-integration-check.md`, with request-time status checks in `src/lib/server/runtime/integration.ts`
-  - the first private content workflow and first role-aware shared content lifecycle are now in place for feats
-  - the highest-value missing content slice is extending that bounded workflow beyond feats so the content surface is not locked to one family
+  - the first private content workflows now exist for both feats and spells
+  - the first role-aware shared content lifecycle is still feat-only
+  - the highest-value missing content slice is extending trusted shared content operations to spells now that private spell creation and SRD derivation are in place
 - next recommended block:
-  - `S24 - Private Spell CRUD Foundation`, because the repo already has shared spell catalog data, spell validation, and character spell wiring, but user-facing content operations are still feat-only
+  - `S26 - Shared Spell Publishing Foundation`, because private spell creation and SRD spell derivation now exist but trusted roles still cannot publish bounded shared/system spell entries from the app
 
 ## Session Blocks
 
@@ -581,10 +585,59 @@ In that case, it should still name the next recommended block.
     - spell-specific fields are validated in the app workflow, not only in file-import schemas
     - the UI clearly distinguishes shared SRD spells from user-private spell drafts
 
+### S25 - SRD To Private Spell Derivation
+
+- objective: let users start from a trusted shared SRD spell and save an editable private copy
+- read context:
+    - `docs/context/30_CONTENT_AND_PERMISSIONS.md`
+    - `docs/context/40_AUTH_AND_DATA.md`
+    - `docs/context/50_WORKFLOW_RULES.md`
+    - `docs/rules/05_GUIA_CARGA_CONTENIDO_DESDE_ARCHIVOS.md`
+    - `docs/rules/06_MODELO_DATOS_CONTENIDO_Y_PERMISOS.md`
+- likely files:
+    - `src/routes/app/content/...`
+    - `src/lib/server/repositories/private-spells.ts`
+    - `src/lib/server/e2e/mock-app.ts`
+    - relevant tests near the content route/repository code
+- minimum validation:
+    - `pnpm check`
+    - targeted unit tests for spell derivation and ownership rules
+    - targeted E2E only if the copy flow is exercised in the browser
+- closure criterion:
+    - a shared SRD spell can be copied into private user-owned spell content
+    - the derived spell keeps enough source metadata to explain where it came from
+    - the original shared SRD spell remains read-only in normal user flows
+    - the UI clearly distinguishes manual private spell creation from shared-spell derivation
+
+### S26 - Shared Spell Publishing Foundation
+
+- objective: add the first bounded trusted-role publishing workflow for spells
+- read context:
+    - `docs/context/10_PRODUCT_SCOPE.md`
+    - `docs/context/30_CONTENT_AND_PERMISSIONS.md`
+    - `docs/context/40_AUTH_AND_DATA.md`
+    - `docs/context/50_WORKFLOW_RULES.md`
+    - `docs/11-admin-and-test-user-workflow.md`
+- likely files:
+    - `src/routes/app/content/...`
+    - `src/lib/server/repositories/private-spells.ts`
+    - `src/lib/schemas/content/private-spell...`
+    - `src/lib/server/permissions/authorization.ts`
+    - relevant tests near the route/repository code
+- minimum validation:
+    - `pnpm check`
+    - targeted permission and repository tests
+    - targeted E2E only if a full browser publish flow is added
+- closure criterion:
+    - `content_editor` users can publish validated shared homebrew spells
+    - `admin` users can publish bounded system-owned spell entries
+    - normal users remain unable to publish shared or system spell content
+    - the spell publishing path preserves clear separation between private drafts and shared/system catalog entries
+
 ## Notes
 
 - this plan is intentionally session-oriented, not milestone-oriented
 - each block should fit comfortably in one focused chat
 - if a block grows during implementation, split it rather than stretching the session
 - recommended implementation order from the current project state:
-    - `S24 - Private Spell CRUD Foundation`
+    - `S26 - Shared Spell Publishing Foundation`
