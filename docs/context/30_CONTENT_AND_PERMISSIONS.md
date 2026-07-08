@@ -31,7 +31,8 @@ SRD content is structured reusable catalog data and should remain distinct from 
 - character ownership
 - user-private feats now have create and SRD-derivation workflows
 - shared and system feat publishing now has an initial role-aware UI surface
-- shared-content editing remains the next missing role-aware workflow
+- user-private spells now also have create, SRD-derivation, and guarded shared/system publishing workflows
+- shared-content editing remains the next missing role-aware workflow for spells
 
 ## Import Rule
 

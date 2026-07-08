@@ -76,12 +76,12 @@ In that case, it should still name the next recommended block.
     - admin/test-user operator tooling is implemented through `scripts/create-test-user.ts`, `scripts/manage-user-role.ts`, and `docs/11-admin-and-test-user-workflow.md`
     - structured note placeholder rows are filtered during submit normalization and schema parsing, restoring green character create/edit E2E confidence
     - `/app/content` now supports private feat creation, SRD-to-private feat derivation, and role-aware shared/system feat publishing
-    - `/app/content` now also supports private spell creation and SRD-to-private spell derivation
+    - `/app/content` now also supports private spell creation, SRD-to-private spell derivation, and role-aware shared/system spell publishing
     - trusted editor/admin users can now review and update shared homebrew feats from `/app/content`
     - trusted editor/admin users can now also retire or permanently delete maintained shared feats from `/app/content`
 - implemented but still intentionally shallow:
     - real character CRUD exists
-    - the shared catalog is browseable and now has guarded create/update/retire/delete workflows for feats plus private create/derive workflows for spells, but trusted shared spell workflows do not exist yet
+    - the shared catalog is browseable and now has guarded create/update/retire/delete workflows for feats plus private create/derive/publish workflows for spells, but spell maintenance and lifecycle controls do not exist yet
     - permissions exist as schema, RLS, server helpers, operator scripts, and a first visible content surface, not as a full admin/editor product surface
 - current project point:
   - the MVP app shell and first character workflow are implemented and E2E-stable
@@ -89,10 +89,11 @@ In that case, it should still name the next recommended block.
   - environment separation is documented
   - runtime integration behavior is now documented in `README.md` and `docs/10-runtime-integration-check.md`, with request-time status checks in `src/lib/server/runtime/integration.ts`
   - the first private content workflows now exist for both feats and spells
-  - the first role-aware shared content lifecycle is still feat-only
-  - the highest-value missing content slice is extending trusted shared content operations to spells now that private spell creation and SRD derivation are in place
+  - trusted editor/admin users can now publish bounded shared and system homebrew entries for both feats and spells
+  - the first role-aware shared content maintenance and lifecycle controls are still feat-only
+  - the highest-value missing content slice is extending trusted shared content maintenance to spells now that private spell creation, SRD derivation, and spell publishing are in place
 - next recommended block:
-  - `S26 - Shared Spell Publishing Foundation`, because private spell creation and SRD spell derivation now exist but trusted roles still cannot publish bounded shared/system spell entries from the app
+  - `S27 - Shared Spell Maintenance`, because trusted roles can now publish bounded shared/system spell entries but still cannot review and update maintained shared spells from the app
 
 ## Session Blocks
 
@@ -634,10 +635,34 @@ In that case, it should still name the next recommended block.
     - normal users remain unable to publish shared or system spell content
     - the spell publishing path preserves clear separation between private drafts and shared/system catalog entries
 
+### S27 - Shared Spell Maintenance
+
+- objective: add the first bounded update workflow for trusted shared spell content after the initial publish path
+- read context:
+    - `docs/context/10_PRODUCT_SCOPE.md`
+    - `docs/context/30_CONTENT_AND_PERMISSIONS.md`
+    - `docs/context/40_AUTH_AND_DATA.md`
+    - `docs/context/50_WORKFLOW_RULES.md`
+    - `docs/11-admin-and-test-user-workflow.md`
+- likely files:
+    - `src/routes/app/content/...`
+    - `src/lib/server/repositories/private-spells.ts`
+    - `src/lib/server/permissions/authorization.ts`
+    - relevant tests near the content route/repository code
+- minimum validation:
+    - `pnpm check`
+    - targeted unit tests for shared/system spell update rules
+    - targeted E2E only if a browser edit workflow is added
+- closure criterion:
+    - `content_editor` and `admin` users can review the shared spells they are allowed to maintain
+    - shared non-system spells can be updated through explicit app-side authorization
+    - system-owned spells remain admin-only for update operations
+    - normal users remain unable to edit shared or system-owned spell catalog content
+
 ## Notes
 
 - this plan is intentionally session-oriented, not milestone-oriented
 - each block should fit comfortably in one focused chat
 - if a block grows during implementation, split it rather than stretching the session
 - recommended implementation order from the current project state:
-    - `S26 - Shared Spell Publishing Foundation`
+    - `S27 - Shared Spell Maintenance`

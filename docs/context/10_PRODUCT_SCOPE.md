@@ -20,7 +20,7 @@
 ## Deferred Scope
 
 - advanced campaign collaboration
-- broad self-service publishing workflows beyond the current guarded feat-only path
+- broad self-service publishing workflows beyond the current guarded feat/spell path for trusted roles
 - full automation of all DnD rules
 - broad social or community features
 

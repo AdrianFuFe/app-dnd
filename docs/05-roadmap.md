@@ -73,6 +73,9 @@ Status on 2026-07-08:
 - authenticated users can create private feats and derive private copies from shared SRD feats
 - `content_editor` users can publish validated shared homebrew feats from the app content surface
 - `admin` users can publish system-owned feat entries from the same guarded workflow
+- authenticated users can also create private spells and derive private copies from shared SRD spells
+- `content_editor` users can now publish validated shared homebrew spells from the app content surface
+- `admin` users can now publish system-owned spell entries from the same guarded workflow
 - role assignment still remains outside the runtime UI and inside operator tooling
 
 ## Iteration 10
@@ -87,7 +90,7 @@ Status on 2026-07-08:
 - editor/admin users can now review shared homebrew feats they are allowed to maintain
 - `content_editor` users can update their own shared homebrew feats
 - `admin` users can update both shared and system-owned homebrew feats
-- shared-content maintenance is still feat-only and does not yet include delete/archive controls
+- shared-content maintenance is still feat-only and does not yet include shared spell editing
 
 ## Iteration 11
 
@@ -95,6 +98,11 @@ Status on 2026-07-08:
 - let trusted roles retire or delete shared homebrew entries through guarded app-side authorization
 - keep system-owned lifecycle operations admin-only
 - preserve normal-user read-only behavior for shared and system-owned content
+
+Status on 2026-07-08:
+
+- trusted roles can now retire or permanently delete maintained shared feats
+- shared spell publishing exists, but spell maintenance and lifecycle controls are still missing
 
 ## Future Iterations
 
