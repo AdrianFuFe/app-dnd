@@ -140,6 +140,20 @@
 			)}
 			in the live character forms.
 		</p>
+		{#if data.roleOperations.canPublishSharedFeats || data.roleOperations.canPublishSystemFeats}
+			<div class="mt-5 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-4 text-sm text-indigo-900">
+				<p class="font-medium">Role-aware content operations are active for this account.</p>
+				<p class="mt-2">
+					{#if data.roleOperations.canPublishSystemFeats}
+						You can publish shared homebrew feats and promote approved entries into
+						system-owned catalog content.
+					{:else}
+						You can publish shared homebrew feats for broader reuse, but system-owned
+						catalog content remains admin-only.
+					{/if}
+				</p>
+			</div>
+		{/if}
 		<div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 			<div class="rounded-2xl bg-stone-100 p-4">
 				<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">
@@ -274,6 +288,16 @@
 					private feats.
 				</p>
 			{/if}
+			{#if data.publishedSharedFeatName}
+				<p class="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
+					{data.publishedSharedFeatName} was published to the shared homebrew catalog.
+				</p>
+			{/if}
+			{#if data.publishedSystemFeatName}
+				<p class="mt-4 rounded-2xl border border-fuchsia-200 bg-fuchsia-50 px-4 py-3 text-sm text-fuchsia-800">
+					{data.publishedSystemFeatName} was published as system-owned content.
+				</p>
+			{/if}
 
 			{#if form?.createPrivateFeatFormError}
 				<p class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -348,6 +372,37 @@
 				>
 					Create private feat
 				</button>
+				{#if data.roleOperations.canPublishSharedFeats || data.roleOperations.canPublishSystemFeats}
+					<div class="rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4">
+						<p class="text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
+							Privileged publishing
+						</p>
+						<p class="mt-2 text-sm text-stone-600">
+							These actions reuse the same validated feat draft, but publish it beyond your
+							private workspace. Role assignment still stays outside the runtime UI.
+						</p>
+						<div class="mt-4 flex flex-wrap gap-3">
+							{#if data.roleOperations.canPublishSharedFeats}
+								<button
+									class="rounded-lg bg-indigo-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-indigo-500"
+									type="submit"
+									formaction="?/publishSharedFeat"
+								>
+									Publish shared feat
+								</button>
+							{/if}
+							{#if data.roleOperations.canPublishSystemFeats}
+								<button
+									class="rounded-lg bg-fuchsia-700 px-5 py-3 text-sm font-medium text-white transition hover:bg-fuchsia-600"
+									type="submit"
+									formaction="?/publishSystemFeat"
+								>
+									Publish system feat
+								</button>
+							{/if}
+						</div>
+					</div>
+				{/if}
 			</form>
 		</div>
 

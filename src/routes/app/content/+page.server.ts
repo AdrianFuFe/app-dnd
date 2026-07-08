@@ -10,6 +10,7 @@ import {
 } from '$lib/server/permissions/authorization';
 import {
 	createPrivateFeat,
+	createSharedFeat,
 	derivePrivateFeatFromSharedCatalog,
 	listPrivateFeatsForUser
 } from '$lib/server/repositories/private-feats';
@@ -24,7 +25,13 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 		return {
 			createdPrivateFeatName: url.searchParams.get('createdPrivateFeat'),
 			derivedPrivateFeatName: url.searchParams.get('derivedPrivateFeat'),
+			publishedSharedFeatName: url.searchParams.get('publishedSharedFeat'),
+			publishedSystemFeatName: url.searchParams.get('publishedSystemFeat'),
 			createPrivateFeatValues: createPrivateFeatFormValues(),
+			roleOperations: {
+				canPublishSharedFeats: false,
+				canPublishSystemFeats: false
+			},
 			characterCatalog: {
 				speciesOptions: [],
 				subspeciesOptions: [],
@@ -62,7 +69,15 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 	return {
 		createdPrivateFeatName: url.searchParams.get('createdPrivateFeat'),
 		derivedPrivateFeatName: url.searchParams.get('derivedPrivateFeat'),
+		publishedSharedFeatName: url.searchParams.get('publishedSharedFeat'),
+		publishedSystemFeatName: url.searchParams.get('publishedSystemFeat'),
 		createPrivateFeatValues: createPrivateFeatFormValues(),
+		roleOperations: {
+			canPublishSharedFeats:
+				parentData.authorization?.globalRole === 'content_editor' ||
+				parentData.authorization?.globalRole === 'admin',
+			canPublishSystemFeats: parentData.authorization?.globalRole === 'admin'
+		},
 		characterCatalog: await listCharacterCreationCatalog(locals.supabase),
 		privateFeats: parentData.session
 			? await listPrivateFeatsForUser(locals.supabase, parentData.session.user.id)
@@ -87,21 +102,18 @@ export const actions: Actions = {
 
 		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
 		requirePermissionScopeAccess(authorization, 'private_content');
+		const parsedForm = await parsePrivateFeatCreateForm(request);
 
-		const rawValues = Object.fromEntries(await request.formData());
-		const values = createPrivateFeatFormValues(rawValues);
-		const parsed = privateFeatFormSchema.safeParse(values);
-
-		if (!parsed.success) {
-			return fail(400, {
-				createPrivateFeatFieldErrors: flattenPrivateFeatFormErrors(parsed.error),
-				createPrivateFeatFormError: 'Please correct the highlighted private feat fields.',
-				createPrivateFeatValues: values
-			});
+		if ('response' in parsedForm) {
+			return parsedForm.response;
 		}
 
 		try {
-			const feat = await createPrivateFeat(locals.supabase, locals.session.user.id, parsed.data);
+			const feat = await createPrivateFeat(
+				locals.supabase,
+				locals.session.user.id,
+				parsedForm.data
+			);
 			const createdPrivateFeat = encodeURIComponent(feat.name);
 
 			throw redirect(303, `/app/content?createdPrivateFeat=${createdPrivateFeat}`);
@@ -118,7 +130,7 @@ export const actions: Actions = {
 			return fail(400, {
 				createPrivateFeatFieldErrors: {},
 				createPrivateFeatFormError: formError,
-				createPrivateFeatValues: values
+				createPrivateFeatValues: parsedForm.values
 			});
 		}
 	},
@@ -172,5 +184,118 @@ export const actions: Actions = {
 				createPrivateFeatValues: createPrivateFeatFormValues()
 			});
 		}
+	},
+	publishSharedFeat: async ({ locals, request }) => {
+		if (!locals.session) {
+			throw redirect(302, '/auth/login?redirectTo=/app/content');
+		}
+
+		if (!locals.supabase) {
+			return fail(500, {
+				createPrivateFeatFieldErrors: {},
+				createPrivateFeatFormError: 'Supabase is not configured yet.',
+				createPrivateFeatValues: createPrivateFeatFormValues()
+			});
+		}
+
+		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		requirePermissionScopeAccess(authorization, 'shared_content');
+
+		const parsedForm = await parsePrivateFeatCreateForm(request);
+
+		if ('response' in parsedForm) {
+			return parsedForm.response;
+		}
+
+		try {
+			const feat = await createSharedFeat(locals.supabase, locals.session.user.id, {
+				...parsedForm.data,
+				visibility: 'shared',
+				isSystemContent: false
+			});
+			const publishedSharedFeat = encodeURIComponent(feat.name);
+
+			throw redirect(303, `/app/content?publishedSharedFeat=${publishedSharedFeat}`);
+		} catch (error) {
+			if (isRedirect(error)) {
+				throw error;
+			}
+
+			return fail(400, {
+				createPrivateFeatFieldErrors: {},
+				createPrivateFeatFormError:
+					error instanceof Error
+						? error.message
+						: 'The feat could not be published to shared content.',
+				createPrivateFeatValues: parsedForm.values
+			});
+		}
+	},
+	publishSystemFeat: async ({ locals, request }) => {
+		if (!locals.session) {
+			throw redirect(302, '/auth/login?redirectTo=/app/content');
+		}
+
+		if (!locals.supabase) {
+			return fail(500, {
+				createPrivateFeatFieldErrors: {},
+				createPrivateFeatFormError: 'Supabase is not configured yet.',
+				createPrivateFeatValues: createPrivateFeatFormValues()
+			});
+		}
+
+		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		requirePermissionScopeAccess(authorization, 'system_content');
+
+		const parsedForm = await parsePrivateFeatCreateForm(request);
+
+		if ('response' in parsedForm) {
+			return parsedForm.response;
+		}
+
+		try {
+			const feat = await createSharedFeat(locals.supabase, locals.session.user.id, {
+				...parsedForm.data,
+				visibility: 'public',
+				isSystemContent: true
+			});
+			const publishedSystemFeat = encodeURIComponent(feat.name);
+
+			throw redirect(303, `/app/content?publishedSystemFeat=${publishedSystemFeat}`);
+		} catch (error) {
+			if (isRedirect(error)) {
+				throw error;
+			}
+
+			return fail(400, {
+				createPrivateFeatFieldErrors: {},
+				createPrivateFeatFormError:
+					error instanceof Error
+						? error.message
+						: 'The feat could not be published as system content.',
+				createPrivateFeatValues: parsedForm.values
+			});
+		}
 	}
 };
+
+async function parsePrivateFeatCreateForm(request: Request) {
+	const rawValues = Object.fromEntries(await request.formData());
+	const values = createPrivateFeatFormValues(rawValues);
+	const parsed = privateFeatFormSchema.safeParse(values);
+
+	if (!parsed.success) {
+		return {
+			response: fail(400, {
+				createPrivateFeatFieldErrors: flattenPrivateFeatFormErrors(parsed.error),
+				createPrivateFeatFormError: 'Please correct the highlighted private feat fields.',
+				createPrivateFeatValues: values
+			})
+		};
+	}
+
+	return {
+		data: parsed.data,
+		values
+	};
+}

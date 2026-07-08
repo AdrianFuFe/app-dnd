@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
 	createE2EPrivateFeatForUser,
+	createE2ESharedFeatForUser,
 	getE2EFeatCatalogEntry,
 	isE2EMockSupabaseClient,
 	listE2EPrivateFeatsForUser
@@ -12,6 +13,8 @@ type FeatRow = Database['public']['Tables']['feats']['Row'];
 type FeatInsert = Database['public']['Tables']['feats']['Insert'];
 type ContentSourceCode = 'user-private' | 'homebrew' | 'srd-5-1' | 'srd-5-2';
 type PrivateFeatSourceCode = 'user-private' | 'homebrew';
+type SharedFeatSourceCode = 'homebrew';
+type ManagedFeatVisibility = 'shared' | 'public';
 
 export type PrivateFeatDerivation = {
 	source: ContentSourceCode;
@@ -43,6 +46,26 @@ export type CreatePrivateFeatInput = {
 
 export type DerivePrivateFeatInput = {
 	sharedFeatId: string;
+};
+
+export type CreateSharedFeatInput = CreatePrivateFeatInput & {
+	sourceCode?: SharedFeatSourceCode;
+	visibility: ManagedFeatVisibility;
+	isSystemContent: boolean;
+};
+
+export type SharedFeatRecord = {
+	id: string;
+	sourceCode: SharedFeatSourceCode;
+	slug: string;
+	name: string;
+	prerequisites: string[];
+	summary: string | null;
+	description: string | null;
+	visibility: ManagedFeatVisibility;
+	isSystemContent: boolean;
+	createdAt: string;
+	updatedAt: string;
 };
 
 type PrivateFeatRow = Pick<
@@ -211,6 +234,50 @@ export async function derivePrivateFeatFromSharedCatalog(
 	return mapPrivateFeatRecord(data, privateSourceIds);
 }
 
+export async function createSharedFeat(
+	supabase: SupabaseClient<Database>,
+	userId: string,
+	input: CreateSharedFeatInput
+): Promise<SharedFeatRecord> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		return createE2ESharedFeatForUser(userId, input);
+	}
+
+	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
+	await assertNoExistingSharedFeatSlug(supabase, input.slug, sourceIds);
+
+	const insert: FeatInsert = {
+		owner_user_id: input.isSystemContent ? null : userId,
+		source_id: sourceIds.homebrew,
+		visibility: input.visibility,
+		slug: input.slug,
+		name: input.name,
+		prerequisites: input.prerequisites,
+		summary: input.summary ?? null,
+		description: input.description ?? null,
+		mechanics: [],
+		is_system_content: input.isSystemContent
+	};
+
+	const { data, error } = await supabase
+		.from('feats')
+		.insert(insert)
+		.select(
+			'id, source_id, slug, name, prerequisites, summary, description, visibility, is_system_content, created_at, updated_at'
+		)
+		.single();
+
+	if (error) {
+		throw new Error(
+			input.isSystemContent
+				? `Failed to create system feat for user ${userId}`
+				: `Failed to create shared feat for user ${userId}`
+		);
+	}
+
+	return mapSharedFeatRecord(data, sourceIds);
+}
+
 export function buildPrivateFeatDerivationMechanic(input: {
 	source: ContentSourceCode;
 	slug: string;
@@ -305,6 +372,28 @@ async function assertNoExistingPrivateFeatSlug(
 	}
 }
 
+async function assertNoExistingSharedFeatSlug(
+	supabase: SupabaseClient<Database>,
+	slug: string,
+	sourceIds: Record<SharedFeatSourceCode, string>
+) {
+	const { data, error } = await supabase
+		.from('feats')
+		.select('id')
+		.eq('slug', slug)
+		.eq('source_id', sourceIds.homebrew)
+		.not('visibility', 'in', '(private,campaign)')
+		.limit(1);
+
+	if (error) {
+		throw new Error(`Failed to check shared feat slug "${slug}"`);
+	}
+
+	if (data.length > 0) {
+		throw new Error('A shared feat with that slug already exists. Try a different name.');
+	}
+}
+
 function mapPrivateFeatRecord(
 	feat: PrivateFeatRow,
 	sourceIds: Record<PrivateFeatSourceCode, string>
@@ -318,6 +407,38 @@ function mapPrivateFeatRecord(
 		summary: feat.summary,
 		description: feat.description,
 		derivation: extractPrivateFeatDerivation(feat.mechanics),
+		createdAt: feat.created_at,
+		updatedAt: feat.updated_at
+	};
+}
+
+function mapSharedFeatRecord(
+	feat: Pick<
+		FeatRow,
+		| 'id'
+		| 'source_id'
+		| 'slug'
+		| 'name'
+		| 'prerequisites'
+		| 'summary'
+		| 'description'
+		| 'visibility'
+		| 'is_system_content'
+		| 'created_at'
+		| 'updated_at'
+	>,
+	sourceIds: Record<SharedFeatSourceCode, string>
+): SharedFeatRecord {
+	return {
+		id: feat.id,
+		sourceCode: feat.source_id === sourceIds.homebrew ? 'homebrew' : 'homebrew',
+		slug: feat.slug,
+		name: feat.name,
+		prerequisites: feat.prerequisites,
+		summary: feat.summary,
+		description: feat.description,
+		visibility: feat.visibility === 'public' ? 'public' : 'shared',
+		isSystemContent: feat.is_system_content,
 		createdAt: feat.created_at,
 		updatedAt: feat.updated_at
 	};

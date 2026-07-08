@@ -55,6 +55,21 @@ type E2EPrivateFeatRecord = {
 	updatedAt: string;
 };
 
+type E2ESharedFeatRecord = {
+	id: string;
+	userId: string | null;
+	sourceCode: 'homebrew';
+	slug: string;
+	name: string;
+	prerequisites: string[];
+	summary: string | null;
+	description: string | null;
+	visibility: 'shared' | 'public';
+	isSystemContent: boolean;
+	createdAt: string;
+	updatedAt: string;
+};
+
 type ContentFile<T> = {
 	items: T[];
 };
@@ -348,6 +363,7 @@ const initialCharacters: E2ECharacterRecord[] = [
 const state = {
 	characters: [] as E2ECharacterRecord[],
 	privateFeats: [] as E2EPrivateFeatRecord[],
+	sharedFeats: [] as E2ESharedFeatRecord[],
 	nextCharacterSequence: 2,
 	nextPrivateFeatSequence: 1,
 	nextUpdatedMinute: 0
@@ -417,6 +433,7 @@ export function getE2EMockSession(): Session {
 export function resetE2EMockState() {
 	state.characters = initialCharacters.map((character) => ({ ...character }));
 	state.privateFeats = [];
+	state.sharedFeats = [];
 	state.nextCharacterSequence = 2;
 	state.nextPrivateFeatSequence = 1;
 	state.nextUpdatedMinute = 0;
@@ -458,7 +475,12 @@ export function listE2EExpandedContentCatalog(): ExpandedContentCatalog {
 		})),
 		backgrounds: e2eExpandedContentCatalog.backgrounds.map((option) => ({ ...option })),
 		spells: e2eExpandedContentCatalog.spells.map(cloneSpellCatalogEntry),
-		feats: e2eExpandedContentCatalog.feats.map(cloneFeatCatalogEntry),
+		feats: [
+			...state.sharedFeats
+				.sort((left, right) => left.name.localeCompare(right.name))
+				.map((feat) => cloneFeatCatalogEntry(feat)),
+			...e2eExpandedContentCatalog.feats.map(cloneFeatCatalogEntry)
+		],
 		equipment: e2eExpandedContentCatalog.equipment.map(cloneEquipmentCatalogEntry),
 		vocabularies: cloneSharedRulesVocabularyCatalog(e2eExpandedContentCatalog.vocabularies)
 	};
@@ -642,6 +664,49 @@ export function createE2EPrivateFeatForUser(
 
 	state.nextPrivateFeatSequence += 1;
 	state.privateFeats.unshift(feat);
+
+	return { ...feat };
+}
+
+export function createE2ESharedFeatForUser(
+	userId: string,
+	input: {
+		sourceCode?: 'homebrew';
+		slug: string;
+		name: string;
+		prerequisites: string[];
+		summary?: string;
+		description?: string;
+		visibility: 'shared' | 'public';
+		isSystemContent: boolean;
+	}
+) {
+	const duplicate =
+		state.sharedFeats.find((feat) => feat.slug === input.slug) ??
+		e2eExpandedContentCatalog.feats.find((feat) => feat.slug === input.slug);
+
+	if (duplicate) {
+		throw new Error('A shared feat with that slug already exists. Try a different name.');
+	}
+
+	const timestamp = nextUpdatedAt();
+	const feat: E2ESharedFeatRecord = {
+		id: `shared-feat-e2e-${state.nextPrivateFeatSequence}`,
+		userId: input.isSystemContent ? null : userId,
+		sourceCode: input.sourceCode ?? 'homebrew',
+		slug: input.slug,
+		name: input.name,
+		prerequisites: [...input.prerequisites],
+		summary: input.summary ?? null,
+		description: input.description ?? null,
+		visibility: input.visibility,
+		isSystemContent: input.isSystemContent,
+		createdAt: timestamp,
+		updatedAt: timestamp
+	};
+
+	state.nextPrivateFeatSequence += 1;
+	state.sharedFeats.unshift(feat);
 
 	return { ...feat };
 }
