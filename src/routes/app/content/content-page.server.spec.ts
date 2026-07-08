@@ -12,10 +12,12 @@ const { listCharacterCreationCatalog, listExpandedContentCatalog } = vi.hoisted(
 	listExpandedContentCatalog: vi.fn()
 }));
 
-const { createPrivateFeat, listPrivateFeatsForUser } = vi.hoisted(() => ({
+const { createPrivateFeat, derivePrivateFeatFromSharedCatalog, listPrivateFeatsForUser } =
+	vi.hoisted(() => ({
 	createPrivateFeat: vi.fn(),
+	derivePrivateFeatFromSharedCatalog: vi.fn(),
 	listPrivateFeatsForUser: vi.fn()
-}));
+	}));
 
 const { getAuthorizationContext, requirePermissionScopeAccess } = vi.hoisted(() => ({
 	getAuthorizationContext: vi.fn(),
@@ -29,6 +31,7 @@ vi.mock('$lib/server/repositories/catalog', () => ({
 
 vi.mock('$lib/server/repositories/private-feats', () => ({
 	createPrivateFeat,
+	derivePrivateFeatFromSharedCatalog,
 	listPrivateFeatsForUser
 }));
 
@@ -82,6 +85,7 @@ describe('/app/content load', () => {
 			} as never)
 		).resolves.toEqual({
 			createdPrivateFeatName: null,
+			derivedPrivateFeatName: null,
 			createPrivateFeatValues: {
 				name: '',
 				summary: '',
@@ -257,11 +261,13 @@ describe('/app/content load', () => {
 		const privateFeats = [
 			{
 				id: 'private-feat-1',
+				sourceCode: 'user-private',
 				slug: 'observant-echo',
 				name: 'Observant Echo',
 				prerequisites: ['level:4'],
 				summary: 'Sharper pattern recall.',
 				description: null,
+				derivation: null,
 				createdAt: '2026-07-07T20:00:00.000Z',
 				updatedAt: '2026-07-07T20:00:00.000Z'
 			}
@@ -277,10 +283,13 @@ describe('/app/content load', () => {
 					supabase
 				},
 				parent: async () => ({ session }),
-				url: new URL('http://localhost/app/content?createdPrivateFeat=Observant%20Echo')
+				url: new URL(
+					'http://localhost/app/content?createdPrivateFeat=Observant%20Echo&derivedPrivateFeat=Alert'
+				)
 			} as never)
 		).resolves.toEqual({
 			createdPrivateFeatName: 'Observant Echo',
+			derivedPrivateFeatName: 'Alert',
 			createPrivateFeatValues: {
 				name: '',
 				summary: '',
@@ -304,6 +313,7 @@ describe('/app/content load', () => {
 describe('/app/content actions', () => {
 	beforeEach(() => {
 		createPrivateFeat.mockReset();
+		derivePrivateFeatFromSharedCatalog.mockReset();
 		getAuthorizationContext.mockReset().mockResolvedValue({
 			userId: 'user-1',
 			globalRole: 'user',
@@ -346,11 +356,13 @@ describe('/app/content actions', () => {
 	it('creates a private feat for the current user', async () => {
 		createPrivateFeat.mockResolvedValueOnce({
 			id: 'private-feat-1',
+			sourceCode: 'user-private',
 			slug: 'observant-echo',
 			name: 'Observant Echo',
 			prerequisites: ['level:4'],
 			summary: 'Sharper pattern recall.',
 			description: null,
+			derivation: null,
 			createdAt: '2026-07-07T20:00:00.000Z',
 			updatedAt: '2026-07-07T20:00:00.000Z'
 		});
@@ -388,6 +400,52 @@ describe('/app/content actions', () => {
 			summary: 'Sharper pattern recall.',
 			description: undefined,
 			prerequisites: ['level:4']
+		});
+	});
+
+	it('derives a private feat from a shared SRD feat', async () => {
+		derivePrivateFeatFromSharedCatalog.mockResolvedValueOnce({
+			id: 'private-feat-2',
+			sourceCode: 'homebrew',
+			slug: 'alert',
+			name: 'Alert',
+			prerequisites: [],
+			summary: 'Always ready.',
+			description: null,
+			derivation: {
+				source: 'srd-5-1',
+				contentType: 'feat',
+				slug: 'alert',
+				name: 'Alert'
+			},
+			createdAt: '2026-07-08T09:00:00.000Z',
+			updatedAt: '2026-07-08T09:00:00.000Z'
+		});
+
+		await expect(
+			actions.deriveFeat?.({
+				locals: {
+					session: {
+						user: {
+							id: 'user-1'
+						}
+					},
+					supabase: {}
+				},
+				request: new Request('http://localhost/app/content?/deriveFeat', {
+					method: 'POST',
+					body: new URLSearchParams({
+						sharedFeatId: 'shared-feat-1'
+					})
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 303,
+			location: '/app/content?derivedPrivateFeat=Alert'
+		});
+
+		expect(derivePrivateFeatFromSharedCatalog).toHaveBeenCalledWith({}, 'user-1', {
+			sharedFeatId: 'shared-feat-1'
 		});
 	});
 });

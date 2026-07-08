@@ -268,6 +268,12 @@
 					{data.createdPrivateFeatName} was created as a private feat.
 				</p>
 			{/if}
+			{#if data.derivedPrivateFeatName}
+				<p class="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+					{data.derivedPrivateFeatName} was copied from the shared SRD catalog into your
+					private feats.
+				</p>
+			{/if}
 
 			{#if form?.createPrivateFeatFormError}
 				<p class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -372,14 +378,26 @@
 									<h3 class="text-lg font-semibold text-stone-900">{feat.name}</h3>
 									<p class="mt-1 text-sm text-stone-500">slug: {feat.slug}</p>
 								</div>
-								<span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-amber-900">
-									Private
-								</span>
+								<div class="flex flex-wrap gap-2">
+									<span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-amber-900">
+										Private
+									</span>
+									{#if feat.derivation}
+										<span class="rounded-full bg-sky-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-sky-900">
+											Derived
+										</span>
+									{/if}
+								</div>
 							</div>
 
 							<p class="mt-3 text-sm text-stone-600">
 								{feat.summary ?? feat.description ?? 'No summary yet.'}
 							</p>
+							{#if feat.derivation}
+								<p class="mt-3 text-xs uppercase tracking-[0.16em] text-stone-500">
+									Derived from {feat.derivation.source}: {feat.derivation.name}
+								</p>
+							{/if}
 
 							<p class="mt-4 text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
 								Prerequisites
@@ -700,7 +718,19 @@
 				<div class="mt-6 space-y-4">
 					{#each data.sharedCatalog.feats as feat (feat.id)}
 						<article class="rounded-2xl border border-stone-200 p-4">
-							<h3 class="text-lg font-semibold text-stone-900">{feat.name}</h3>
+							<div class="flex flex-wrap items-start justify-between gap-3">
+								<h3 class="text-lg font-semibold text-stone-900">{feat.name}</h3>
+								<form method="POST">
+									<input type="hidden" name="sharedFeatId" value={feat.id} />
+									<button
+										class="rounded-full bg-stone-900 px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-white transition hover:bg-stone-700"
+										type="submit"
+										formaction="?/deriveFeat"
+									>
+										Copy to private
+									</button>
+								</form>
+							</div>
 							<p class="mt-2 text-sm text-stone-600">
 								{feat.summary ?? feat.description ?? 'No summary yet.'}
 							</p>

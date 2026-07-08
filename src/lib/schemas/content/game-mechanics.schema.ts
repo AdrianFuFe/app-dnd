@@ -102,6 +102,13 @@ export const gameMechanicSchema = z.discriminatedUnion('type', [
 		featureId: z.string().trim().min(1)
 	}),
 	z.object({
+		type: z.literal('source_derivation'),
+		source: z.enum(['srd-5-1', 'srd-5-2', 'user-private', 'homebrew']),
+		contentType: z.literal('feat'),
+		slug: slugSchema,
+		name: z.string().trim().min(1)
+	}),
+	z.object({
 		type: z.literal('note'),
 		text: z.string().trim().min(1)
 	})

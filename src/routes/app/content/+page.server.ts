@@ -10,6 +10,7 @@ import {
 } from '$lib/server/permissions/authorization';
 import {
 	createPrivateFeat,
+	derivePrivateFeatFromSharedCatalog,
 	listPrivateFeatsForUser
 } from '$lib/server/repositories/private-feats';
 import {
@@ -22,6 +23,7 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 	if (!locals.supabase) {
 		return {
 			createdPrivateFeatName: url.searchParams.get('createdPrivateFeat'),
+			derivedPrivateFeatName: url.searchParams.get('derivedPrivateFeat'),
 			createPrivateFeatValues: createPrivateFeatFormValues(),
 			characterCatalog: {
 				speciesOptions: [],
@@ -59,6 +61,7 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 
 	return {
 		createdPrivateFeatName: url.searchParams.get('createdPrivateFeat'),
+		derivedPrivateFeatName: url.searchParams.get('derivedPrivateFeat'),
 		createPrivateFeatValues: createPrivateFeatFormValues(),
 		characterCatalog: await listCharacterCreationCatalog(locals.supabase),
 		privateFeats: parentData.session
@@ -116,6 +119,57 @@ export const actions: Actions = {
 				createPrivateFeatFieldErrors: {},
 				createPrivateFeatFormError: formError,
 				createPrivateFeatValues: values
+			});
+		}
+	},
+	deriveFeat: async ({ locals, request }) => {
+		if (!locals.session) {
+			throw redirect(302, '/auth/login?redirectTo=/app/content');
+		}
+
+		if (!locals.supabase) {
+			return fail(500, {
+				createPrivateFeatFieldErrors: {},
+				createPrivateFeatFormError: 'Supabase is not configured yet.',
+				createPrivateFeatValues: createPrivateFeatFormValues()
+			});
+		}
+
+		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		requirePermissionScopeAccess(authorization, 'private_content');
+
+		const formData = await request.formData();
+		const sharedFeatId = formData.get('sharedFeatId');
+
+		if (typeof sharedFeatId !== 'string' || sharedFeatId.trim().length === 0) {
+			return fail(400, {
+				createPrivateFeatFieldErrors: {},
+				createPrivateFeatFormError: 'Please choose a valid shared feat to copy.',
+				createPrivateFeatValues: createPrivateFeatFormValues()
+			});
+		}
+
+		try {
+			const feat = await derivePrivateFeatFromSharedCatalog(
+				locals.supabase,
+				locals.session.user.id,
+				{ sharedFeatId }
+			);
+			const derivedPrivateFeat = encodeURIComponent(feat.name);
+
+			throw redirect(303, `/app/content?derivedPrivateFeat=${derivedPrivateFeat}`);
+		} catch (error) {
+			if (isRedirect(error)) {
+				throw error;
+			}
+
+			return fail(400, {
+				createPrivateFeatFieldErrors: {},
+				createPrivateFeatFormError:
+					error instanceof Error
+						? error.message
+						: 'The shared feat could not be copied into your private content.',
+				createPrivateFeatValues: createPrivateFeatFormValues()
 			});
 		}
 	}

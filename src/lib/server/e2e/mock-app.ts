@@ -39,11 +39,18 @@ type E2ECharacterRecord = CharacterCreateInput & {
 type E2EPrivateFeatRecord = {
 	id: string;
 	userId: string;
+	sourceCode: 'user-private' | 'homebrew';
 	slug: string;
 	name: string;
 	prerequisites: string[];
 	summary: string | null;
 	description: string | null;
+	derivation: {
+		source: 'srd-5-1' | 'srd-5-2' | 'user-private' | 'homebrew';
+		contentType: 'feat';
+		slug: string;
+		name: string;
+	} | null;
 	createdAt: string;
 	updatedAt: string;
 };
@@ -601,11 +608,13 @@ export function listE2EPrivateFeatsForUser(userId: string) {
 export function createE2EPrivateFeatForUser(
 	userId: string,
 	input: {
+		sourceCode?: 'user-private' | 'homebrew';
 		slug: string;
 		name: string;
 		prerequisites: string[];
 		summary?: string;
 		description?: string;
+		derivation?: E2EPrivateFeatRecord['derivation'];
 	}
 ) {
 	const duplicate = state.privateFeats.find(
@@ -620,11 +629,13 @@ export function createE2EPrivateFeatForUser(
 	const feat: E2EPrivateFeatRecord = {
 		id: `private-feat-e2e-${state.nextPrivateFeatSequence}`,
 		userId,
+		sourceCode: input.sourceCode ?? 'user-private',
 		slug: input.slug,
 		name: input.name,
 		prerequisites: [...input.prerequisites],
 		summary: input.summary ?? null,
 		description: input.description ?? null,
+		derivation: input.derivation ?? null,
 		createdAt: timestamp,
 		updatedAt: timestamp
 	};

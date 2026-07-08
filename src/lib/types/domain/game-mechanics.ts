@@ -29,4 +29,11 @@ export type GameMechanic =
 	| { type: 'spellcasting'; ability: Ability }
 	| { type: 'resource'; name: string; maxFormula: string; resetOn: RestType }
 	| { type: 'feature'; featureId: string }
+	| {
+			type: 'source_derivation';
+			source: 'srd-5-1' | 'srd-5-2' | 'user-private' | 'homebrew';
+			contentType: 'feat';
+			slug: string;
+			name: string;
+	  }
 	| { type: 'note'; text: string };
