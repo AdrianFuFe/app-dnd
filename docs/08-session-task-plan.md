@@ -66,6 +66,7 @@ In that case, it should still name the next recommended block.
     - `S20 - SRD To Private Derivation`
     - `S21 - Role-Aware Content Operations`
     - `S22 - Shared Content Maintenance`
+    - `S23 - Shared Content Lifecycle Controls`
 - effectively completed beyond the original status notes:
     - expanded catalog wiring now also covers `backgrounds`, `subspecies`, and `subclasses`
     - equipment catalog wiring now also covers character `attacks` and `inventory`, including linked `equipmentId` persistence, server-side normalization, enriched detail rendering, and targeted E2E coverage for the catalog selectors
@@ -74,19 +75,20 @@ In that case, it should still name the next recommended block.
     - structured note placeholder rows are filtered during submit normalization and schema parsing, restoring green character create/edit E2E confidence
     - `/app/content` now supports private feat creation, SRD-to-private feat derivation, and role-aware shared/system feat publishing
     - trusted editor/admin users can now review and update shared homebrew feats from `/app/content`
+    - trusted editor/admin users can now also retire or permanently delete maintained shared feats from `/app/content`
 - implemented but still intentionally shallow:
     - real character CRUD exists
-    - the shared catalog is browseable and now has guarded publish/update workflows for feats, but not a full shared-content lifecycle yet
+    - the shared catalog is browseable and now has guarded create/update/retire/delete workflows for feats, but those content operations are still feat-only
     - permissions exist as schema, RLS, server helpers, operator scripts, and a first visible content surface, not as a full admin/editor product surface
 - current project point:
   - the MVP app shell and first character workflow are implemented and E2E-stable
   - structured character sections cover the highest-value MVP slices
   - environment separation is documented
   - runtime integration behavior is now documented in `README.md` and `docs/10-runtime-integration-check.md`, with request-time status checks in `src/lib/server/runtime/integration.ts`
-  - the first private content workflow and first role-aware shared publishing workflow are now in place
-  - the highest-value missing content slice is explicit lifecycle control for maintained shared feats after create/update
+  - the first private content workflow and first role-aware shared content lifecycle are now in place for feats
+  - the highest-value missing content slice is extending that bounded workflow beyond feats so the content surface is not locked to one family
 - next recommended block:
-  - `S23 - Shared Content Lifecycle Controls`, because shared feat publishing and maintenance now exist but trusted roles still lack a bounded in-app delete/archive path
+  - `S24 - Private Spell CRUD Foundation`, because the repo already has shared spell catalog data, spell validation, and character spell wiring, but user-facing content operations are still feat-only
 
 ## Session Blocks
 
@@ -555,10 +557,34 @@ In that case, it should still name the next recommended block.
     - normal users remain unable to mutate shared or system-owned catalog content
     - the UI explains destructive scope clearly before applying the action
 
+### S24 - Private Spell CRUD Foundation
+
+- objective: extend the first user-facing private content workflow from feats into spells
+- read context:
+    - `docs/context/10_PRODUCT_SCOPE.md`
+    - `docs/context/30_CONTENT_AND_PERMISSIONS.md`
+    - `docs/context/40_AUTH_AND_DATA.md`
+    - `docs/context/50_WORKFLOW_RULES.md`
+    - `docs/rules/05_GUIA_CARGA_CONTENIDO_DESDE_ARCHIVOS.md`
+- likely files:
+    - `src/routes/app/content/...`
+    - `src/lib/server/repositories/...`
+    - `src/lib/schemas/content/spell...`
+    - relevant tests near the new route/repository/schema code
+- minimum validation:
+    - `pnpm check`
+    - targeted unit tests
+    - targeted E2E only if a full browser workflow is added
+- closure criterion:
+    - authenticated users can list and create private spells from the app UI
+    - private spells remain owner-scoped and do not weaken SRD/shared spell boundaries
+    - spell-specific fields are validated in the app workflow, not only in file-import schemas
+    - the UI clearly distinguishes shared SRD spells from user-private spell drafts
+
 ## Notes
 
 - this plan is intentionally session-oriented, not milestone-oriented
 - each block should fit comfortably in one focused chat
 - if a block grows during implementation, split it rather than stretching the session
 - recommended implementation order from the current project state:
-    - `S23 - Shared Content Lifecycle Controls`
+    - `S24 - Private Spell CRUD Foundation`
