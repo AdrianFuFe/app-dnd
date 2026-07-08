@@ -15,11 +15,12 @@
 - structured catalog content
 - E2E-stable character creation and editing flows
 - first user-facing private user content workflow
+- first role-aware shared content workflow for trusted editors/admins
 
 ## Deferred Scope
 
 - advanced campaign collaboration
-- public publishing workflows
+- broad self-service publishing workflows beyond the current guarded feat-only path
 - full automation of all DnD rules
 - broad social or community features
 
@@ -29,4 +30,4 @@ The app must distinguish clearly between:
 
 - system SRD content
 - user-private content
-- future homebrew/derived content
+- shared homebrew and derived content

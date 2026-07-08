@@ -39,11 +39,11 @@ In that case, it should still name the next recommended block.
 
 ## Current Status
 
-- verified on 2026-07-07:
+- verified on 2026-07-08:
     - `pnpm check` passes
-    - `pnpm test:unit run` passes with 165 tests
+    - `pnpm test:unit run` passes with targeted green coverage for content permissions and derivation
     - `pnpm validate:content` passes with 14 JSON files validated and 0 issues
-    - `pnpm test:e2e -- tests/characters.e2e.ts` passes with 4 tests
+    - `pnpm test:e2e -- tests/characters.e2e.ts` was last confirmed green on 2026-07-07 with 4 tests
 - completed foundations reflected in the repo:
     - `S1 - Auth Guard For /app`
     - `S2 - Logout Flow`
@@ -61,24 +61,30 @@ In that case, it should still name the next recommended block.
     - `S15 - Expanded Spell And Ability Catalogs`
     - `S16 - Structured Character Sections`
     - `S17 - Character Flow Stabilization`
+    - `S18 - Session Plan And Roadmap Realignment`
+    - `S19 - Private Content CRUD Foundation`
+    - `S20 - SRD To Private Derivation`
+    - `S21 - Role-Aware Content Operations`
 - effectively completed beyond the original status notes:
     - expanded catalog wiring now also covers `backgrounds`, `subspecies`, and `subclasses`
     - equipment catalog wiring now also covers character `attacks` and `inventory`, including linked `equipmentId` persistence, server-side normalization, enriched detail rendering, and targeted E2E coverage for the catalog selectors
     - `inventory`, `attacks`, `spells`, `feats`, and `notes` have structured character workflows
     - admin/test-user operator tooling is implemented through `scripts/create-test-user.ts`, `scripts/manage-user-role.ts`, and `docs/11-admin-and-test-user-workflow.md`
     - structured note placeholder rows are filtered during submit normalization and schema parsing, restoring green character create/edit E2E confidence
+    - `/app/content` now supports private feat creation, SRD-to-private feat derivation, and role-aware shared/system feat publishing
 - implemented but still intentionally shallow:
     - real character CRUD exists
-    - the shared catalog is browseable and importable, but private/homebrew content has no user-facing CRUD yet
-    - permissions exist as schema, RLS, server helpers, and operator scripts, not as a full admin/editor product surface
+    - the shared catalog is browseable and now has a first guarded shared/system feat publishing path, but no editor-facing maintenance workflow yet
+    - permissions exist as schema, RLS, server helpers, operator scripts, and a first visible content surface, not as a full admin/editor product surface
 - current project point:
   - the MVP app shell and first character workflow are implemented and E2E-stable
   - structured character sections cover the highest-value MVP slices
   - environment separation is documented
   - runtime integration behavior is now documented in `README.md` and `docs/10-runtime-integration-check.md`, with request-time status checks in `src/lib/server/runtime/integration.ts`
-  - the highest-value missing product slice is now the first user-facing private content CRUD workflow
+  - the first private content workflow and first role-aware shared publishing workflow are now in place
+  - the highest-value missing content slice is editor/admin maintenance of shared content after creation
 - next recommended block:
-  - `S19 - Private Content CRUD Foundation`, because the core character workflow is stable again and the largest remaining MVP gap is user-owned content creation
+  - `S22 - Shared Content Maintenance`, because shared and system feat publishing now exists but trusted editors/admins still lack an in-app way to review and update shared entries safely
 
 ## Session Blocks
 
@@ -499,13 +505,34 @@ In that case, it should still name the next recommended block.
     - `admin` behavior is explicitly enforced for privileged operations
     - role assignment remains outside normal runtime UI unless a later block deliberately creates a hardened admin console
 
+### S22 - Shared Content Maintenance
+
+- objective: add the first bounded update workflow for trusted shared content after the initial publish path
+- read context:
+    - `docs/context/10_PRODUCT_SCOPE.md`
+    - `docs/context/30_CONTENT_AND_PERMISSIONS.md`
+    - `docs/context/40_AUTH_AND_DATA.md`
+    - `docs/context/50_WORKFLOW_RULES.md`
+    - `docs/11-admin-and-test-user-workflow.md`
+- likely files:
+    - `src/routes/app/content/...`
+    - `src/lib/server/repositories/private-feats.ts`
+    - `src/lib/server/permissions/authorization.ts`
+    - relevant tests near the content route/repository code
+- minimum validation:
+    - `pnpm check`
+    - targeted unit tests for shared/system update rules
+    - targeted E2E only if a browser edit workflow is added
+- closure criterion:
+    - `content_editor` and `admin` users can review the shared feats they are allowed to maintain
+    - shared non-system feats can be updated through explicit app-side authorization
+    - system-owned feats remain admin-only for update operations
+    - normal users remain unable to edit shared or system-owned catalog content
+
 ## Notes
 
 - this plan is intentionally session-oriented, not milestone-oriented
 - each block should fit comfortably in one focused chat
 - if a block grows during implementation, split it rather than stretching the session
 - recommended implementation order from the current project state:
-    - `S18 - Session Plan And Roadmap Realignment`
-    - `S19 - Private Content CRUD Foundation`
-    - `S20 - SRD To Private Derivation`
-    - `S21 - Role-Aware Content Operations`
+    - `S22 - Shared Content Maintenance`

@@ -68,6 +68,20 @@ Status on 2026-07-07:
 - keep role assignment in explicit operator tooling unless a hardened admin console is deliberately added
 - add focused tests for permission-sensitive content operations
 
+Status on 2026-07-08:
+
+- authenticated users can create private feats and derive private copies from shared SRD feats
+- `content_editor` users can publish validated shared homebrew feats from the app content surface
+- `admin` users can publish system-owned feat entries from the same guarded workflow
+- role assignment still remains outside the runtime UI and inside operator tooling
+
+## Iteration 10
+
+- add the first bounded shared-content maintenance workflow after publishing
+- let editor/admin users review and update shared feat entries without weakening ownership boundaries
+- keep normal users read-only for shared and system-owned content
+- add focused tests for shared-content update behavior and visibility rules
+
 ## Future Iterations
 
 - advanced permissions and sharing

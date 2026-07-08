@@ -4,7 +4,7 @@
 
 - `srd-5-1`
 - `user-private`
-- future `homebrew`
+- `homebrew`
 
 ## Core Rule
 
@@ -14,6 +14,7 @@ SRD content is structured reusable catalog data and should remain distinct from 
 
 - SRD/system content is readable but not editable through normal user flows
 - private content belongs to one user
+- shared non-system content is editable only through explicitly authorized editor/admin flows
 - visibility must be modeled explicitly
 - RLS is the enforcement layer for persisted data
 
@@ -28,7 +29,9 @@ SRD content is structured reusable catalog data and should remain distinct from 
 - feats
 - equipment
 - character ownership
-- private user-authored content is still the next missing user-facing workflow
+- user-private feats now have create and SRD-derivation workflows
+- shared and system feat publishing now has an initial role-aware UI surface
+- shared-content editing remains the next missing role-aware workflow
 
 ## Import Rule
 
