@@ -2,12 +2,14 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { error as httpError } from '@sveltejs/kit';
 import {
 	createE2ESharedSpellForUser,
+	deleteE2EManagedSharedSpellForUser,
 	isE2EMockSupabaseClient,
 	createE2EPrivateSpellForUser,
 	getE2EManagedSharedSpellById,
 	getE2ESpellCatalogEntry,
 	listE2EManagedSharedSpellsForUser,
 	listE2EPrivateSpellsForUser,
+	retireE2EManagedSharedSpellForUser,
 	updateE2EManagedSharedSpellForUser
 } from '$lib/server/e2e/mock-app';
 import type { Database } from '$lib/types/database/supabase';
@@ -102,6 +104,11 @@ export type SharedSpellRecord = {
 
 export type ManagedSharedSpellRecord = SharedSpellRecord & {
 	ownerUserId: string | null;
+};
+
+export type ManagedSharedSpellLifecycleResult = {
+	id: string;
+	name: string;
 };
 
 type PrivateSpellRow = Pick<
@@ -541,6 +548,76 @@ export async function updateManagedSharedSpell(
 	return mapManagedSharedSpellRecord(data, sourceIds);
 }
 
+export async function retireManagedSharedSpell(
+	supabase: SupabaseClient<Database>,
+	authorization: AuthorizationContext,
+	spellId: string
+): Promise<ManagedSharedSpellLifecycleResult> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		const spell = loadE2EManagedSharedSpellById(spellId);
+		assertManagedSharedSpellAccess(authorization, spell, 'retire');
+		const retired = retireE2EManagedSharedSpellForUser(authorization.userId, {
+			spellId,
+			includeSystemContent: authorization.globalRole === 'admin'
+		});
+
+		return {
+			id: retired.id,
+			name: retired.name
+		};
+	}
+
+	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
+	const spell = await loadManagedSharedSpellById(supabase, spellId, sourceIds);
+	assertManagedSharedSpellAccess(authorization, spell, 'retire');
+
+	const { error } = await supabase.from('spells').update({ visibility: 'private' }).eq('id', spell.id);
+
+	if (error) {
+		throw new Error(`Failed to retire shared spell ${spell.id}`);
+	}
+
+	return {
+		id: spell.id,
+		name: spell.name
+	};
+}
+
+export async function deleteManagedSharedSpell(
+	supabase: SupabaseClient<Database>,
+	authorization: AuthorizationContext,
+	spellId: string
+): Promise<ManagedSharedSpellLifecycleResult> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		const spell = loadE2EManagedSharedSpellById(spellId);
+		assertManagedSharedSpellAccess(authorization, spell, 'delete');
+		const deleted = deleteE2EManagedSharedSpellForUser(authorization.userId, {
+			spellId,
+			includeSystemContent: authorization.globalRole === 'admin'
+		});
+
+		return {
+			id: deleted.id,
+			name: deleted.name
+		};
+	}
+
+	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
+	const spell = await loadManagedSharedSpellById(supabase, spellId, sourceIds);
+	assertManagedSharedSpellAccess(authorization, spell, 'delete');
+
+	const { error } = await supabase.from('spells').delete().eq('id', spell.id);
+
+	if (error) {
+		throw new Error(`Failed to delete shared spell ${spell.id}`);
+	}
+
+	return {
+		id: spell.id,
+		name: spell.name
+	};
+}
+
 export function buildPrivateSpellDerivationMechanic(input: {
 	source: ContentSourceCode;
 	slug: string;
@@ -804,7 +881,7 @@ function loadE2EManagedSharedSpellById(spellId: string) {
 function assertManagedSharedSpellAccess(
 	authorization: AuthorizationContext,
 	spell: Pick<SharedSpellRow, 'owner_user_id' | 'is_system_content'>,
-	operation: 'update'
+	operation: 'update' | 'retire' | 'delete'
 ) {
 	if (spell.is_system_content) {
 		if (authorization.globalRole !== 'admin') {

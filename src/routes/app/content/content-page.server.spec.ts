@@ -18,6 +18,7 @@ const {
 	createSharedFeat,
 	createSharedSpell,
 	deleteManagedSharedFeat,
+	deleteManagedSharedSpell,
 	derivePrivateFeatFromSharedCatalog,
 	derivePrivateSpellFromSharedCatalog,
 	listManagedSharedFeats,
@@ -25,6 +26,7 @@ const {
 	listPrivateFeatsForUser,
 	listPrivateSpellsForUser,
 	retireManagedSharedFeat,
+	retireManagedSharedSpell,
 	updateManagedSharedSpell,
 	updateManagedSharedFeat
 } =
@@ -34,6 +36,7 @@ const {
 	createSharedFeat: vi.fn(),
 	createSharedSpell: vi.fn(),
 	deleteManagedSharedFeat: vi.fn(),
+	deleteManagedSharedSpell: vi.fn(),
 	derivePrivateFeatFromSharedCatalog: vi.fn(),
 	derivePrivateSpellFromSharedCatalog: vi.fn(),
 	listManagedSharedFeats: vi.fn(),
@@ -41,6 +44,7 @@ const {
 	listPrivateFeatsForUser: vi.fn(),
 	listPrivateSpellsForUser: vi.fn(),
 	retireManagedSharedFeat: vi.fn(),
+	retireManagedSharedSpell: vi.fn(),
 	updateManagedSharedSpell: vi.fn(),
 	updateManagedSharedFeat: vi.fn()
 	}));
@@ -69,9 +73,11 @@ vi.mock('$lib/server/repositories/private-feats', () => ({
 vi.mock('$lib/server/repositories/private-spells', () => ({
 	createPrivateSpell,
 	createSharedSpell,
+	deleteManagedSharedSpell,
 	derivePrivateSpellFromSharedCatalog,
 	listManagedSharedSpells,
 	listPrivateSpellsForUser,
+	retireManagedSharedSpell,
 	updateManagedSharedSpell
 }));
 
@@ -139,6 +145,8 @@ describe('/app/content load', () => {
 			updatedSharedSpellName: null,
 			retiredSharedFeatName: null,
 			deletedSharedFeatName: null,
+			retiredSharedSpellName: null,
+			deletedSharedSpellName: null,
 			createPrivateFeatValues: {
 				name: '',
 				summary: '',
@@ -464,7 +472,7 @@ describe('/app/content load', () => {
 				}),
 				url: new URL(
 					'http://localhost/app/content?createdPrivateFeat=Observant%20Echo&createdPrivateSpell=Arc%20Light&derivedPrivateFeat=Alert&derivedPrivateSpell=Magic%20Missile&publishedSharedFeat=Battle%20Lore&editSharedFeat=shared-feat-1&updatedSharedFeat=Battle%20Lore'
-					+ '&publishedSharedSpell=Arc%20Light%20Nova&publishedSystemSpell=Solar%20Ward&editSharedSpell=shared-spell-1&updatedSharedSpell=Arc%20Light%20Nova'
+					+ '&publishedSharedSpell=Arc%20Light%20Nova&publishedSystemSpell=Solar%20Ward&editSharedSpell=shared-spell-1&updatedSharedSpell=Arc%20Light%20Nova&retiredSharedSpell=Old%20Ward&deletedSharedSpell=Lost%20Sigil'
 				)
 			} as never)
 		).resolves.toEqual({
@@ -480,6 +488,8 @@ describe('/app/content load', () => {
 			updatedSharedSpellName: 'Arc Light Nova',
 			retiredSharedFeatName: null,
 			deletedSharedFeatName: null,
+			retiredSharedSpellName: 'Old Ward',
+			deletedSharedSpellName: 'Lost Sigil',
 			createPrivateFeatValues: {
 				name: '',
 				summary: '',
@@ -562,11 +572,13 @@ describe('/app/content actions', () => {
 		createSharedFeat.mockReset();
 		createSharedSpell.mockReset();
 		deleteManagedSharedFeat.mockReset();
+		deleteManagedSharedSpell.mockReset();
 		derivePrivateFeatFromSharedCatalog.mockReset();
 		derivePrivateSpellFromSharedCatalog.mockReset();
 		listManagedSharedFeats.mockReset();
 		listManagedSharedSpells.mockReset();
 		retireManagedSharedFeat.mockReset();
+		retireManagedSharedSpell.mockReset();
 		updateManagedSharedSpell.mockReset();
 		updateManagedSharedFeat.mockReset();
 		getAuthorizationContext.mockReset().mockResolvedValue({
@@ -1687,6 +1699,135 @@ describe('/app/content actions', () => {
 						classSlugsText: 'clerigo',
 						concentration: 'on',
 						ritual: ''
+					})
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 403
+		});
+	});
+
+	it('retires a managed shared spell for content editors', async () => {
+		getAuthorizationContext.mockResolvedValueOnce({
+			userId: 'user-1',
+			globalRole: 'content_editor',
+			capabilities: [
+				'read_shared_catalog',
+				'manage_own_characters',
+				'manage_private_content',
+				'edit_shared_content'
+			]
+		});
+		retireManagedSharedSpell.mockResolvedValueOnce({
+			id: 'shared-spell-1',
+			name: 'Arc Light Nova'
+		});
+
+		await expect(
+			actions.retireSharedSpell?.({
+				locals: {
+					session: {
+						user: {
+							id: 'user-1'
+						}
+					},
+					supabase: {}
+				},
+				request: new Request('http://localhost/app/content?/retireSharedSpell', {
+					method: 'POST',
+					body: new URLSearchParams({
+						spellId: 'shared-spell-1'
+					})
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 303,
+			location: '/app/content?retiredSharedSpell=Arc%20Light%20Nova'
+		});
+
+		expect(retireManagedSharedSpell).toHaveBeenCalledWith(
+			{},
+			expect.objectContaining({ globalRole: 'content_editor', userId: 'user-1' }),
+			'shared-spell-1'
+		);
+	});
+
+	it('deletes a managed shared spell for admins', async () => {
+		getAuthorizationContext.mockResolvedValueOnce({
+			userId: 'user-1',
+			globalRole: 'admin',
+			capabilities: [
+				'read_shared_catalog',
+				'manage_own_characters',
+				'manage_private_content',
+				'edit_shared_content',
+				'manage_system_content',
+				'manage_users_and_roles'
+			]
+		});
+		deleteManagedSharedSpell.mockResolvedValueOnce({
+			id: 'system-spell-1',
+			name: 'Solar Ward'
+		});
+
+		await expect(
+			actions.deleteSharedSpell?.({
+				locals: {
+					session: {
+						user: {
+							id: 'user-1'
+						}
+					},
+					supabase: {}
+				},
+				request: new Request('http://localhost/app/content?/deleteSharedSpell', {
+					method: 'POST',
+					body: new URLSearchParams({
+						spellId: 'system-spell-1'
+					})
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 303,
+			location: '/app/content?deletedSharedSpell=Solar%20Ward'
+		});
+
+		expect(deleteManagedSharedSpell).toHaveBeenCalledWith(
+			{},
+			expect.objectContaining({ globalRole: 'admin', userId: 'user-1' }),
+			'system-spell-1'
+		);
+	});
+
+	it('blocks content editors from admin-only shared spell lifecycle actions', async () => {
+		getAuthorizationContext.mockResolvedValueOnce({
+			userId: 'user-1',
+			globalRole: 'content_editor',
+			capabilities: [
+				'read_shared_catalog',
+				'manage_own_characters',
+				'manage_private_content',
+				'edit_shared_content'
+			]
+		});
+		retireManagedSharedSpell.mockRejectedValueOnce(
+			Object.assign(new Error('forbidden'), { status: 403 })
+		);
+
+		await expect(
+			actions.retireSharedSpell?.({
+				locals: {
+					session: {
+						user: {
+							id: 'user-1'
+						}
+					},
+					supabase: {}
+				},
+				request: new Request('http://localhost/app/content?/retireSharedSpell', {
+					method: 'POST',
+					body: new URLSearchParams({
+						spellId: 'system-spell-1'
 					})
 				})
 			} as never)

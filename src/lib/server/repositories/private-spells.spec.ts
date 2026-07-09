@@ -8,10 +8,12 @@ import {
 	buildPrivateSpellDerivationMechanic,
 	createSharedSpell,
 	createPrivateSpell,
+	deleteManagedSharedSpell,
 	derivePrivateSpellFromSharedCatalog,
 	extractPrivateSpellDerivation,
 	listManagedSharedSpells,
 	listPrivateSpellsForUser,
+	retireManagedSharedSpell,
 	updateManagedSharedSpell
 } from './private-spells';
 import { createAuthorizationContext } from '$lib/server/permissions/authorization';
@@ -275,5 +277,53 @@ describe('private spells repository', () => {
 				level: 4
 			})
 		);
+	});
+
+	it('retires an editor-owned shared spell into private content in the E2E repository path', async () => {
+		resetE2EMockState();
+		const supabase = createE2EMockSupabaseClient();
+		const created = await createSharedSpell(supabase, 'user-1', {
+			slug: 'arc-light-nova',
+			name: 'Arc Light Nova',
+			level: 3,
+			school: 'evocation',
+			classSlugs: ['mago'],
+			concentration: false,
+			ritual: false,
+			visibility: 'shared',
+			isSystemContent: false
+		});
+		const authorization = createAuthorizationContext('user-1', 'content_editor');
+
+		await expect(retireManagedSharedSpell(supabase, authorization, created.id)).resolves.toEqual({
+			id: created.id,
+			name: 'Arc Light Nova'
+		});
+
+		await expect(listManagedSharedSpells(supabase, authorization)).resolves.toEqual([]);
+	});
+
+	it('deletes a system-owned shared spell for admins in the E2E repository path', async () => {
+		resetE2EMockState();
+		const supabase = createE2EMockSupabaseClient();
+		const created = await createSharedSpell(supabase, 'user-1', {
+			slug: 'solar-ward',
+			name: 'Solar Ward',
+			level: 4,
+			school: 'abjuration',
+			classSlugs: ['clerigo'],
+			concentration: true,
+			ritual: false,
+			visibility: 'public',
+			isSystemContent: true
+		});
+		const authorization = createAuthorizationContext('user-1', 'admin');
+
+		await expect(deleteManagedSharedSpell(supabase, authorization, created.id)).resolves.toEqual({
+			id: created.id,
+			name: 'Solar Ward'
+		});
+
+		await expect(listManagedSharedSpells(supabase, authorization)).resolves.toEqual([]);
 	});
 });

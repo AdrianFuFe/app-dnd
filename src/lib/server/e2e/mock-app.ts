@@ -1054,6 +1054,65 @@ export function updateE2EManagedSharedSpellForUser(
 	};
 }
 
+export function retireE2EManagedSharedSpellForUser(
+	userId: string,
+	input: {
+		spellId: string;
+		includeSystemContent: boolean;
+	}
+) {
+	const spell = state.sharedSpells.find((entry) => entry.id === input.spellId);
+
+	if (!spell || spell.visibility === 'private' || spell.visibility === 'campaign') {
+		throw new Error('Please choose a valid shared spell to maintain.');
+	}
+
+	if (!input.includeSystemContent && (spell.isSystemContent || spell.userId !== userId)) {
+		throw new Error('Please choose a valid shared spell to maintain.');
+	}
+
+	Object.assign(spell, {
+		visibility: 'private',
+		updatedAt: nextUpdatedAt()
+	});
+
+	return {
+		...spell,
+		classSlugs: [...spell.classSlugs]
+	};
+}
+
+export function deleteE2EManagedSharedSpellForUser(
+	userId: string,
+	input: {
+		spellId: string;
+		includeSystemContent: boolean;
+	}
+) {
+	const index = state.sharedSpells.findIndex((entry) => entry.id === input.spellId);
+
+	if (index === -1) {
+		throw new Error('Please choose a valid shared spell to maintain.');
+	}
+
+	const spell = state.sharedSpells[index];
+
+	if (spell.visibility === 'private' || spell.visibility === 'campaign') {
+		throw new Error('Please choose a valid shared spell to maintain.');
+	}
+
+	if (!input.includeSystemContent && (spell.isSystemContent || spell.userId !== userId)) {
+		throw new Error('Please choose a valid shared spell to maintain.');
+	}
+
+	state.sharedSpells.splice(index, 1);
+
+	return {
+		...spell,
+		classSlugs: [...spell.classSlugs]
+	};
+}
+
 export function createE2ESharedFeatForUser(
 	userId: string,
 	input: {

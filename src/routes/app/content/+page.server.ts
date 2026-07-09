@@ -27,9 +27,11 @@ import {
 import {
 	createPrivateSpell,
 	createSharedSpell,
+	deleteManagedSharedSpell,
 	derivePrivateSpellFromSharedCatalog,
 	listManagedSharedSpells,
 	listPrivateSpellsForUser,
+	retireManagedSharedSpell,
 	updateManagedSharedSpell
 } from '$lib/server/repositories/private-spells';
 import {
@@ -54,6 +56,8 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 			updatedSharedSpellName: url.searchParams.get('updatedSharedSpell'),
 			retiredSharedFeatName: url.searchParams.get('retiredSharedFeat'),
 			deletedSharedFeatName: url.searchParams.get('deletedSharedFeat'),
+			retiredSharedSpellName: url.searchParams.get('retiredSharedSpell'),
+			deletedSharedSpellName: url.searchParams.get('deletedSharedSpell'),
 			createPrivateFeatValues: createPrivateFeatFormValues(),
 			createPrivateSpellValues: createPrivateSpellFormValues(),
 			editSharedFeatId: null,
@@ -142,6 +146,8 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 		updatedSharedSpellName: url.searchParams.get('updatedSharedSpell'),
 		retiredSharedFeatName: url.searchParams.get('retiredSharedFeat'),
 		deletedSharedFeatName: url.searchParams.get('deletedSharedFeat'),
+		retiredSharedSpellName: url.searchParams.get('retiredSharedSpell'),
+		deletedSharedSpellName: url.searchParams.get('deletedSharedSpell'),
 		createPrivateFeatValues: createPrivateFeatFormValues(),
 		createPrivateSpellValues: createPrivateSpellFormValues(),
 		editSharedFeatId: editableSharedFeat?.id ?? null,
@@ -488,6 +494,110 @@ export const actions: Actions = {
 					error instanceof Error ? error.message : 'The shared spell could not be updated.',
 				editSharedSpellId: spellId,
 				editSharedSpellValues: parsedForm.values
+			});
+		}
+	},
+	retireSharedSpell: async ({ locals, request }) => {
+		if (!locals.session) {
+			throw redirect(302, '/auth/login?redirectTo=/app/content');
+		}
+
+		if (!locals.supabase) {
+			return fail(500, {
+				editSharedSpellFieldErrors: {},
+				editSharedSpellFormError: 'Supabase is not configured yet.',
+				editSharedSpellId: null,
+				editSharedSpellValues: createPrivateSpellFormValues()
+			});
+		}
+
+		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		requirePermissionScopeAccess(authorization, 'shared_content');
+
+		const formData = await request.formData();
+		const spellId = formData.get('spellId');
+
+		if (typeof spellId !== 'string' || spellId.trim().length === 0) {
+			return fail(400, {
+				editSharedSpellFieldErrors: {},
+				editSharedSpellFormError: 'Please choose a valid shared spell to maintain.',
+				editSharedSpellId: null,
+				editSharedSpellValues: createPrivateSpellFormValues()
+			});
+		}
+
+		try {
+			const spell = await retireManagedSharedSpell(locals.supabase, authorization, spellId);
+			const retiredSharedSpell = encodeURIComponent(spell.name);
+
+			throw redirect(303, `/app/content?retiredSharedSpell=${retiredSharedSpell}`);
+		} catch (error) {
+			if (isRedirect(error)) {
+				throw error;
+			}
+
+			if (typeof error === 'object' && error !== null && 'status' in error && error.status === 403) {
+				throw error;
+			}
+
+			return fail(400, {
+				editSharedSpellFieldErrors: {},
+				editSharedSpellFormError:
+					error instanceof Error ? error.message : 'The shared spell could not be retired.',
+				editSharedSpellId: spellId,
+				editSharedSpellValues: createPrivateSpellFormValues()
+			});
+		}
+	},
+	deleteSharedSpell: async ({ locals, request }) => {
+		if (!locals.session) {
+			throw redirect(302, '/auth/login?redirectTo=/app/content');
+		}
+
+		if (!locals.supabase) {
+			return fail(500, {
+				editSharedSpellFieldErrors: {},
+				editSharedSpellFormError: 'Supabase is not configured yet.',
+				editSharedSpellId: null,
+				editSharedSpellValues: createPrivateSpellFormValues()
+			});
+		}
+
+		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		requirePermissionScopeAccess(authorization, 'shared_content');
+
+		const formData = await request.formData();
+		const spellId = formData.get('spellId');
+
+		if (typeof spellId !== 'string' || spellId.trim().length === 0) {
+			return fail(400, {
+				editSharedSpellFieldErrors: {},
+				editSharedSpellFormError: 'Please choose a valid shared spell to maintain.',
+				editSharedSpellId: null,
+				editSharedSpellValues: createPrivateSpellFormValues()
+			});
+		}
+
+		try {
+			const spell = await deleteManagedSharedSpell(locals.supabase, authorization, spellId);
+			const deletedSharedSpell = encodeURIComponent(spell.name);
+
+			throw redirect(303, `/app/content?deletedSharedSpell=${deletedSharedSpell}`);
+		} catch (error) {
+			if (isRedirect(error)) {
+				throw error;
+			}
+
+			if (typeof error === 'object' && error !== null && 'status' in error && error.status === 403) {
+				throw error;
+			}
+
+			return fail(400, {
+				editSharedSpellFieldErrors: {},
+				editSharedSpellFormError:
+					error instanceof Error ? error.message : 'The shared spell could not be deleted.',
+				editSharedSpellId: spellId,
+				editSharedSpellValues: createPrivateSpellFormValues()
 			});
 		}
 	},

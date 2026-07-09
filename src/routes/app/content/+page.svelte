@@ -622,13 +622,23 @@
 					Update a managed shared spell
 				</h2>
 				<p class="mt-3 max-w-2xl text-sm leading-7 text-stone-600">
-					Editors can update their own shared homebrew spells. Admins can apply the same
-					editing controls to system-owned spell entries.
+					Editors can update, retire, or delete their own shared homebrew spells. Admins
+					can apply the same lifecycle controls to system-owned spell entries.
 				</p>
 
 				{#if data.updatedSharedSpellName}
 					<p class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
 						{data.updatedSharedSpellName} was updated successfully.
+					</p>
+				{/if}
+				{#if data.retiredSharedSpellName}
+					<p class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+						{data.retiredSharedSpellName} was retired from the shared catalog.
+					</p>
+				{/if}
+				{#if data.deletedSharedSpellName}
+					<p class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+						{data.deletedSharedSpellName} was deleted from shared content.
 					</p>
 				{/if}
 
@@ -831,20 +841,43 @@
 						</button>
 					</form>
 
-					<div class="mt-6 rounded-2xl border border-sky-200 bg-sky-50 p-4">
-						<p class="text-sm font-medium text-sky-950">Edit scope</p>
-						<p class="mt-2 text-sm leading-6 text-sky-900">
-							This editor updates the shared spell you selected without changing the
-							ownership model around private spell drafts.
+					<div class="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+						<p class="text-sm font-medium text-amber-950">Lifecycle controls</p>
+						<p class="mt-2 text-sm leading-6 text-amber-900">
+							Retiring removes this spell from shared browsing without permanently deleting
+							the stored row. Deleting removes it permanently from managed shared content.
 						</p>
-						<p class="mt-2 text-sm leading-6 text-sky-900">
+						<p class="mt-2 text-sm leading-6 text-amber-900">
 							{#if selectedManagedSharedSpell?.isSystemContent}
-								This entry is system-owned, so only admin users should update it.
+								This entry is system-owned, so only admin users should apply destructive
+								actions here.
 							{:else}
-								This entry is shared homebrew content, so editors can only update spells
-								they own.
+								This action scope is limited to the shared spell you selected and should
+								be used only when it should no longer stay in the shared catalog.
 							{/if}
 						</p>
+						<div class="mt-4 flex flex-wrap gap-3">
+							<form method="POST">
+								<input type="hidden" name="spellId" value={editSharedSpellId} />
+								<button
+									class="rounded-lg border border-amber-300 bg-white px-4 py-3 text-sm font-medium text-amber-950 transition hover:bg-amber-100"
+									type="submit"
+									formaction="?/retireSharedSpell"
+								>
+									Retire from shared catalog
+								</button>
+							</form>
+							<form method="POST">
+								<input type="hidden" name="spellId" value={editSharedSpellId} />
+								<button
+									class="rounded-lg bg-rose-700 px-4 py-3 text-sm font-medium text-white transition hover:bg-rose-600"
+									type="submit"
+									formaction="?/deleteSharedSpell"
+								>
+									Delete permanently
+								</button>
+							</form>
+						</div>
 					</div>
 				{/if}
 			</div>
