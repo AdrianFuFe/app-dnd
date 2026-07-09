@@ -21,9 +21,11 @@ const {
 	derivePrivateFeatFromSharedCatalog,
 	derivePrivateSpellFromSharedCatalog,
 	listManagedSharedFeats,
+	listManagedSharedSpells,
 	listPrivateFeatsForUser,
 	listPrivateSpellsForUser,
 	retireManagedSharedFeat,
+	updateManagedSharedSpell,
 	updateManagedSharedFeat
 } =
 	vi.hoisted(() => ({
@@ -35,9 +37,11 @@ const {
 	derivePrivateFeatFromSharedCatalog: vi.fn(),
 	derivePrivateSpellFromSharedCatalog: vi.fn(),
 	listManagedSharedFeats: vi.fn(),
+	listManagedSharedSpells: vi.fn(),
 	listPrivateFeatsForUser: vi.fn(),
 	listPrivateSpellsForUser: vi.fn(),
 	retireManagedSharedFeat: vi.fn(),
+	updateManagedSharedSpell: vi.fn(),
 	updateManagedSharedFeat: vi.fn()
 	}));
 
@@ -66,7 +70,9 @@ vi.mock('$lib/server/repositories/private-spells', () => ({
 	createPrivateSpell,
 	createSharedSpell,
 	derivePrivateSpellFromSharedCatalog,
-	listPrivateSpellsForUser
+	listManagedSharedSpells,
+	listPrivateSpellsForUser,
+	updateManagedSharedSpell
 }));
 
 vi.mock('$lib/server/permissions/authorization', () => ({
@@ -109,6 +115,7 @@ describe('/app/content load', () => {
 		listPrivateFeatsForUser.mockReset().mockResolvedValue([]);
 		listPrivateSpellsForUser.mockReset().mockResolvedValue([]);
 		listManagedSharedFeats.mockReset().mockResolvedValue([]);
+		listManagedSharedSpells.mockReset().mockResolvedValue([]);
 	});
 
 	it('returns empty catalog slices when Supabase is unavailable', async () => {
@@ -129,6 +136,7 @@ describe('/app/content load', () => {
 			publishedSharedSpellName: null,
 			publishedSystemSpellName: null,
 			updatedSharedFeatName: null,
+			updatedSharedSpellName: null,
 			retiredSharedFeatName: null,
 			deletedSharedFeatName: null,
 			createPrivateFeatValues: {
@@ -159,13 +167,31 @@ describe('/app/content load', () => {
 				description: '',
 				prerequisitesText: ''
 			},
+			editSharedSpellId: null,
+			editSharedSpellValues: {
+				name: '',
+				level: '',
+				school: '',
+				summary: '',
+				description: '',
+				castingTime: '',
+				range: '',
+				components: '',
+				materials: '',
+				duration: '',
+				classSlugsText: '',
+				concentration: false,
+				ritual: false
+			},
 			roleOperations: {
 				canPublishSharedFeats: false,
 				canPublishSystemFeats: false,
 				canPublishSharedSpells: false,
 				canPublishSystemSpells: false,
 				canMaintainSharedFeats: false,
-				canMaintainSystemFeats: false
+				canMaintainSystemFeats: false,
+				canMaintainSharedSpells: false,
+				canMaintainSystemSpells: false
 			},
 			characterCatalog: {
 				speciesOptions: [],
@@ -175,6 +201,7 @@ describe('/app/content load', () => {
 				backgroundOptions: []
 			},
 			manageableSharedFeats: [],
+			manageableSharedSpells: [],
 			privateFeats: [],
 			privateSpells: [],
 			sharedCatalog: {
@@ -389,12 +416,38 @@ describe('/app/content load', () => {
 				updatedAt: '2026-07-08T09:15:00.000Z'
 			}
 		];
+		const manageableSharedSpells = [
+			{
+				id: 'shared-spell-1',
+				ownerUserId: 'user-1',
+				sourceCode: 'homebrew',
+				slug: 'arc-light-nova',
+				name: 'Arc Light Nova',
+				level: 3,
+				school: 'evocation',
+				castingTime: '1 action',
+				range: '90 feet',
+				components: 'V, S, M',
+				materials: 'A copper lens.',
+				duration: 'Instantaneous',
+				classSlugs: ['mago'],
+				summary: 'Shared arcane detonation.',
+				description: null,
+				visibility: 'shared' as const,
+				isSystemContent: false,
+				concentration: false,
+				ritual: false,
+				createdAt: '2026-07-08T10:15:00.000Z',
+				updatedAt: '2026-07-08T10:15:00.000Z'
+			}
+		];
 
 		listCharacterCreationCatalog.mockResolvedValueOnce(characterCatalog);
 		listExpandedContentCatalog.mockResolvedValueOnce(sharedCatalog);
 		listPrivateFeatsForUser.mockResolvedValueOnce(privateFeats);
 		listPrivateSpellsForUser.mockResolvedValueOnce(privateSpells);
 		listManagedSharedFeats.mockResolvedValueOnce(manageableSharedFeats);
+		listManagedSharedSpells.mockResolvedValueOnce(manageableSharedSpells);
 
 		await expect(
 			load({
@@ -411,7 +464,7 @@ describe('/app/content load', () => {
 				}),
 				url: new URL(
 					'http://localhost/app/content?createdPrivateFeat=Observant%20Echo&createdPrivateSpell=Arc%20Light&derivedPrivateFeat=Alert&derivedPrivateSpell=Magic%20Missile&publishedSharedFeat=Battle%20Lore&editSharedFeat=shared-feat-1&updatedSharedFeat=Battle%20Lore'
-					+ '&publishedSharedSpell=Arc%20Light%20Nova&publishedSystemSpell=Solar%20Ward'
+					+ '&publishedSharedSpell=Arc%20Light%20Nova&publishedSystemSpell=Solar%20Ward&editSharedSpell=shared-spell-1&updatedSharedSpell=Arc%20Light%20Nova'
 				)
 			} as never)
 		).resolves.toEqual({
@@ -424,6 +477,7 @@ describe('/app/content load', () => {
 			publishedSharedSpellName: 'Arc Light Nova',
 			publishedSystemSpellName: 'Solar Ward',
 			updatedSharedFeatName: 'Battle Lore',
+			updatedSharedSpellName: 'Arc Light Nova',
 			retiredSharedFeatName: null,
 			deletedSharedFeatName: null,
 			createPrivateFeatValues: {
@@ -454,16 +508,35 @@ describe('/app/content load', () => {
 				description: '',
 				prerequisitesText: 'level:4'
 			},
+			editSharedSpellId: 'shared-spell-1',
+			editSharedSpellValues: {
+				name: 'Arc Light Nova',
+				level: '3',
+				school: 'evocation',
+				summary: 'Shared arcane detonation.',
+				description: '',
+				castingTime: '1 action',
+				range: '90 feet',
+				components: 'V, S, M',
+				materials: 'A copper lens.',
+				duration: 'Instantaneous',
+				classSlugsText: 'mago',
+				concentration: false,
+				ritual: false
+			},
 			roleOperations: {
 				canPublishSharedFeats: true,
 				canPublishSystemFeats: false,
 				canPublishSharedSpells: true,
 				canPublishSystemSpells: false,
 				canMaintainSharedFeats: true,
-				canMaintainSystemFeats: false
+				canMaintainSystemFeats: false,
+				canMaintainSharedSpells: true,
+				canMaintainSystemSpells: false
 			},
 			characterCatalog,
 			manageableSharedFeats,
+			manageableSharedSpells,
 			privateFeats,
 			privateSpells,
 			sharedCatalog
@@ -478,6 +551,7 @@ describe('/app/content load', () => {
 		expect(listPrivateSpellsForUser).toHaveBeenCalledOnce();
 		expect(listPrivateSpellsForUser).toHaveBeenCalledWith(supabase, session.user.id);
 		expect(listManagedSharedFeats).toHaveBeenCalledOnce();
+		expect(listManagedSharedSpells).toHaveBeenCalledOnce();
 	});
 });
 
@@ -491,7 +565,9 @@ describe('/app/content actions', () => {
 		derivePrivateFeatFromSharedCatalog.mockReset();
 		derivePrivateSpellFromSharedCatalog.mockReset();
 		listManagedSharedFeats.mockReset();
+		listManagedSharedSpells.mockReset();
 		retireManagedSharedFeat.mockReset();
+		updateManagedSharedSpell.mockReset();
 		updateManagedSharedFeat.mockReset();
 		getAuthorizationContext.mockReset().mockResolvedValue({
 			userId: 'user-1',
@@ -1333,6 +1409,104 @@ describe('/app/content actions', () => {
 		);
 	});
 
+	it('updates a managed shared spell for content editors', async () => {
+		getAuthorizationContext.mockResolvedValueOnce({
+			userId: 'user-1',
+			globalRole: 'content_editor',
+			capabilities: [
+				'read_shared_catalog',
+				'manage_own_characters',
+				'manage_private_content',
+				'edit_shared_content'
+			]
+		});
+		updateManagedSharedSpell.mockResolvedValueOnce({
+			id: 'shared-spell-1',
+			ownerUserId: 'user-1',
+			sourceCode: 'homebrew',
+			slug: 'arc-light-supernova',
+			name: 'Arc Light Supernova',
+			level: 4,
+			school: 'evocation',
+			castingTime: '1 action',
+			range: '120 feet',
+			components: 'V, S, M',
+			materials: 'A copper lens.',
+			duration: 'Instantaneous',
+			classSlugs: ['mago'],
+			summary: 'Revised arcane detonation.',
+			description: null,
+			visibility: 'shared',
+			isSystemContent: false,
+			concentration: false,
+			ritual: false,
+			createdAt: '2026-07-08T10:15:00.000Z',
+			updatedAt: '2026-07-08T10:45:00.000Z'
+		});
+
+		await expect(
+			actions.updateSharedSpell?.({
+				locals: {
+					session: {
+						user: {
+							id: 'user-1'
+						}
+					},
+					supabase: {}
+				},
+				request: new Request('http://localhost/app/content?/updateSharedSpell', {
+					method: 'POST',
+					body: new URLSearchParams({
+						spellId: 'shared-spell-1',
+						name: 'Arc Light Supernova',
+						level: '4',
+						school: 'evocation',
+						summary: 'Revised arcane detonation.',
+						description: '',
+						castingTime: '1 action',
+						range: '120 feet',
+						components: 'V, S, M',
+						materials: 'A copper lens.',
+						duration: 'Instantaneous',
+						classSlugsText: 'mago',
+						concentration: '',
+						ritual: ''
+					})
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 303,
+			location:
+				'/app/content?editSharedSpell=shared-spell-1&updatedSharedSpell=Arc%20Light%20Supernova'
+		});
+
+		expect(requirePermissionScopeAccess).toHaveBeenCalledWith(
+			expect.objectContaining({ globalRole: 'content_editor' }),
+			'shared_content'
+		);
+		expect(updateManagedSharedSpell).toHaveBeenCalledWith(
+			{},
+			expect.objectContaining({ globalRole: 'content_editor', userId: 'user-1' }),
+			{
+				spellId: 'shared-spell-1',
+				slug: 'arc-light-supernova',
+				name: 'Arc Light Supernova',
+				level: 4,
+				school: 'evocation',
+				summary: 'Revised arcane detonation.',
+				description: undefined,
+				castingTime: '1 action',
+				range: '120 feet',
+				components: 'V, S, M',
+				materials: 'A copper lens.',
+				duration: 'Instantaneous',
+				classSlugs: ['mago'],
+				concentration: false,
+				ritual: false
+			}
+		);
+	});
+
 	it('returns edit-form validation errors for invalid shared feat updates', async () => {
 		getAuthorizationContext.mockResolvedValueOnce({
 			userId: 'user-1',
@@ -1377,6 +1551,59 @@ describe('/app/content actions', () => {
 		expect(updateManagedSharedFeat).not.toHaveBeenCalled();
 	});
 
+	it('returns edit-form validation errors for invalid shared spell updates', async () => {
+		getAuthorizationContext.mockResolvedValueOnce({
+			userId: 'user-1',
+			globalRole: 'content_editor',
+			capabilities: [
+				'read_shared_catalog',
+				'manage_own_characters',
+				'manage_private_content',
+				'edit_shared_content'
+			]
+		});
+
+		const response = await actions.updateSharedSpell?.({
+			locals: {
+				session: {
+					user: {
+						id: 'user-1'
+					}
+				},
+				supabase: {}
+			},
+			request: new Request('http://localhost/app/content?/updateSharedSpell', {
+				method: 'POST',
+				body: new URLSearchParams({
+					spellId: 'shared-spell-1',
+					name: 'Arc Light Nova',
+					level: '3',
+					school: 'evocation',
+					summary: '',
+					description: '',
+					castingTime: '',
+					range: '',
+					components: 'V, S',
+					materials: 'A copper lens.',
+					duration: '',
+					classSlugsText: '',
+					concentration: '',
+					ritual: ''
+				})
+			})
+		} as never);
+
+		expect(response?.status).toBe(400);
+		expect(response?.data.editSharedSpellId).toBe('shared-spell-1');
+		expect(response?.data.editSharedSpellFormError).toBe(
+			'Please correct the highlighted private spell fields.'
+		);
+		expect(response?.data.editSharedSpellFieldErrors.materials?.[0]).toContain(
+			'only allowed when spell components include M'
+		);
+		expect(updateManagedSharedSpell).not.toHaveBeenCalled();
+	});
+
 	it('blocks content editors from admin-only managed feat updates', async () => {
 		getAuthorizationContext.mockResolvedValueOnce({
 			userId: 'user-1',
@@ -1410,6 +1637,56 @@ describe('/app/content actions', () => {
 						summary: 'System-governed feat.',
 						description: '',
 						prerequisitesText: ''
+					})
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 403
+		});
+	});
+
+	it('blocks content editors from admin-only managed spell updates', async () => {
+		getAuthorizationContext.mockResolvedValueOnce({
+			userId: 'user-1',
+			globalRole: 'content_editor',
+			capabilities: [
+				'read_shared_catalog',
+				'manage_own_characters',
+				'manage_private_content',
+				'edit_shared_content'
+			]
+		});
+		updateManagedSharedSpell.mockRejectedValueOnce(
+			Object.assign(new Error('forbidden'), { status: 403 })
+		);
+
+		await expect(
+			actions.updateSharedSpell?.({
+				locals: {
+					session: {
+						user: {
+							id: 'user-1'
+						}
+					},
+					supabase: {}
+				},
+				request: new Request('http://localhost/app/content?/updateSharedSpell', {
+					method: 'POST',
+					body: new URLSearchParams({
+						spellId: 'system-spell-1',
+						name: 'Solar Ward',
+						level: '4',
+						school: 'abjuration',
+						summary: 'System-governed radiant barrier.',
+						description: '',
+						castingTime: '1 action',
+						range: 'Self',
+						components: 'V, S',
+						materials: '',
+						duration: '10 minutes',
+						classSlugsText: 'clerigo',
+						concentration: 'on',
+						ritual: ''
 					})
 				})
 			} as never)

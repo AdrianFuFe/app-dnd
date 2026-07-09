@@ -10,8 +10,11 @@ import {
 	createPrivateSpell,
 	derivePrivateSpellFromSharedCatalog,
 	extractPrivateSpellDerivation,
-	listPrivateSpellsForUser
+	listManagedSharedSpells,
+	listPrivateSpellsForUser,
+	updateManagedSharedSpell
 } from './private-spells';
+import { createAuthorizationContext } from '$lib/server/permissions/authorization';
 
 describe('private spell derivation metadata', () => {
 	it('extracts the first spell derivation mechanic from mixed mechanics', () => {
@@ -213,5 +216,64 @@ describe('private spells repository', () => {
 				isSystemContent: true
 			})
 		).rejects.toThrow('A shared spell with that slug already exists. Try a different name.');
+	});
+
+	it('lists and updates managed shared spells in the E2E repository path', async () => {
+		resetE2EMockState();
+		const supabase = createE2EMockSupabaseClient();
+
+		await createSharedSpell(supabase, 'user-1', {
+			slug: 'arc-light-nova',
+			name: 'Arc Light Nova',
+			level: 3,
+			school: 'evocation',
+			classSlugs: ['mago'],
+			concentration: false,
+			ritual: false,
+			visibility: 'shared',
+			isSystemContent: false
+		});
+
+		await expect(
+			listManagedSharedSpells(supabase, createAuthorizationContext('user-1', 'content_editor'))
+		).resolves.toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					slug: 'arc-light-nova',
+					name: 'Arc Light Nova',
+					ownerUserId: 'user-1'
+				})
+			])
+		);
+
+		await expect(
+			updateManagedSharedSpell(
+				supabase,
+				createAuthorizationContext('user-1', 'content_editor'),
+				{
+					spellId: 'shared-spell-e2e-1',
+					slug: 'arc-light-supernova',
+					name: 'Arc Light Supernova',
+					level: 4,
+					school: 'evocation',
+					castingTime: '1 action',
+					range: '120 feet',
+					components: 'V, S, M',
+					materials: 'A copper lens.',
+					duration: 'Instantaneous',
+					classSlugs: ['mago'],
+					summary: 'Revised arcane detonation.',
+					description: 'Brighter and broader.',
+					concentration: false,
+					ritual: false
+				}
+			)
+		).resolves.toEqual(
+			expect.objectContaining({
+				slug: 'arc-light-supernova',
+				name: 'Arc Light Supernova',
+				level: 4
+			})
+		);
 	});
 });

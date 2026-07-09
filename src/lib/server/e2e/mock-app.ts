@@ -676,6 +676,17 @@ export function getE2EManagedSharedFeatById(featId: string) {
 	return feat ? { ...feat } : null;
 }
 
+export function getE2EManagedSharedSpellById(spellId: string) {
+	const spell = state.sharedSpells.find((entry) => entry.id === spellId);
+
+	return spell
+		? {
+				...spell,
+				classSlugs: [...spell.classSlugs]
+			}
+		: null;
+}
+
 export function getE2EEquipmentCatalogEntry(
 	equipmentId: string
 ): EquipmentCatalogEntry | undefined {
@@ -957,6 +968,85 @@ export function createE2ESharedSpellForUser(
 
 	state.nextPrivateSpellSequence += 1;
 	state.sharedSpells.unshift(spell);
+
+	return {
+		...spell,
+		classSlugs: [...spell.classSlugs]
+	};
+}
+
+export function listE2EManagedSharedSpellsForUser(userId: string, includeSystemContent: boolean) {
+	return state.sharedSpells
+		.filter((spell) => spell.visibility !== 'private' && spell.visibility !== 'campaign')
+		.filter((spell) => (includeSystemContent ? true : !spell.isSystemContent))
+		.filter((spell) => (includeSystemContent ? true : spell.userId === userId))
+		.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+		.map((spell) => ({
+			...spell,
+			classSlugs: [...spell.classSlugs]
+		}));
+}
+
+export function updateE2EManagedSharedSpellForUser(
+	userId: string,
+	input: {
+		spellId: string;
+		name: string;
+		slug: string;
+		level: number;
+		school: string;
+		castingTime?: string;
+		range?: string;
+		components?: string;
+		materials?: string;
+		duration?: string;
+		classSlugs: string[];
+		summary?: string;
+		description?: string;
+		concentration: boolean;
+		ritual: boolean;
+		includeSystemContent: boolean;
+	}
+) {
+	const spell = state.sharedSpells.find((entry) => entry.id === input.spellId);
+
+	if (!spell) {
+		throw new Error('Please choose a valid shared spell to maintain.');
+	}
+
+	if (spell.visibility === 'private' || spell.visibility === 'campaign') {
+		throw new Error('Please choose a valid shared spell to maintain.');
+	}
+
+	if (!input.includeSystemContent && (spell.isSystemContent || spell.userId !== userId)) {
+		throw new Error('Please choose a valid shared spell to maintain.');
+	}
+
+	const duplicate = state.sharedSpells.find(
+		(entry) => entry.id !== spell.id && entry.slug === input.slug
+	);
+
+	if (duplicate) {
+		throw new Error('A shared spell with that slug already exists. Try a different name.');
+	}
+
+	Object.assign(spell, {
+		name: input.name,
+		slug: input.slug,
+		level: input.level,
+		school: input.school,
+		castingTime: input.castingTime ?? null,
+		range: input.range ?? null,
+		components: input.components ?? null,
+		materials: input.materials ?? null,
+		duration: input.duration ?? null,
+		classSlugs: [...input.classSlugs],
+		summary: input.summary ?? null,
+		description: input.description ?? null,
+		concentration: input.concentration,
+		ritual: input.ritual,
+		updatedAt: nextUpdatedAt()
+	});
 
 	return {
 		...spell,

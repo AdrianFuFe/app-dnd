@@ -37,6 +37,20 @@
 			? data.manageableSharedFeats.find((feat) => feat.id === editSharedFeatId) ?? null
 			: null
 	);
+	const editSharedSpellId = $derived(
+		(form?.editSharedSpellId ?? data.editSharedSpellId) as string | null
+	);
+	const editSharedSpellFieldErrors = $derived(
+		(form?.editSharedSpellFieldErrors ?? {}) as PrivateSpellFormFieldErrors
+	);
+	const editSharedSpellValues = $derived(
+		(form?.editSharedSpellValues ?? data.editSharedSpellValues) as PrivateSpellFormValues
+	);
+	const selectedManagedSharedSpell = $derived(
+		editSharedSpellId
+			? data.manageableSharedSpells.find((spell) => spell.id === editSharedSpellId) ?? null
+			: null
+	);
 
 	function formatCountLabel(count: number, singular: string, plural: string): string {
 		return `${count} ${count === 1 ? singular : plural}`;
@@ -140,6 +154,14 @@
 
 	function createPrivateSpellValue(field: PrivateSpellFormFieldName) {
 		return createSpellValues[field];
+	}
+
+	function editSharedSpellFieldError(field: PrivateSpellFormFieldName) {
+		return editSharedSpellFieldErrors[field]?.[0];
+	}
+
+	function editSharedSpellValue(field: PrivateSpellFormFieldName) {
+		return editSharedSpellValues[field];
 	}
 </script>
 
@@ -516,6 +538,313 @@
 								</button>
 							</form>
 						</div>
+					</div>
+				{/if}
+			</div>
+		</section>
+	{/if}
+
+	{#if data.roleOperations.canMaintainSharedSpells}
+		<section class="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
+			<div class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+				<div class="flex items-center justify-between gap-4">
+					<div>
+						<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
+							Shared spell maintenance
+						</p>
+						<h2 class="mt-2 text-2xl font-semibold text-stone-900">
+							Review trusted shared spells
+						</h2>
+					</div>
+					<p class="text-sm text-stone-500">{data.manageableSharedSpells.length} total</p>
+				</div>
+				<p class="mt-3 max-w-2xl text-sm leading-7 text-stone-600">
+					This queue only shows shared homebrew spells your current role is allowed to
+					maintain. Normal users never see this workflow.
+				</p>
+
+				{#if data.manageableSharedSpells.length === 0}
+					<p class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600">
+						No maintainable shared spells yet. Publish one first, or use an admin account to
+						review system-owned entries.
+					</p>
+				{:else}
+					<div class="mt-6 space-y-4">
+						{#each data.manageableSharedSpells as spell (spell.id)}
+							<article class="rounded-2xl border border-stone-200 p-4">
+								<div class="flex flex-wrap items-start justify-between gap-3">
+									<div>
+										<h3 class="text-lg font-semibold text-stone-900">{spell.name}</h3>
+										<p class="mt-1 text-sm text-stone-500">slug: {spell.slug}</p>
+									</div>
+									<div class="flex flex-wrap items-center gap-2">
+										<span
+											class={`rounded-full px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] ${
+												spell.isSystemContent
+													? 'bg-fuchsia-100 text-fuchsia-900'
+													: 'bg-indigo-100 text-indigo-900'
+											}`}
+										>
+											{spell.isSystemContent ? 'System' : 'Shared'}
+										</span>
+										<span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-amber-900">
+											{formatSpellLevel(spell.level)}
+										</span>
+										<a
+											class={`rounded-full px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-white transition ${
+												editSharedSpellId === spell.id
+													? 'bg-stone-500 hover:bg-stone-500'
+													: 'bg-stone-900 hover:bg-stone-700'
+											}`}
+											href={`?editSharedSpell=${spell.id}`}
+										>
+											{editSharedSpellId === spell.id ? 'Editing' : 'Edit'}
+										</a>
+									</div>
+								</div>
+								<p class="mt-3 text-sm text-stone-600">
+									{spell.summary ?? spell.description ?? 'No summary yet.'}
+								</p>
+								<p class="mt-4 text-xs uppercase tracking-[0.16em] text-stone-500">
+									Classes: {formatClassList(spell.classSlugs)}
+								</p>
+							</article>
+						{/each}
+					</div>
+				{/if}
+			</div>
+
+			<div class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+				<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
+					Maintenance editor
+				</p>
+				<h2 class="mt-2 text-2xl font-semibold text-stone-900">
+					Update a managed shared spell
+				</h2>
+				<p class="mt-3 max-w-2xl text-sm leading-7 text-stone-600">
+					Editors can update their own shared homebrew spells. Admins can apply the same
+					editing controls to system-owned spell entries.
+				</p>
+
+				{#if data.updatedSharedSpellName}
+					<p class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+						{data.updatedSharedSpellName} was updated successfully.
+					</p>
+				{/if}
+
+				{#if form?.editSharedSpellFormError}
+					<p class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+						{form.editSharedSpellFormError}
+					</p>
+				{/if}
+
+				{#if !editSharedSpellId}
+					<p class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600">
+						Choose a shared spell from the maintenance list to load it into this editor.
+					</p>
+				{:else}
+					<form method="POST" class="mt-6 space-y-4">
+						<input type="hidden" name="spellId" value={editSharedSpellId} />
+
+						<div class="grid gap-4 sm:grid-cols-2">
+							<label class="block sm:col-span-2">
+								<span class="mb-1 block text-sm font-medium text-stone-700">Spell name</span>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									name="name"
+									type="text"
+									value={editSharedSpellValue('name')}
+								/>
+								{#if editSharedSpellFieldError('name')}
+									<p class="mt-1 text-sm text-red-700">{editSharedSpellFieldError('name')}</p>
+								{/if}
+							</label>
+
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700">Level</span>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									name="level"
+									type="number"
+									min="0"
+									max="9"
+									value={editSharedSpellValue('level')}
+								/>
+								{#if editSharedSpellFieldError('level')}
+									<p class="mt-1 text-sm text-red-700">{editSharedSpellFieldError('level')}</p>
+								{/if}
+							</label>
+
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700">School</span>
+								<select
+									class="block w-full rounded-lg border-stone-300"
+									name="school"
+									value={editSharedSpellValue('school')}
+								>
+									<option value="">Choose a spell school</option>
+									{#each data.sharedCatalog.vocabularies.spellSchools as school (school.slug)}
+										<option value={school.slug}>{school.name}</option>
+									{/each}
+								</select>
+								{#if editSharedSpellFieldError('school')}
+									<p class="mt-1 text-sm text-red-700">{editSharedSpellFieldError('school')}</p>
+								{/if}
+							</label>
+
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700">Casting time</span>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									name="castingTime"
+									type="text"
+									value={editSharedSpellValue('castingTime')}
+								/>
+								{#if editSharedSpellFieldError('castingTime')}
+									<p class="mt-1 text-sm text-red-700">
+										{editSharedSpellFieldError('castingTime')}
+									</p>
+								{/if}
+							</label>
+
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700">Range</span>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									name="range"
+									type="text"
+									value={editSharedSpellValue('range')}
+								/>
+								{#if editSharedSpellFieldError('range')}
+									<p class="mt-1 text-sm text-red-700">{editSharedSpellFieldError('range')}</p>
+								{/if}
+							</label>
+
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700">Components</span>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									name="components"
+									type="text"
+									value={editSharedSpellValue('components')}
+								/>
+								{#if editSharedSpellFieldError('components')}
+									<p class="mt-1 text-sm text-red-700">
+										{editSharedSpellFieldError('components')}
+									</p>
+								{/if}
+							</label>
+
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700">Duration</span>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									name="duration"
+									type="text"
+									value={editSharedSpellValue('duration')}
+								/>
+								{#if editSharedSpellFieldError('duration')}
+									<p class="mt-1 text-sm text-red-700">{editSharedSpellFieldError('duration')}</p>
+								{/if}
+							</label>
+
+							<label class="block sm:col-span-2">
+								<span class="mb-1 block text-sm font-medium text-stone-700">Materials</span>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									name="materials"
+									type="text"
+									value={editSharedSpellValue('materials')}
+								/>
+								{#if editSharedSpellFieldError('materials')}
+									<p class="mt-1 text-sm text-red-700">{editSharedSpellFieldError('materials')}</p>
+								{/if}
+							</label>
+
+							<label class="block sm:col-span-2">
+								<span class="mb-1 block text-sm font-medium text-stone-700">Class slugs</span>
+								<textarea
+									class="block min-h-24 w-full rounded-lg border-stone-300"
+									name="classSlugsText"
+								>{editSharedSpellValue('classSlugsText')}</textarea>
+								{#if editSharedSpellFieldError('classSlugsText')}
+									<p class="mt-1 text-sm text-red-700">
+										{editSharedSpellFieldError('classSlugsText')}
+									</p>
+								{/if}
+							</label>
+
+							<label class="block sm:col-span-2">
+								<span class="mb-1 block text-sm font-medium text-stone-700">Summary</span>
+								<input
+									class="block w-full rounded-lg border-stone-300"
+									name="summary"
+									type="text"
+									value={editSharedSpellValue('summary')}
+								/>
+								{#if editSharedSpellFieldError('summary')}
+									<p class="mt-1 text-sm text-red-700">{editSharedSpellFieldError('summary')}</p>
+								{/if}
+							</label>
+
+							<label class="block sm:col-span-2">
+								<span class="mb-1 block text-sm font-medium text-stone-700">Description</span>
+								<textarea
+									class="block min-h-28 w-full rounded-lg border-stone-300"
+									name="description"
+								>{editSharedSpellValue('description')}</textarea>
+								{#if editSharedSpellFieldError('description')}
+									<p class="mt-1 text-sm text-red-700">
+										{editSharedSpellFieldError('description')}
+									</p>
+								{/if}
+							</label>
+						</div>
+
+						<div class="flex flex-wrap gap-6">
+							<label class="flex items-center gap-3 text-sm text-stone-700">
+								<input
+									class="rounded border-stone-300"
+									name="concentration"
+									type="checkbox"
+									checked={editSharedSpellValues.concentration}
+								/>
+								<span>Requires concentration</span>
+							</label>
+							<label class="flex items-center gap-3 text-sm text-stone-700">
+								<input
+									class="rounded border-stone-300"
+									name="ritual"
+									type="checkbox"
+									checked={editSharedSpellValues.ritual}
+								/>
+								<span>Can be cast as a ritual</span>
+							</label>
+						</div>
+
+						<button
+							class="rounded-lg bg-stone-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-stone-700"
+							type="submit"
+							formaction="?/updateSharedSpell"
+						>
+							Save shared spell changes
+						</button>
+					</form>
+
+					<div class="mt-6 rounded-2xl border border-sky-200 bg-sky-50 p-4">
+						<p class="text-sm font-medium text-sky-950">Edit scope</p>
+						<p class="mt-2 text-sm leading-6 text-sky-900">
+							This editor updates the shared spell you selected without changing the
+							ownership model around private spell drafts.
+						</p>
+						<p class="mt-2 text-sm leading-6 text-sky-900">
+							{#if selectedManagedSharedSpell?.isSystemContent}
+								This entry is system-owned, so only admin users should update it.
+							{:else}
+								This entry is shared homebrew content, so editors can only update spells
+								they own.
+							{/if}
+						</p>
 					</div>
 				{/if}
 			</div>

@@ -90,7 +90,7 @@ Status on 2026-07-08:
 - editor/admin users can now review shared homebrew feats they are allowed to maintain
 - `content_editor` users can update their own shared homebrew feats
 - `admin` users can update both shared and system-owned homebrew feats
-- shared-content maintenance is still feat-only and does not yet include shared spell editing
+- shared spell editing is now also available for trusted roles through the app content surface
 
 ## Iteration 11
 
@@ -102,7 +102,7 @@ Status on 2026-07-08:
 Status on 2026-07-08:
 
 - trusted roles can now retire or permanently delete maintained shared feats
-- shared spell publishing exists, but spell maintenance and lifecycle controls are still missing
+- shared spell publishing and maintenance now exist, but spell lifecycle controls are still missing
 
 ## Future Iterations
 

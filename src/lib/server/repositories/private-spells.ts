@@ -1,13 +1,18 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { error as httpError } from '@sveltejs/kit';
 import {
 	createE2ESharedSpellForUser,
 	isE2EMockSupabaseClient,
 	createE2EPrivateSpellForUser,
+	getE2EManagedSharedSpellById,
 	getE2ESpellCatalogEntry,
-	listE2EPrivateSpellsForUser
+	listE2EManagedSharedSpellsForUser,
+	listE2EPrivateSpellsForUser,
+	updateE2EManagedSharedSpellForUser
 } from '$lib/server/e2e/mock-app';
 import type { Database } from '$lib/types/database/supabase';
 import type { GameMechanic } from '$lib/types/domain/game-mechanics';
+import type { AuthorizationContext } from '$lib/types/permissions/permissions';
 
 type SpellRow = Database['public']['Tables']['spells']['Row'];
 type SpellInsert = Database['public']['Tables']['spells']['Insert'];
@@ -95,6 +100,10 @@ export type SharedSpellRecord = {
 	updatedAt: string;
 };
 
+export type ManagedSharedSpellRecord = SharedSpellRecord & {
+	ownerUserId: string | null;
+};
+
 type PrivateSpellRow = Pick<
 	SpellRow,
 	| 'id'
@@ -121,6 +130,7 @@ type PrivateSpellRow = Pick<
 type SharedSpellRow = Pick<
 	SpellRow,
 	| 'id'
+	| 'owner_user_id'
 	| 'source_id'
 	| 'slug'
 	| 'name'
@@ -370,7 +380,7 @@ export async function createSharedSpell(
 		.from('spells')
 		.insert(insert)
 		.select(
-			'id, source_id, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, visibility, concentration, ritual, is_system_content, created_at, updated_at'
+			'id, owner_user_id, source_id, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, visibility, concentration, ritual, is_system_content, created_at, updated_at'
 		)
 		.single();
 
@@ -383,6 +393,152 @@ export async function createSharedSpell(
 	}
 
 	return mapSharedSpellRecord(data, sourceIds);
+}
+
+export async function listManagedSharedSpells(
+	supabase: SupabaseClient<Database>,
+	authorization: AuthorizationContext
+): Promise<ManagedSharedSpellRecord[]> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		return listE2EManagedSharedSpellsForUser(
+			authorization.userId,
+			authorization.globalRole === 'admin'
+		).map((spell) => ({
+			id: spell.id,
+			sourceCode: spell.sourceCode,
+			slug: spell.slug,
+			name: spell.name,
+			level: spell.level,
+			school: spell.school,
+			castingTime: spell.castingTime,
+			range: spell.range,
+			components: spell.components,
+			materials: spell.materials,
+			duration: spell.duration,
+			classSlugs: [...spell.classSlugs],
+			summary: spell.summary,
+			description: spell.description,
+			visibility: spell.visibility === 'public' ? 'public' : 'shared',
+			isSystemContent: spell.isSystemContent,
+			concentration: spell.concentration,
+			ritual: spell.ritual,
+			createdAt: spell.createdAt,
+			updatedAt: spell.updatedAt,
+			ownerUserId: spell.userId
+		}));
+	}
+
+	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
+	const query = supabase
+		.from('spells')
+		.select(
+			'id, owner_user_id, source_id, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, visibility, concentration, ritual, is_system_content, created_at, updated_at'
+		)
+		.eq('source_id', sourceIds.homebrew)
+		.not('visibility', 'in', '(private,campaign)')
+		.order('updated_at', { ascending: false });
+
+	const { data, error } =
+		authorization.globalRole === 'admin'
+			? await query
+			: await query.eq('owner_user_id', authorization.userId).eq('is_system_content', false);
+
+	if (error) {
+		throw new Error(`Failed to load managed shared spells for user ${authorization.userId}`);
+	}
+
+	return data.map((spell) => mapManagedSharedSpellRecord(spell, sourceIds));
+}
+
+export async function updateManagedSharedSpell(
+	supabase: SupabaseClient<Database>,
+	authorization: AuthorizationContext,
+	input: CreatePrivateSpellInput & {
+		spellId: string;
+	}
+): Promise<ManagedSharedSpellRecord> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		const spell = loadE2EManagedSharedSpellById(input.spellId);
+		assertManagedSharedSpellAccess(authorization, spell, 'update');
+		const updated = updateE2EManagedSharedSpellForUser(authorization.userId, {
+			spellId: input.spellId,
+			name: input.name,
+			slug: input.slug,
+			level: input.level,
+			school: input.school,
+			castingTime: input.castingTime,
+			range: input.range,
+			components: input.components,
+			materials: input.materials,
+			duration: input.duration,
+			classSlugs: input.classSlugs,
+			summary: input.summary,
+			description: input.description,
+			concentration: input.concentration,
+			ritual: input.ritual,
+			includeSystemContent: authorization.globalRole === 'admin'
+		});
+
+		return {
+			id: updated.id,
+			sourceCode: updated.sourceCode,
+			slug: updated.slug,
+			name: updated.name,
+			level: updated.level,
+			school: updated.school,
+			castingTime: updated.castingTime,
+			range: updated.range,
+			components: updated.components,
+			materials: updated.materials,
+			duration: updated.duration,
+			classSlugs: [...updated.classSlugs],
+			summary: updated.summary,
+			description: updated.description,
+			visibility: updated.visibility === 'public' ? 'public' : 'shared',
+			isSystemContent: updated.isSystemContent,
+			concentration: updated.concentration,
+			ritual: updated.ritual,
+			createdAt: updated.createdAt,
+			updatedAt: updated.updatedAt,
+			ownerUserId: updated.userId
+		};
+	}
+
+	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
+	const spell = await loadManagedSharedSpellById(supabase, input.spellId, sourceIds);
+	assertManagedSharedSpellAccess(authorization, spell, 'update');
+
+	await assertNoExistingSharedSpellSlug(supabase, input.slug, sourceIds, spell.id);
+
+	const { data, error } = await supabase
+		.from('spells')
+		.update({
+			slug: input.slug,
+			name: input.name,
+			level: input.level,
+			school: input.school,
+			casting_time: input.castingTime ?? null,
+			range_text: input.range ?? null,
+			components: input.components ?? null,
+			materials: input.materials ?? null,
+			duration: input.duration ?? null,
+			class_slugs: input.classSlugs,
+			summary: input.summary ?? null,
+			description: input.description ?? null,
+			concentration: input.concentration,
+			ritual: input.ritual
+		})
+		.eq('id', spell.id)
+		.select(
+			'id, owner_user_id, source_id, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, visibility, concentration, ritual, is_system_content, created_at, updated_at'
+		)
+		.single();
+
+	if (error) {
+		throw new Error(`Failed to update shared spell ${spell.id}`);
+	}
+
+	return mapManagedSharedSpellRecord(data, sourceIds);
 }
 
 export function buildPrivateSpellDerivationMechanic(input: {
@@ -465,15 +621,18 @@ async function assertNoExistingPrivateSpellSlug(
 async function assertNoExistingSharedSpellSlug(
 	supabase: SupabaseClient<Database>,
 	slug: string,
-	sourceIds: Record<SharedSpellSourceCode, string>
+	sourceIds: Record<SharedSpellSourceCode, string>,
+	excludeSpellId?: string
 ) {
-	const { data, error } = await supabase
+	const query = supabase
 		.from('spells')
 		.select('id')
 		.eq('slug', slug)
 		.eq('source_id', sourceIds.homebrew)
 		.not('visibility', 'in', '(private,campaign)')
-		.limit(1);
+		.limit(2);
+
+	const { data, error } = excludeSpellId ? await query.neq('id', excludeSpellId) : await query;
 
 	if (error) {
 		throw new Error(`Failed to check shared spell slug "${slug}"`);
@@ -520,6 +679,27 @@ async function loadSharedSpellForDerivation(
 
 	if (error || !data || data.visibility === 'private' || data.visibility === 'campaign') {
 		throw new Error('Please choose a valid shared spell to copy.');
+	}
+
+	return data;
+}
+
+async function loadManagedSharedSpellById(
+	supabase: SupabaseClient<Database>,
+	spellId: string,
+	sourceIds: Record<SharedSpellSourceCode, string>
+): Promise<SharedSpellRow> {
+	const { data, error } = await supabase
+		.from('spells')
+		.select(
+			'id, owner_user_id, source_id, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, visibility, concentration, ritual, is_system_content, created_at, updated_at'
+		)
+		.eq('id', spellId)
+		.eq('source_id', sourceIds.homebrew)
+		.single();
+
+	if (error || !data || data.visibility === 'private' || data.visibility === 'campaign') {
+		throw new Error('Please choose a valid shared spell to maintain.');
 	}
 
 	return data;
@@ -580,6 +760,16 @@ function mapSharedSpellRecord(
 	};
 }
 
+function mapManagedSharedSpellRecord(
+	spell: SharedSpellRow,
+	sourceIds: Record<SharedSpellSourceCode, string>
+): ManagedSharedSpellRecord {
+	return {
+		...mapSharedSpellRecord(spell, sourceIds),
+		ownerUserId: spell.owner_user_id
+	};
+}
+
 function normalizeMechanics(mechanics: unknown): GameMechanic[] {
 	return Array.isArray(mechanics) ? (mechanics as GameMechanic[]) : [];
 }
@@ -595,4 +785,36 @@ function findSourceCodeById(
 	}
 
 	return null;
+}
+
+function loadE2EManagedSharedSpellById(spellId: string) {
+	const spell = getE2EManagedSharedSpellById(spellId);
+
+	if (!spell || spell.visibility === 'private' || spell.visibility === 'campaign') {
+		throw new Error('Please choose a valid shared spell to maintain.');
+	}
+
+	return {
+		...spell,
+		owner_user_id: spell.userId,
+		is_system_content: spell.isSystemContent
+	};
+}
+
+function assertManagedSharedSpellAccess(
+	authorization: AuthorizationContext,
+	spell: Pick<SharedSpellRow, 'owner_user_id' | 'is_system_content'>,
+	operation: 'update'
+) {
+	if (spell.is_system_content) {
+		if (authorization.globalRole !== 'admin') {
+			throw httpError(403, `Admin role required to ${operation} system-owned spells.`);
+		}
+
+		return;
+	}
+
+	if (authorization.globalRole !== 'admin' && spell.owner_user_id !== authorization.userId) {
+		throw httpError(403, `You can only ${operation} your own shared spells.`);
+	}
 }

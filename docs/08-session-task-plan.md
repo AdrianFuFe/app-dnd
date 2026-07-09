@@ -78,10 +78,11 @@ In that case, it should still name the next recommended block.
     - `/app/content` now supports private feat creation, SRD-to-private feat derivation, and role-aware shared/system feat publishing
     - `/app/content` now also supports private spell creation, SRD-to-private spell derivation, and role-aware shared/system spell publishing
     - trusted editor/admin users can now review and update shared homebrew feats from `/app/content`
+    - trusted editor/admin users can now also review and update shared homebrew spells from `/app/content`
     - trusted editor/admin users can now also retire or permanently delete maintained shared feats from `/app/content`
 - implemented but still intentionally shallow:
     - real character CRUD exists
-    - the shared catalog is browseable and now has guarded create/update/retire/delete workflows for feats plus private create/derive/publish workflows for spells, but spell maintenance and lifecycle controls do not exist yet
+    - the shared catalog is browseable and now has guarded create/update/retire/delete workflows for feats plus create/derive/publish/update workflows for spells, but spell lifecycle controls do not exist yet
     - permissions exist as schema, RLS, server helpers, operator scripts, and a first visible content surface, not as a full admin/editor product surface
 - current project point:
   - the MVP app shell and first character workflow are implemented and E2E-stable
@@ -90,10 +91,11 @@ In that case, it should still name the next recommended block.
   - runtime integration behavior is now documented in `README.md` and `docs/10-runtime-integration-check.md`, with request-time status checks in `src/lib/server/runtime/integration.ts`
   - the first private content workflows now exist for both feats and spells
   - trusted editor/admin users can now publish bounded shared and system homebrew entries for both feats and spells
-  - the first role-aware shared content maintenance and lifecycle controls are still feat-only
-  - the highest-value missing content slice is extending trusted shared content maintenance to spells now that private spell creation, SRD derivation, and spell publishing are in place
+  - trusted editor/admin users can now also review and update maintained shared spells
+  - explicit lifecycle controls are still feat-only
+  - the highest-value missing content slice is extending trusted shared content lifecycle controls to spells now that private spell creation, SRD derivation, spell publishing, and spell maintenance are in place
 - next recommended block:
-  - `S27 - Shared Spell Maintenance`, because trusted roles can now publish bounded shared/system spell entries but still cannot review and update maintained shared spells from the app
+  - `S28 - Shared Spell Lifecycle Controls`, because trusted roles can now publish and update maintained shared spells but still cannot retire or delete bounded shared/system spell entries from the app
 
 ## Session Blocks
 
@@ -659,10 +661,34 @@ In that case, it should still name the next recommended block.
     - system-owned spells remain admin-only for update operations
     - normal users remain unable to edit shared or system-owned spell catalog content
 
+### S28 - Shared Spell Lifecycle Controls
+
+- objective: add the first bounded retire/delete workflow for maintained shared spells
+- read context:
+    - `docs/context/10_PRODUCT_SCOPE.md`
+    - `docs/context/30_CONTENT_AND_PERMISSIONS.md`
+    - `docs/context/40_AUTH_AND_DATA.md`
+    - `docs/context/50_WORKFLOW_RULES.md`
+    - `docs/11-admin-and-test-user-workflow.md`
+- likely files:
+    - `src/routes/app/content/...`
+    - `src/lib/server/repositories/private-spells.ts`
+    - `src/lib/server/permissions/authorization.ts`
+    - relevant tests near the content route/repository code
+- minimum validation:
+    - `pnpm check`
+    - targeted unit tests for shared/system spell delete or archive rules
+    - targeted E2E only if a browser delete/archive workflow is added
+- closure criterion:
+    - `content_editor` users can retire or delete only their own shared non-system spells
+    - `admin` users can retire or delete shared and system-owned homebrew spells
+    - normal users remain unable to mutate shared or system-owned spell catalog content
+    - the UI explains destructive scope clearly before applying the action
+
 ## Notes
 
 - this plan is intentionally session-oriented, not milestone-oriented
 - each block should fit comfortably in one focused chat
 - if a block grows during implementation, split it rather than stretching the session
 - recommended implementation order from the current project state:
-    - `S27 - Shared Spell Maintenance`
+    - `S28 - Shared Spell Lifecycle Controls`

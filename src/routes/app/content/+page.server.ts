@@ -28,9 +28,12 @@ import {
 	createPrivateSpell,
 	createSharedSpell,
 	derivePrivateSpellFromSharedCatalog,
-	listPrivateSpellsForUser
+	listManagedSharedSpells,
+	listPrivateSpellsForUser,
+	updateManagedSharedSpell
 } from '$lib/server/repositories/private-spells';
 import {
+	createPrivateSpellFormValuesFromInput,
 	createPrivateSpellFormValues,
 	flattenPrivateSpellFormErrors,
 	privateSpellFormSchema
@@ -48,19 +51,24 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 			publishedSharedSpellName: url.searchParams.get('publishedSharedSpell'),
 			publishedSystemSpellName: url.searchParams.get('publishedSystemSpell'),
 			updatedSharedFeatName: url.searchParams.get('updatedSharedFeat'),
+			updatedSharedSpellName: url.searchParams.get('updatedSharedSpell'),
 			retiredSharedFeatName: url.searchParams.get('retiredSharedFeat'),
 			deletedSharedFeatName: url.searchParams.get('deletedSharedFeat'),
 			createPrivateFeatValues: createPrivateFeatFormValues(),
 			createPrivateSpellValues: createPrivateSpellFormValues(),
 			editSharedFeatId: null,
 			editSharedFeatValues: createPrivateFeatFormValues(),
+			editSharedSpellId: null,
+			editSharedSpellValues: createPrivateSpellFormValues(),
 			roleOperations: {
 				canPublishSharedFeats: false,
 				canPublishSystemFeats: false,
 				canPublishSharedSpells: false,
 				canPublishSystemSpells: false,
 				canMaintainSharedFeats: false,
-				canMaintainSystemFeats: false
+				canMaintainSystemFeats: false,
+				canMaintainSharedSpells: false,
+				canMaintainSystemSpells: false
 			},
 			characterCatalog: {
 				speciesOptions: [],
@@ -70,6 +78,7 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 				backgroundOptions: []
 			},
 			manageableSharedFeats: [],
+			manageableSharedSpells: [],
 			privateFeats: [],
 			privateSpells: [],
 			sharedCatalog: {
@@ -103,10 +112,21 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 			parentData.authorization.globalRole === 'admin')
 			? await listManagedSharedFeats(locals.supabase, parentData.authorization)
 			: [];
+	const manageableSharedSpells =
+		parentData.authorization &&
+		(parentData.authorization.globalRole === 'content_editor' ||
+			parentData.authorization.globalRole === 'admin')
+			? await listManagedSharedSpells(locals.supabase, parentData.authorization)
+			: [];
 	const editSharedFeatId = url.searchParams.get('editSharedFeat');
 	const editableSharedFeat =
 		typeof editSharedFeatId === 'string'
 			? manageableSharedFeats.find((feat) => feat.id === editSharedFeatId) ?? null
+			: null;
+	const editSharedSpellId = url.searchParams.get('editSharedSpell');
+	const editableSharedSpell =
+		typeof editSharedSpellId === 'string'
+			? manageableSharedSpells.find((spell) => spell.id === editSharedSpellId) ?? null
 			: null;
 
 	return {
@@ -119,6 +139,7 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 		publishedSharedSpellName: url.searchParams.get('publishedSharedSpell'),
 		publishedSystemSpellName: url.searchParams.get('publishedSystemSpell'),
 		updatedSharedFeatName: url.searchParams.get('updatedSharedFeat'),
+		updatedSharedSpellName: url.searchParams.get('updatedSharedSpell'),
 		retiredSharedFeatName: url.searchParams.get('retiredSharedFeat'),
 		deletedSharedFeatName: url.searchParams.get('deletedSharedFeat'),
 		createPrivateFeatValues: createPrivateFeatFormValues(),
@@ -127,6 +148,10 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 		editSharedFeatValues: editableSharedFeat
 			? createPrivateFeatFormValuesFromInput(editableSharedFeat)
 			: createPrivateFeatFormValues(),
+		editSharedSpellId: editableSharedSpell?.id ?? null,
+		editSharedSpellValues: editableSharedSpell
+			? createPrivateSpellFormValuesFromInput(editableSharedSpell)
+			: createPrivateSpellFormValues(),
 		roleOperations: {
 			canPublishSharedFeats:
 				parentData.authorization?.globalRole === 'content_editor' ||
@@ -139,10 +164,15 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 			canMaintainSharedFeats:
 				parentData.authorization?.globalRole === 'content_editor' ||
 				parentData.authorization?.globalRole === 'admin',
-			canMaintainSystemFeats: parentData.authorization?.globalRole === 'admin'
+			canMaintainSystemFeats: parentData.authorization?.globalRole === 'admin',
+			canMaintainSharedSpells:
+				parentData.authorization?.globalRole === 'content_editor' ||
+				parentData.authorization?.globalRole === 'admin',
+			canMaintainSystemSpells: parentData.authorization?.globalRole === 'admin'
 		},
 		characterCatalog: await listCharacterCreationCatalog(locals.supabase),
 		manageableSharedFeats,
+		manageableSharedSpells,
 		privateFeats: parentData.session
 			? await listPrivateFeatsForUser(locals.supabase, parentData.session.user.id)
 			: [],
@@ -388,6 +418,76 @@ export const actions: Actions = {
 						? error.message
 						: 'The spell could not be published as system content.',
 				createPrivateSpellValues: parsedForm.values
+			});
+		}
+	},
+	updateSharedSpell: async ({ locals, request }) => {
+		if (!locals.session) {
+			throw redirect(302, '/auth/login?redirectTo=/app/content');
+		}
+
+		if (!locals.supabase) {
+			return fail(500, {
+				editSharedSpellFieldErrors: {},
+				editSharedSpellFormError: 'Supabase is not configured yet.',
+				editSharedSpellId: null,
+				editSharedSpellValues: createPrivateSpellFormValues()
+			});
+		}
+
+		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		requirePermissionScopeAccess(authorization, 'shared_content');
+
+		const formData = await request.formData();
+		const spellId = formData.get('spellId');
+
+		if (typeof spellId !== 'string' || spellId.trim().length === 0) {
+			return fail(400, {
+				editSharedSpellFieldErrors: {},
+				editSharedSpellFormError: 'Please choose a valid shared spell to maintain.',
+				editSharedSpellId: null,
+				editSharedSpellValues: createPrivateSpellFormValues()
+			});
+		}
+
+		const parsedForm = parsePrivateSpellCreateValues(Object.fromEntries(formData));
+
+		if (parsedForm.response) {
+			return fail(parsedForm.response.status, {
+				editSharedSpellFieldErrors: parsedForm.response.data.createPrivateSpellFieldErrors,
+				editSharedSpellFormError: parsedForm.response.data.createPrivateSpellFormError,
+				editSharedSpellId: spellId,
+				editSharedSpellValues: parsedForm.values
+			});
+		}
+
+		try {
+			const spell = await updateManagedSharedSpell(locals.supabase, authorization, {
+				spellId,
+				...parsedForm.data
+			});
+			const updatedSharedSpell = encodeURIComponent(spell.name);
+			const editSharedSpell = encodeURIComponent(spell.id);
+
+			throw redirect(
+				303,
+				`/app/content?editSharedSpell=${editSharedSpell}&updatedSharedSpell=${updatedSharedSpell}`
+			);
+		} catch (error) {
+			if (isRedirect(error)) {
+				throw error;
+			}
+
+			if (typeof error === 'object' && error !== null && 'status' in error && error.status === 403) {
+				throw error;
+			}
+
+			return fail(400, {
+				editSharedSpellFieldErrors: {},
+				editSharedSpellFormError:
+					error instanceof Error ? error.message : 'The shared spell could not be updated.',
+				editSharedSpellId: spellId,
+				editSharedSpellValues: parsedForm.values
 			});
 		}
 	},
