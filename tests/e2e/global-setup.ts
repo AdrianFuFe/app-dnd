@@ -4,7 +4,7 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
-const SERVER_URL = 'http://127.0.0.1:4173';
+const SERVER_URL = 'http://localhost:4173';
 const PID_DIR = path.join(process.cwd(), '.svelte-kit', 'playwright');
 const PID_PATH = path.join(PID_DIR, 'preview-server.json');
 const VITE_BIN_PATH = path.join(process.cwd(), 'node_modules', 'vite', 'bin', 'vite.js');
@@ -22,7 +22,7 @@ export default async function globalSetup() {
 
 	const serverProcess = spawn(
 		process.execPath,
-		[VITE_BIN_PATH, 'preview', '--host', '127.0.0.1', '--strictPort'],
+		[VITE_BIN_PATH, 'preview', '--host', 'localhost', '--strictPort'],
 		{
 			cwd: process.cwd(),
 			detached: true,

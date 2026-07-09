@@ -23,7 +23,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 			event.cookies.set('app-e2e-role', requestedRole, {
 				httpOnly: false,
 				path: '/',
-				sameSite: 'lax'
+				sameSite: 'lax',
+				secure: false
 			});
 		}
 

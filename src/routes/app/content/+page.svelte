@@ -989,6 +989,7 @@
 				<button
 					class="rounded-lg bg-stone-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-stone-700"
 					type="submit"
+					formaction="?/createPrivateFeat"
 				>
 					Create private feat
 				</button>

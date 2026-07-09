@@ -590,7 +590,7 @@ describe('/app/content actions', () => {
 	});
 
 	it('returns field errors for invalid private feat input', async () => {
-		const response = await actions.default?.({
+		const response = await actions.createPrivateFeat?.({
 			locals: {
 				session: {
 					user: {
@@ -675,7 +675,7 @@ describe('/app/content actions', () => {
 		});
 
 		await expect(
-			actions.default?.({
+			actions.createPrivateFeat?.({
 				locals: {
 					session: {
 						user: {

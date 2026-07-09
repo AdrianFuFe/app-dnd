@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Browser, type Locator, type Page } from '@playwright/test';
 
 test.beforeEach(async ({ page, request }) => {
 	const response = await request.post('/api/test/reset');
@@ -7,8 +7,8 @@ test.beforeEach(async ({ page, request }) => {
 	await page.context().clearCookies();
 });
 
-test('user role keeps privileged content controls hidden', async ({ page }) => {
-	await gotoContentPage(page, 'user');
+test('user role keeps privileged content controls hidden', async ({ browser }) => {
+	const page = await openContentPage(browser, 'user');
 
 	await expect(page.getByRole('heading', { name: 'Create your own spell draft' })).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Create private spell' })).toBeVisible();
@@ -16,12 +16,12 @@ test('user role keeps privileged content controls hidden', async ({ page }) => {
 	await expect(page.getByRole('button', { name: 'Publish system spell' })).toHaveCount(0);
 	await expect(page.getByRole('heading', { name: 'Review trusted shared spells' })).toHaveCount(0);
 	await expect(page.getByRole('heading', { name: 'Update a managed shared spell' })).toHaveCount(0);
+
+	await page.context().close();
 });
 
-test.fixme('content editors can publish, update, and retire their shared spells', async ({
-	page
-}) => {
-	await gotoContentPage(page, 'content_editor');
+test('content editors can publish, update, and retire their shared spells', async ({ browser }) => {
+	const page = await openContentPage(browser, 'content_editor');
 
 	const spellName = 'Lantern Step';
 	await fillSpellDraftForm(getSpellCreateForm(page), {
@@ -39,29 +39,53 @@ test.fixme('content editors can publish, update, and retire their shared spells'
 		ritual: false
 	});
 
-	await submitFormAction(
-		page,
-		getSpellCreateForm(page),
-		'/app/content?/publishSharedSpell&e2eRole=content_editor'
-	);
+	await getSpellCreateForm(page).getByRole('button', { name: 'Publish shared spell' }).click();
 
 	await expect(page).toHaveURL(/publishedSharedSpell=Lantern%20Step/);
 	await expect(
 		page.getByText('Lantern Step was published to the shared homebrew catalog.')
 	).toBeVisible();
+	await expect(getManagedSpellCard(page, spellName)).toBeVisible();
 
-	await submitHiddenPost(page, '/app/content?/retireSharedSpell&e2eRole=content_editor', {
-		spellId: 'shared-spell-e2e-1'
+	await getManagedSpellCard(page, spellName).getByRole('link', { name: 'Edit' }).click();
+	await expect(page).toHaveURL(/editSharedSpell=shared-spell-e2e-1/);
+
+	const editForm = getSharedSpellEditForm(page);
+	const updatedSpellName = 'Lantern Step Redux';
+	await fillSpellDraftForm(editForm, {
+		name: updatedSpellName,
+		level: '3',
+		school: 'evocation',
+		castingTime: '1 reaction',
+		range: '60 feet',
+		components: 'V, S, M',
+		materials: 'A brass lantern wick',
+		duration: '1 minute',
+		classSlugsText: 'mago\nhechicero',
+		summary: 'Slip through a brighter wake of lantern light.',
+		description: 'You answer danger with a flash-step that leaves searing afterimages behind.',
+		concentration: true,
+		ritual: false
 	});
 
-	await expect(page).toHaveURL(/retiredSharedSpell=Lantern%20Step/);
+	await editForm.getByRole('button', { name: 'Save shared spell changes' }).click();
+
+	await expect(page).toHaveURL(/updatedSharedSpell=Lantern%20Step%20Redux/);
+	await expect(page.getByText('Lantern Step Redux was updated successfully.')).toBeVisible();
+
+	await getLifecycleControls(page).getByRole('button', { name: 'Retire from shared catalog' }).click();
+
+	await expect(page).toHaveURL(/retiredSharedSpell=Lantern%20Step%20Redux/);
 	await expect(
-		page.getByText('Lantern Step was retired from the shared catalog.')
+		page.getByText('Lantern Step Redux was retired from the shared catalog.')
 	).toBeVisible();
+	await expect(getManagedSpellCard(page, updatedSpellName)).toHaveCount(0);
+
+	await page.context().close();
 });
 
-test.fixme('admins can publish and permanently delete system-owned spells', async ({ page }) => {
-	await gotoContentPage(page, 'admin');
+test('admins can publish and permanently delete system-owned spells', async ({ browser }) => {
+	const page = await openContentPage(browser, 'admin');
 
 	const spellName = 'Solar Lattice';
 	await fillSpellDraftForm(getSpellCreateForm(page), {
@@ -80,34 +104,64 @@ test.fixme('admins can publish and permanently delete system-owned spells', asyn
 		ritual: false
 	});
 
-	await submitFormAction(
-		page,
-		getSpellCreateForm(page),
-		'/app/content?/publishSystemSpell&e2eRole=admin'
-	);
+	await getSpellCreateForm(page).getByRole('button', { name: 'Publish system spell' }).click();
 
 	await expect(page).toHaveURL(/publishedSystemSpell=Solar%20Lattice/);
 	await expect(page.getByText('Solar Lattice was published as system-owned content.')).toBeVisible();
+	await expect(getManagedSpellCard(page, spellName)).toBeVisible();
+	await expect(getManagedSpellCard(page, spellName).getByText('System')).toBeVisible();
 
-	await submitHiddenPost(page, '/app/content?/deleteSharedSpell&e2eRole=admin', {
-		spellId: 'shared-spell-e2e-1'
-	});
+	await getManagedSpellCard(page, spellName).getByRole('link', { name: 'Edit' }).click();
+	await expect(page).toHaveURL(/editSharedSpell=shared-spell-e2e-1/);
+
+	await getLifecycleControls(page).getByRole('button', { name: 'Delete permanently' }).click();
 
 	await expect(page).toHaveURL(/deletedSharedSpell=Solar%20Lattice/);
 	await expect(page.getByText('Solar Lattice was deleted from shared content.')).toBeVisible();
+	await expect(getManagedSpellCard(page, spellName)).toHaveCount(0);
+
+	await page.context().close();
 });
 
-async function gotoContentPage(page: Page, role: 'user' | 'content_editor' | 'admin') {
-	await page.goto('/app/content');
-	await page.evaluate((selectedRole) => {
-		document.cookie = `app-e2e-role=${selectedRole}; path=/`;
-	}, role);
+async function openContentPage(browser: Browser, role: 'user' | 'content_editor' | 'admin') {
+	const context = await browser.newContext({
+		baseURL: 'http://localhost:4173',
+		javaScriptEnabled: false
+	});
+	const page = await context.newPage();
+
+	await page.goto(`/api/test/role?role=${role}`);
 	await page.goto('/app/content');
 	await expect(page).toHaveURL(/\/app\/content$/);
+
+	return page;
 }
 
 function getSpellCreateForm(page: Page): Locator {
 	return page.locator('form').filter({ has: page.getByRole('button', { name: 'Create private spell' }) });
+}
+
+function getSharedSpellEditForm(page: Page): Locator {
+	return page.locator('form').filter({ has: page.getByRole('button', { name: 'Save shared spell changes' }) });
+}
+
+function getManagedSpellCard(page: Page, spellName: string): Locator {
+	return getSharedSpellMaintenanceSection(page)
+		.locator('article')
+		.filter({ has: page.getByRole('heading', { name: spellName }) });
+}
+
+function getLifecycleControls(page: Page): Locator {
+	return getSharedSpellMaintenanceSection(page)
+		.locator('div')
+		.filter({ has: page.getByText('Lifecycle controls') })
+		.filter({ has: page.getByRole('button', { name: 'Retire from shared catalog' }) });
+}
+
+function getSharedSpellMaintenanceSection(page: Page): Locator {
+	return page
+		.locator('section')
+		.filter({ has: page.getByRole('heading', { name: 'Review trusted shared spells' }) });
 }
 
 async function fillSpellDraftForm(
@@ -166,43 +220,4 @@ async function fillSpellDraftForm(
 	} else {
 		await form.getByLabel('Can be cast as a ritual').uncheck();
 	}
-}
-
-async function submitFormAction(page: Page, form: Locator, action: string) {
-	await Promise.all([
-		page.waitForURL(/\/app\/content\?/),
-		form.evaluate((element, targetAction) => {
-			const submitButton = document.createElement('button');
-			submitButton.type = 'submit';
-			submitButton.hidden = true;
-			submitButton.setAttribute('formaction', targetAction as string);
-			element.appendChild(submitButton);
-			submitButton.click();
-		}, action)
-	]);
-}
-
-async function submitHiddenPost(page: Page, action: string, fields: Record<string, string>) {
-	await Promise.all([
-		page.waitForURL(/\/app\/content\?/),
-		page.evaluate(
-			({ targetAction, targetFields }) => {
-				const form = document.createElement('form');
-				form.method = 'POST';
-				form.action = targetAction;
-
-				for (const [name, value] of Object.entries(targetFields)) {
-					const input = document.createElement('input');
-					input.type = 'hidden';
-					input.name = name;
-					input.value = value;
-					form.appendChild(input);
-				}
-
-				document.body.appendChild(form);
-				form.submit();
-			},
-			{ targetAction: action, targetFields: fields }
-		)
-	]);
 }

@@ -23,7 +23,8 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 	cookies.set('app-e2e-role', role, {
 		httpOnly: false,
 		path: '/',
-		sameSite: 'lax'
+		sameSite: 'lax',
+		secure: false
 	});
 
 	return json({ ok: true, role });
@@ -41,7 +42,8 @@ export const POST: RequestHandler = async ({ cookies, request }) => {
 	cookies.set('app-e2e-role', role, {
 		httpOnly: false,
 		path: '/',
-		sameSite: 'lax'
+		sameSite: 'lax',
+		secure: false
 	});
 
 	return json({ ok: true, role });
