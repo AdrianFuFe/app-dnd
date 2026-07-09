@@ -44,6 +44,8 @@ In that case, it should still name the next recommended block.
     - `pnpm test:unit run` passes with targeted green coverage for content permissions and derivation
     - `pnpm validate:content` passes with 14 JSON files validated and 0 issues
     - `pnpm test:e2e -- tests/characters.e2e.ts` was last confirmed green on 2026-07-07 with 4 tests
+- verified on 2026-07-09:
+    - `pnpm test:e2e -- tests/content.e2e.ts` passes with 5 tests covering privileged feat and spell browser workflows
 - completed foundations reflected in the repo:
     - `S1 - Auth Guard For /app`
     - `S2 - Logout Flow`
@@ -81,9 +83,10 @@ In that case, it should still name the next recommended block.
     - trusted editor/admin users can now also review and update shared homebrew spells from `/app/content`
     - trusted editor/admin users can now also retire or permanently delete maintained shared feats from `/app/content`
     - trusted editor/admin users can now also retire or permanently delete maintained shared spells from `/app/content`
+    - `/app/content` browser coverage now exercises role-sensitive feat and spell publish, maintain, retire, and delete flows in the E2E mock runtime
 - implemented but still intentionally shallow:
     - real character CRUD exists
-    - the shared catalog is browseable and now has guarded create/update/retire/delete workflows for both feats and spells, but `/app/content` still lacks browser-level E2E coverage for privileged content workflows
+    - the shared catalog is browseable and now has guarded create/update/retire/delete workflows for both feats and spells, but browser coverage still focuses on happy-path privileged flows instead of validation and rejection cases
     - permissions exist as schema, RLS, server helpers, operator scripts, and a first visible content surface, not as a full admin/editor product surface
 - current project point:
   - the MVP app shell and first character workflow are implemented and E2E-stable
@@ -93,10 +96,10 @@ In that case, it should still name the next recommended block.
   - the first private content workflows now exist for both feats and spells
   - trusted editor/admin users can now publish bounded shared and system homebrew entries for both feats and spells
   - trusted editor/admin users can now also review, update, retire, and delete maintained shared spells
-  - privileged content workflows are implemented server-side and in the UI, but only character workflows currently have browser E2E coverage
-  - the highest-value missing confidence slice is browser-level coverage for `/app/content`, especially role-sensitive spell lifecycle actions
+  - privileged content workflows are now covered in the browser for the primary feat and spell lifecycle paths
+  - the highest-value nearby confidence slice is browser-level coverage for rejected content submissions and validation feedback on `/app/content`
 - next recommended block:
-  - `S29 - Privileged Content E2E Coverage`, because `/app/content` now has role-sensitive spell publish/maintain/lifecycle flows but no browser regression coverage yet
+  - `S30 - Content Validation E2E Guardrails`, because `/app/content` now has happy-path browser coverage but still lacks regression protection for invalid privileged submissions and server-returned form errors
 
 ## Session Blocks
 
@@ -708,10 +711,32 @@ In that case, it should still name the next recommended block.
     - at least one trusted-role shared spell publish and lifecycle workflow is covered in the browser
     - the test harness resets role state between tests so the suite remains deterministic
 
+### S30 - Content Validation E2E Guardrails
+
+- objective: add focused browser coverage for invalid `/app/content` submissions and rejected privileged actions
+- read context:
+    - `docs/context/20_ARCHITECTURE_AND_STACK.md`
+    - `docs/context/30_CONTENT_AND_PERMISSIONS.md`
+    - `docs/context/40_AUTH_AND_DATA.md`
+    - `docs/context/50_WORKFLOW_RULES.md`
+    - `docs/11-admin-and-test-user-workflow.md`
+- likely files:
+    - `tests/content.e2e.ts`
+    - `tests/e2e/...`
+    - `src/routes/app/content/+page.server.ts`
+    - `src/lib/server/e2e/mock-app.ts`
+- minimum validation:
+    - `pnpm check`
+    - `pnpm test:e2e -- tests/content.e2e.ts`
+- closure criterion:
+    - invalid feat or spell publish attempts render stable field-level feedback in the browser
+    - at least one privileged browser test confirms the page stays on the form when validation fails
+    - the coverage remains deterministic across role resets in E2E mode
+
 ## Notes
 
 - this plan is intentionally session-oriented, not milestone-oriented
 - each block should fit comfortably in one focused chat
 - if a block grows during implementation, split it rather than stretching the session
 - recommended implementation order from the current project state:
-    - `S29 - Privileged Content E2E Coverage`
+    - `S30 - Content Validation E2E Guardrails`

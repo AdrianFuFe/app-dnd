@@ -10,12 +10,99 @@ test.beforeEach(async ({ page, request }) => {
 test('user role keeps privileged content controls hidden', async ({ browser }) => {
 	const page = await openContentPage(browser, 'user');
 
+	await expect(page.getByRole('heading', { name: 'Create your own feat draft' })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Create private feat' })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Publish shared feat' })).toHaveCount(0);
+	await expect(page.getByRole('button', { name: 'Publish system feat' })).toHaveCount(0);
+	await expect(page.getByRole('heading', { name: 'Review trusted shared entries' })).toHaveCount(0);
+	await expect(page.getByRole('heading', { name: 'Update a managed shared feat' })).toHaveCount(0);
 	await expect(page.getByRole('heading', { name: 'Create your own spell draft' })).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Create private spell' })).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Publish shared spell' })).toHaveCount(0);
 	await expect(page.getByRole('button', { name: 'Publish system spell' })).toHaveCount(0);
 	await expect(page.getByRole('heading', { name: 'Review trusted shared spells' })).toHaveCount(0);
 	await expect(page.getByRole('heading', { name: 'Update a managed shared spell' })).toHaveCount(0);
+
+	await page.context().close();
+});
+
+test('content editors can publish, update, and retire their shared feats', async ({ browser }) => {
+	const page = await openContentPage(browser, 'content_editor');
+
+	const featName = 'Lantern Savant';
+	await fillFeatDraftForm(getFeatCreateForm(page), {
+		name: featName,
+		summary: 'Study the secret geometry of lantern light.',
+		description: 'You can read hidden angles in bright flames and step through flickering cover.',
+		prerequisitesText: 'level:4\nability:intelligence:13'
+	});
+
+	await getFeatCreateForm(page).getByRole('button', { name: 'Publish shared feat' }).click();
+
+	await expect(page).toHaveURL(/publishedSharedFeat=Lantern%20Savant/);
+	await expect(
+		page.getByText('Lantern Savant was published to the shared homebrew catalog.')
+	).toBeVisible();
+	await expect(getManagedFeatCard(page, featName)).toBeVisible();
+
+	await getManagedFeatCard(page, featName).getByRole('link', { name: 'Edit' }).click();
+	await expect(page).toHaveURL(/editSharedFeat=shared-feat-e2e-1/);
+
+	const editForm = getSharedFeatEditForm(page);
+	const updatedFeatName = 'Lantern Savant Redux';
+	await fillFeatDraftForm(editForm, {
+		name: updatedFeatName,
+		summary: 'Refine lantern geometry into a sharper battlefield sense.',
+		description:
+			'You trace radiant vectors through the air, exposing weak points and impossible paths.',
+		prerequisitesText: 'level:8\nability:intelligence:15\nspellcasting'
+	});
+
+	await editForm.getByRole('button', { name: 'Save shared feat changes' }).click();
+
+	await expect(page).toHaveURL(/updatedSharedFeat=Lantern%20Savant%20Redux/);
+	await expect(page.getByText('Lantern Savant Redux was updated successfully.')).toBeVisible();
+
+	await getFeatLifecycleControls(page)
+		.getByRole('button', { name: 'Retire from shared catalog' })
+		.click();
+
+	await expect(page).toHaveURL(/retiredSharedFeat=Lantern%20Savant%20Redux/);
+	await expect(
+		page.getByText('Lantern Savant Redux was retired from the shared catalog.')
+	).toBeVisible();
+	await expect(getManagedFeatCard(page, updatedFeatName)).toHaveCount(0);
+
+	await page.context().close();
+});
+
+test('admins can publish and permanently delete system-owned feats', async ({ browser }) => {
+	const page = await openContentPage(browser, 'admin');
+
+	const featName = 'Solar Bastion';
+	await fillFeatDraftForm(getFeatCreateForm(page), {
+		name: featName,
+		summary: 'Anchor yourself behind a disciplined lattice of sunlight.',
+		description:
+			'You can set your stance like a radiant fortress, turning momentum into a shield line.',
+		prerequisitesText: 'ability:wisdom:13\nproficiency:armor:heavy-armor'
+	});
+
+	await getFeatCreateForm(page).getByRole('button', { name: 'Publish system feat' }).click();
+
+	await expect(page).toHaveURL(/publishedSystemFeat=Solar%20Bastion/);
+	await expect(page.getByText('Solar Bastion was published as system-owned content.')).toBeVisible();
+	await expect(getManagedFeatCard(page, featName)).toBeVisible();
+	await expect(getManagedFeatCard(page, featName).getByText('System')).toBeVisible();
+
+	await getManagedFeatCard(page, featName).getByRole('link', { name: 'Edit' }).click();
+	await expect(page).toHaveURL(/editSharedFeat=shared-feat-e2e-1/);
+
+	await getFeatLifecycleControls(page).getByRole('button', { name: 'Delete permanently' }).click();
+
+	await expect(page).toHaveURL(/deletedSharedFeat=Solar%20Bastion/);
+	await expect(page.getByText('Solar Bastion was deleted from shared content.')).toBeVisible();
+	await expect(getManagedFeatCard(page, featName)).toHaveCount(0);
 
 	await page.context().close();
 });
@@ -141,14 +228,35 @@ function getSpellCreateForm(page: Page): Locator {
 	return page.locator('form').filter({ has: page.getByRole('button', { name: 'Create private spell' }) });
 }
 
+function getFeatCreateForm(page: Page): Locator {
+	return page.locator('form').filter({ has: page.getByRole('button', { name: 'Create private feat' }) });
+}
+
+function getSharedFeatEditForm(page: Page): Locator {
+	return page.locator('form').filter({ has: page.getByRole('button', { name: 'Save shared feat changes' }) });
+}
+
 function getSharedSpellEditForm(page: Page): Locator {
 	return page.locator('form').filter({ has: page.getByRole('button', { name: 'Save shared spell changes' }) });
+}
+
+function getManagedFeatCard(page: Page, featName: string): Locator {
+	return getSharedFeatMaintenanceSection(page)
+		.locator('article')
+		.filter({ has: page.getByRole('heading', { name: featName }) });
 }
 
 function getManagedSpellCard(page: Page, spellName: string): Locator {
 	return getSharedSpellMaintenanceSection(page)
 		.locator('article')
 		.filter({ has: page.getByRole('heading', { name: spellName }) });
+}
+
+function getFeatLifecycleControls(page: Page): Locator {
+	return getSharedFeatMaintenanceSection(page)
+		.locator('div')
+		.filter({ has: page.getByText('Lifecycle controls') })
+		.filter({ has: page.getByRole('button', { name: 'Retire from shared catalog' }) });
 }
 
 function getLifecycleControls(page: Page): Locator {
@@ -158,10 +266,31 @@ function getLifecycleControls(page: Page): Locator {
 		.filter({ has: page.getByRole('button', { name: 'Retire from shared catalog' }) });
 }
 
+function getSharedFeatMaintenanceSection(page: Page): Locator {
+	return page
+		.locator('section')
+		.filter({ has: page.getByRole('heading', { name: 'Review trusted shared entries' }) });
+}
+
 function getSharedSpellMaintenanceSection(page: Page): Locator {
 	return page
 		.locator('section')
 		.filter({ has: page.getByRole('heading', { name: 'Review trusted shared spells' }) });
+}
+
+async function fillFeatDraftForm(
+	form: Locator,
+	values: {
+		name: string;
+		summary: string;
+		description: string;
+		prerequisitesText: string;
+	}
+) {
+	await form.getByLabel('Feat name').fill(values.name);
+	await form.getByLabel('Summary').fill(values.summary);
+	await form.getByLabel('Description').fill(values.description);
+	await form.getByLabel('Prerequisites').fill(values.prerequisitesText);
 }
 
 async function fillSpellDraftForm(

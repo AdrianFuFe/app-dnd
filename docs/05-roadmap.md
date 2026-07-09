@@ -108,6 +108,7 @@ Status on 2026-07-09:
 
 - trusted roles can now retire or permanently delete maintained shared spells
 - the E2E mock runtime now has role-override groundwork for future privileged content browser coverage
+- privileged `/app/content` browser coverage now exercises trusted feat and spell publish, edit, retire, and delete workflows across `user`, `content_editor`, and `admin` roles
 
 ## Future Iterations
 
