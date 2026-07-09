@@ -19,6 +19,7 @@ declare global {
 	namespace App {
 		// interface Error {}
 		interface Locals {
+			e2eRole?: import('$lib/types/permissions/permissions').GlobalRole;
 			runtime: import('$lib/server/runtime/integration').RuntimeIntegrationStatus;
 			safeGetSession: () => Promise<SupabaseSession | null>;
 			session: SupabaseSession | null;

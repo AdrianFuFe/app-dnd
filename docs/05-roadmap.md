@@ -104,6 +104,11 @@ Status on 2026-07-08:
 - trusted roles can now retire or permanently delete maintained shared feats
 - shared spell publishing and maintenance now exist, but spell lifecycle controls are still missing
 
+Status on 2026-07-09:
+
+- trusted roles can now retire or permanently delete maintained shared spells
+- the E2E mock runtime now has role-override groundwork for future privileged content browser coverage
+
 ## Future Iterations
 
 - advanced permissions and sharing

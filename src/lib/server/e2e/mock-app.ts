@@ -2,6 +2,7 @@ import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { summarizeCatalogMechanics } from '$lib/server/repositories/catalog-mechanic-summary';
 import { listSharedRulesVocabularies } from '$lib/server/repositories/shared-rules-vocabularies';
 import type { Database } from '$lib/types/database/supabase';
+import type { GlobalRole } from '$lib/types/permissions/permissions';
 import type {
 	CharacterBackgroundOption,
 	CharacterClassOption,
@@ -418,6 +419,7 @@ const state = {
 	privateSpells: [] as E2EPrivateSpellRecord[],
 	sharedSpells: [] as E2ESharedSpellRecord[],
 	sharedFeats: [] as E2ESharedFeatRecord[],
+	currentGlobalRole: 'user' as GlobalRole,
 	nextCharacterSequence: 2,
 	nextPrivateFeatSequence: 1,
 	nextPrivateSpellSequence: 1,
@@ -446,7 +448,7 @@ export function createE2EMockSupabaseClient(): SupabaseClient<Database> {
 								return {
 									maybeSingle: async () => ({
 										data: {
-											global_role: 'user'
+											global_role: state.currentGlobalRole
 										},
 										error: null
 									})
@@ -491,10 +493,15 @@ export function resetE2EMockState() {
 	state.privateSpells = [];
 	state.sharedSpells = [];
 	state.sharedFeats = [];
+	state.currentGlobalRole = 'user';
 	state.nextCharacterSequence = 2;
 	state.nextPrivateFeatSequence = 1;
 	state.nextPrivateSpellSequence = 1;
 	state.nextUpdatedMinute = 0;
+}
+
+export function setE2EMockGlobalRole(role: GlobalRole) {
+	state.currentGlobalRole = role;
 }
 
 export function listE2ECatalog(): CharacterCreationCatalog {

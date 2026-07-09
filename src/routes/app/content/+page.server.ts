@@ -5,9 +5,11 @@ import {
 	listExpandedContentCatalog
 } from '$lib/server/repositories/catalog';
 import {
+	createAuthorizationContext,
 	getAuthorizationContext,
 	requirePermissionScopeAccess
 } from '$lib/server/permissions/authorization';
+import { isE2EMode } from '$lib/server/e2e/mode';
 import {
 	createPrivateFeat,
 	createSharedFeat,
@@ -40,8 +42,42 @@ import {
 	flattenPrivateSpellFormErrors,
 	privateSpellFormSchema
 } from '$lib/schemas/content/private-spell-form.schema';
+import { GLOBAL_ROLES, type AuthorizationContext, type GlobalRole } from '$lib/types/permissions/permissions';
 
-export const load: PageServerLoad = async ({ locals, url, parent }) => {
+function resolveContentE2ERoleOverride(input: {
+	cookies: { get: (name: string) => string | undefined };
+	url?: URL;
+}): GlobalRole | null {
+	if (!isE2EMode()) {
+		return null;
+	}
+
+	const requestedRole = input.url?.searchParams.get('e2eRole') ?? input.cookies.get('app-e2e-role');
+
+	if (!requestedRole || !GLOBAL_ROLES.includes(requestedRole as GlobalRole)) {
+		return null;
+	}
+
+	return requestedRole as GlobalRole;
+}
+
+async function getContentAuthorizationContext(input: {
+	cookies: { get: (name: string) => string | undefined };
+	supabase: SupabaseRequestClient;
+	url?: URL;
+	userId: string;
+}): Promise<AuthorizationContext> {
+	const e2eRole = resolveContentE2ERoleOverride({
+		cookies: input.cookies,
+		url: input.url
+	});
+
+	return e2eRole
+		? createAuthorizationContext(input.userId, e2eRole)
+		: await getAuthorizationContext(input.supabase, input.userId);
+}
+
+export const load: PageServerLoad = async ({ cookies, locals, url, parent }) => {
 	if (!locals.supabase) {
 		return {
 			createdPrivateFeatName: url.searchParams.get('createdPrivateFeat'),
@@ -110,17 +146,20 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 	}
 
 	const parentData = await parent();
+	const e2eRole = resolveContentE2ERoleOverride({ cookies, url });
+	const authorization =
+		e2eRole && parentData.session
+			? createAuthorizationContext(parentData.session.user.id, e2eRole)
+			: parentData.authorization;
 	const manageableSharedFeats =
-		parentData.authorization &&
-		(parentData.authorization.globalRole === 'content_editor' ||
-			parentData.authorization.globalRole === 'admin')
-			? await listManagedSharedFeats(locals.supabase, parentData.authorization)
+		authorization &&
+		(authorization.globalRole === 'content_editor' || authorization.globalRole === 'admin')
+			? await listManagedSharedFeats(locals.supabase, authorization)
 			: [];
 	const manageableSharedSpells =
-		parentData.authorization &&
-		(parentData.authorization.globalRole === 'content_editor' ||
-			parentData.authorization.globalRole === 'admin')
-			? await listManagedSharedSpells(locals.supabase, parentData.authorization)
+		authorization &&
+		(authorization.globalRole === 'content_editor' || authorization.globalRole === 'admin')
+			? await listManagedSharedSpells(locals.supabase, authorization)
 			: [];
 	const editSharedFeatId = url.searchParams.get('editSharedFeat');
 	const editableSharedFeat =
@@ -160,21 +199,17 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 			: createPrivateSpellFormValues(),
 		roleOperations: {
 			canPublishSharedFeats:
-				parentData.authorization?.globalRole === 'content_editor' ||
-				parentData.authorization?.globalRole === 'admin',
-			canPublishSystemFeats: parentData.authorization?.globalRole === 'admin',
+				authorization?.globalRole === 'content_editor' || authorization?.globalRole === 'admin',
+			canPublishSystemFeats: authorization?.globalRole === 'admin',
 			canPublishSharedSpells:
-				parentData.authorization?.globalRole === 'content_editor' ||
-				parentData.authorization?.globalRole === 'admin',
-			canPublishSystemSpells: parentData.authorization?.globalRole === 'admin',
+				authorization?.globalRole === 'content_editor' || authorization?.globalRole === 'admin',
+			canPublishSystemSpells: authorization?.globalRole === 'admin',
 			canMaintainSharedFeats:
-				parentData.authorization?.globalRole === 'content_editor' ||
-				parentData.authorization?.globalRole === 'admin',
-			canMaintainSystemFeats: parentData.authorization?.globalRole === 'admin',
+				authorization?.globalRole === 'content_editor' || authorization?.globalRole === 'admin',
+			canMaintainSystemFeats: authorization?.globalRole === 'admin',
 			canMaintainSharedSpells:
-				parentData.authorization?.globalRole === 'content_editor' ||
-				parentData.authorization?.globalRole === 'admin',
-			canMaintainSystemSpells: parentData.authorization?.globalRole === 'admin'
+				authorization?.globalRole === 'content_editor' || authorization?.globalRole === 'admin',
+			canMaintainSystemSpells: authorization?.globalRole === 'admin'
 		},
 		characterCatalog: await listCharacterCreationCatalog(locals.supabase),
 		manageableSharedFeats,
@@ -335,7 +370,7 @@ export const actions: Actions = {
 			});
 		}
 	},
-	publishSharedSpell: async ({ locals, request }) => {
+	publishSharedSpell: async ({ cookies, locals, request }) => {
 		if (!locals.session) {
 			throw redirect(302, '/auth/login?redirectTo=/app/content');
 		}
@@ -348,7 +383,11 @@ export const actions: Actions = {
 			});
 		}
 
-		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		const authorization = await getContentAuthorizationContext({
+			cookies,
+			supabase: locals.supabase,
+			userId: locals.session.user.id
+		});
 		requirePermissionScopeAccess(authorization, 'shared_content');
 
 		const parsedForm = await parsePrivateSpellCreateForm(request);
@@ -381,7 +420,7 @@ export const actions: Actions = {
 			});
 		}
 	},
-	publishSystemSpell: async ({ locals, request }) => {
+	publishSystemSpell: async ({ cookies, locals, request }) => {
 		if (!locals.session) {
 			throw redirect(302, '/auth/login?redirectTo=/app/content');
 		}
@@ -394,7 +433,11 @@ export const actions: Actions = {
 			});
 		}
 
-		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		const authorization = await getContentAuthorizationContext({
+			cookies,
+			supabase: locals.supabase,
+			userId: locals.session.user.id
+		});
 		requirePermissionScopeAccess(authorization, 'system_content');
 
 		const parsedForm = await parsePrivateSpellCreateForm(request);
@@ -427,7 +470,7 @@ export const actions: Actions = {
 			});
 		}
 	},
-	updateSharedSpell: async ({ locals, request }) => {
+	updateSharedSpell: async ({ cookies, locals, request }) => {
 		if (!locals.session) {
 			throw redirect(302, '/auth/login?redirectTo=/app/content');
 		}
@@ -441,7 +484,11 @@ export const actions: Actions = {
 			});
 		}
 
-		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		const authorization = await getContentAuthorizationContext({
+			cookies,
+			supabase: locals.supabase,
+			userId: locals.session.user.id
+		});
 		requirePermissionScopeAccess(authorization, 'shared_content');
 
 		const formData = await request.formData();
@@ -497,7 +544,7 @@ export const actions: Actions = {
 			});
 		}
 	},
-	retireSharedSpell: async ({ locals, request }) => {
+	retireSharedSpell: async ({ cookies, locals, request }) => {
 		if (!locals.session) {
 			throw redirect(302, '/auth/login?redirectTo=/app/content');
 		}
@@ -511,7 +558,11 @@ export const actions: Actions = {
 			});
 		}
 
-		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		const authorization = await getContentAuthorizationContext({
+			cookies,
+			supabase: locals.supabase,
+			userId: locals.session.user.id
+		});
 		requirePermissionScopeAccess(authorization, 'shared_content');
 
 		const formData = await request.formData();
@@ -549,7 +600,7 @@ export const actions: Actions = {
 			});
 		}
 	},
-	deleteSharedSpell: async ({ locals, request }) => {
+	deleteSharedSpell: async ({ cookies, locals, request }) => {
 		if (!locals.session) {
 			throw redirect(302, '/auth/login?redirectTo=/app/content');
 		}
@@ -563,7 +614,11 @@ export const actions: Actions = {
 			});
 		}
 
-		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		const authorization = await getContentAuthorizationContext({
+			cookies,
+			supabase: locals.supabase,
+			userId: locals.session.user.id
+		});
 		requirePermissionScopeAccess(authorization, 'shared_content');
 
 		const formData = await request.formData();

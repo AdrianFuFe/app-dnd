@@ -80,9 +80,10 @@ In that case, it should still name the next recommended block.
     - trusted editor/admin users can now review and update shared homebrew feats from `/app/content`
     - trusted editor/admin users can now also review and update shared homebrew spells from `/app/content`
     - trusted editor/admin users can now also retire or permanently delete maintained shared feats from `/app/content`
+    - trusted editor/admin users can now also retire or permanently delete maintained shared spells from `/app/content`
 - implemented but still intentionally shallow:
     - real character CRUD exists
-    - the shared catalog is browseable and now has guarded create/update/retire/delete workflows for feats plus create/derive/publish/update workflows for spells, but spell lifecycle controls do not exist yet
+    - the shared catalog is browseable and now has guarded create/update/retire/delete workflows for both feats and spells, but `/app/content` still lacks browser-level E2E coverage for privileged content workflows
     - permissions exist as schema, RLS, server helpers, operator scripts, and a first visible content surface, not as a full admin/editor product surface
 - current project point:
   - the MVP app shell and first character workflow are implemented and E2E-stable
@@ -91,11 +92,11 @@ In that case, it should still name the next recommended block.
   - runtime integration behavior is now documented in `README.md` and `docs/10-runtime-integration-check.md`, with request-time status checks in `src/lib/server/runtime/integration.ts`
   - the first private content workflows now exist for both feats and spells
   - trusted editor/admin users can now publish bounded shared and system homebrew entries for both feats and spells
-  - trusted editor/admin users can now also review and update maintained shared spells
-  - explicit lifecycle controls are still feat-only
-  - the highest-value missing content slice is extending trusted shared content lifecycle controls to spells now that private spell creation, SRD derivation, spell publishing, and spell maintenance are in place
+  - trusted editor/admin users can now also review, update, retire, and delete maintained shared spells
+  - privileged content workflows are implemented server-side and in the UI, but only character workflows currently have browser E2E coverage
+  - the highest-value missing confidence slice is browser-level coverage for `/app/content`, especially role-sensitive spell lifecycle actions
 - next recommended block:
-  - `S28 - Shared Spell Lifecycle Controls`, because trusted roles can now publish and update maintained shared spells but still cannot retire or delete bounded shared/system spell entries from the app
+  - `S29 - Privileged Content E2E Coverage`, because `/app/content` now has role-sensitive spell publish/maintain/lifecycle flows but no browser regression coverage yet
 
 ## Session Blocks
 
@@ -685,10 +686,32 @@ In that case, it should still name the next recommended block.
     - normal users remain unable to mutate shared or system-owned spell catalog content
     - the UI explains destructive scope clearly before applying the action
 
+### S29 - Privileged Content E2E Coverage
+
+- objective: add focused browser coverage for role-sensitive `/app/content` workflows
+- read context:
+    - `docs/context/20_ARCHITECTURE_AND_STACK.md`
+    - `docs/context/30_CONTENT_AND_PERMISSIONS.md`
+    - `docs/context/40_AUTH_AND_DATA.md`
+    - `docs/context/50_WORKFLOW_RULES.md`
+    - `docs/11-admin-and-test-user-workflow.md`
+- likely files:
+    - `tests/...`
+    - `tests/e2e/...`
+    - `src/routes/api/test/...`
+    - `src/lib/server/e2e/mock-app.ts`
+- minimum validation:
+    - `pnpm check`
+    - `pnpm test:e2e -- tests/content.e2e.ts`
+- closure criterion:
+    - Playwright can switch between `user`, `content_editor`, and `admin` behavior in E2E mode
+    - at least one trusted-role shared spell publish and lifecycle workflow is covered in the browser
+    - the test harness resets role state between tests so the suite remains deterministic
+
 ## Notes
 
 - this plan is intentionally session-oriented, not milestone-oriented
 - each block should fit comfortably in one focused chat
 - if a block grows during implementation, split it rather than stretching the session
 - recommended implementation order from the current project state:
-    - `S28 - Shared Spell Lifecycle Controls`
+    - `S29 - Privileged Content E2E Coverage`
