@@ -25,9 +25,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 				path: '/',
 				sameSite: 'lax'
 			});
-		} else {
-			setE2EMockGlobalRole('user');
-			event.locals.e2eRole = 'user';
 		}
 
 		const session = getE2EMockSession();

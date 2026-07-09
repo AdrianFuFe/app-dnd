@@ -63,14 +63,17 @@ function resolveContentE2ERoleOverride(input: {
 
 async function getContentAuthorizationContext(input: {
 	cookies: { get: (name: string) => string | undefined };
+	e2eRole?: GlobalRole;
 	supabase: SupabaseRequestClient;
 	url?: URL;
 	userId: string;
 }): Promise<AuthorizationContext> {
-	const e2eRole = resolveContentE2ERoleOverride({
-		cookies: input.cookies,
-		url: input.url
-	});
+	const e2eRole =
+		input.e2eRole ??
+		resolveContentE2ERoleOverride({
+			cookies: input.cookies,
+			url: input.url
+		});
 
 	return e2eRole
 		? createAuthorizationContext(input.userId, e2eRole)
@@ -146,7 +149,7 @@ export const load: PageServerLoad = async ({ cookies, locals, url, parent }) => 
 	}
 
 	const parentData = await parent();
-	const e2eRole = resolveContentE2ERoleOverride({ cookies, url });
+	const e2eRole = locals.e2eRole ?? resolveContentE2ERoleOverride({ cookies, url });
 	const authorization =
 		e2eRole && parentData.session
 			? createAuthorizationContext(parentData.session.user.id, e2eRole)
@@ -385,6 +388,7 @@ export const actions: Actions = {
 
 		const authorization = await getContentAuthorizationContext({
 			cookies,
+			e2eRole: locals.e2eRole,
 			supabase: locals.supabase,
 			userId: locals.session.user.id
 		});
@@ -435,6 +439,7 @@ export const actions: Actions = {
 
 		const authorization = await getContentAuthorizationContext({
 			cookies,
+			e2eRole: locals.e2eRole,
 			supabase: locals.supabase,
 			userId: locals.session.user.id
 		});
@@ -486,6 +491,7 @@ export const actions: Actions = {
 
 		const authorization = await getContentAuthorizationContext({
 			cookies,
+			e2eRole: locals.e2eRole,
 			supabase: locals.supabase,
 			userId: locals.session.user.id
 		});
@@ -560,6 +566,7 @@ export const actions: Actions = {
 
 		const authorization = await getContentAuthorizationContext({
 			cookies,
+			e2eRole: locals.e2eRole,
 			supabase: locals.supabase,
 			userId: locals.session.user.id
 		});
@@ -616,6 +623,7 @@ export const actions: Actions = {
 
 		const authorization = await getContentAuthorizationContext({
 			cookies,
+			e2eRole: locals.e2eRole,
 			supabase: locals.supabase,
 			userId: locals.session.user.id
 		});
