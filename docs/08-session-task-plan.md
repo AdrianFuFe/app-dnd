@@ -45,7 +45,7 @@ In that case, it should still name the next recommended block.
     - `pnpm validate:content` passes with 14 JSON files validated and 0 issues
     - `pnpm test:e2e -- tests/characters.e2e.ts` was last confirmed green on 2026-07-07 with 4 tests
 - verified on 2026-07-09:
-    - `pnpm test:e2e -- tests/content.e2e.ts` passes with 5 tests covering privileged feat and spell browser workflows
+    - `pnpm test:e2e -- tests/content.e2e.ts` passes with 7 tests covering privileged feat and spell browser workflows plus invalid publish guardrails
 - completed foundations reflected in the repo:
     - `S1 - Auth Guard For /app`
     - `S2 - Logout Flow`
@@ -84,9 +84,10 @@ In that case, it should still name the next recommended block.
     - trusted editor/admin users can now also retire or permanently delete maintained shared feats from `/app/content`
     - trusted editor/admin users can now also retire or permanently delete maintained shared spells from `/app/content`
     - `/app/content` browser coverage now exercises role-sensitive feat and spell publish, maintain, retire, and delete flows in the E2E mock runtime
+    - invalid privileged feat and spell publish attempts now stay on `/app/content` with stable field-level validation feedback in browser coverage
 - implemented but still intentionally shallow:
     - real character CRUD exists
-    - the shared catalog is browseable and now has guarded create/update/retire/delete workflows for both feats and spells, but browser coverage still focuses on happy-path privileged flows instead of validation and rejection cases
+    - the shared catalog is browseable and now has guarded create/update/retire/delete workflows for both feats and spells, but browser coverage still focuses on publish-path validation and does not yet cover invalid maintenance edits
     - permissions exist as schema, RLS, server helpers, operator scripts, and a first visible content surface, not as a full admin/editor product surface
 - current project point:
   - the MVP app shell and first character workflow are implemented and E2E-stable
@@ -97,9 +98,10 @@ In that case, it should still name the next recommended block.
   - trusted editor/admin users can now publish bounded shared and system homebrew entries for both feats and spells
   - trusted editor/admin users can now also review, update, retire, and delete maintained shared spells
   - privileged content workflows are now covered in the browser for the primary feat and spell lifecycle paths
-  - the highest-value nearby confidence slice is browser-level coverage for rejected content submissions and validation feedback on `/app/content`
+  - rejected privileged publish submissions now have browser regression coverage with stable field feedback
+  - the highest-value nearby confidence slice is browser-level coverage for invalid shared-content maintenance edits and editor-state recovery on `/app/content`
 - next recommended block:
-  - `S30 - Content Validation E2E Guardrails`, because `/app/content` now has happy-path browser coverage but still lacks regression protection for invalid privileged submissions and server-returned form errors
+  - `S31 - Shared Content Edit Validation E2E`, because `/app/content` now covers publish-path validation failures but still lacks browser regression coverage for invalid trusted-role maintenance edits
 
 ## Session Blocks
 
@@ -733,10 +735,32 @@ In that case, it should still name the next recommended block.
     - at least one privileged browser test confirms the page stays on the form when validation fails
     - the coverage remains deterministic across role resets in E2E mode
 
+### S31 - Shared Content Edit Validation E2E
+
+- objective: add focused browser coverage for invalid trusted-role edits in the shared feat and spell maintenance editors
+- read context:
+    - `docs/context/20_ARCHITECTURE_AND_STACK.md`
+    - `docs/context/30_CONTENT_AND_PERMISSIONS.md`
+    - `docs/context/40_AUTH_AND_DATA.md`
+    - `docs/context/50_WORKFLOW_RULES.md`
+    - `docs/11-admin-and-test-user-workflow.md`
+- likely files:
+    - `tests/content.e2e.ts`
+    - `src/routes/app/content/+page.server.ts`
+    - `src/routes/app/content/+page.svelte`
+    - `src/lib/server/e2e/mock-app.ts`
+- minimum validation:
+    - `pnpm check`
+    - `pnpm test:e2e -- tests/content.e2e.ts`
+- closure criterion:
+    - invalid shared feat or spell edits render stable field-level feedback in the maintenance editor
+    - the selected managed entry stays loaded after validation failure so the user can correct the draft in place
+    - the coverage remains deterministic across role resets in E2E mode
+
 ## Notes
 
 - this plan is intentionally session-oriented, not milestone-oriented
 - each block should fit comfortably in one focused chat
 - if a block grows during implementation, split it rather than stretching the session
 - recommended implementation order from the current project state:
-    - `S30 - Content Validation E2E Guardrails`
+    - `S31 - Shared Content Edit Validation E2E`

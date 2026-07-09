@@ -76,6 +76,31 @@ test('content editors can publish, update, and retire their shared feats', async
 	await page.context().close();
 });
 
+test('content editors keep shared feat publish failures on the form with field feedback', async ({ browser }) => {
+	const page = await openContentPage(browser, 'content_editor');
+
+	const featName = 'Faulty Lantern Logic';
+	const invalidPrerequisites = 'medium-armor proficiency';
+	const createForm = getFeatCreateForm(page);
+	await fillFeatDraftForm(createForm, {
+		name: featName,
+		summary: 'A draft with an intentionally invalid prerequisite format.',
+		description: 'This should fail validation before any shared feat is created.',
+		prerequisitesText: invalidPrerequisites
+	});
+
+	await createForm.getByRole('button', { name: 'Publish shared feat' }).click();
+
+	await expect(page).toHaveURL(/\/app\/content\?\/publishSharedFeat$/);
+	await expect(page.getByText('Please correct the highlighted private feat fields.')).toBeVisible();
+	await expect(page.getByText('Use prerequisite format')).toBeVisible();
+	await expect(createForm.getByLabel('Feat name')).toHaveValue(featName);
+	await expect(createForm.getByLabel('Prerequisites')).toHaveValue(invalidPrerequisites);
+	await expect(getManagedFeatCard(page, featName)).toHaveCount(0);
+
+	await page.context().close();
+});
+
 test('admins can publish and permanently delete system-owned feats', async ({ browser }) => {
 	const page = await openContentPage(browser, 'admin');
 
@@ -167,6 +192,40 @@ test('content editors can publish, update, and retire their shared spells', asyn
 		page.getByText('Lantern Step Redux was retired from the shared catalog.')
 	).toBeVisible();
 	await expect(getManagedSpellCard(page, updatedSpellName)).toHaveCount(0);
+
+	await page.context().close();
+});
+
+test('admins keep system spell publish failures on the form with field feedback', async ({ browser }) => {
+	const page = await openContentPage(browser, 'admin');
+
+	const spellName = 'Faulty Solar Lattice';
+	const invalidMaterials = 'A gold-thread sigil';
+	const createForm = getSpellCreateForm(page);
+	await fillSpellDraftForm(createForm, {
+		name: spellName,
+		level: '4',
+		school: 'abjuration',
+		castingTime: '1 action',
+		range: 'Self',
+		components: 'V, S',
+		materials: invalidMaterials,
+		duration: '10 minutes',
+		classSlugsText: 'clerigo\npaladin',
+		summary: 'A deliberately invalid system-publish draft.',
+		description: 'This should remain on the form because materials require component M.',
+		concentration: true,
+		ritual: false
+	});
+
+	await createForm.getByRole('button', { name: 'Publish system spell' }).click();
+
+	await expect(page).toHaveURL(/\/app\/content\?\/publishSystemSpell$/);
+	await expect(page.getByText('Please correct the highlighted private spell fields.')).toBeVisible();
+	await expect(page.getByText('only allowed when spell components include M')).toBeVisible();
+	await expect(createForm.getByLabel('Spell name')).toHaveValue(spellName);
+	await expect(createForm.locator('input[name="materials"]')).toHaveValue(invalidMaterials);
+	await expect(getManagedSpellCard(page, spellName)).toHaveCount(0);
 
 	await page.context().close();
 });
