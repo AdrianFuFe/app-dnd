@@ -179,6 +179,58 @@
 					]
 				}
 			]
+		},
+		{
+			"slug": "champion",
+			"name": "Champion",
+			"summary": "Arquetipo marcial enfocado en precision atletica, resistencia y excelencia fisica.",
+			"description": "Seed inicial derivado de reglas basicas oficiales. Esta entrada amplia la cobertura de subclases no lanzadoras de conjuros con rasgos marciales sencillos.",
+			"classSlug": "guerrero",
+			"visibility": "public",
+			"grantedSpellsByLevel": [],
+			"mechanics": [
+				{ "type": "feature", "featureId": "improved-critical" },
+				{ "type": "feature", "featureId": "remarkable-athlete" },
+				{ "type": "feature", "featureId": "additional-fighting-style" }
+			],
+			"features": [
+				{
+					"level": 3,
+					"featureId": "improved-critical",
+					"name": "Improved Critical",
+					"summary": "Tus golpes arma consiguen impactos criticos con mayor frecuencia.",
+					"mechanics": [
+						{
+							"type": "note",
+							"text": "Your weapon attacks score a critical hit on a roll of 19 or 20."
+						}
+					]
+				},
+				{
+					"level": 7,
+					"featureId": "remarkable-athlete",
+					"name": "Remarkable Athlete",
+					"summary": "Tu destreza fisica mejora saltos, empujes y pruebas atleticas no dominadas.",
+					"mechanics": [
+						{
+							"type": "note",
+							"text": "Add half your proficiency bonus to Strength, Dexterity, and Constitution checks you are not already proficient in, and increase your running long jump distance."
+						}
+					]
+				},
+				{
+					"level": 10,
+					"featureId": "additional-fighting-style",
+					"name": "Additional Fighting Style",
+					"summary": "Adoptas un segundo estilo de combate para reforzar tu especializacion marcial.",
+					"mechanics": [
+						{
+							"type": "note",
+							"text": "You can choose a second option from the Fighting Style class feature."
+						}
+					]
+				}
+			]
 		}
 	]
 }

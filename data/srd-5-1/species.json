@@ -14,7 +14,7 @@
 				{ "type": "fixed", "language": "comun" },
 				{ "type": "fixed", "language": "elfico" }
 			],
-			"subspeciesSlugs": ["high-elf"],
+			"subspeciesSlugs": ["high-elf", "wood-elf"],
 			"visibility": "public",
 			"mechanics": [
 				{ "type": "ability_bonus", "ability": "dexterity", "value": 2 },

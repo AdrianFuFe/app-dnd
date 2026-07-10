@@ -111,6 +111,12 @@ Status on 2026-07-09:
 - privileged `/app/content` browser coverage now exercises trusted feat and spell publish, edit, retire, and delete workflows across `user`, `content_editor`, and `admin` roles
 - invalid privileged feat and spell publish attempts now keep users on `/app/content` with stable field-level validation feedback in Playwright coverage
 
+Status on 2026-07-10:
+
+- invalid trusted-role shared feat and shared spell edits now keep the maintenance editor loaded with stable field-level feedback in Playwright coverage
+- SRD seed coverage now includes additional `subspecies` and `subclasses` entries for existing species/class consumers
+- the next nearby confidence slice is targeted browser coverage for dependent subspecies and subclass selection behavior in character forms
+
 ## Future Iterations
 
 - advanced permissions and sharing

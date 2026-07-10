@@ -32,7 +32,7 @@ SRD content is structured reusable catalog data and should remain distinct from 
 - user-private feats now have create and SRD-derivation workflows
 - shared and system feat publishing now has an initial role-aware UI surface
 - user-private spells now also have create, SRD-derivation, and guarded shared/system publishing workflows
-- shared-content editing remains the next missing role-aware workflow for spells
+- trusted editor/admin users can now review, update, retire, and delete maintained shared feats and spells
 
 ## Import Rule
 

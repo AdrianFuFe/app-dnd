@@ -101,6 +101,48 @@ test('content editors keep shared feat publish failures on the form with field f
 	await page.context().close();
 });
 
+test('content editors keep invalid shared feat edits loaded with field feedback', async ({ browser }) => {
+	const page = await openContentPage(browser, 'content_editor');
+
+	const featName = 'Lantern Savant';
+	await fillFeatDraftForm(getFeatCreateForm(page), {
+		name: featName,
+		summary: 'Study the secret geometry of lantern light.',
+		description: 'You can read hidden angles in bright flames and step through flickering cover.',
+		prerequisitesText: 'level:4\nability:intelligence:13'
+	});
+
+	await getFeatCreateForm(page).getByRole('button', { name: 'Publish shared feat' }).click();
+	await expect(page).toHaveURL(/publishedSharedFeat=Lantern%20Savant/);
+
+	const managedFeatCard = getManagedFeatCard(page, featName);
+	await managedFeatCard.getByRole('link', { name: 'Edit' }).click();
+	await expect(page).toHaveURL(/editSharedFeat=shared-feat-e2e-1/);
+
+	const invalidPrerequisites = 'medium-armor proficiency';
+	const editForm = getSharedFeatEditForm(page);
+	await fillFeatDraftForm(editForm, {
+		name: featName,
+		summary: 'Still trusted, but intentionally malformed for validation.',
+		description: 'The maintenance editor should keep this draft loaded after the failed save.',
+		prerequisitesText: invalidPrerequisites
+	});
+
+	await editForm.getByRole('button', { name: 'Save shared feat changes' }).click();
+
+	await expect(page).toHaveURL(/\/app\/content\?\/updateSharedFeat$/);
+	await expect(page.getByText('Please correct the highlighted private feat fields.')).toBeVisible();
+	await expect(page.getByText('Use prerequisite format')).toBeVisible();
+	await expect(editForm.locator('input[name="featId"]')).toHaveValue('shared-feat-e2e-1');
+	await expect(editForm.getByLabel('Feat name')).toHaveValue(featName);
+	await expect(editForm.getByLabel('Prerequisites')).toHaveValue(invalidPrerequisites);
+	await expect(getSharedFeatMaintenanceSection(page).getByRole('link', { name: 'Editing' })).toHaveCount(
+		1
+	);
+
+	await page.context().close();
+});
+
 test('admins can publish and permanently delete system-owned feats', async ({ browser }) => {
 	const page = await openContentPage(browser, 'admin');
 
@@ -192,6 +234,65 @@ test('content editors can publish, update, and retire their shared spells', asyn
 		page.getByText('Lantern Step Redux was retired from the shared catalog.')
 	).toBeVisible();
 	await expect(getManagedSpellCard(page, updatedSpellName)).toHaveCount(0);
+
+	await page.context().close();
+});
+
+test('content editors keep invalid shared spell edits loaded with field feedback', async ({ browser }) => {
+	const page = await openContentPage(browser, 'content_editor');
+
+	const spellName = 'Lantern Step';
+	await fillSpellDraftForm(getSpellCreateForm(page), {
+		name: spellName,
+		level: '2',
+		school: 'conjuration',
+		castingTime: '1 bonus action',
+		range: '30 feet',
+		components: 'V, S',
+		duration: 'Instantaneous',
+		classSlugsText: 'mago\nhechicero',
+		summary: 'Blink through a wash of lantern light.',
+		description: 'You teleport in a flare of warm light and leave a fading afterimage.',
+		concentration: false,
+		ritual: false
+	});
+
+	await getSpellCreateForm(page).getByRole('button', { name: 'Publish shared spell' }).click();
+	await expect(page).toHaveURL(/publishedSharedSpell=Lantern%20Step/);
+
+	const managedSpellCard = getManagedSpellCard(page, spellName);
+	await managedSpellCard.getByRole('link', { name: 'Edit' }).click();
+	await expect(page).toHaveURL(/editSharedSpell=shared-spell-e2e-1/);
+
+	const invalidMaterials = 'A brass lantern wick';
+	const editForm = getSharedSpellEditForm(page);
+	await fillSpellDraftForm(editForm, {
+		name: spellName,
+		level: '2',
+		school: 'conjuration',
+		castingTime: '1 bonus action',
+		range: '30 feet',
+		components: 'V, S',
+		materials: invalidMaterials,
+		duration: 'Instantaneous',
+		classSlugsText: 'mago\nhechicero',
+		summary: 'Still trusted, but intentionally malformed for validation.',
+		description: 'The maintenance editor should keep this draft loaded after the failed save.',
+		concentration: false,
+		ritual: false
+	});
+
+	await editForm.getByRole('button', { name: 'Save shared spell changes' }).click();
+
+	await expect(page).toHaveURL(/\/app\/content\?\/updateSharedSpell$/);
+	await expect(page.getByText('Please correct the highlighted private spell fields.')).toBeVisible();
+	await expect(page.getByText('only allowed when spell components include M')).toBeVisible();
+	await expect(editForm.locator('input[name="spellId"]')).toHaveValue('shared-spell-e2e-1');
+	await expect(editForm.getByLabel('Spell name')).toHaveValue(spellName);
+	await expect(editForm.getByLabel('Materials')).toHaveValue(invalidMaterials);
+	await expect(
+		getSharedSpellMaintenanceSection(page).getByRole('link', { name: 'Editing' })
+	).toHaveCount(1);
 
 	await page.context().close();
 });
@@ -312,16 +413,16 @@ function getManagedSpellCard(page: Page, spellName: string): Locator {
 }
 
 function getFeatLifecycleControls(page: Page): Locator {
-	return getSharedFeatMaintenanceSection(page)
+	return page
 		.locator('div')
-		.filter({ has: page.getByText('Lifecycle controls') })
+		.filter({ has: page.getByRole('heading', { name: 'Update a managed shared feat' }) })
 		.filter({ has: page.getByRole('button', { name: 'Retire from shared catalog' }) });
 }
 
 function getLifecycleControls(page: Page): Locator {
-	return getSharedSpellMaintenanceSection(page)
+	return page
 		.locator('div')
-		.filter({ has: page.getByText('Lifecycle controls') })
+		.filter({ has: page.getByRole('heading', { name: 'Update a managed shared spell' }) })
 		.filter({ has: page.getByRole('button', { name: 'Retire from shared catalog' }) });
 }
 

@@ -46,6 +46,8 @@ In that case, it should still name the next recommended block.
     - `pnpm test:e2e -- tests/characters.e2e.ts` was last confirmed green on 2026-07-07 with 4 tests
 - verified on 2026-07-09:
     - `pnpm test:e2e -- tests/content.e2e.ts` passes with 7 tests covering privileged feat and spell browser workflows plus invalid publish guardrails
+- verified on 2026-07-10:
+    - `pnpm test:e2e -- tests/content.e2e.ts` passes with 9 tests covering invalid shared-content maintenance edits in addition to the existing privileged content browser workflows
 - completed foundations reflected in the repo:
     - `S1 - Auth Guard For /app`
     - `S2 - Logout Flow`
@@ -71,6 +73,8 @@ In that case, it should still name the next recommended block.
     - `S23 - Shared Content Lifecycle Controls`
     - `S24 - Private Spell CRUD Foundation`
     - `S25 - SRD To Private Spell Derivation`
+    - `S31 - Shared Content Edit Validation E2E`
+    - `S32 - Catalog Seed Expansion For Subspecies And Subclasses`
 - effectively completed beyond the original status notes:
     - expanded catalog wiring now also covers `backgrounds`, `subspecies`, and `subclasses`
     - equipment catalog wiring now also covers character `attacks` and `inventory`, including linked `equipmentId` persistence, server-side normalization, enriched detail rendering, and targeted E2E coverage for the catalog selectors
@@ -85,9 +89,10 @@ In that case, it should still name the next recommended block.
     - trusted editor/admin users can now also retire or permanently delete maintained shared spells from `/app/content`
     - `/app/content` browser coverage now exercises role-sensitive feat and spell publish, maintain, retire, and delete flows in the E2E mock runtime
     - invalid privileged feat and spell publish attempts now stay on `/app/content` with stable field-level validation feedback in browser coverage
+    - invalid trusted-role shared feat and spell edit attempts now also stay in the maintenance editor with stable field feedback and preserved selected-entry state in browser coverage
 - implemented but still intentionally shallow:
     - real character CRUD exists
-    - the shared catalog is browseable and now has guarded create/update/retire/delete workflows for both feats and spells, but browser coverage still focuses on publish-path validation and does not yet cover invalid maintenance edits
+    - the shared catalog is browseable and now has guarded create/update/retire/delete workflows for both feats and spells, while the SRD seed files for some existing catalog families are still intentionally thin
     - permissions exist as schema, RLS, server helpers, operator scripts, and a first visible content surface, not as a full admin/editor product surface
 - current project point:
   - the MVP app shell and first character workflow are implemented and E2E-stable
@@ -99,9 +104,9 @@ In that case, it should still name the next recommended block.
   - trusted editor/admin users can now also review, update, retire, and delete maintained shared spells
   - privileged content workflows are now covered in the browser for the primary feat and spell lifecycle paths
   - rejected privileged publish submissions now have browser regression coverage with stable field feedback
-  - the highest-value nearby confidence slice is browser-level coverage for invalid shared-content maintenance edits and editor-state recovery on `/app/content`
+  - the highest-value nearby confidence slice is targeted browser coverage for dependent `subspecies` and `subclass` selection behavior that now has richer seed data behind it
 - next recommended block:
-  - `S31 - Shared Content Edit Validation E2E`, because `/app/content` now covers publish-path validation failures but still lacks browser regression coverage for invalid trusted-role maintenance edits
+  - `S33 - Character Catalog Dependent Selection E2E`, because the character forms already depend on `species -> subspecies` and `class -> subclass` relationships and the newly expanded seed data should now be proven in the browser
 
 ## Session Blocks
 
@@ -757,10 +762,49 @@ In that case, it should still name the next recommended block.
     - the selected managed entry stays loaded after validation failure so the user can correct the draft in place
     - the coverage remains deterministic across role resets in E2E mode
 
+### S32 - Catalog Seed Expansion For Subspecies And Subclasses
+
+- objective: expand the thin SRD catalog seed coverage for `subspecies` and `subclasses` without changing the existing runtime model
+- read context:
+    - `docs/context/20_ARCHITECTURE_AND_STACK.md`
+    - `docs/context/30_CONTENT_AND_PERMISSIONS.md`
+    - `docs/context/50_WORKFLOW_RULES.md`
+- likely files:
+    - `data/srd-5-1/species.json`
+    - `data/srd-5-1/subspecies.json`
+    - `data/srd-5-1/subclasses.json`
+    - validation tests or docs only if needed
+- minimum validation:
+    - `pnpm validate:content`
+    - targeted schema tests only if the data shape pushes existing validation boundaries
+- closure criterion:
+    - at least one additional valid subspecies is linked from an existing species entry
+    - at least one additional valid subclass is added for an already-modeled class
+    - the expanded files validate cleanly through the local content-validation workflow
+
+### S33 - Character Catalog Dependent Selection E2E
+
+- objective: add focused browser coverage for dependent `subspecies` and `subclass` behavior in the character create/edit forms
+- read context:
+    - `docs/context/20_ARCHITECTURE_AND_STACK.md`
+    - `docs/context/30_CONTENT_AND_PERMISSIONS.md`
+    - `docs/context/50_WORKFLOW_RULES.md`
+- likely files:
+    - `tests/characters.e2e.ts`
+    - `src/lib/components/forms/character-create-form.svelte`
+    - `src/lib/server/e2e/mock-app.ts`
+- minimum validation:
+    - `pnpm check`
+    - `pnpm test:e2e -- tests/characters.e2e.ts`
+- closure criterion:
+    - browser coverage proves subspecies options change with the selected species
+    - browser coverage proves subclass options change with the selected class
+    - at least one assertion exercises newly expanded catalog entries rather than only the original seed rows
+
 ## Notes
 
 - this plan is intentionally session-oriented, not milestone-oriented
 - each block should fit comfortably in one focused chat
 - if a block grows during implementation, split it rather than stretching the session
 - recommended implementation order from the current project state:
-    - `S31 - Shared Content Edit Validation E2E`
+    - `S33 - Character Catalog Dependent Selection E2E`

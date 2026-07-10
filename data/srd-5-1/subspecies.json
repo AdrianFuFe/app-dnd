@@ -19,6 +19,19 @@
 				{ "type": "choose_language", "count": 1 },
 				{ "type": "note", "text": "Gain one wizard cantrip of your choice." }
 			]
+		},
+		{
+			"slug": "wood-elf",
+			"name": "Wood Elf",
+			"summary": "Subespecie elfica agil y sigilosa, adaptada a territorios salvajes.",
+			"description": "Seed inicial para ampliar la cobertura del catalogo species-subspecies con una variante orientada a movilidad y exploracion.",
+			"speciesSlug": "elfo",
+			"visibility": "public",
+			"mechanics": [
+				{ "type": "ability_bonus", "ability": "wisdom", "value": 1 },
+				{ "type": "speed", "value": 35 },
+				{ "type": "note", "text": "You can attempt to hide even when you are only lightly obscured by foliage, heavy rain, falling snow, mist, and other natural phenomena." }
+			]
 		}
 	]
 }
