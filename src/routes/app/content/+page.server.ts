@@ -703,7 +703,7 @@ export const actions: Actions = {
 			});
 		}
 	},
-	updateSharedFeat: async ({ locals, request }) => {
+	updateSharedFeat: async ({ cookies, locals, request }) => {
 		if (!locals.session) {
 			throw redirect(302, '/auth/login?redirectTo=/app/content');
 		}
@@ -717,10 +717,12 @@ export const actions: Actions = {
 			});
 		}
 
-		const authorization = await getAuthorizationContext(
-			locals.supabase,
-			locals.session.user.id
-		);
+		const authorization = await getContentAuthorizationContext({
+			cookies,
+			e2eRole: locals.e2eRole,
+			supabase: locals.supabase,
+			userId: locals.session.user.id
+		});
 		requirePermissionScopeAccess(authorization, 'shared_content');
 
 		const formData = await request.formData();
@@ -783,7 +785,7 @@ export const actions: Actions = {
 			});
 		}
 	},
-	retireSharedFeat: async ({ locals, request }) => {
+	retireSharedFeat: async ({ cookies, locals, request }) => {
 		if (!locals.session) {
 			throw redirect(302, '/auth/login?redirectTo=/app/content');
 		}
@@ -797,10 +799,12 @@ export const actions: Actions = {
 			});
 		}
 
-		const authorization = await getAuthorizationContext(
-			locals.supabase,
-			locals.session.user.id
-		);
+		const authorization = await getContentAuthorizationContext({
+			cookies,
+			e2eRole: locals.e2eRole,
+			supabase: locals.supabase,
+			userId: locals.session.user.id
+		});
 		requirePermissionScopeAccess(authorization, 'shared_content');
 
 		const formData = await request.formData();
@@ -845,7 +849,7 @@ export const actions: Actions = {
 			});
 		}
 	},
-	deleteSharedFeat: async ({ locals, request }) => {
+	deleteSharedFeat: async ({ cookies, locals, request }) => {
 		if (!locals.session) {
 			throw redirect(302, '/auth/login?redirectTo=/app/content');
 		}
@@ -859,10 +863,12 @@ export const actions: Actions = {
 			});
 		}
 
-		const authorization = await getAuthorizationContext(
-			locals.supabase,
-			locals.session.user.id
-		);
+		const authorization = await getContentAuthorizationContext({
+			cookies,
+			e2eRole: locals.e2eRole,
+			supabase: locals.supabase,
+			userId: locals.session.user.id
+		});
 		requirePermissionScopeAccess(authorization, 'shared_content');
 
 		const formData = await request.formData();
@@ -961,7 +967,7 @@ export const actions: Actions = {
 			});
 		}
 	},
-	publishSharedFeat: async ({ locals, request }) => {
+	publishSharedFeat: async ({ cookies, locals, request }) => {
 		if (!locals.session) {
 			throw redirect(302, '/auth/login?redirectTo=/app/content');
 		}
@@ -974,10 +980,12 @@ export const actions: Actions = {
 			});
 		}
 
-		const authorization = await getAuthorizationContext(
-			locals.supabase,
-			locals.session.user.id
-		);
+		const authorization = await getContentAuthorizationContext({
+			cookies,
+			e2eRole: locals.e2eRole,
+			supabase: locals.supabase,
+			userId: locals.session.user.id
+		});
 		requirePermissionScopeAccess(authorization, 'shared_content');
 
 		const parsedForm = await parsePrivateFeatCreateForm(request);
@@ -1010,7 +1018,7 @@ export const actions: Actions = {
 			});
 		}
 	},
-	publishSystemFeat: async ({ locals, request }) => {
+	publishSystemFeat: async ({ cookies, locals, request }) => {
 		if (!locals.session) {
 			throw redirect(302, '/auth/login?redirectTo=/app/content');
 		}
@@ -1023,10 +1031,12 @@ export const actions: Actions = {
 			});
 		}
 
-		const authorization = await getAuthorizationContext(
-			locals.supabase,
-			locals.session.user.id
-		);
+		const authorization = await getContentAuthorizationContext({
+			cookies,
+			e2eRole: locals.e2eRole,
+			supabase: locals.supabase,
+			userId: locals.session.user.id
+		});
 		requirePermissionScopeAccess(authorization, 'system_content');
 
 		const parsedForm = await parsePrivateFeatCreateForm(request);
