@@ -48,6 +48,11 @@ In that case, it should still name the next recommended block.
     - `pnpm test:e2e -- tests/content.e2e.ts` passes with 7 tests covering privileged feat and spell browser workflows plus invalid publish guardrails
 - verified on 2026-07-10:
     - `pnpm test:e2e -- tests/content.e2e.ts` passes with 9 tests covering invalid shared-content maintenance edits in addition to the existing privileged content browser workflows
+- verified again on 2026-07-10 during planning review:
+    - `pnpm check` passes
+    - `pnpm build` passes
+    - `pnpm lint` is currently red because Prettier formatting drift exists in multiple repo files
+    - `pnpm test` is currently red before E2E execution because `src/lib/schemas/content/content-template.schema.spec.ts` still expects the pre-expansion SRD fixture counts for `species`, `subspecies`, and `subclasses`
 - completed foundations reflected in the repo:
     - `S1 - Auth Guard For /app`
     - `S2 - Logout Flow`
@@ -105,8 +110,13 @@ In that case, it should still name the next recommended block.
   - privileged content workflows are now covered in the browser for the primary feat and spell lifecycle paths
   - rejected privileged publish submissions now have browser regression coverage with stable field feedback
   - the highest-value nearby confidence slice is targeted browser coverage for dependent `subspecies` and `subclass` selection behavior that now has richer seed data behind it
+  - the current repo is close to an internally testable MVP, but it is not yet at a fully green release-ready checkpoint because content-template expectations and formatting drift still need cleanup
+  - live Supabase runtime and deployment readiness are documented, but still need an explicit smoke-test pass against a real environment after the current quality gaps are closed
 - next recommended block:
-  - `S33 - Character Catalog Dependent Selection E2E`, because the character forms already depend on `species -> subspecies` and `class -> subclass` relationships and the newly expanded seed data should now be proven in the browser
+  - `S33 - Character Catalog Dependent Selection E2E`, because the character forms already depend on `species -> subspecies` and `class -> subclass` relationships, the newly expanded seed data should now be proven in the browser, and this is still the tightest next confidence slice from the previous implementation session
+- near-term follow-up after `S33`:
+  - `S34 - Catalog Fixture And Quality Gate Realignment`, to restore green unit expectations after the expanded SRD seed and to clear the current formatting drift
+  - `S35 - Live Supabase Smoke And Deploy Readiness`, to validate the app against a real Supabase project and close the remaining gap between "implemented MVP" and "operational MVP"
 
 ## Session Blocks
 
@@ -801,6 +811,53 @@ In that case, it should still name the next recommended block.
     - browser coverage proves subclass options change with the selected class
     - at least one assertion exercises newly expanded catalog entries rather than only the original seed rows
 
+### S34 - Catalog Fixture And Quality Gate Realignment
+
+- objective: restore the repository quality gates after the recent SRD seed expansion
+- read context:
+    - `docs/05-roadmap.md`
+    - `docs/context/20_ARCHITECTURE_AND_STACK.md`
+    - `docs/context/30_CONTENT_AND_PERMISSIONS.md`
+    - `docs/context/50_WORKFLOW_RULES.md`
+- likely files:
+    - `src/lib/schemas/content/content-template.schema.spec.ts`
+    - `data/srd-5-1/species.json`
+    - `data/srd-5-1/subspecies.json`
+    - `data/srd-5-1/subclasses.json`
+    - any repo files currently flagged by `pnpm lint`
+- minimum validation:
+    - `pnpm check`
+    - `pnpm test:unit run`
+    - `pnpm lint`
+- closure criterion:
+    - content-template expectations reflect the current expanded SRD fixture set
+    - `pnpm test:unit run` is green again
+    - formatting drift no longer keeps `pnpm lint` red
+
+### S35 - Live Supabase Smoke And Deploy Readiness
+
+- objective: prove that the MVP can run against a real Supabase environment and is ready for first hosted testing
+- read context:
+    - `docs/09-environment-setup.md`
+    - `docs/10-runtime-integration-check.md`
+    - `docs/11-admin-and-test-user-workflow.md`
+    - `docs/context/20_ARCHITECTURE_AND_STACK.md`
+    - `docs/context/40_AUTH_AND_DATA.md`
+    - `docs/context/50_WORKFLOW_RULES.md`
+- likely files:
+    - `README.md`
+    - `.env.example`
+    - `supabase/sql/...`
+    - hosting or adapter configuration if introduced
+- minimum validation:
+    - `pnpm check`
+    - `pnpm build`
+    - a documented live smoke-test pass against a real Supabase project
+- closure criterion:
+    - a developer can bootstrap the SQL and environment without guessing
+    - auth, `/app`, character CRUD, and `/app/content` core flows have been smoke-tested against live Supabase
+    - deployment prerequisites are explicit enough to host an internal test build without relying on the mock runtime
+
 ## Notes
 
 - this plan is intentionally session-oriented, not milestone-oriented
@@ -808,3 +865,5 @@ In that case, it should still name the next recommended block.
 - if a block grows during implementation, split it rather than stretching the session
 - recommended implementation order from the current project state:
     - `S33 - Character Catalog Dependent Selection E2E`
+    - `S34 - Catalog Fixture And Quality Gate Realignment`
+    - `S35 - Live Supabase Smoke And Deploy Readiness`
