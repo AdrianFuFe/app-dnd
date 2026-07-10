@@ -384,21 +384,19 @@
 	function handleSpeciesChange(event: Event) {
 		const nextSpeciesId = (event.currentTarget as HTMLSelectElement).value;
 
-		if (nextSpeciesId !== formValues.speciesId) {
-			formValues.subspeciesId = '';
-		}
-
-		formValues.speciesId = nextSpeciesId;
+		formValues =
+			nextSpeciesId !== formValues.speciesId
+				? { ...formValues, speciesId: nextSpeciesId, subspeciesId: '' }
+				: { ...formValues, speciesId: nextSpeciesId };
 	}
 
 	function handleClassChange(event: Event) {
 		const nextClassId = (event.currentTarget as HTMLSelectElement).value;
 
-		if (nextClassId !== formValues.classId) {
-			formValues.subclassId = '';
-		}
-
-		formValues.classId = nextClassId;
+		formValues =
+			nextClassId !== formValues.classId
+				? { ...formValues, classId: nextClassId, subclassId: '' }
+				: { ...formValues, classId: nextClassId };
 	}
 
 	function addInventoryItem() {
@@ -779,7 +777,9 @@
 	}
 
 	function sanitizeNoteItems(items: NoteFormItem[]): NoteFormItem[] {
-		return items.filter((item) => item.title.trim().length > 0 || item.content.trim().length > 0);
+		return items.filter(
+			(item) => item.title.trim().length > 0 || item.content.trim().length > 0
+		);
 	}
 
 	function serializeNoteItems(items: NoteFormItem[]) {
@@ -856,7 +856,7 @@
 		}
 	}
 
-	function syncStructuredFieldValues(event: SubmitEvent) {
+	function syncStructuredFieldValues() {
 		if (attackItemsField) {
 			attackItemsField.value = attackItemsFieldValue();
 		}
@@ -953,7 +953,10 @@
 					name="subspeciesId"
 					bind:value={formValues.subspeciesId}
 					onchange={(event) => {
-						formValues.subspeciesId = (event.currentTarget as HTMLSelectElement).value;
+						formValues = {
+							...formValues,
+							subspeciesId: (event.currentTarget as HTMLSelectElement).value
+						};
 					}}
 				>
 					<option value="">Select a subspecies</option>
@@ -1013,7 +1016,10 @@
 					name="subclassId"
 					bind:value={formValues.subclassId}
 					onchange={(event) => {
-						formValues.subclassId = (event.currentTarget as HTMLSelectElement).value;
+						formValues = {
+							...formValues,
+							subclassId: (event.currentTarget as HTMLSelectElement).value
+						};
 					}}
 				>
 					<option value="">Select a subclass</option>
@@ -2007,9 +2013,8 @@
 									value={item.content}
 									oninput={(event) =>
 										updateNoteItem(index, {
-											content: (
-												event.currentTarget as HTMLTextAreaElement
-											).value
+											content: (event.currentTarget as HTMLTextAreaElement)
+												.value
 										})}></textarea>
 							</label>
 						</div>

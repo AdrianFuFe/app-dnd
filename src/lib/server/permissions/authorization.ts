@@ -40,7 +40,10 @@ export function hasPermissionScopeAccess(
 ): boolean {
 	const policy = getPermissionScopePolicy(scope);
 
-	return hasCapability(context, policy.capability) && policy.allowedRoles.includes(context.globalRole);
+	return (
+		hasCapability(context, policy.capability) &&
+		policy.allowedRoles.includes(context.globalRole)
+	);
 }
 
 export async function getAuthorizationContext(

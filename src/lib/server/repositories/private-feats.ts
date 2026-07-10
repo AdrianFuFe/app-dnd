@@ -216,7 +216,9 @@ export async function derivePrivateFeatFromSharedCatalog(
 	await assertNoExistingPrivateFeatSlug(supabase, userId, sharedFeat.slug, privateSourceIds);
 
 	const sharedSourceCode =
-		findSourceCodeById(allSourceIds, sharedFeat.source_id) === 'srd-5-2' ? 'srd-5-2' : 'srd-5-1';
+		findSourceCodeById(allSourceIds, sharedFeat.source_id) === 'srd-5-2'
+			? 'srd-5-2'
+			: 'srd-5-1';
 	const insert: FeatInsert = {
 		owner_user_id: userId,
 		source_id: privateSourceIds.homebrew,
@@ -443,7 +445,10 @@ export async function retireManagedSharedFeat(
 	const feat = await loadManagedSharedFeatById(supabase, featId, sourceIds);
 	assertManagedSharedFeatAccess(authorization, feat, 'retire');
 
-	const { error } = await supabase.from('feats').update({ visibility: 'private' }).eq('id', feat.id);
+	const { error } = await supabase
+		.from('feats')
+		.update({ visibility: 'private' })
+		.eq('id', feat.id);
 
 	if (error) {
 		throw new Error(`Failed to retire shared feat ${feat.id}`);
@@ -523,7 +528,10 @@ async function loadContentSourceIds<TCode extends ContentSourceCode>(
 	supabase: SupabaseClient<Database>,
 	codes: readonly TCode[]
 ): Promise<Record<TCode, string>> {
-	const { data, error } = await supabase.from('content_sources').select('id, code').in('code', codes);
+	const { data, error } = await supabase
+		.from('content_sources')
+		.select('id, code')
+		.in('code', codes);
 
 	if (error || !data) {
 		throw new Error('Failed to resolve required content sources.');
@@ -621,9 +629,7 @@ async function assertNoExistingSharedFeatSlug(
 		.not('visibility', 'in', '(private,campaign)')
 		.limit(2);
 
-	const { data, error } = excludeFeatId
-		? await query.neq('id', excludeFeatId)
-		: await query;
+	const { data, error } = excludeFeatId ? await query.neq('id', excludeFeatId) : await query;
 
 	if (error) {
 		throw new Error(`Failed to check shared feat slug "${slug}"`);

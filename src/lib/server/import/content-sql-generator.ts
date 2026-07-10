@@ -200,7 +200,9 @@ export function generateSrdCatalogSeedSql(): string {
 	);
 	const classesFile = readJsonFile<ContentFile<CharacterClassItem>>('data/srd-5-1/classes.json');
 	const subclassesFile = readJsonFile<ContentFile<SubclassItem>>('data/srd-5-1/subclasses.json');
-	const backgroundsFile = readJsonFile<ContentFile<BackgroundItem>>('data/srd-5-1/backgrounds.json');
+	const backgroundsFile = readJsonFile<ContentFile<BackgroundItem>>(
+		'data/srd-5-1/backgrounds.json'
+	);
 	const spellsFile = readJsonFile<ContentFile<SpellItem>>('data/srd-5-1/spells.json');
 	const featsFile = readJsonFile<ContentFile<FeatItem>>('data/srd-5-1/feats.json');
 	const equipmentFile = readJsonFile<ContentFile<EquipmentItem>>('data/srd-5-1/equipment.json');

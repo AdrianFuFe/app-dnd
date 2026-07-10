@@ -18,7 +18,9 @@ function hasNonEmptyValue(value: string | undefined): boolean {
 }
 
 export function getRuntimeIntegrationStatus(): RuntimeIntegrationStatus {
-	const missingLiveEnv = LIVE_SUPABASE_ENV_KEYS.filter((key) => !hasNonEmptyValue(publicEnv[key]));
+	const missingLiveEnv = LIVE_SUPABASE_ENV_KEYS.filter(
+		(key) => !hasNonEmptyValue(publicEnv[key])
+	);
 	const mode: RuntimeMode = env.APP_E2E === 'true' ? 'e2e-mock' : 'live-supabase';
 
 	return {

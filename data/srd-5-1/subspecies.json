@@ -30,7 +30,10 @@
 			"mechanics": [
 				{ "type": "ability_bonus", "ability": "wisdom", "value": 1 },
 				{ "type": "speed", "value": 35 },
-				{ "type": "note", "text": "You can attempt to hide even when you are only lightly obscured by foliage, heavy rain, falling snow, mist, and other natural phenomena." }
+				{
+					"type": "note",
+					"text": "You can attempt to hide even when you are only lightly obscured by foliage, heavy rain, falling snow, mist, and other natural phenomena."
+				}
 			]
 		}
 	]

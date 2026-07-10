@@ -27,15 +27,23 @@ export function parseEmailAllowlist(value: string | undefined): string[] {
 		return [];
 	}
 
-	return [...new Set(value.split(',').map((entry) => normalizeEmail(entry)).filter(Boolean))];
+	return [
+		...new Set(
+			value
+				.split(',')
+				.map((entry) => normalizeEmail(entry))
+				.filter(Boolean)
+		)
+	];
 }
 
-export function parseAdminWorkflowEnv(
-	env: NodeJS.ProcessEnv = process.env
-): AdminWorkflowEnv {
+export function parseAdminWorkflowEnv(env: NodeJS.ProcessEnv = process.env): AdminWorkflowEnv {
 	return {
 		adminAllowlistEmails: parseEmailAllowlist(env.ADMIN_ALLOWLIST_EMAILS),
-		serviceRoleKey: requireNonEmptyValue(env.SUPABASE_SERVICE_ROLE_KEY, 'SUPABASE_SERVICE_ROLE_KEY'),
+		serviceRoleKey: requireNonEmptyValue(
+			env.SUPABASE_SERVICE_ROLE_KEY,
+			'SUPABASE_SERVICE_ROLE_KEY'
+		),
 		supabaseAnonKey: env.PUBLIC_SUPABASE_ANON_KEY?.trim() || undefined,
 		supabaseUrl: requireNonEmptyValue(env.PUBLIC_SUPABASE_URL, 'PUBLIC_SUPABASE_URL')
 	};
@@ -93,7 +101,10 @@ export function buildProfileUpsert(input: {
 }
 
 export async function findUserByEmail(
-	listUsersPage: (page: number, perPage: number) => Promise<{
+	listUsersPage: (
+		page: number,
+		perPage: number
+	) => Promise<{
 		lastPage?: number | null;
 		users: Pick<User, 'email' | 'id'>[];
 	}>,
@@ -105,7 +116,9 @@ export async function findUserByEmail(
 
 	while (true) {
 		const result = await listUsersPage(page, perPage);
-		const match = result.users.find((user) => normalizeEmail(user.email ?? '') === normalizedEmail);
+		const match = result.users.find(
+			(user) => normalizeEmail(user.email ?? '') === normalizedEmail
+		);
 
 		if (match) {
 			return match;

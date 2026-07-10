@@ -174,7 +174,14 @@
 					"type": "choose_proficiency",
 					"proficiencyType": "skill",
 					"count": 2,
-					"options": ["arcana", "history", "insight", "investigation", "medicine", "religion"]
+					"options": [
+						"arcana",
+						"history",
+						"insight",
+						"investigation",
+						"medicine",
+						"religion"
+					]
 				},
 				{ "type": "spellcasting", "ability": "intelligence" },
 				{ "type": "feature", "featureId": "spellcasting" },

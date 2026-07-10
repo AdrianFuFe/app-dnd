@@ -81,7 +81,7 @@ describe('content templates', () => {
 
 		expect(parsed.items).toHaveLength(2);
 		expect(elf.languages[0]).toEqual({ type: 'fixed', language: 'comun' });
-		expect(elf.subspeciesSlugs).toEqual(['high-elf']);
+		expect(elf.subspeciesSlugs).toEqual(['high-elf', 'wood-elf']);
 		expect(human.mechanics).toContainEqual({ type: 'choose_language', count: 1 });
 	});
 
@@ -90,9 +90,11 @@ describe('content templates', () => {
 
 		const parsed = subspeciesFileSchema.parse(file);
 		const highElf = expectItemBySlug(parsed.items, 'high-elf');
+		const woodElf = expectItemBySlug(parsed.items, 'wood-elf');
 
-		expect(parsed.items).toHaveLength(1);
+		expect(parsed.items).toHaveLength(2);
 		expect(highElf.speciesSlug).toBe('elfo');
+		expect(woodElf.speciesSlug).toBe('elfo');
 	});
 
 	it('validates the SRD classes catalog file', () => {
@@ -189,8 +191,9 @@ describe('content templates', () => {
 		const knowledgeDomain = expectItemBySlug(parsed.items, 'knowledge-domain');
 		const lifeDomain = expectItemBySlug(parsed.items, 'life-domain');
 		const schoolOfEvocation = expectItemBySlug(parsed.items, 'school-of-evocation');
+		const champion = expectItemBySlug(parsed.items, 'champion');
 
-		expect(parsed.items).toHaveLength(3);
+		expect(parsed.items).toHaveLength(4);
 		expect(knowledgeDomain.grantedSpellsByLevel[0]?.spellSlugs).toEqual([
 			'command',
 			'identify'
@@ -202,10 +205,7 @@ describe('content templates', () => {
 		});
 		expect(lifeDomain.classSlug).toBe('clerigo');
 		expect(lifeDomain.grantedSpellsByLevel).toHaveLength(5);
-		expect(lifeDomain.grantedSpellsByLevel[0]?.spellSlugs).toEqual([
-			'bless',
-			'cure-wounds'
-		]);
+		expect(lifeDomain.grantedSpellsByLevel[0]?.spellSlugs).toEqual(['bless', 'cure-wounds']);
 		expect(lifeDomain.mechanics).toContainEqual({
 			type: 'spell_grant',
 			spellId: 'raise-dead'
@@ -213,6 +213,10 @@ describe('content templates', () => {
 		expect(schoolOfEvocation.classSlug).toBe('mago');
 		expect(schoolOfEvocation.features).toContainEqual(
 			expect.objectContaining({ featureId: 'sculpt-spells', level: 2 })
+		);
+		expect(champion.classSlug).toBe('guerrero');
+		expect(champion.features).toContainEqual(
+			expect.objectContaining({ featureId: 'improved-critical', level: 3 })
 		);
 	});
 });
@@ -641,7 +645,11 @@ describe('content schema examples', () => {
 					equipment: [
 						{ type: 'item', id: 'travelers-clothes' },
 						{ type: 'item', id: 'artisan-tools' },
-						{ type: 'choice', options: ['belt-pouch', 'satchel'], note: 'Contains 5 gp.' }
+						{
+							type: 'choice',
+							options: ['belt-pouch', 'satchel'],
+							note: 'Contains 5 gp.'
+						}
 					]
 				}
 			]

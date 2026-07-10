@@ -291,11 +291,14 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 				contentType: validationResult.data.contentType,
 				itemCount: validationResult.data.items.length
 			});
-			const existingItems = validItemsByContentType.get(validationResult.data.contentType) ?? [];
-			const nextItems = (validationResult.data.items as CatalogReferenceItem[]).map((item) => ({
-				filePath,
-				item
-			}));
+			const existingItems =
+				validItemsByContentType.get(validationResult.data.contentType) ?? [];
+			const nextItems = (validationResult.data.items as CatalogReferenceItem[]).map(
+				(item) => ({
+					filePath,
+					item
+				})
+			);
 			validItemsByContentType.set(validationResult.data.contentType, [
 				...existingItems,
 				...nextItems
@@ -388,8 +391,10 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 			mechanics
 				.filter(
 					(mechanic) =>
-						mechanic.type === 'proficiency' && mechanic.proficiencyType === 'armor' && mechanic.value
-					)
+						mechanic.type === 'proficiency' &&
+						mechanic.proficiencyType === 'armor' &&
+						mechanic.value
+				)
 				.map((mechanic) => mechanic.value as string)
 		);
 		const weaponProficienciesFromMechanics = toSortedUnique(
@@ -399,7 +404,7 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 						mechanic.type === 'proficiency' &&
 						mechanic.proficiencyType === 'weapon' &&
 						mechanic.value
-					)
+				)
 				.map((mechanic) => mechanic.value as string)
 		);
 		const savingThrowProficienciesFromMechanics = toSortedUnique(
@@ -409,7 +414,7 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 						mechanic.type === 'proficiency' &&
 						mechanic.proficiencyType === 'saving_throw' &&
 						mechanic.value
-					)
+				)
 				.map((mechanic) => mechanic.value as string)
 		);
 		const skillChoiceMechanic = mechanics.find(
@@ -515,7 +520,10 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 		const subclassProficienciesFromMechanics = toSortedUnique(
 			mechanics
 				.filter(
-					(mechanic) => mechanic.type === 'proficiency' && mechanic.proficiencyType && mechanic.value
+					(mechanic) =>
+						mechanic.type === 'proficiency' &&
+						mechanic.proficiencyType &&
+						mechanic.value
 				)
 				.map((mechanic) => `${mechanic.proficiencyType}:${mechanic.value}`)
 		);
@@ -526,7 +534,10 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 				)
 				.flatMap((feature) => feature.mechanics ?? [])
 				.filter(
-					(mechanic) => mechanic.type === 'proficiency' && mechanic.proficiencyType && mechanic.value
+					(mechanic) =>
+						mechanic.type === 'proficiency' &&
+						mechanic.proficiencyType &&
+						mechanic.value
 				)
 				.map((mechanic) => `${mechanic.proficiencyType}:${mechanic.value}`)
 		);
@@ -647,12 +658,11 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 					message: `Unknown feat slug "${slug}" referenced by feat prerequisite in "${feat.slug}"`
 				});
 			}
-
 		}
 	}
 
 	for (const [contentType, items] of validItemsByContentType.entries()) {
-		for (const { filePath, item } of items) {
+		for (const { item } of items) {
 			for (const mechanic of item.mechanics ?? []) {
 				if (
 					mechanic.type === 'spell_grant' &&
@@ -691,14 +701,20 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 		const hasFixedLanguageMechanics = fixedLanguagesFromMechanics.length > 0;
 		const hasChooseLanguageMechanics = chooseLanguageCountFromMechanics > 0;
 
-		if (hasFixedLanguageMechanics && !arraysEqual(fixedLanguages, fixedLanguagesFromMechanics)) {
+		if (
+			hasFixedLanguageMechanics &&
+			!arraysEqual(fixedLanguages, fixedLanguagesFromMechanics)
+		) {
 			result.issues.push({
 				filePath: path.join(dataDirectoryPath, 'srd-5-1', 'species.json'),
 				message: `Species "${species.slug}" fixed languages do not match language mechanics`
 			});
 		}
 
-		if (hasChooseLanguageMechanics && chooseLanguageCount !== chooseLanguageCountFromMechanics) {
+		if (
+			hasChooseLanguageMechanics &&
+			chooseLanguageCount !== chooseLanguageCountFromMechanics
+		) {
 			result.issues.push({
 				filePath: path.join(dataDirectoryPath, 'srd-5-1', 'species.json'),
 				message: `Species "${species.slug}" language choices do not match choose_language mechanics`
@@ -752,7 +768,7 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 						mechanic.type === 'proficiency' &&
 						mechanic.proficiencyType === 'skill' &&
 						mechanic.value
-					)
+				)
 				.map((mechanic) => mechanic.value as string)
 		);
 		const toolProficienciesFromMechanics = toSortedUnique(
@@ -762,7 +778,7 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 						mechanic.type === 'proficiency' &&
 						mechanic.proficiencyType === 'tool' &&
 						mechanic.value
-					)
+				)
 				.map((mechanic) => mechanic.value as string)
 		);
 		const fixedLanguages = toSortedUnique(
@@ -812,14 +828,20 @@ export function validateContentDataDirectory(dataDirectoryPath: string): Content
 			});
 		}
 
-		if (hasFixedLanguageMechanics && !arraysEqual(fixedLanguages, fixedLanguagesFromMechanics)) {
+		if (
+			hasFixedLanguageMechanics &&
+			!arraysEqual(fixedLanguages, fixedLanguagesFromMechanics)
+		) {
 			result.issues.push({
 				filePath,
 				message: `Background "${background.slug}" fixed languages do not match language mechanics`
 			});
 		}
 
-		if (hasChooseLanguageMechanics && chooseLanguageCount !== chooseLanguageCountFromMechanics) {
+		if (
+			hasChooseLanguageMechanics &&
+			chooseLanguageCount !== chooseLanguageCountFromMechanics
+		) {
 			result.issues.push({
 				filePath,
 				message: `Background "${background.slug}" language choices do not match choose_language mechanics`

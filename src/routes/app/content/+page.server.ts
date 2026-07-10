@@ -42,7 +42,11 @@ import {
 	flattenPrivateSpellFormErrors,
 	privateSpellFormSchema
 } from '$lib/schemas/content/private-spell-form.schema';
-import { GLOBAL_ROLES, type AuthorizationContext, type GlobalRole } from '$lib/types/permissions/permissions';
+import {
+	GLOBAL_ROLES,
+	type AuthorizationContext,
+	type GlobalRole
+} from '$lib/types/permissions/permissions';
 
 function resolveContentE2ERoleOverride(input: {
 	cookies: { get: (name: string) => string | undefined };
@@ -52,7 +56,8 @@ function resolveContentE2ERoleOverride(input: {
 		return null;
 	}
 
-	const requestedRole = input.url?.searchParams.get('e2eRole') ?? input.cookies.get('app-e2e-role');
+	const requestedRole =
+		input.url?.searchParams.get('e2eRole') ?? input.cookies.get('app-e2e-role');
 
 	if (!requestedRole || !GLOBAL_ROLES.includes(requestedRole as GlobalRole)) {
 		return null;
@@ -167,12 +172,12 @@ export const load: PageServerLoad = async ({ cookies, locals, url, parent }) => 
 	const editSharedFeatId = url.searchParams.get('editSharedFeat');
 	const editableSharedFeat =
 		typeof editSharedFeatId === 'string'
-			? manageableSharedFeats.find((feat) => feat.id === editSharedFeatId) ?? null
+			? (manageableSharedFeats.find((feat) => feat.id === editSharedFeatId) ?? null)
 			: null;
 	const editSharedSpellId = url.searchParams.get('editSharedSpell');
 	const editableSharedSpell =
 		typeof editSharedSpellId === 'string'
-			? manageableSharedSpells.find((spell) => spell.id === editSharedSpellId) ?? null
+			? (manageableSharedSpells.find((spell) => spell.id === editSharedSpellId) ?? null)
 			: null;
 
 	return {
@@ -202,16 +207,20 @@ export const load: PageServerLoad = async ({ cookies, locals, url, parent }) => 
 			: createPrivateSpellFormValues(),
 		roleOperations: {
 			canPublishSharedFeats:
-				authorization?.globalRole === 'content_editor' || authorization?.globalRole === 'admin',
+				authorization?.globalRole === 'content_editor' ||
+				authorization?.globalRole === 'admin',
 			canPublishSystemFeats: authorization?.globalRole === 'admin',
 			canPublishSharedSpells:
-				authorization?.globalRole === 'content_editor' || authorization?.globalRole === 'admin',
+				authorization?.globalRole === 'content_editor' ||
+				authorization?.globalRole === 'admin',
 			canPublishSystemSpells: authorization?.globalRole === 'admin',
 			canMaintainSharedFeats:
-				authorization?.globalRole === 'content_editor' || authorization?.globalRole === 'admin',
+				authorization?.globalRole === 'content_editor' ||
+				authorization?.globalRole === 'admin',
 			canMaintainSystemFeats: authorization?.globalRole === 'admin',
 			canMaintainSharedSpells:
-				authorization?.globalRole === 'content_editor' || authorization?.globalRole === 'admin',
+				authorization?.globalRole === 'content_editor' ||
+				authorization?.globalRole === 'admin',
 			canMaintainSystemSpells: authorization?.globalRole === 'admin'
 		},
 		characterCatalog: await listCharacterCreationCatalog(locals.supabase),
@@ -241,7 +250,10 @@ export const actions: Actions = {
 			});
 		}
 
-		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		const authorization = await getAuthorizationContext(
+			locals.supabase,
+			locals.session.user.id
+		);
 		requirePermissionScopeAccess(authorization, 'private_content');
 		const parsedForm = await parsePrivateFeatCreateForm(request);
 
@@ -288,7 +300,10 @@ export const actions: Actions = {
 			});
 		}
 
-		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		const authorization = await getAuthorizationContext(
+			locals.supabase,
+			locals.session.user.id
+		);
 		requirePermissionScopeAccess(authorization, 'private_content');
 		const parsedForm = await parsePrivateSpellCreateForm(request);
 
@@ -335,7 +350,10 @@ export const actions: Actions = {
 			});
 		}
 
-		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		const authorization = await getAuthorizationContext(
+			locals.supabase,
+			locals.session.user.id
+		);
 		requirePermissionScopeAccess(authorization, 'private_content');
 
 		const formData = await request.formData();
@@ -537,14 +555,21 @@ export const actions: Actions = {
 				throw error;
 			}
 
-			if (typeof error === 'object' && error !== null && 'status' in error && error.status === 403) {
+			if (
+				typeof error === 'object' &&
+				error !== null &&
+				'status' in error &&
+				error.status === 403
+			) {
 				throw error;
 			}
 
 			return fail(400, {
 				editSharedSpellFieldErrors: {},
 				editSharedSpellFormError:
-					error instanceof Error ? error.message : 'The shared spell could not be updated.',
+					error instanceof Error
+						? error.message
+						: 'The shared spell could not be updated.',
 				editSharedSpellId: spellId,
 				editSharedSpellValues: parsedForm.values
 			});
@@ -594,14 +619,21 @@ export const actions: Actions = {
 				throw error;
 			}
 
-			if (typeof error === 'object' && error !== null && 'status' in error && error.status === 403) {
+			if (
+				typeof error === 'object' &&
+				error !== null &&
+				'status' in error &&
+				error.status === 403
+			) {
 				throw error;
 			}
 
 			return fail(400, {
 				editSharedSpellFieldErrors: {},
 				editSharedSpellFormError:
-					error instanceof Error ? error.message : 'The shared spell could not be retired.',
+					error instanceof Error
+						? error.message
+						: 'The shared spell could not be retired.',
 				editSharedSpellId: spellId,
 				editSharedSpellValues: createPrivateSpellFormValues()
 			});
@@ -651,14 +683,21 @@ export const actions: Actions = {
 				throw error;
 			}
 
-			if (typeof error === 'object' && error !== null && 'status' in error && error.status === 403) {
+			if (
+				typeof error === 'object' &&
+				error !== null &&
+				'status' in error &&
+				error.status === 403
+			) {
 				throw error;
 			}
 
 			return fail(400, {
 				editSharedSpellFieldErrors: {},
 				editSharedSpellFormError:
-					error instanceof Error ? error.message : 'The shared spell could not be deleted.',
+					error instanceof Error
+						? error.message
+						: 'The shared spell could not be deleted.',
 				editSharedSpellId: spellId,
 				editSharedSpellValues: createPrivateSpellFormValues()
 			});
@@ -678,7 +717,10 @@ export const actions: Actions = {
 			});
 		}
 
-		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		const authorization = await getAuthorizationContext(
+			locals.supabase,
+			locals.session.user.id
+		);
 		requirePermissionScopeAccess(authorization, 'shared_content');
 
 		const formData = await request.formData();
@@ -721,7 +763,12 @@ export const actions: Actions = {
 				throw error;
 			}
 
-			if (typeof error === 'object' && error !== null && 'status' in error && error.status === 403) {
+			if (
+				typeof error === 'object' &&
+				error !== null &&
+				'status' in error &&
+				error.status === 403
+			) {
 				throw error;
 			}
 
@@ -750,7 +797,10 @@ export const actions: Actions = {
 			});
 		}
 
-		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		const authorization = await getAuthorizationContext(
+			locals.supabase,
+			locals.session.user.id
+		);
 		requirePermissionScopeAccess(authorization, 'shared_content');
 
 		const formData = await request.formData();
@@ -775,14 +825,21 @@ export const actions: Actions = {
 				throw error;
 			}
 
-			if (typeof error === 'object' && error !== null && 'status' in error && error.status === 403) {
+			if (
+				typeof error === 'object' &&
+				error !== null &&
+				'status' in error &&
+				error.status === 403
+			) {
 				throw error;
 			}
 
 			return fail(400, {
 				editSharedFeatFieldErrors: {},
 				editSharedFeatFormError:
-					error instanceof Error ? error.message : 'The shared feat could not be retired.',
+					error instanceof Error
+						? error.message
+						: 'The shared feat could not be retired.',
 				editSharedFeatId: featId,
 				editSharedFeatValues: createPrivateFeatFormValues()
 			});
@@ -802,7 +859,10 @@ export const actions: Actions = {
 			});
 		}
 
-		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		const authorization = await getAuthorizationContext(
+			locals.supabase,
+			locals.session.user.id
+		);
 		requirePermissionScopeAccess(authorization, 'shared_content');
 
 		const formData = await request.formData();
@@ -827,14 +887,21 @@ export const actions: Actions = {
 				throw error;
 			}
 
-			if (typeof error === 'object' && error !== null && 'status' in error && error.status === 403) {
+			if (
+				typeof error === 'object' &&
+				error !== null &&
+				'status' in error &&
+				error.status === 403
+			) {
 				throw error;
 			}
 
 			return fail(400, {
 				editSharedFeatFieldErrors: {},
 				editSharedFeatFormError:
-					error instanceof Error ? error.message : 'The shared feat could not be deleted.',
+					error instanceof Error
+						? error.message
+						: 'The shared feat could not be deleted.',
 				editSharedFeatId: featId,
 				editSharedFeatValues: createPrivateFeatFormValues()
 			});
@@ -853,7 +920,10 @@ export const actions: Actions = {
 			});
 		}
 
-		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		const authorization = await getAuthorizationContext(
+			locals.supabase,
+			locals.session.user.id
+		);
 		requirePermissionScopeAccess(authorization, 'private_content');
 
 		const formData = await request.formData();
@@ -904,7 +974,10 @@ export const actions: Actions = {
 			});
 		}
 
-		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		const authorization = await getAuthorizationContext(
+			locals.supabase,
+			locals.session.user.id
+		);
 		requirePermissionScopeAccess(authorization, 'shared_content');
 
 		const parsedForm = await parsePrivateFeatCreateForm(request);
@@ -950,7 +1023,10 @@ export const actions: Actions = {
 			});
 		}
 
-		const authorization = await getAuthorizationContext(locals.supabase, locals.session.user.id);
+		const authorization = await getAuthorizationContext(
+			locals.supabase,
+			locals.session.user.id
+		);
 		requirePermissionScopeAccess(authorization, 'system_content');
 
 		const parsedForm = await parsePrivateFeatCreateForm(request);

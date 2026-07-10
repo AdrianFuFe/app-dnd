@@ -109,7 +109,106 @@ test('character edit route updates an existing draft and returns to detail', asy
 	await expect(page.getByText('Tracks ley lines.', { exact: true })).toBeVisible();
 });
 
-test('character detail route shows enriched catalog-linked attacks and inventory', async ({ page }) => {
+test('character create route filters dependent subspecies and subclass options from catalog selections', async ({
+	page
+}) => {
+	await page.goto('/app/characters/new');
+
+	const speciesSelect = page.locator('select[name="speciesId"]');
+	const subspeciesSelect = page.locator('select[name="subspeciesId"]');
+	const classSelect = page.locator('select[name="classId"]');
+	const subclassSelect = page.locator('select[name="subclassId"]');
+
+	await expect(getSelectOptions(subspeciesSelect)).resolves.toEqual(['Select a subspecies']);
+	await expect(getSelectOptions(subclassSelect)).resolves.toEqual(['Select a subclass']);
+
+	await speciesSelect.selectOption({ label: 'Elfo' });
+	await expect(getSelectOptions(subspeciesSelect)).resolves.toEqual([
+		'Select a subspecies',
+		'High Elf',
+		'Wood Elf'
+	]);
+
+	await subspeciesSelect.selectOption({ label: 'Wood Elf' });
+	await expect(subspeciesSelect).toHaveValue(await getOptionValue(subspeciesSelect, 'Wood Elf'));
+
+	await speciesSelect.selectOption({ label: 'Humano' });
+	await expect(subspeciesSelect).toHaveValue('');
+	await expect(getSelectOptions(subspeciesSelect)).resolves.toEqual(['Select a subspecies']);
+
+	await classSelect.selectOption({ label: 'Clerigo' });
+	await expect(getSelectOptions(subclassSelect)).resolves.toEqual([
+		'Select a subclass',
+		'Life Domain',
+		'Knowledge Domain'
+	]);
+
+	await subclassSelect.selectOption({ label: 'Knowledge Domain' });
+	await expect(subclassSelect).toHaveValue(
+		await getOptionValue(subclassSelect, 'Knowledge Domain')
+	);
+
+	await classSelect.selectOption({ label: 'Guerrero' });
+	await expect(subclassSelect).toHaveValue('');
+	await expect(getSelectOptions(subclassSelect)).resolves.toEqual([
+		'Select a subclass',
+		'Champion'
+	]);
+});
+
+test('character edit route resets dependent selections and saves newly expanded catalog entries', async ({
+	page
+}) => {
+	await page.goto('/app/characters/char-e2e-1/edit');
+
+	const speciesSelect = page.locator('select[name="speciesId"]');
+	const subspeciesSelect = page.locator('select[name="subspeciesId"]');
+	const classSelect = page.locator('select[name="classId"]');
+	const subclassSelect = page.locator('select[name="subclassId"]');
+
+	await speciesSelect.selectOption({ label: 'Elfo' });
+	await subspeciesSelect.selectOption({ label: 'High Elf' });
+	await classSelect.selectOption({ label: 'Mago' });
+	await subclassSelect.selectOption({ label: 'School of Evocation' });
+
+	await speciesSelect.selectOption({ label: 'Humano' });
+	await expect(subspeciesSelect).toHaveValue('');
+	await expect(getSelectOptions(subspeciesSelect)).resolves.toEqual(['Select a subspecies']);
+
+	await speciesSelect.selectOption({ label: 'Elfo' });
+	await expect(getSelectOptions(subspeciesSelect)).resolves.toEqual([
+		'Select a subspecies',
+		'High Elf',
+		'Wood Elf'
+	]);
+	await subspeciesSelect.selectOption({ label: 'Wood Elf' });
+
+	await classSelect.selectOption({ label: 'Guerrero' });
+	await expect(subclassSelect).toHaveValue('');
+	await expect(getSelectOptions(subclassSelect)).resolves.toEqual([
+		'Select a subclass',
+		'Champion'
+	]);
+	await subclassSelect.selectOption({ label: 'Champion' });
+
+	const spellSection = page
+		.locator('section')
+		.filter({ has: page.getByRole('heading', { name: 'Spells' }) });
+	await spellSection.getByRole('button', { name: 'Remove' }).click();
+
+	await page.getByRole('button', { name: 'Save changes' }).click();
+
+	await expect(page).toHaveURL('/app/characters/char-e2e-1?updated=Talia%20Stormstep');
+	await expect(page.getByText('Talia Stormstep was updated successfully.')).toBeVisible();
+	await expect(page.getByText('Elfo', { exact: true })).toBeVisible();
+	await expect(page.getByText('Wood Elf', { exact: true })).toBeVisible();
+	await expect(page.getByText('Guerrero', { exact: true })).toBeVisible();
+	await expect(page.getByText('Champion', { exact: true })).toBeVisible();
+});
+
+test('character detail route shows enriched catalog-linked attacks and inventory', async ({
+	page
+}) => {
 	await page.goto('/app/characters/char-e2e-1');
 
 	await expect(page).toHaveURL('/app/characters/char-e2e-1');
@@ -238,7 +337,7 @@ async function fillCharacterForm(
 		attackItems: [
 			{
 				catalogWeaponName: 'Quarterstaff',
-				attackBonus: '+4',
+				attackBonus: '+4'
 			}
 		],
 		spellItems: [
@@ -360,12 +459,15 @@ async function fillCharacterForm(
 	for (let index = 0; index < values.spellItems.length; index += 1) {
 		const item = values.spellItems[index];
 		if (item.catalogSpellName) {
-			await spellSection.getByLabel('Catalog spell').nth(index).selectOption({
-				label:
-					item.level === '0'
-						? `${item.catalogSpellName} (Cantrip)`
-						: `${item.catalogSpellName} (Level ${item.level ?? '1'})`
-			});
+			await spellSection
+				.getByLabel('Catalog spell')
+				.nth(index)
+				.selectOption({
+					label:
+						item.level === '0'
+							? `${item.catalogSpellName} (Cantrip)`
+							: `${item.catalogSpellName} (Level ${item.level ?? '1'})`
+				});
 		}
 		if (item.name !== undefined) {
 			await spellSection.getByLabel('Spell name').nth(index).fill(item.name);
@@ -509,4 +611,14 @@ async function selectDependentOption(select: ReturnType<Page['locator']>, label:
 		.toContain(label);
 
 	await select.selectOption({ label });
+}
+
+async function getSelectOptions(select: ReturnType<Page['locator']>) {
+	return (await select.locator('option').allTextContents()).map((option) => option.trim());
+}
+
+async function getOptionValue(select: ReturnType<Page['locator']>, label: string) {
+	const option = select.locator('option').filter({ hasText: label });
+	await expect(option).toHaveCount(1);
+	return (await option.first().getAttribute('value')) ?? '';
 }

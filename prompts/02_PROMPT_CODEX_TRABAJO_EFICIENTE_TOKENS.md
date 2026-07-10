@@ -15,11 +15,11 @@ Protocolo de contexto:
 
 1. Lee primero `docs/context/00_INDEX.md`.
 2. Carga solo los fragmentos necesarios para la tarea:
-   - producto: `docs/context/10_PRODUCT_SCOPE.md`
-   - arquitectura: `docs/context/20_ARCHITECTURE_AND_STACK.md`
-   - contenido/permisos: `docs/context/30_CONTENT_AND_PERMISSIONS.md`
-   - auth/datos: `docs/context/40_AUTH_AND_DATA.md`
-   - reglas de trabajo: `docs/context/50_WORKFLOW_RULES.md`
+    - producto: `docs/context/10_PRODUCT_SCOPE.md`
+    - arquitectura: `docs/context/20_ARCHITECTURE_AND_STACK.md`
+    - contenido/permisos: `docs/context/30_CONTENT_AND_PERMISSIONS.md`
+    - auth/datos: `docs/context/40_AUTH_AND_DATA.md`
+    - reglas de trabajo: `docs/context/50_WORKFLOW_RULES.md`
 3. Lee solo los archivos de codigo directamente implicados.
 4. No releas toda la documentacion general salvo que la tarea lo requiera.
 

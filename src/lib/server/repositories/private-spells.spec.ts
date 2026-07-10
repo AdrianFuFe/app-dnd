@@ -237,7 +237,10 @@ describe('private spells repository', () => {
 		});
 
 		await expect(
-			listManagedSharedSpells(supabase, createAuthorizationContext('user-1', 'content_editor'))
+			listManagedSharedSpells(
+				supabase,
+				createAuthorizationContext('user-1', 'content_editor')
+			)
 		).resolves.toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({
@@ -295,7 +298,9 @@ describe('private spells repository', () => {
 		});
 		const authorization = createAuthorizationContext('user-1', 'content_editor');
 
-		await expect(retireManagedSharedSpell(supabase, authorization, created.id)).resolves.toEqual({
+		await expect(
+			retireManagedSharedSpell(supabase, authorization, created.id)
+		).resolves.toEqual({
 			id: created.id,
 			name: 'Arc Light Nova'
 		});
@@ -319,7 +324,9 @@ describe('private spells repository', () => {
 		});
 		const authorization = createAuthorizationContext('user-1', 'admin');
 
-		await expect(deleteManagedSharedSpell(supabase, authorization, created.id)).resolves.toEqual({
+		await expect(
+			deleteManagedSharedSpell(supabase, authorization, created.id)
+		).resolves.toEqual({
 			id: created.id,
 			name: 'Solar Ward'
 		});

@@ -54,7 +54,8 @@ export const spellItemSchema = contentBaseFieldsSchema
 			?.split(',')
 			.map((component) => component.trim())
 			.includes('M');
-		const hasMaterialsText = typeof value.materials === 'string' && value.materials.trim().length > 0;
+		const hasMaterialsText =
+			typeof value.materials === 'string' && value.materials.trim().length > 0;
 
 		if (hasMaterialComponent && !hasMaterialsText) {
 			context.addIssue({

@@ -123,16 +123,16 @@ Planning review on 2026-07-10:
 - the repo is not fully green yet because `pnpm lint` still reports formatting drift and `pnpm test` currently stops in unit coverage where the content-template fixture expectations still match the older pre-expansion SRD counts
 - the next recommended implementation block remains `S33 - Character Catalog Dependent Selection E2E`
 - the next two follow-up blocks after `S33` should be:
-  - restore green quality gates by realigning content-template expectations and formatting
-  - run a real Supabase smoke test and deployment-readiness pass so the MVP can move from "implemented" to "operational for internal testing"
+    - restore green quality gates by realigning content-template expectations and formatting
+    - run a real Supabase smoke test and deployment-readiness pass so the MVP can move from "implemented" to "operational for internal testing"
 
 ## Future Iterations
 
 - short-term MVP closeout:
-  - complete `S33 - Character Catalog Dependent Selection E2E`
-  - restore green `pnpm test` and `pnpm lint` after the expanded SRD seed changes
-  - validate auth, character CRUD, and `/app/content` flows against a real Supabase project
-  - make hosting/deployment prerequisites explicit for the first internal test build
+    - complete `S33 - Character Catalog Dependent Selection E2E`
+    - restore green `pnpm test` and `pnpm lint` after the expanded SRD seed changes
+    - validate auth, character CRUD, and `/app/content` flows against a real Supabase project
+    - make hosting/deployment prerequisites explicit for the first internal test build
 - advanced permissions and sharing
 - campaign-aware visibility
 - future campaign and companion features

@@ -113,15 +113,21 @@ describe('role enforcement helpers', () => {
 	});
 
 	it('checks scope access from the shared permission policy', () => {
-		expect(hasPermissionScopeAccess(createAuthorizationContext('user-1', 'user'), 'shared_content')).toBe(
-			false
-		);
 		expect(
-			hasPermissionScopeAccess(createAuthorizationContext('user-2', 'content_editor'), 'shared_content')
+			hasPermissionScopeAccess(createAuthorizationContext('user-1', 'user'), 'shared_content')
+		).toBe(false);
+		expect(
+			hasPermissionScopeAccess(
+				createAuthorizationContext('user-2', 'content_editor'),
+				'shared_content'
+			)
 		).toBe(true);
-		expect(hasPermissionScopeAccess(createAuthorizationContext('user-3', 'admin'), 'system_content')).toBe(
-			true
-		);
+		expect(
+			hasPermissionScopeAccess(
+				createAuthorizationContext('user-3', 'admin'),
+				'system_content'
+			)
+		).toBe(true);
 	});
 
 	it('throws 403 for missing roles or capabilities', () => {

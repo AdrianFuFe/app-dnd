@@ -15,7 +15,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 	event.locals.runtime = runtime;
 
 	if (runtime.mode === 'e2e-mock' && isE2EMode()) {
-		const requestedRole = event.url.searchParams.get('e2eRole') ?? event.cookies.get('app-e2e-role');
+		const requestedRole =
+			event.url.searchParams.get('e2eRole') ?? event.cookies.get('app-e2e-role');
 
 		if (requestedRole && GLOBAL_ROLES.includes(requestedRole as GlobalRole)) {
 			setE2EMockGlobalRole(requestedRole as GlobalRole);

@@ -119,9 +119,7 @@ export const knownWeaponProficiencySlugSet = new Set<string>(knownWeaponProficie
 export const knownIndividualWeaponProficiencySlugSet = new Set<string>(
 	knownIndividualWeaponProficiencySlugs
 );
-export const knownSavingThrowProficiencySlugSet = new Set<string>(
-	knownSavingThrowProficiencySlugs
-);
+export const knownSavingThrowProficiencySlugSet = new Set<string>(knownSavingThrowProficiencySlugs);
 export const knownToolProficiencySlugSet = new Set<string>(knownToolProficiencySlugs);
 
 export const languageSlugSchema = z.enum(knownLanguageSlugs);
@@ -148,7 +146,10 @@ export function isKnownProficiencySlug(proficiencyType: string, slug: string): b
 	}
 
 	if (proficiencyType === 'weapon') {
-		return knownWeaponProficiencySlugSet.has(slug) || knownIndividualWeaponProficiencySlugSet.has(slug);
+		return (
+			knownWeaponProficiencySlugSet.has(slug) ||
+			knownIndividualWeaponProficiencySlugSet.has(slug)
+		);
 	}
 
 	if (proficiencyType === 'tool') {

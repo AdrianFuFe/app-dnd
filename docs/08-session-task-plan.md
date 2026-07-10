@@ -100,23 +100,23 @@ In that case, it should still name the next recommended block.
     - the shared catalog is browseable and now has guarded create/update/retire/delete workflows for both feats and spells, while the SRD seed files for some existing catalog families are still intentionally thin
     - permissions exist as schema, RLS, server helpers, operator scripts, and a first visible content surface, not as a full admin/editor product surface
 - current project point:
-  - the MVP app shell and first character workflow are implemented and E2E-stable
-  - structured character sections cover the highest-value MVP slices
-  - environment separation is documented
-  - runtime integration behavior is now documented in `README.md` and `docs/10-runtime-integration-check.md`, with request-time status checks in `src/lib/server/runtime/integration.ts`
-  - the first private content workflows now exist for both feats and spells
-  - trusted editor/admin users can now publish bounded shared and system homebrew entries for both feats and spells
-  - trusted editor/admin users can now also review, update, retire, and delete maintained shared spells
-  - privileged content workflows are now covered in the browser for the primary feat and spell lifecycle paths
-  - rejected privileged publish submissions now have browser regression coverage with stable field feedback
-  - the highest-value nearby confidence slice is targeted browser coverage for dependent `subspecies` and `subclass` selection behavior that now has richer seed data behind it
-  - the current repo is close to an internally testable MVP, but it is not yet at a fully green release-ready checkpoint because content-template expectations and formatting drift still need cleanup
-  - live Supabase runtime and deployment readiness are documented, but still need an explicit smoke-test pass against a real environment after the current quality gaps are closed
+    - the MVP app shell and first character workflow are implemented and E2E-stable
+    - structured character sections cover the highest-value MVP slices
+    - environment separation is documented
+    - runtime integration behavior is now documented in `README.md` and `docs/10-runtime-integration-check.md`, with request-time status checks in `src/lib/server/runtime/integration.ts`
+    - the first private content workflows now exist for both feats and spells
+    - trusted editor/admin users can now publish bounded shared and system homebrew entries for both feats and spells
+    - trusted editor/admin users can now also review, update, retire, and delete maintained shared spells
+    - privileged content workflows are now covered in the browser for the primary feat and spell lifecycle paths
+    - rejected privileged publish submissions now have browser regression coverage with stable field feedback
+    - the highest-value nearby confidence slice is targeted browser coverage for dependent `subspecies` and `subclass` selection behavior that now has richer seed data behind it
+    - the current repo is close to an internally testable MVP, but it is not yet at a fully green release-ready checkpoint because content-template expectations and formatting drift still need cleanup
+    - live Supabase runtime and deployment readiness are documented, but still need an explicit smoke-test pass against a real environment after the current quality gaps are closed
 - next recommended block:
-  - `S33 - Character Catalog Dependent Selection E2E`, because the character forms already depend on `species -> subspecies` and `class -> subclass` relationships, the newly expanded seed data should now be proven in the browser, and this is still the tightest next confidence slice from the previous implementation session
+    - `S33 - Character Catalog Dependent Selection E2E`, because the character forms already depend on `species -> subspecies` and `class -> subclass` relationships, the newly expanded seed data should now be proven in the browser, and this is still the tightest next confidence slice from the previous implementation session
 - near-term follow-up after `S33`:
-  - `S34 - Catalog Fixture And Quality Gate Realignment`, to restore green unit expectations after the expanded SRD seed and to clear the current formatting drift
-  - `S35 - Live Supabase Smoke And Deploy Readiness`, to validate the app against a real Supabase project and close the remaining gap between "implemented MVP" and "operational MVP"
+    - `S34 - Catalog Fixture And Quality Gate Realignment`, to restore green unit expectations after the expanded SRD seed and to clear the current formatting drift
+    - `S35 - Live Supabase Smoke And Deploy Readiness`, to validate the app against a real Supabase project and close the remaining gap between "implemented MVP" and "operational MVP"
 
 ## Session Blocks
 
@@ -418,7 +418,7 @@ In that case, it should still name the next recommended block.
     - at least one currently free-text section such as `spells`, `attacks`, or `inventory` has a structured workflow
     - the change improves editing without breaking MVP ownership rules
 - current repo note:
-  - `inventory`, `attacks`, `spells`, and `feats` now have structured workflows in the current codebase
+    - `inventory`, `attacks`, `spells`, and `feats` now have structured workflows in the current codebase
 
 ### S17 - Character Flow Stabilization
 

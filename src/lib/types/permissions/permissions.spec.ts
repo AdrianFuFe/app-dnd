@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-	GLOBAL_ROLE_POLICIES,
-	getGlobalRolePolicy,
-	getPermissionScopePolicy
-} from './permissions';
+import { GLOBAL_ROLE_POLICIES, getGlobalRolePolicy, getPermissionScopePolicy } from './permissions';
 
 describe('global permission policies', () => {
 	it('defines explicit responsibilities for each global role', () => {

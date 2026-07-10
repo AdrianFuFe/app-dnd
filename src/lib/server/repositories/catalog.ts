@@ -642,7 +642,8 @@ async function loadSelectedSubclassForSpellSelection(
 	supabase: SupabaseClient<Database>,
 	subclassId?: string
 ): Promise<
-	Pick<SubclassRow, 'id' | 'class_slug' | 'name' | 'mechanics' | 'granted_spells_by_level'> | undefined
+	| Pick<SubclassRow, 'id' | 'class_slug' | 'name' | 'mechanics' | 'granted_spells_by_level'>
+	| undefined
 > {
 	if (!subclassId) {
 		return undefined;

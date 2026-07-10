@@ -14,10 +14,9 @@ import {
 
 describe('admin workflow helpers', () => {
 	it('normalizes the email allowlist', () => {
-		expect(parseEmailAllowlist(' Admin@example.com,editor@example.com,admin@example.com ')).toEqual([
-			'admin@example.com',
-			'editor@example.com'
-		]);
+		expect(
+			parseEmailAllowlist(' Admin@example.com,editor@example.com,admin@example.com ')
+		).toEqual(['admin@example.com', 'editor@example.com']);
 	});
 
 	it('loads the required admin workflow env', () => {
@@ -40,9 +39,9 @@ describe('admin workflow helpers', () => {
 	});
 
 	it('blocks admin grants for non-allowlisted emails', () => {
-		expect(() => assertAdminGrantAllowed('user@example.com', 'admin', ['admin@example.com'])).toThrow(
-			'Refusing to grant admin role'
-		);
+		expect(() =>
+			assertAdminGrantAllowed('user@example.com', 'admin', ['admin@example.com'])
+		).toThrow('Refusing to grant admin role');
 	});
 
 	it('allows non-admin role updates without the allowlist', () => {
@@ -67,22 +66,19 @@ describe('admin workflow helpers', () => {
 	});
 
 	it('finds a user by email across pages', async () => {
-		const user = await findUserByEmail(
-			async (page) => {
-				if (page === 1) {
-					return {
-						lastPage: 2,
-						users: [{ email: 'first@example.com', id: 'user-1' }]
-					};
-				}
-
+		const user = await findUserByEmail(async (page) => {
+			if (page === 1) {
 				return {
 					lastPage: 2,
-					users: [{ email: 'admin@example.com', id: 'user-2' }]
+					users: [{ email: 'first@example.com', id: 'user-1' }]
 				};
-			},
-			'Admin@example.com'
-		);
+			}
+
+			return {
+				lastPage: 2,
+				users: [{ email: 'admin@example.com', id: 'user-2' }]
+			};
+		}, 'Admin@example.com');
 
 		expect(user).toEqual({
 			email: 'admin@example.com',
@@ -111,13 +107,13 @@ describe('admin workflow helpers', () => {
 	});
 
 	it('parses test-user input with defaults', () => {
-		expect(parseCreateTestUserInput(['--email', 'user@example.com', '--password', 'secret123'])).toEqual(
-			{
-				displayName: null,
-				email: 'user@example.com',
-				emailConfirmed: true,
-				password: 'secret123'
-			}
-		);
+		expect(
+			parseCreateTestUserInput(['--email', 'user@example.com', '--password', 'secret123'])
+		).toEqual({
+			displayName: null,
+			email: 'user@example.com',
+			emailConfirmed: true,
+			password: 'secret123'
+		});
 	});
 });

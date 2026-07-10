@@ -133,7 +133,8 @@ export const PERMISSION_SCOPE_POLICIES: Record<PermissionScope, PermissionScopeP
 	character_data: {
 		allowedRoles: GLOBAL_ROLES,
 		capability: 'manage_own_characters',
-		description: 'Manage your own characters. Admins may also operate across users when required.',
+		description:
+			'Manage your own characters. Admins may also operate across users when required.',
 		enforcement: ['app', 'rls']
 	},
 	private_content: {

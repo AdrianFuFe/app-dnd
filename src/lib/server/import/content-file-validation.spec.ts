@@ -403,9 +403,21 @@ describe('validateContentDataDirectory', () => {
 						weaponProficiencies: ['simple-weapons'],
 						mechanics: [
 							{ type: 'proficiency', proficiencyType: 'armor', value: 'all-armor' },
-							{ type: 'proficiency', proficiencyType: 'weapon', value: 'martial-weapons' },
-							{ type: 'proficiency', proficiencyType: 'saving_throw', value: 'strength' },
-							{ type: 'proficiency', proficiencyType: 'saving_throw', value: 'constitution' }
+							{
+								type: 'proficiency',
+								proficiencyType: 'weapon',
+								value: 'martial-weapons'
+							},
+							{
+								type: 'proficiency',
+								proficiencyType: 'saving_throw',
+								value: 'strength'
+							},
+							{
+								type: 'proficiency',
+								proficiencyType: 'saving_throw',
+								value: 'constitution'
+							}
 						]
 					}
 				]
@@ -471,9 +483,13 @@ describe('validateContentDataDirectory', () => {
 				expect.stringContaining('items.0.weaponProficiencies.0: Invalid input'),
 				expect.stringContaining('items.0.toolProficiencies.0: Invalid option'),
 				expect.stringContaining('items.0.skillChoices.options.0: Invalid option'),
-				expect.stringContaining('items.0.mechanics.0.options.0: Unknown skill proficiency slug'),
+				expect.stringContaining(
+					'items.0.mechanics.0.options.0: Unknown skill proficiency slug'
+				),
 				expect.stringContaining('items.0.mechanics.1.value: Unknown tool proficiency slug'),
-				expect.stringContaining('items.0.mechanics.2.value: Unknown saving_throw proficiency slug')
+				expect.stringContaining(
+					'items.0.mechanics.2.value: Unknown saving_throw proficiency slug'
+				)
 			])
 		);
 	});
@@ -1093,9 +1109,7 @@ describe('validateContentDataDirectory', () => {
 						slug: 'life-domain',
 						name: 'Life Domain',
 						classSlug: 'clerigo',
-						grantedSpellsByLevel: [
-							{ level: 1, spellSlugs: ['bless', 'cure-wounds'] }
-						],
+						grantedSpellsByLevel: [{ level: 1, spellSlugs: ['bless', 'cure-wounds'] }],
 						mechanics: [
 							{ type: 'spell_grant', spellId: 'cure-wounds' },
 							{ type: 'spell_grant', spellId: 'bless' }
@@ -1206,7 +1220,9 @@ describe('validateContentDataDirectory', () => {
 						slug: 'high-elf',
 						name: 'High Elf',
 						speciesSlug: 'elfo',
-						mechanics: [{ type: 'proficiency', proficiencyType: 'weapon', value: 'sun-blade' }]
+						mechanics: [
+							{ type: 'proficiency', proficiencyType: 'weapon', value: 'sun-blade' }
+						]
 					}
 				]
 			})
@@ -1237,10 +1253,14 @@ describe('validateContentDataDirectory', () => {
 		expect(result.issues).toHaveLength(2);
 		expect(result.issues.map((issue) => issue.message)).toEqual(
 			expect.arrayContaining([
-				expect.stringContaining('items.0.mechanics.0.value: Unknown weapon proficiency slug'),
+				expect.stringContaining(
+					'items.0.mechanics.0.value: Unknown weapon proficiency slug'
+				),
 				expect.stringContaining('items.0.skillProficiencies.0: Invalid option'),
 				expect.stringContaining('items.0.toolProficiencies.0: Invalid option'),
-				expect.stringContaining('items.0.mechanics.0.value: Unknown skill proficiency slug'),
+				expect.stringContaining(
+					'items.0.mechanics.0.value: Unknown skill proficiency slug'
+				),
 				expect.stringContaining('items.0.mechanics.1.value: Unknown tool proficiency slug')
 			])
 		);

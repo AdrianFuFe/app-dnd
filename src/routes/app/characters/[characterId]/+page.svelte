@@ -209,7 +209,9 @@
 									</p>
 								{/if}
 								{#if findEquipmentCatalogEntry(item.equipmentId)}
-									<p class="mt-2 text-xs uppercase tracking-[0.16em] text-stone-500">
+									<p
+										class="mt-2 text-xs uppercase tracking-[0.16em] text-stone-500"
+									>
 										{findEquipmentCatalogEntry(item.equipmentId)?.category}
 									</p>
 								{/if}
@@ -227,7 +229,9 @@
 			</article>
 
 			<article class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
-				<h2 class="text-xl font-semibold text-stone-900">Attacks, Spells, Feats, And Notes</h2>
+				<h2 class="text-xl font-semibold text-stone-900">
+					Attacks, Spells, Feats, And Notes
+				</h2>
 				<div class="mt-6 space-y-6">
 					<div>
 						<p class="text-sm font-medium text-stone-500">Attacks</p>
@@ -252,8 +256,12 @@
 											</span>
 										{/if}
 										{#if findEquipmentCatalogEntry(attack.equipmentId)?.properties.length}
-											<p class="mt-2 text-xs uppercase tracking-[0.16em] text-stone-500">
-												{findEquipmentCatalogEntry(attack.equipmentId)?.properties.join(' | ')}
+											<p
+												class="mt-2 text-xs uppercase tracking-[0.16em] text-stone-500"
+											>
+												{findEquipmentCatalogEntry(
+													attack.equipmentId
+												)?.properties.join(' | ')}
 											</p>
 										{/if}
 										{#if formatAttackMeta( [attack.attackBonus, attack.damageType ? `${attack.damage ?? ''} ${attack.damageType}`.trim() : attack.damage, attack.range] )}
@@ -303,17 +311,7 @@
 												</span>
 											{/if}
 										</div>
-										{#if formatSpellMeta([
-											spell.level !== undefined
-												? spell.level === 0
-													? 'Cantrip'
-													: `Level ${spell.level}`
-												: undefined,
-											spell.school,
-											spell.castingTime,
-											spell.range,
-											spell.duration
-										])}
+										{#if formatSpellMeta( [spell.level !== undefined ? (spell.level === 0 ? 'Cantrip' : `Level ${spell.level}`) : undefined, spell.school, spell.castingTime, spell.range, spell.duration] )}
 											<p class="mt-2 text-sm text-stone-600">
 												{formatSpellMeta([
 													spell.level !== undefined
@@ -348,16 +346,22 @@
 					<div>
 						<p class="text-sm font-medium text-stone-500">Feats</p>
 						{#if data.character.featItems.length === 0}
-							<p class="mt-2 text-sm leading-7 text-stone-700">No feats recorded yet.</p>
+							<p class="mt-2 text-sm leading-7 text-stone-700">
+								No feats recorded yet.
+							</p>
 						{:else}
 							<div class="mt-3 space-y-3">
 								{#each data.character.featItems as feat (`${feat.name}-${feat.featId ?? ''}`)}
 									<div
 										class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4"
 									>
-										<p class="text-base font-semibold text-stone-900">{feat.name}</p>
+										<p class="text-base font-semibold text-stone-900">
+											{feat.name}
+										</p>
 										{#if feat.description}
-											<p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700">
+											<p
+												class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700"
+											>
 												{feat.description}
 											</p>
 										{/if}
@@ -375,9 +379,15 @@
 						{:else}
 							<div class="mt-3 space-y-3">
 								{#each data.character.noteItems as note (`${note.title}-${note.content}`)}
-									<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4">
-										<p class="text-base font-semibold text-stone-900">{note.title}</p>
-										<p class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700">
+									<div
+										class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4"
+									>
+										<p class="text-base font-semibold text-stone-900">
+											{note.title}
+										</p>
+										<p
+											class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700"
+										>
 											{note.content}
 										</p>
 									</div>

@@ -29,8 +29,7 @@ const {
 	retireManagedSharedSpell,
 	updateManagedSharedSpell,
 	updateManagedSharedFeat
-} =
-	vi.hoisted(() => ({
+} = vi.hoisted(() => ({
 	createPrivateFeat: vi.fn(),
 	createPrivateSpell: vi.fn(),
 	createSharedFeat: vi.fn(),
@@ -47,7 +46,7 @@ const {
 	retireManagedSharedSpell: vi.fn(),
 	updateManagedSharedSpell: vi.fn(),
 	updateManagedSharedFeat: vi.fn()
-	}));
+}));
 
 const { getAuthorizationContext, requirePermissionScopeAccess } = vi.hoisted(() => ({
 	getAuthorizationContext: vi.fn(),
@@ -467,12 +466,16 @@ describe('/app/content load', () => {
 					authorization: {
 						userId: 'user-1',
 						globalRole: 'content_editor',
-						capabilities: ['read_shared_catalog', 'manage_private_content', 'edit_shared_content']
+						capabilities: [
+							'read_shared_catalog',
+							'manage_private_content',
+							'edit_shared_content'
+						]
 					}
 				}),
 				url: new URL(
-					'http://localhost/app/content?createdPrivateFeat=Observant%20Echo&createdPrivateSpell=Arc%20Light&derivedPrivateFeat=Alert&derivedPrivateSpell=Magic%20Missile&publishedSharedFeat=Battle%20Lore&editSharedFeat=shared-feat-1&updatedSharedFeat=Battle%20Lore'
-					+ '&publishedSharedSpell=Arc%20Light%20Nova&publishedSystemSpell=Solar%20Ward&editSharedSpell=shared-spell-1&updatedSharedSpell=Arc%20Light%20Nova&retiredSharedSpell=Old%20Ward&deletedSharedSpell=Lost%20Sigil'
+					'http://localhost/app/content?createdPrivateFeat=Observant%20Echo&createdPrivateSpell=Arc%20Light&derivedPrivateFeat=Alert&derivedPrivateSpell=Magic%20Missile&publishedSharedFeat=Battle%20Lore&editSharedFeat=shared-feat-1&updatedSharedFeat=Battle%20Lore' +
+						'&publishedSharedSpell=Arc%20Light%20Nova&publishedSystemSpell=Solar%20Ward&editSharedSpell=shared-spell-1&updatedSharedSpell=Arc%20Light%20Nova&retiredSharedSpell=Old%20Ward&deletedSharedSpell=Lost%20Sigil'
 				)
 			} as never)
 		).resolves.toEqual({

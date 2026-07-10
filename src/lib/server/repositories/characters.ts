@@ -123,17 +123,16 @@ export async function createCharacter(
 		featsResult,
 		inventoryResult,
 		notesResult
-	] =
-		await Promise.all([
-			supabase.from('character_stats').insert(statsInsert),
-			supabase.from('character_combat_stats').insert(combatStatsInsert),
-			supabase.from('character_text_sections').insert(textSectionsInsert),
-			insertCharacterAttackItems(supabase, character.id, input.attackItems),
-			insertCharacterSpellItems(supabase, character.id, input.spellItems),
-			insertCharacterFeatItems(supabase, character.id, input.featItems),
-			insertCharacterInventoryItems(supabase, character.id, input.inventoryItems),
-			insertCharacterNoteItems(supabase, character.id, input.noteItems)
-		]);
+	] = await Promise.all([
+		supabase.from('character_stats').insert(statsInsert),
+		supabase.from('character_combat_stats').insert(combatStatsInsert),
+		supabase.from('character_text_sections').insert(textSectionsInsert),
+		insertCharacterAttackItems(supabase, character.id, input.attackItems),
+		insertCharacterSpellItems(supabase, character.id, input.spellItems),
+		insertCharacterFeatItems(supabase, character.id, input.featItems),
+		insertCharacterInventoryItems(supabase, character.id, input.inventoryItems),
+		insertCharacterNoteItems(supabase, character.id, input.noteItems)
+	]);
 
 	const childError =
 		statsResult.error ??
@@ -188,48 +187,42 @@ export async function getCharacterForUser(
 		featsResult,
 		inventoryResult,
 		notesResult
-	] =
-		await Promise.all([
-			supabase
-				.from('character_stats')
-				.select('strength, dexterity, constitution, intelligence, wisdom, charisma')
-				.eq('character_id', characterId)
-				.maybeSingle(),
-			supabase
-				.from('character_combat_stats')
-				.select(
-					'max_hp, current_hp, temporary_hp, armor_class, initiative, speed, hit_dice'
-				)
-				.eq('character_id', characterId)
-				.maybeSingle(),
-			supabase
-				.from('character_text_sections')
-				.select('attacks, spells, inventory, notes')
-				.eq('character_id', characterId)
-				.maybeSingle(),
-			supabase
-				.from('character_attacks')
-				.select('equipment_id, name, attack_bonus, damage, damage_type, range, description')
-				.eq('character_id', characterId),
-			supabase
-				.from('character_spells')
-				.select(
-					'spell_id, name, level, school, casting_time, range, components, duration, description, is_prepared'
-				)
-				.eq('character_id', characterId),
-			supabase
-				.from('character_feats')
-				.select('feat_id, name, description')
-				.eq('character_id', characterId),
-			supabase
-				.from('character_inventory_items')
-				.select('equipment_id, name, quantity, description, weight, value, is_equipped')
-				.eq('character_id', characterId),
-			supabase
-				.from('character_notes')
-				.select('title, content')
-				.eq('character_id', characterId)
-		]);
+	] = await Promise.all([
+		supabase
+			.from('character_stats')
+			.select('strength, dexterity, constitution, intelligence, wisdom, charisma')
+			.eq('character_id', characterId)
+			.maybeSingle(),
+		supabase
+			.from('character_combat_stats')
+			.select('max_hp, current_hp, temporary_hp, armor_class, initiative, speed, hit_dice')
+			.eq('character_id', characterId)
+			.maybeSingle(),
+		supabase
+			.from('character_text_sections')
+			.select('attacks, spells, inventory, notes')
+			.eq('character_id', characterId)
+			.maybeSingle(),
+		supabase
+			.from('character_attacks')
+			.select('equipment_id, name, attack_bonus, damage, damage_type, range, description')
+			.eq('character_id', characterId),
+		supabase
+			.from('character_spells')
+			.select(
+				'spell_id, name, level, school, casting_time, range, components, duration, description, is_prepared'
+			)
+			.eq('character_id', characterId),
+		supabase
+			.from('character_feats')
+			.select('feat_id, name, description')
+			.eq('character_id', characterId),
+		supabase
+			.from('character_inventory_items')
+			.select('equipment_id, name, quantity, description, weight, value, is_equipped')
+			.eq('character_id', characterId),
+		supabase.from('character_notes').select('title, content').eq('character_id', characterId)
+	]);
 
 	const childError =
 		statsResult.error ??
@@ -392,26 +385,25 @@ export async function updateCharacter(
 		featsResult,
 		inventoryResult,
 		notesResult
-	] =
-		await Promise.all([
-			supabase
-				.from('character_stats')
-				.update(toCharacterStatsFields(input))
-				.eq('character_id', characterId),
-			supabase
-				.from('character_combat_stats')
-				.update(toCharacterCombatStatsFields(input))
-				.eq('character_id', characterId),
-			supabase
-				.from('character_text_sections')
-				.update(toCharacterTextSectionsFields(input))
-				.eq('character_id', characterId),
-			replaceCharacterAttackItems(supabase, characterId, input.attackItems),
-			replaceCharacterSpellItems(supabase, characterId, input.spellItems),
-			replaceCharacterFeatItems(supabase, characterId, input.featItems),
-			replaceCharacterInventoryItems(supabase, characterId, input.inventoryItems),
-			replaceCharacterNoteItems(supabase, characterId, input.noteItems)
-		]);
+	] = await Promise.all([
+		supabase
+			.from('character_stats')
+			.update(toCharacterStatsFields(input))
+			.eq('character_id', characterId),
+		supabase
+			.from('character_combat_stats')
+			.update(toCharacterCombatStatsFields(input))
+			.eq('character_id', characterId),
+		supabase
+			.from('character_text_sections')
+			.update(toCharacterTextSectionsFields(input))
+			.eq('character_id', characterId),
+		replaceCharacterAttackItems(supabase, characterId, input.attackItems),
+		replaceCharacterSpellItems(supabase, characterId, input.spellItems),
+		replaceCharacterFeatItems(supabase, characterId, input.featItems),
+		replaceCharacterInventoryItems(supabase, characterId, input.inventoryItems),
+		replaceCharacterNoteItems(supabase, characterId, input.noteItems)
+	]);
 
 	const childError =
 		statsResult.error ??
@@ -691,9 +683,7 @@ async function replaceCharacterSpellItems(
 	const restoreResult = await supabase
 		.from('character_spells')
 		.insert(
-			existingItems.map((item) =>
-				toCharacterSpellItemInsert(characterId, mapSpellRow(item))
-			)
+			existingItems.map((item) => toCharacterSpellItemInsert(characterId, mapSpellRow(item)))
 		);
 
 	return {
@@ -715,7 +705,10 @@ async function replaceCharacterFeatItems(
 		return { error: selectError ?? new Error('Failed to load current character feats') };
 	}
 
-	const deleteResult = await supabase.from('character_feats').delete().eq('character_id', characterId);
+	const deleteResult = await supabase
+		.from('character_feats')
+		.delete()
+		.eq('character_id', characterId);
 
 	if (deleteResult.error || items.length === 0) {
 		return deleteResult;
@@ -733,7 +726,9 @@ async function replaceCharacterFeatItems(
 
 	const restoreResult = await supabase
 		.from('character_feats')
-		.insert(existingItems.map((item) => toCharacterFeatItemInsert(characterId, mapFeatRow(item))));
+		.insert(
+			existingItems.map((item) => toCharacterFeatItemInsert(characterId, mapFeatRow(item)))
+		);
 
 	return {
 		error: restoreResult.error ?? insertResult.error
@@ -754,7 +749,10 @@ async function replaceCharacterNoteItems(
 		return { error: selectError ?? new Error('Failed to load current character notes') };
 	}
 
-	const deleteResult = await supabase.from('character_notes').delete().eq('character_id', characterId);
+	const deleteResult = await supabase
+		.from('character_notes')
+		.delete()
+		.eq('character_id', characterId);
 
 	if (deleteResult.error || items.length === 0) {
 		return deleteResult;
@@ -772,7 +770,9 @@ async function replaceCharacterNoteItems(
 
 	const restoreResult = await supabase
 		.from('character_notes')
-		.insert(existingItems.map((item) => toCharacterNoteItemInsert(characterId, mapNoteRow(item))));
+		.insert(
+			existingItems.map((item) => toCharacterNoteItemInsert(characterId, mapNoteRow(item)))
+		);
 
 	return {
 		error: restoreResult.error ?? insertResult.error
@@ -923,9 +923,7 @@ function toLegacyNoteText(items: CharacterNoteItem[], fallback?: string): string
 		return fallback?.trim() ? fallback : null;
 	}
 
-	return items
-		.map((item) => `${item.title}\n${item.content}`)
-		.join('\n\n');
+	return items.map((item) => `${item.title}\n${item.content}`).join('\n\n');
 }
 
 function parseLegacyAttackItems(value: string | null): CharacterAttackItem[] {
@@ -980,7 +978,13 @@ function splitLegacyAttackEntries(value: string): string[] {
 function mapAttackRow(
 	item: Pick<
 		CharacterAttackRow,
-		'equipment_id' | 'name' | 'attack_bonus' | 'damage' | 'damage_type' | 'range' | 'description'
+		| 'equipment_id'
+		| 'name'
+		| 'attack_bonus'
+		| 'damage'
+		| 'damage_type'
+		| 'range'
+		| 'description'
 	>
 ): CharacterAttackItem {
 	return {

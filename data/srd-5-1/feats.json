@@ -67,7 +67,11 @@
 			"visibility": "public",
 			"mechanics": [
 				{ "type": "ability_bonus", "ability": "constitution", "value": 1 },
-				{ "type": "proficiency", "proficiencyType": "saving_throw", "value": "constitution" }
+				{
+					"type": "proficiency",
+					"proficiencyType": "saving_throw",
+					"value": "constitution"
+				}
 			]
 		},
 		{

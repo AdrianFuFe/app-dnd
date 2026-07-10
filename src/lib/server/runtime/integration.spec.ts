@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-	getLiveSupabaseConfigurationMessage,
-	getRuntimeIntegrationStatus
-} from './integration';
+import { getLiveSupabaseConfigurationMessage, getRuntimeIntegrationStatus } from './integration';
 
 describe('getRuntimeIntegrationStatus', () => {
 	it('reports missing live Supabase configuration outside E2E mode', () => {

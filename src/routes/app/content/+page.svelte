@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import type { ActionData, PageData } from './$types';
 	import type { ContentMechanicSummary } from '$lib/types/content/mechanic-summary';
 	import type {
@@ -31,10 +32,12 @@
 	const createSpellValues = $derived(
 		(form?.createPrivateSpellValues ?? data.createPrivateSpellValues) as PrivateSpellFormValues
 	);
-	const editSharedFeatId = $derived((form?.editSharedFeatId ?? data.editSharedFeatId) as string | null);
+	const editSharedFeatId = $derived(
+		(form?.editSharedFeatId ?? data.editSharedFeatId) as string | null
+	);
 	const selectedManagedSharedFeat = $derived(
 		editSharedFeatId
-			? data.manageableSharedFeats.find((feat) => feat.id === editSharedFeatId) ?? null
+			? (data.manageableSharedFeats.find((feat) => feat.id === editSharedFeatId) ?? null)
 			: null
 	);
 	const editSharedSpellId = $derived(
@@ -48,7 +51,7 @@
 	);
 	const selectedManagedSharedSpell = $derived(
 		editSharedSpellId
-			? data.manageableSharedSpells.find((spell) => spell.id === editSharedSpellId) ?? null
+			? (data.manageableSharedSpells.find((spell) => spell.id === editSharedSpellId) ?? null)
 			: null
 	);
 
@@ -114,7 +117,8 @@
 
 	function formatProficiencyGrantSummary(summary: ContentMechanicSummary): string | null {
 		const parts = summary.proficiencyGrants.map(
-			(grant) => `${formatProficiencyTypeLabel(grant.proficiencyType)}: ${formatSlugLabel(grant.value)}`
+			(grant) =>
+				`${formatProficiencyTypeLabel(grant.proficiencyType)}: ${formatSlugLabel(grant.value)}`
 		);
 
 		for (const choice of summary.proficiencyChoices) {
@@ -202,12 +206,16 @@
 			in the live character forms.
 		</p>
 		{#if data.roleOperations.canPublishSharedFeats || data.roleOperations.canPublishSystemFeats || data.roleOperations.canPublishSharedSpells || data.roleOperations.canPublishSystemSpells}
-			<div class="mt-5 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-4 text-sm text-indigo-900">
-				<p class="font-medium">Role-aware content operations are active for this account.</p>
+			<div
+				class="mt-5 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-4 text-sm text-indigo-900"
+			>
+				<p class="font-medium">
+					Role-aware content operations are active for this account.
+				</p>
 				<p class="mt-2">
 					{#if data.roleOperations.canPublishSystemFeats || data.roleOperations.canPublishSystemSpells}
-						You can publish shared homebrew spells and feats, and promote approved entries
-						into system-owned catalog content.
+						You can publish shared homebrew spells and feats, and promote approved
+						entries into system-owned catalog content.
 					{:else}
 						You can publish shared homebrew spells and feats for broader reuse, but
 						system-owned catalog content remains admin-only.
@@ -345,9 +353,11 @@
 				</p>
 
 				{#if data.manageableSharedFeats.length === 0}
-					<p class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600">
-						No maintainable shared feats yet. Publish one first, or use an admin account to
-						review system-owned entries.
+					<p
+						class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600"
+					>
+						No maintainable shared feats yet. Publish one first, or use an admin account
+						to review system-owned entries.
 					</p>
 				{:else}
 					<div class="mt-6 space-y-4">
@@ -355,7 +365,9 @@
 							<article class="rounded-2xl border border-stone-200 p-4">
 								<div class="flex flex-wrap items-start justify-between gap-3">
 									<div>
-										<h3 class="text-lg font-semibold text-stone-900">{feat.name}</h3>
+										<h3 class="text-lg font-semibold text-stone-900">
+											{feat.name}
+										</h3>
 										<p class="mt-1 text-sm text-stone-500">slug: {feat.slug}</p>
 									</div>
 									<div class="flex flex-wrap items-center gap-2">
@@ -374,7 +386,7 @@
 													? 'bg-stone-500 hover:bg-stone-500'
 													: 'bg-stone-900 hover:bg-stone-700'
 											}`}
-											href={`?editSharedFeat=${feat.id}`}
+											href={resolve(`/app/content?editSharedFeat=${feat.id}`)}
 										>
 											{editSharedFeatId === feat.id ? 'Editing' : 'Edit'}
 										</a>
@@ -383,7 +395,9 @@
 								<p class="mt-3 text-sm text-stone-600">
 									{feat.summary ?? feat.description ?? 'No summary yet.'}
 								</p>
-								<p class="mt-4 text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
+								<p
+									class="mt-4 text-xs font-medium uppercase tracking-[0.16em] text-stone-500"
+								>
 									Prerequisites
 								</p>
 								<p class="mt-2 text-sm text-stone-700">
@@ -408,29 +422,39 @@
 				</p>
 
 				{#if data.updatedSharedFeatName}
-					<p class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+					<p
+						class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+					>
 						{data.updatedSharedFeatName} was updated successfully.
 					</p>
 				{/if}
 				{#if data.retiredSharedFeatName}
-					<p class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+					<p
+						class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+					>
 						{data.retiredSharedFeatName} was retired from the shared catalog.
 					</p>
 				{/if}
 				{#if data.deletedSharedFeatName}
-					<p class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+					<p
+						class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900"
+					>
 						{data.deletedSharedFeatName} was deleted from shared content.
 					</p>
 				{/if}
 
 				{#if form?.editSharedFeatFormError}
-					<p class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+					<p
+						class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+					>
 						{form.editSharedFeatFormError}
 					</p>
 				{/if}
 
 				{#if !editSharedFeatId}
-					<p class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600">
+					<p
+						class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600"
+					>
 						Choose a shared feat from the maintenance list to load it into this editor.
 					</p>
 				{:else}
@@ -438,7 +462,9 @@
 						<input type="hidden" name="featId" value={editSharedFeatId} />
 
 						<label class="block">
-							<span class="mb-1 block text-sm font-medium text-stone-700">Feat name</span>
+							<span class="mb-1 block text-sm font-medium text-stone-700"
+								>Feat name</span
+							>
 							<input
 								class="block w-full rounded-lg border-stone-300"
 								name="name"
@@ -446,12 +472,16 @@
 								value={editSharedFeatValue('name')}
 							/>
 							{#if editSharedFeatFieldError('name')}
-								<p class="mt-1 text-sm text-red-700">{editSharedFeatFieldError('name')}</p>
+								<p class="mt-1 text-sm text-red-700">
+									{editSharedFeatFieldError('name')}
+								</p>
 							{/if}
 						</label>
 
 						<label class="block">
-							<span class="mb-1 block text-sm font-medium text-stone-700">Summary</span>
+							<span class="mb-1 block text-sm font-medium text-stone-700"
+								>Summary</span
+							>
 							<input
 								class="block w-full rounded-lg border-stone-300"
 								name="summary"
@@ -459,16 +489,20 @@
 								value={editSharedFeatValue('summary')}
 							/>
 							{#if editSharedFeatFieldError('summary')}
-								<p class="mt-1 text-sm text-red-700">{editSharedFeatFieldError('summary')}</p>
+								<p class="mt-1 text-sm text-red-700">
+									{editSharedFeatFieldError('summary')}
+								</p>
 							{/if}
 						</label>
 
 						<label class="block">
-							<span class="mb-1 block text-sm font-medium text-stone-700">Description</span>
+							<span class="mb-1 block text-sm font-medium text-stone-700"
+								>Description</span
+							>
 							<textarea
 								class="block min-h-28 w-full rounded-lg border-stone-300"
-								name="description"
-							>{editSharedFeatValue('description')}</textarea>
+								name="description">{editSharedFeatValue('description')}</textarea
+							>
 							{#if editSharedFeatFieldError('description')}
 								<p class="mt-1 text-sm text-red-700">
 									{editSharedFeatFieldError('description')}
@@ -477,13 +511,17 @@
 						</label>
 
 						<label class="block">
-							<span class="mb-1 block text-sm font-medium text-stone-700">Prerequisites</span>
+							<span class="mb-1 block text-sm font-medium text-stone-700"
+								>Prerequisites</span
+							>
 							<textarea
 								class="block min-h-28 w-full rounded-lg border-stone-300"
 								name="prerequisitesText"
-							>{editSharedFeatValue('prerequisitesText')}</textarea>
+								>{editSharedFeatValue('prerequisitesText')}</textarea
+							>
 							<p class="mt-1 text-sm text-stone-500">
-								Use one prerequisite per line. Updates are revalidated before saving.
+								Use one prerequisite per line. Updates are revalidated before
+								saving.
 							</p>
 							{#if editSharedFeatFieldError('prerequisitesText')}
 								<p class="mt-1 text-sm text-red-700">
@@ -504,16 +542,18 @@
 					<div class="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
 						<p class="text-sm font-medium text-amber-950">Lifecycle controls</p>
 						<p class="mt-2 text-sm leading-6 text-amber-900">
-							Retiring removes this feat from shared browsing without permanently deleting
-							the stored row. Deleting removes it permanently from managed shared content.
+							Retiring removes this feat from shared browsing without permanently
+							deleting the stored row. Deleting removes it permanently from managed
+							shared content.
 						</p>
 						<p class="mt-2 text-sm leading-6 text-amber-900">
 							{#if selectedManagedSharedFeat?.isSystemContent}
-								This entry is system-owned, so only admin users should apply destructive
-								actions here.
+								This entry is system-owned, so only admin users should apply
+								destructive actions here.
 							{:else}
-								This action scope is limited to the shared feat you selected and should be
-								used only when it should no longer stay in the shared catalog.
+								This action scope is limited to the shared feat you selected and
+								should be used only when it should no longer stay in the shared
+								catalog.
 							{/if}
 						</p>
 						<div class="mt-4 flex flex-wrap gap-3">
@@ -564,9 +604,11 @@
 				</p>
 
 				{#if data.manageableSharedSpells.length === 0}
-					<p class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600">
-						No maintainable shared spells yet. Publish one first, or use an admin account to
-						review system-owned entries.
+					<p
+						class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600"
+					>
+						No maintainable shared spells yet. Publish one first, or use an admin
+						account to review system-owned entries.
 					</p>
 				{:else}
 					<div class="mt-6 space-y-4">
@@ -574,8 +616,12 @@
 							<article class="rounded-2xl border border-stone-200 p-4">
 								<div class="flex flex-wrap items-start justify-between gap-3">
 									<div>
-										<h3 class="text-lg font-semibold text-stone-900">{spell.name}</h3>
-										<p class="mt-1 text-sm text-stone-500">slug: {spell.slug}</p>
+										<h3 class="text-lg font-semibold text-stone-900">
+											{spell.name}
+										</h3>
+										<p class="mt-1 text-sm text-stone-500">
+											slug: {spell.slug}
+										</p>
 									</div>
 									<div class="flex flex-wrap items-center gap-2">
 										<span
@@ -587,7 +633,9 @@
 										>
 											{spell.isSystemContent ? 'System' : 'Shared'}
 										</span>
-										<span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-amber-900">
+										<span
+											class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-amber-900"
+										>
 											{formatSpellLevel(spell.level)}
 										</span>
 										<a
@@ -596,7 +644,9 @@
 													? 'bg-stone-500 hover:bg-stone-500'
 													: 'bg-stone-900 hover:bg-stone-700'
 											}`}
-											href={`?editSharedSpell=${spell.id}`}
+											href={resolve(
+												`/app/content?editSharedSpell=${spell.id}`
+											)}
 										>
 											{editSharedSpellId === spell.id ? 'Editing' : 'Edit'}
 										</a>
@@ -627,29 +677,39 @@
 				</p>
 
 				{#if data.updatedSharedSpellName}
-					<p class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+					<p
+						class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+					>
 						{data.updatedSharedSpellName} was updated successfully.
 					</p>
 				{/if}
 				{#if data.retiredSharedSpellName}
-					<p class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+					<p
+						class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+					>
 						{data.retiredSharedSpellName} was retired from the shared catalog.
 					</p>
 				{/if}
 				{#if data.deletedSharedSpellName}
-					<p class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+					<p
+						class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900"
+					>
 						{data.deletedSharedSpellName} was deleted from shared content.
 					</p>
 				{/if}
 
 				{#if form?.editSharedSpellFormError}
-					<p class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+					<p
+						class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+					>
 						{form.editSharedSpellFormError}
 					</p>
 				{/if}
 
 				{#if !editSharedSpellId}
-					<p class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600">
+					<p
+						class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600"
+					>
 						Choose a shared spell from the maintenance list to load it into this editor.
 					</p>
 				{:else}
@@ -658,7 +718,9 @@
 
 						<div class="grid gap-4 sm:grid-cols-2">
 							<label class="block sm:col-span-2">
-								<span class="mb-1 block text-sm font-medium text-stone-700">Spell name</span>
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Spell name</span
+								>
 								<input
 									class="block w-full rounded-lg border-stone-300"
 									name="name"
@@ -666,12 +728,16 @@
 									value={editSharedSpellValue('name')}
 								/>
 								{#if editSharedSpellFieldError('name')}
-									<p class="mt-1 text-sm text-red-700">{editSharedSpellFieldError('name')}</p>
+									<p class="mt-1 text-sm text-red-700">
+										{editSharedSpellFieldError('name')}
+									</p>
 								{/if}
 							</label>
 
 							<label class="block">
-								<span class="mb-1 block text-sm font-medium text-stone-700">Level</span>
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Level</span
+								>
 								<input
 									class="block w-full rounded-lg border-stone-300"
 									name="level"
@@ -681,12 +747,16 @@
 									value={editSharedSpellValue('level')}
 								/>
 								{#if editSharedSpellFieldError('level')}
-									<p class="mt-1 text-sm text-red-700">{editSharedSpellFieldError('level')}</p>
+									<p class="mt-1 text-sm text-red-700">
+										{editSharedSpellFieldError('level')}
+									</p>
 								{/if}
 							</label>
 
 							<label class="block">
-								<span class="mb-1 block text-sm font-medium text-stone-700">School</span>
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>School</span
+								>
 								<select
 									class="block w-full rounded-lg border-stone-300"
 									name="school"
@@ -698,12 +768,16 @@
 									{/each}
 								</select>
 								{#if editSharedSpellFieldError('school')}
-									<p class="mt-1 text-sm text-red-700">{editSharedSpellFieldError('school')}</p>
+									<p class="mt-1 text-sm text-red-700">
+										{editSharedSpellFieldError('school')}
+									</p>
 								{/if}
 							</label>
 
 							<label class="block">
-								<span class="mb-1 block text-sm font-medium text-stone-700">Casting time</span>
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Casting time</span
+								>
 								<input
 									class="block w-full rounded-lg border-stone-300"
 									name="castingTime"
@@ -718,7 +792,9 @@
 							</label>
 
 							<label class="block">
-								<span class="mb-1 block text-sm font-medium text-stone-700">Range</span>
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Range</span
+								>
 								<input
 									class="block w-full rounded-lg border-stone-300"
 									name="range"
@@ -726,12 +802,16 @@
 									value={editSharedSpellValue('range')}
 								/>
 								{#if editSharedSpellFieldError('range')}
-									<p class="mt-1 text-sm text-red-700">{editSharedSpellFieldError('range')}</p>
+									<p class="mt-1 text-sm text-red-700">
+										{editSharedSpellFieldError('range')}
+									</p>
 								{/if}
 							</label>
 
 							<label class="block">
-								<span class="mb-1 block text-sm font-medium text-stone-700">Components</span>
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Components</span
+								>
 								<input
 									class="block w-full rounded-lg border-stone-300"
 									name="components"
@@ -746,7 +826,9 @@
 							</label>
 
 							<label class="block">
-								<span class="mb-1 block text-sm font-medium text-stone-700">Duration</span>
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Duration</span
+								>
 								<input
 									class="block w-full rounded-lg border-stone-300"
 									name="duration"
@@ -754,12 +836,16 @@
 									value={editSharedSpellValue('duration')}
 								/>
 								{#if editSharedSpellFieldError('duration')}
-									<p class="mt-1 text-sm text-red-700">{editSharedSpellFieldError('duration')}</p>
+									<p class="mt-1 text-sm text-red-700">
+										{editSharedSpellFieldError('duration')}
+									</p>
 								{/if}
 							</label>
 
 							<label class="block sm:col-span-2">
-								<span class="mb-1 block text-sm font-medium text-stone-700">Materials</span>
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Materials</span
+								>
 								<input
 									class="block w-full rounded-lg border-stone-300"
 									name="materials"
@@ -767,16 +853,21 @@
 									value={editSharedSpellValue('materials')}
 								/>
 								{#if editSharedSpellFieldError('materials')}
-									<p class="mt-1 text-sm text-red-700">{editSharedSpellFieldError('materials')}</p>
+									<p class="mt-1 text-sm text-red-700">
+										{editSharedSpellFieldError('materials')}
+									</p>
 								{/if}
 							</label>
 
 							<label class="block sm:col-span-2">
-								<span class="mb-1 block text-sm font-medium text-stone-700">Class slugs</span>
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Class slugs</span
+								>
 								<textarea
 									class="block min-h-24 w-full rounded-lg border-stone-300"
 									name="classSlugsText"
-								>{editSharedSpellValue('classSlugsText')}</textarea>
+									>{editSharedSpellValue('classSlugsText')}</textarea
+								>
 								{#if editSharedSpellFieldError('classSlugsText')}
 									<p class="mt-1 text-sm text-red-700">
 										{editSharedSpellFieldError('classSlugsText')}
@@ -785,7 +876,9 @@
 							</label>
 
 							<label class="block sm:col-span-2">
-								<span class="mb-1 block text-sm font-medium text-stone-700">Summary</span>
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Summary</span
+								>
 								<input
 									class="block w-full rounded-lg border-stone-300"
 									name="summary"
@@ -793,16 +886,21 @@
 									value={editSharedSpellValue('summary')}
 								/>
 								{#if editSharedSpellFieldError('summary')}
-									<p class="mt-1 text-sm text-red-700">{editSharedSpellFieldError('summary')}</p>
+									<p class="mt-1 text-sm text-red-700">
+										{editSharedSpellFieldError('summary')}
+									</p>
 								{/if}
 							</label>
 
 							<label class="block sm:col-span-2">
-								<span class="mb-1 block text-sm font-medium text-stone-700">Description</span>
+								<span class="mb-1 block text-sm font-medium text-stone-700"
+									>Description</span
+								>
 								<textarea
 									class="block min-h-28 w-full rounded-lg border-stone-300"
 									name="description"
-								>{editSharedSpellValue('description')}</textarea>
+									>{editSharedSpellValue('description')}</textarea
+								>
 								{#if editSharedSpellFieldError('description')}
 									<p class="mt-1 text-sm text-red-700">
 										{editSharedSpellFieldError('description')}
@@ -844,16 +942,18 @@
 					<div class="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
 						<p class="text-sm font-medium text-amber-950">Lifecycle controls</p>
 						<p class="mt-2 text-sm leading-6 text-amber-900">
-							Retiring removes this spell from shared browsing without permanently deleting
-							the stored row. Deleting removes it permanently from managed shared content.
+							Retiring removes this spell from shared browsing without permanently
+							deleting the stored row. Deleting removes it permanently from managed
+							shared content.
 						</p>
 						<p class="mt-2 text-sm leading-6 text-amber-900">
 							{#if selectedManagedSharedSpell?.isSystemContent}
-								This entry is system-owned, so only admin users should apply destructive
-								actions here.
+								This entry is system-owned, so only admin users should apply
+								destructive actions here.
 							{:else}
-								This action scope is limited to the shared spell you selected and should
-								be used only when it should no longer stay in the shared catalog.
+								This action scope is limited to the shared spell you selected and
+								should be used only when it should no longer stay in the shared
+								catalog.
 							{/if}
 						</p>
 						<div class="mt-4 flex flex-wrap gap-3">
@@ -889,38 +989,46 @@
 			<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
 				Private feats
 			</p>
-			<h2 class="mt-2 text-2xl font-semibold text-stone-900">
-				Create your own feat draft
-			</h2>
+			<h2 class="mt-2 text-2xl font-semibold text-stone-900">Create your own feat draft</h2>
 			<p class="mt-3 max-w-2xl text-sm leading-7 text-stone-600">
 				This first private content workflow is owner-scoped. New feats created here stay
 				private to your account and do not modify the shared SRD catalog.
 			</p>
 
 			{#if data.createdPrivateFeatName}
-				<p class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+				<p
+					class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+				>
 					{data.createdPrivateFeatName} was created as a private feat.
 				</p>
 			{/if}
 			{#if data.derivedPrivateFeatName}
-				<p class="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
-					{data.derivedPrivateFeatName} was copied from the shared SRD catalog into your
-					private feats.
+				<p
+					class="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800"
+				>
+					{data.derivedPrivateFeatName} was copied from the shared SRD catalog into your private
+					feats.
 				</p>
 			{/if}
 			{#if data.publishedSharedFeatName}
-				<p class="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
+				<p
+					class="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800"
+				>
 					{data.publishedSharedFeatName} was published to the shared homebrew catalog.
 				</p>
 			{/if}
 			{#if data.publishedSystemFeatName}
-				<p class="mt-4 rounded-2xl border border-fuchsia-200 bg-fuchsia-50 px-4 py-3 text-sm text-fuchsia-800">
+				<p
+					class="mt-4 rounded-2xl border border-fuchsia-200 bg-fuchsia-50 px-4 py-3 text-sm text-fuchsia-800"
+				>
 					{data.publishedSystemFeatName} was published as system-owned content.
 				</p>
 			{/if}
 
 			{#if form?.createPrivateFeatFormError}
-				<p class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+				<p
+					class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+				>
 					{form.createPrivateFeatFormError}
 				</p>
 			{/if}
@@ -936,7 +1044,9 @@
 						placeholder="Observant Echo"
 					/>
 					{#if createPrivateFeatFieldError('name')}
-						<p class="mt-1 text-sm text-red-700">{createPrivateFeatFieldError('name')}</p>
+						<p class="mt-1 text-sm text-red-700">
+							{createPrivateFeatFieldError('name')}
+						</p>
 					{/if}
 				</label>
 
@@ -950,7 +1060,9 @@
 						placeholder="Short player-facing summary"
 					/>
 					{#if createPrivateFeatFieldError('summary')}
-						<p class="mt-1 text-sm text-red-700">{createPrivateFeatFieldError('summary')}</p>
+						<p class="mt-1 text-sm text-red-700">
+							{createPrivateFeatFieldError('summary')}
+						</p>
 					{/if}
 				</label>
 
@@ -960,9 +1072,12 @@
 						class="block min-h-28 w-full rounded-lg border-stone-300"
 						name="description"
 						placeholder="Describe what this feat changes for the character."
-					>{createPrivateFeatValue('description')}</textarea>
+						>{createPrivateFeatValue('description')}</textarea
+					>
 					{#if createPrivateFeatFieldError('description')}
-						<p class="mt-1 text-sm text-red-700">{createPrivateFeatFieldError('description')}</p>
+						<p class="mt-1 text-sm text-red-700">
+							{createPrivateFeatFieldError('description')}
+						</p>
 					{/if}
 				</label>
 
@@ -974,7 +1089,8 @@
 						class="block min-h-28 w-full rounded-lg border-stone-300"
 						name="prerequisitesText"
 						placeholder="One per line, for example:&#10;level:4&#10;ability:intelligence:13&#10;spellcasting"
-					>{createPrivateFeatValue('prerequisitesText')}</textarea>
+						>{createPrivateFeatValue('prerequisitesText')}</textarea
+					>
 					<p class="mt-1 text-sm text-stone-500">
 						Use one prerequisite per line. Supported formats match the validated content
 						schema.
@@ -994,13 +1110,16 @@
 					Create private feat
 				</button>
 				{#if data.roleOperations.canPublishSharedFeats || data.roleOperations.canPublishSystemFeats}
-					<div class="rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4">
+					<div
+						class="rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4"
+					>
 						<p class="text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
 							Privileged publishing
 						</p>
 						<p class="mt-2 text-sm text-stone-600">
-							These actions reuse the same validated feat draft, but publish it beyond your
-							private workspace. Role assignment still stays outside the runtime UI.
+							These actions reuse the same validated feat draft, but publish it beyond
+							your private workspace. Role assignment still stays outside the runtime
+							UI.
 						</p>
 						<div class="mt-4 flex flex-wrap gap-3">
 							{#if data.roleOperations.canPublishSharedFeats}
@@ -1033,15 +1152,15 @@
 					<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
 						Your private feats
 					</p>
-					<h2 class="mt-2 text-2xl font-semibold text-stone-900">
-						Owner-scoped content
-					</h2>
+					<h2 class="mt-2 text-2xl font-semibold text-stone-900">Owner-scoped content</h2>
 				</div>
 				<p class="text-sm text-stone-500">{data.privateFeats.length} total</p>
 			</div>
 
 			{#if data.privateFeats.length === 0}
-				<p class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600">
+				<p
+					class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600"
+				>
 					No private feats yet. Create one from the form to start building personal
 					content without touching the shared SRD baseline.
 				</p>
@@ -1051,15 +1170,21 @@
 						<article class="rounded-2xl border border-stone-200 p-4">
 							<div class="flex flex-wrap items-start justify-between gap-3">
 								<div>
-									<h3 class="text-lg font-semibold text-stone-900">{feat.name}</h3>
+									<h3 class="text-lg font-semibold text-stone-900">
+										{feat.name}
+									</h3>
 									<p class="mt-1 text-sm text-stone-500">slug: {feat.slug}</p>
 								</div>
 								<div class="flex flex-wrap gap-2">
-									<span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-amber-900">
+									<span
+										class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-amber-900"
+									>
 										Private
 									</span>
 									{#if feat.derivation}
-										<span class="rounded-full bg-sky-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-sky-900">
+										<span
+											class="rounded-full bg-sky-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-sky-900"
+										>
 											Derived
 										</span>
 									{/if}
@@ -1075,7 +1200,9 @@
 								</p>
 							{/if}
 
-							<p class="mt-4 text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
+							<p
+								class="mt-4 text-xs font-medium uppercase tracking-[0.16em] text-stone-500"
+							>
 								Prerequisites
 							</p>
 							<p class="mt-2 text-sm text-stone-700">
@@ -1208,13 +1335,21 @@
 										{option.summary ?? 'No summary yet.'}
 									</p>
 									{#if formatSpellcastingSummary(option.mechanicSummary)}
-										<p class="mt-2 text-xs uppercase tracking-[0.16em] text-stone-500">
-											Spellcasting: {formatSpellcastingSummary(option.mechanicSummary)}
+										<p
+											class="mt-2 text-xs uppercase tracking-[0.16em] text-stone-500"
+										>
+											Spellcasting: {formatSpellcastingSummary(
+												option.mechanicSummary
+											)}
 										</p>
 									{/if}
 									{#if formatProficiencyGrantSummary(option.mechanicSummary)}
-										<p class="mt-2 text-xs uppercase tracking-[0.16em] text-stone-500">
-											Proficiencies: {formatProficiencyGrantSummary(option.mechanicSummary)}
+										<p
+											class="mt-2 text-xs uppercase tracking-[0.16em] text-stone-500"
+										>
+											Proficiencies: {formatProficiencyGrantSummary(
+												option.mechanicSummary
+											)}
 										</p>
 									{/if}
 								</div>
@@ -1274,13 +1409,21 @@
 										{option.summary ?? 'No summary yet.'}
 									</p>
 									{#if formatLanguageGrantSummary(option.mechanicSummary)}
-										<p class="mt-2 text-xs uppercase tracking-[0.16em] text-stone-500">
-											Languages: {formatLanguageGrantSummary(option.mechanicSummary)}
+										<p
+											class="mt-2 text-xs uppercase tracking-[0.16em] text-stone-500"
+										>
+											Languages: {formatLanguageGrantSummary(
+												option.mechanicSummary
+											)}
 										</p>
 									{/if}
 									{#if formatProficiencyGrantSummary(option.mechanicSummary)}
-										<p class="mt-2 text-xs uppercase tracking-[0.16em] text-stone-500">
-											Proficiencies: {formatProficiencyGrantSummary(option.mechanicSummary)}
+										<p
+											class="mt-2 text-xs uppercase tracking-[0.16em] text-stone-500"
+										>
+											Proficiencies: {formatProficiencyGrantSummary(
+												option.mechanicSummary
+											)}
 										</p>
 									{/if}
 								</div>
@@ -1322,24 +1465,30 @@
 									</p>
 								</div>
 								<div class="flex flex-wrap items-start justify-end gap-3">
-								<div
-									class="flex flex-wrap gap-2 text-xs font-medium uppercase tracking-[0.14em] text-stone-600"
-								>
-									{#if spell.isSystemContent}
-										<span class="rounded-full bg-fuchsia-100 px-3 py-1 text-fuchsia-900">
-											System
-										</span>
-									{:else if spell.visibility === 'shared'}
-										<span class="rounded-full bg-indigo-100 px-3 py-1 text-indigo-900">
-											Shared
-										</span>
-									{/if}
+									<div
+										class="flex flex-wrap gap-2 text-xs font-medium uppercase tracking-[0.14em] text-stone-600"
+									>
+										{#if spell.isSystemContent}
+											<span
+												class="rounded-full bg-fuchsia-100 px-3 py-1 text-fuchsia-900"
+											>
+												System
+											</span>
+										{:else if spell.visibility === 'shared'}
+											<span
+												class="rounded-full bg-indigo-100 px-3 py-1 text-indigo-900"
+											>
+												Shared
+											</span>
+										{/if}
 										<span
 											class="rounded-full bg-amber-100 px-3 py-1 text-amber-900"
 										>
 											{formatSpellLevel(spell.level)}
 										</span>
-										<span class="rounded-full bg-sky-100 px-3 py-1 text-sky-900">
+										<span
+											class="rounded-full bg-sky-100 px-3 py-1 text-sky-900"
+										>
 											{spell.school}
 										</span>
 										{#if spell.concentration}
@@ -1358,7 +1507,11 @@
 										{/if}
 									</div>
 									<form method="POST">
-										<input type="hidden" name="sharedSpellId" value={spell.id} />
+										<input
+											type="hidden"
+											name="sharedSpellId"
+											value={spell.id}
+										/>
 										<button
 											class="rounded-full bg-stone-900 px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-white transition hover:bg-stone-700"
 											type="submit"
@@ -1400,38 +1553,46 @@
 			<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
 				Private spells
 			</p>
-			<h2 class="mt-2 text-2xl font-semibold text-stone-900">
-				Create your own spell draft
-			</h2>
+			<h2 class="mt-2 text-2xl font-semibold text-stone-900">Create your own spell draft</h2>
 			<p class="mt-3 max-w-2xl text-sm leading-7 text-stone-600">
 				This first spell workflow stays owner-scoped. Shared SRD spells remain browseable
 				below, while new drafts created here stay private to your account.
 			</p>
 
 			{#if data.createdPrivateSpellName}
-				<p class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+				<p
+					class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+				>
 					{data.createdPrivateSpellName} was created as a private spell.
 				</p>
 			{/if}
 			{#if data.derivedPrivateSpellName}
-				<p class="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+				<p
+					class="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800"
+				>
 					{data.derivedPrivateSpellName} was copied from the shared SRD spell catalog into your
 					private spells.
 				</p>
 			{/if}
 			{#if data.publishedSharedSpellName}
-				<p class="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
+				<p
+					class="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800"
+				>
 					{data.publishedSharedSpellName} was published to the shared homebrew catalog.
 				</p>
 			{/if}
 			{#if data.publishedSystemSpellName}
-				<p class="mt-4 rounded-2xl border border-fuchsia-200 bg-fuchsia-50 px-4 py-3 text-sm text-fuchsia-800">
+				<p
+					class="mt-4 rounded-2xl border border-fuchsia-200 bg-fuchsia-50 px-4 py-3 text-sm text-fuchsia-800"
+				>
 					{data.publishedSystemSpellName} was published as system-owned content.
 				</p>
 			{/if}
 
 			{#if form?.createPrivateSpellFormError}
-				<p class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+				<p
+					class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+				>
 					{form.createPrivateSpellFormError}
 				</p>
 			{/if}
@@ -1439,7 +1600,8 @@
 			<form method="POST" class="mt-6 space-y-4">
 				<div class="grid gap-4 sm:grid-cols-2">
 					<label class="block sm:col-span-2">
-						<span class="mb-1 block text-sm font-medium text-stone-700">Spell name</span>
+						<span class="mb-1 block text-sm font-medium text-stone-700">Spell name</span
+						>
 						<input
 							class="block w-full rounded-lg border-stone-300"
 							name="name"
@@ -1448,7 +1610,9 @@
 							placeholder="Arc Light"
 						/>
 						{#if createPrivateSpellFieldError('name')}
-							<p class="mt-1 text-sm text-red-700">{createPrivateSpellFieldError('name')}</p>
+							<p class="mt-1 text-sm text-red-700">
+								{createPrivateSpellFieldError('name')}
+							</p>
 						{/if}
 					</label>
 
@@ -1463,7 +1627,9 @@
 							value={createPrivateSpellValue('level')}
 						/>
 						{#if createPrivateSpellFieldError('level')}
-							<p class="mt-1 text-sm text-red-700">{createPrivateSpellFieldError('level')}</p>
+							<p class="mt-1 text-sm text-red-700">
+								{createPrivateSpellFieldError('level')}
+							</p>
 						{/if}
 					</label>
 
@@ -1480,12 +1646,16 @@
 							{/each}
 						</select>
 						{#if createPrivateSpellFieldError('school')}
-							<p class="mt-1 text-sm text-red-700">{createPrivateSpellFieldError('school')}</p>
+							<p class="mt-1 text-sm text-red-700">
+								{createPrivateSpellFieldError('school')}
+							</p>
 						{/if}
 					</label>
 
 					<label class="block">
-						<span class="mb-1 block text-sm font-medium text-stone-700">Casting time</span>
+						<span class="mb-1 block text-sm font-medium text-stone-700"
+							>Casting time</span
+						>
 						<input
 							class="block w-full rounded-lg border-stone-300"
 							name="castingTime"
@@ -1510,12 +1680,15 @@
 							placeholder="60 feet"
 						/>
 						{#if createPrivateSpellFieldError('range')}
-							<p class="mt-1 text-sm text-red-700">{createPrivateSpellFieldError('range')}</p>
+							<p class="mt-1 text-sm text-red-700">
+								{createPrivateSpellFieldError('range')}
+							</p>
 						{/if}
 					</label>
 
 					<label class="block">
-						<span class="mb-1 block text-sm font-medium text-stone-700">Components</span>
+						<span class="mb-1 block text-sm font-medium text-stone-700">Components</span
+						>
 						<input
 							class="block w-full rounded-lg border-stone-300"
 							name="components"
@@ -1523,7 +1696,9 @@
 							value={createPrivateSpellValue('components')}
 							placeholder="V, S, M"
 						/>
-						<p class="mt-1 text-sm text-stone-500">Use a comma-separated list of V, S, and M.</p>
+						<p class="mt-1 text-sm text-stone-500">
+							Use a comma-separated list of V, S, and M.
+						</p>
 						{#if createPrivateSpellFieldError('components')}
 							<p class="mt-1 text-sm text-red-700">
 								{createPrivateSpellFieldError('components')}
@@ -1541,7 +1716,9 @@
 							placeholder="Instantaneous"
 						/>
 						{#if createPrivateSpellFieldError('duration')}
-							<p class="mt-1 text-sm text-red-700">{createPrivateSpellFieldError('duration')}</p>
+							<p class="mt-1 text-sm text-red-700">
+								{createPrivateSpellFieldError('duration')}
+							</p>
 						{/if}
 					</label>
 
@@ -1555,7 +1732,9 @@
 							placeholder="Only when components include M"
 						/>
 						{#if createPrivateSpellFieldError('materials')}
-							<p class="mt-1 text-sm text-red-700">{createPrivateSpellFieldError('materials')}</p>
+							<p class="mt-1 text-sm text-red-700">
+								{createPrivateSpellFieldError('materials')}
+							</p>
 						{/if}
 					</label>
 
@@ -1567,7 +1746,8 @@
 							class="block min-h-24 w-full rounded-lg border-stone-300"
 							name="classSlugsText"
 							placeholder="One per line, for example:&#10;mago&#10;clerigo"
-						>{createPrivateSpellValue('classSlugsText')}</textarea>
+							>{createPrivateSpellValue('classSlugsText')}</textarea
+						>
 						<p class="mt-1 text-sm text-stone-500">
 							Optional. Leave blank for a general spell draft.
 						</p>
@@ -1588,17 +1768,22 @@
 							placeholder="Short player-facing summary"
 						/>
 						{#if createPrivateSpellFieldError('summary')}
-							<p class="mt-1 text-sm text-red-700">{createPrivateSpellFieldError('summary')}</p>
+							<p class="mt-1 text-sm text-red-700">
+								{createPrivateSpellFieldError('summary')}
+							</p>
 						{/if}
 					</label>
 
 					<label class="block sm:col-span-2">
-						<span class="mb-1 block text-sm font-medium text-stone-700">Description</span>
+						<span class="mb-1 block text-sm font-medium text-stone-700"
+							>Description</span
+						>
 						<textarea
 							class="block min-h-28 w-full rounded-lg border-stone-300"
 							name="description"
 							placeholder="Describe the spell effect in player-facing terms."
-						>{createPrivateSpellValue('description')}</textarea>
+							>{createPrivateSpellValue('description')}</textarea
+						>
 						{#if createPrivateSpellFieldError('description')}
 							<p class="mt-1 text-sm text-red-700">
 								{createPrivateSpellFieldError('description')}
@@ -1636,13 +1821,16 @@
 					Create private spell
 				</button>
 				{#if data.roleOperations.canPublishSharedSpells || data.roleOperations.canPublishSystemSpells}
-					<div class="rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4">
+					<div
+						class="rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4"
+					>
 						<p class="text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
 							Privileged publishing
 						</p>
 						<p class="mt-2 text-sm text-stone-600">
-							These actions reuse the same validated spell draft, but publish it beyond your
-							private workspace. Role assignment still stays outside the runtime UI.
+							These actions reuse the same validated spell draft, but publish it
+							beyond your private workspace. Role assignment still stays outside the
+							runtime UI.
 						</p>
 						<div class="mt-4 flex flex-wrap gap-3">
 							{#if data.roleOperations.canPublishSharedSpells}
@@ -1683,9 +1871,11 @@
 			</div>
 
 			{#if data.privateSpells.length === 0}
-				<p class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600">
-					No private spells yet. Create one from the form to start building personal
-					spell content without changing the shared SRD spell catalog.
+				<p
+					class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600"
+				>
+					No private spells yet. Create one from the form to start building personal spell
+					content without changing the shared SRD spell catalog.
 				</p>
 			{:else}
 				<div class="mt-6 space-y-4">
@@ -1693,31 +1883,45 @@
 						<article class="rounded-2xl border border-stone-200 p-4">
 							<div class="flex flex-wrap items-start justify-between gap-3">
 								<div>
-									<h3 class="text-lg font-semibold text-stone-900">{spell.name}</h3>
+									<h3 class="text-lg font-semibold text-stone-900">
+										{spell.name}
+									</h3>
 									<p class="mt-1 text-sm text-stone-500">slug: {spell.slug}</p>
 								</div>
-								<div class="flex flex-wrap gap-2 text-xs font-medium uppercase tracking-[0.14em]">
-									<span class="rounded-full bg-amber-100 px-3 py-1 text-amber-900">
+								<div
+									class="flex flex-wrap gap-2 text-xs font-medium uppercase tracking-[0.14em]"
+								>
+									<span
+										class="rounded-full bg-amber-100 px-3 py-1 text-amber-900"
+									>
 										Private
 									</span>
 									{#if spell.derivation}
-										<span class="rounded-full bg-sky-100 px-3 py-1 text-sky-900">
+										<span
+											class="rounded-full bg-sky-100 px-3 py-1 text-sky-900"
+										>
 											Derived
 										</span>
 									{/if}
 									<span class="rounded-full bg-sky-100 px-3 py-1 text-sky-900">
 										{formatSpellLevel(spell.level)}
 									</span>
-									<span class="rounded-full bg-stone-100 px-3 py-1 text-stone-900">
+									<span
+										class="rounded-full bg-stone-100 px-3 py-1 text-stone-900"
+									>
 										{formatSlugLabel(spell.school)}
 									</span>
 									{#if spell.concentration}
-										<span class="rounded-full bg-rose-100 px-3 py-1 text-rose-900">
+										<span
+											class="rounded-full bg-rose-100 px-3 py-1 text-rose-900"
+										>
 											Concentration
 										</span>
 									{/if}
 									{#if spell.ritual}
-										<span class="rounded-full bg-emerald-100 px-3 py-1 text-emerald-900">
+										<span
+											class="rounded-full bg-emerald-100 px-3 py-1 text-emerald-900"
+										>
 											Ritual
 										</span>
 									{/if}

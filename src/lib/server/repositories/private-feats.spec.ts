@@ -52,10 +52,12 @@ describe('managed shared feat lifecycle', () => {
 			isSystemContent: false
 		});
 
-		await expect(retireManagedSharedFeat(supabase, authorization, created.id)).resolves.toEqual({
-			id: created.id,
-			name: 'Battle Lore'
-		});
+		await expect(retireManagedSharedFeat(supabase, authorization, created.id)).resolves.toEqual(
+			{
+				id: created.id,
+				name: 'Battle Lore'
+			}
+		);
 
 		await expect(listManagedSharedFeats(supabase, authorization)).resolves.toEqual([]);
 		await expect(listPrivateFeatsForUser(supabase, 'user-1')).resolves.toEqual(
@@ -83,10 +85,12 @@ describe('managed shared feat lifecycle', () => {
 			isSystemContent: true
 		});
 
-		await expect(deleteManagedSharedFeat(supabase, authorization, created.id)).resolves.toEqual({
-			id: created.id,
-			name: 'Warden Sigil'
-		});
+		await expect(deleteManagedSharedFeat(supabase, authorization, created.id)).resolves.toEqual(
+			{
+				id: created.id,
+				name: 'Warden Sigil'
+			}
+		);
 
 		await expect(listManagedSharedFeats(supabase, authorization)).resolves.toEqual([]);
 	});
