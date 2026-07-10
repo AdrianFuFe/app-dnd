@@ -29,6 +29,8 @@ declare global {
 			authorization?:
 				| import('$lib/types/permissions/permissions').AuthorizationContext
 				| null;
+			runtimeMessage: string;
+			runtime: import('$lib/server/runtime/integration').RuntimeIntegrationStatus;
 			session: SupabaseSession | null;
 		}
 		// interface PageState {}

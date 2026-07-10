@@ -78,6 +78,11 @@ To run the app against a live Supabase project without guessing:
 `pnpm test:e2e` is not a live Supabase smoke test. It validates the app flow against the mock harness only.
 
 The full verification notes live in [docs/10-runtime-integration-check.md](/G:/dev/projects/app-dnd/docs/10-runtime-integration-check.md).
+The end-to-end manual checklist for live Supabase and hosted readiness lives in [docs/12-live-smoke-test-and-deploy-readiness.md](/G:/dev/projects/app-dnd/docs/12-live-smoke-test-and-deploy-readiness.md).
+
+## Hosting Caveat
+
+The project currently uses `@sveltejs/adapter-auto`. That is acceptable for supported platforms, but deployment is not truly ready until the chosen host is confirmed to work with `adapter-auto` or the repo is switched to a host-specific adapter.
 
 ## Scripts
 

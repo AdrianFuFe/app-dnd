@@ -23,6 +23,13 @@
 				</p>
 			</div>
 
+			{#if data.runtime.mode === 'e2e-mock' || !data.runtime.liveSupabaseConfigured}
+				<div class="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+					<p class="text-sm font-medium text-amber-900">Runtime status</p>
+					<p class="mt-2 text-sm leading-6 text-amber-800">{data.runtimeMessage}</p>
+				</div>
+			{/if}
+
 			{#if data.session}
 				<div class="space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
 					<p class="text-sm font-medium text-emerald-800">Active session detected</p>
