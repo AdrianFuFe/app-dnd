@@ -17,10 +17,12 @@ export function createSupabaseServerClient() {
 
 export interface RequestSupabaseContext {
 	cookies: Cookies;
+	secureCookies: boolean;
 }
 
 export function createRequestSupabaseServerClient({
-	cookies
+	cookies,
+	secureCookies
 }: RequestSupabaseContext): SupabaseClient<Database> {
 	const { anonKey, url } = getSupabaseServerEnv();
 
@@ -28,7 +30,7 @@ export function createRequestSupabaseServerClient({
 		auth: {
 			autoRefreshToken: false,
 			detectSessionInUrl: false,
-			persistSession: false,
+			persistSession: true,
 			storage: {
 				getItem(key) {
 					return cookies.get(key) ?? null;
@@ -41,7 +43,7 @@ export function createRequestSupabaseServerClient({
 						httpOnly: true,
 						path: '/',
 						sameSite: 'lax',
-						secure: true
+						secure: secureCookies
 					});
 				}
 			}

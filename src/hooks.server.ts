@@ -47,7 +47,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 	}
 
 	const supabase = createRequestSupabaseServerClient({
-		cookies: event.cookies
+		cookies: event.cookies,
+		secureCookies: event.url.protocol === 'https:'
 	});
 
 	const safeGetSession = async () => getRequestSession(supabase);
