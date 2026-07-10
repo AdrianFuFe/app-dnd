@@ -110,13 +110,13 @@ In that case, it should still name the next recommended block.
     - privileged content workflows are now covered in the browser for the primary feat and spell lifecycle paths
     - rejected privileged publish submissions now have browser regression coverage with stable field feedback
     - the highest-value nearby confidence slice is targeted browser coverage for dependent `subspecies` and `subclass` selection behavior that now has richer seed data behind it
-    - the current repo is close to an internally testable MVP, but it is not yet at a fully green release-ready checkpoint because content-template expectations and formatting drift still need cleanup
-    - live Supabase runtime and deployment readiness are documented, but still need an explicit smoke-test pass against a real environment after the current quality gaps are closed
+    - the repo now has green `pnpm lint`, `pnpm check`, and `pnpm test` after the SRD seed follow-up work
+    - live Supabase runtime and deployment readiness are documented, but still need an explicit smoke-test pass against a real environment plus a concrete hosting choice
 - next recommended block:
-    - `S33 - Character Catalog Dependent Selection E2E`, because the character forms already depend on `species -> subspecies` and `class -> subclass` relationships, the newly expanded seed data should now be proven in the browser, and this is still the tightest next confidence slice from the previous implementation session
-- near-term follow-up after `S33`:
-    - `S34 - Catalog Fixture And Quality Gate Realignment`, to restore green unit expectations after the expanded SRD seed and to clear the current formatting drift
-    - `S35 - Live Supabase Smoke And Deploy Readiness`, to validate the app against a real Supabase project and close the remaining gap between "implemented MVP" and "operational MVP"
+    - `S35 - Live Supabase Smoke And Deploy Readiness`, because the internal quality gates are green again and the main remaining MVP gap is operational validation against a real Supabase project
+- near-term follow-up after `S35`:
+    - choose and wire the final hosting adapter if the selected platform is not compatible with `@sveltejs/adapter-auto`
+    - record the first live smoke outcome in `docs/13-live-smoke-run-log.md`
 
 ## Session Blocks
 

@@ -126,13 +126,18 @@ Planning review on 2026-07-10:
     - restore green quality gates by realigning content-template expectations and formatting
     - run a real Supabase smoke test and deployment-readiness pass so the MVP can move from "implemented" to "operational for internal testing"
 
+Status on 2026-07-10:
+
+- `pnpm lint`, `pnpm check`, and `pnpm test` now pass again after the expanded SRD seed follow-up work
+- the remaining MVP-closeout gap is no longer internal quality drift, but an external live Supabase smoke pass plus a concrete hosting decision
+- the next recommended step is to execute `S35 - Live Supabase Smoke And Deploy Readiness` against a real Supabase environment and record the outcome
+
 ## Future Iterations
 
 - short-term MVP closeout:
-    - complete `S33 - Character Catalog Dependent Selection E2E`
-    - restore green `pnpm test` and `pnpm lint` after the expanded SRD seed changes
     - validate auth, character CRUD, and `/app/content` flows against a real Supabase project
     - make hosting/deployment prerequisites explicit for the first internal test build
+    - record the first live smoke result and selected host assumptions in repo docs
 - advanced permissions and sharing
 - campaign-aware visibility
 - future campaign and companion features

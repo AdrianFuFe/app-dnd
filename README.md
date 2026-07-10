@@ -79,6 +79,7 @@ To run the app against a live Supabase project without guessing:
 
 The full verification notes live in [docs/10-runtime-integration-check.md](/G:/dev/projects/app-dnd/docs/10-runtime-integration-check.md).
 The end-to-end manual checklist for live Supabase and hosted readiness lives in [docs/12-live-smoke-test-and-deploy-readiness.md](/G:/dev/projects/app-dnd/docs/12-live-smoke-test-and-deploy-readiness.md).
+Record the first real-environment run in [docs/13-live-smoke-run-log.md](/G:/dev/projects/app-dnd/docs/13-live-smoke-run-log.md).
 
 ## Hosting Caveat
 
