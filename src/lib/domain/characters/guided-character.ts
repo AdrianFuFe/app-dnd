@@ -1,4 +1,8 @@
 import type {
+	ContentMode,
+	RulesetCode
+} from '$lib/types/content/content';
+import type {
 	EquipmentCatalogEntry,
 	ProficiencyVocabularyEntry,
 	RulesVocabularyEntry,
@@ -15,12 +19,18 @@ import type {
 } from '$lib/types/domain/character';
 import type { Ability, GameMechanic } from '$lib/types/domain/game-mechanics';
 import type { CharacterGuidedInput } from '$lib/schemas/characters/character-guided.schema';
+import {
+	deriveCharacterContentProfile,
+	type CharacterLinkedContentSelection
+} from './character-content-profile';
 
 export type GuidedCharacterOptionBase = {
 	id: string;
 	slug: string;
 	name: string;
 	summary: string | null;
+	rulesetCode: RulesetCode;
+	contentMode: ContentMode;
 	mechanics: GameMechanic[];
 };
 
@@ -137,6 +147,16 @@ export function deriveGuidedCharacterDraft(
 ): GuidedCharacterDraft {
 	const { species, subspecies, characterClass, subclass, background, selectedMechanics } =
 		resolveGuidedSelections(catalog, input);
+	const contentProfile = deriveCharacterContentProfile({
+		baseRulesetCode: species.rulesetCode,
+		linkedContentSelections: createGuidedLinkedContentSelections(
+			species,
+			subspecies,
+			characterClass,
+			subclass,
+			background
+		)
+	});
 
 	const baseAbilityScores = {
 		strength: input.strength,
@@ -193,8 +213,8 @@ export function deriveGuidedCharacterDraft(
 	return {
 		character: {
 			name: input.name,
-			rulesetCode: 'dnd-2014-srd',
-			contentMode: 'canon',
+			rulesetCode: contentProfile.rulesetCode,
+			contentMode: contentProfile.contentMode,
 			speciesId: species.id,
 			subspeciesId: subspecies?.id,
 			classId: characterClass.id,
@@ -569,6 +589,60 @@ function resolveGuidedSelections(catalog: GuidedCharacterCatalog, input: Charact
 			...background.mechanics
 		]
 	};
+}
+
+function createGuidedLinkedContentSelections(
+	species: GuidedCharacterSpeciesOption,
+	subspecies: GuidedCharacterSubspeciesOption | undefined,
+	characterClass: GuidedCharacterClassOption,
+	subclass: GuidedCharacterSubclassOption | undefined,
+	background: GuidedCharacterBackgroundOption
+): CharacterLinkedContentSelection[] {
+	return [
+		{
+			entityType: 'species',
+			entityId: species.id,
+			entityName: species.name,
+			rulesetCode: species.rulesetCode,
+			contentMode: species.contentMode
+		},
+		...(subspecies
+			? [
+					{
+						entityType: 'subspecies' as const,
+						entityId: subspecies.id,
+						entityName: subspecies.name,
+						rulesetCode: subspecies.rulesetCode,
+						contentMode: subspecies.contentMode
+					}
+				]
+			: []),
+		{
+			entityType: 'class',
+			entityId: characterClass.id,
+			entityName: characterClass.name,
+			rulesetCode: characterClass.rulesetCode,
+			contentMode: characterClass.contentMode
+		},
+		...(subclass
+			? [
+					{
+						entityType: 'subclass' as const,
+						entityId: subclass.id,
+						entityName: subclass.name,
+						rulesetCode: subclass.rulesetCode,
+						contentMode: subclass.contentMode
+					}
+				]
+			: []),
+		{
+			entityType: 'background',
+			entityId: background.id,
+			entityName: background.name,
+			rulesetCode: background.rulesetCode,
+			contentMode: background.contentMode
+		}
+	];
 }
 
 function validateSelectionCount(

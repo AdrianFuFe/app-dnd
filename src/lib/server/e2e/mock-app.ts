@@ -621,6 +621,8 @@ export function listE2EGuidedCharacterCatalog(): GuidedCharacterCatalog {
 			slug: item.slug,
 			name: item.name,
 			summary: item.summary ?? null,
+			rulesetCode: 'dnd-2014-srd',
+			contentMode: 'canon',
 			baseSpeed: item.baseSpeed ?? null,
 			mechanics: (item.mechanics ?? []) as never
 		})),
@@ -630,6 +632,8 @@ export function listE2EGuidedCharacterCatalog(): GuidedCharacterCatalog {
 			speciesSlug: item.speciesSlug,
 			name: item.name,
 			summary: item.summary ?? null,
+			rulesetCode: 'dnd-2014-srd',
+			contentMode: 'canon',
 			mechanics: (item.mechanics ?? []) as never
 		})),
 		classOptions: asContentFile<ClassSourceItem>(classesFile).items.map((item) => ({
@@ -637,6 +641,8 @@ export function listE2EGuidedCharacterCatalog(): GuidedCharacterCatalog {
 			slug: item.slug,
 			name: item.name,
 			summary: item.summary ?? null,
+			rulesetCode: 'dnd-2014-srd',
+			contentMode: 'canon',
 			hitDie: item.hitDie,
 			startingEquipment: item.startingEquipment ?? [],
 			mechanics: (item.mechanics ?? []) as never
@@ -647,6 +653,8 @@ export function listE2EGuidedCharacterCatalog(): GuidedCharacterCatalog {
 			classSlug: item.classSlug,
 			name: item.name,
 			summary: item.summary ?? null,
+			rulesetCode: 'dnd-2014-srd',
+			contentMode: 'canon',
 			mechanics: (item.mechanics ?? []) as never,
 			grantedSpellsByLevel: (item.grantedSpellsByLevel ?? []).map((group) => ({
 				level: group.level,
@@ -658,6 +666,8 @@ export function listE2EGuidedCharacterCatalog(): GuidedCharacterCatalog {
 			slug: item.slug,
 			name: item.name,
 			summary: item.summary ?? null,
+			rulesetCode: 'dnd-2014-srd',
+			contentMode: 'canon',
 			startingEquipment: item.equipment ?? [],
 			mechanics: (item.mechanics ?? []) as never
 		})),

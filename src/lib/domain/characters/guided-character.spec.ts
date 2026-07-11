@@ -12,6 +12,8 @@ const catalog: GuidedCharacterCatalog = {
 			slug: 'elfo',
 			name: 'Elf',
 			summary: 'Graceful ancestry.',
+			rulesetCode: 'dnd-2014-srd',
+			contentMode: 'canon',
 			baseSpeed: 30,
 			mechanics: [
 				{ type: 'ability_bonus', ability: 'dexterity', value: 2 },
@@ -28,6 +30,8 @@ const catalog: GuidedCharacterCatalog = {
 			speciesSlug: 'elfo',
 			name: 'High Elf',
 			summary: 'Arcane line.',
+			rulesetCode: 'dnd-2014-srd',
+			contentMode: 'canon',
 			mechanics: [
 				{ type: 'ability_bonus', ability: 'intelligence', value: 1 },
 				{ type: 'choose_language', count: 1 }
@@ -40,6 +44,8 @@ const catalog: GuidedCharacterCatalog = {
 			slug: 'clerigo',
 			name: 'Cleric',
 			summary: 'Divine caster.',
+			rulesetCode: 'dnd-2014-srd',
+			contentMode: 'canon',
 			hitDie: 8,
 			startingEquipment: [
 				{ type: 'choice', options: ['mace', 'warhammer'] },
@@ -64,6 +70,8 @@ const catalog: GuidedCharacterCatalog = {
 			classSlug: 'clerigo',
 			name: 'Life Domain',
 			summary: 'Healing path.',
+			rulesetCode: 'dnd-2014-srd',
+			contentMode: 'canon',
 			mechanics: [{ type: 'proficiency', proficiencyType: 'armor', value: 'heavy-armor' }],
 			grantedSpellsByLevel: [{ level: 1, spellSlugs: ['bless', 'cure-wounds'] }]
 		}
@@ -74,6 +82,8 @@ const catalog: GuidedCharacterCatalog = {
 			slug: 'sage',
 			name: 'Sage',
 			summary: 'Academic researcher.',
+			rulesetCode: 'dnd-2014-srd',
+			contentMode: 'canon',
 			startingEquipment: [
 				{ type: 'item', id: 'holy-symbol' },
 				{ type: 'choice', options: ['prayer-book', 'prayer-wheel'] }
@@ -267,6 +277,8 @@ describe('deriveGuidedCharacterDraft', () => {
 		const draft = deriveGuidedCharacterDraft(catalog, input);
 
 		expect(draft.character.race).toBe('Elf');
+		expect(draft.character.rulesetCode).toBe('dnd-2014-srd');
+		expect(draft.character.contentMode).toBe('canon');
 		expect(draft.character.subrace).toBe('High Elf');
 		expect(draft.character.className).toBe('Cleric');
 		expect(draft.character.background).toBe('Sage');
@@ -383,5 +395,38 @@ describe('deriveGuidedCharacterDraft', () => {
 				}
 			)
 		).toThrow('Please choose a valid subspecies for the selected species.');
+	});
+
+	it('marks the character as custom when a linked guided entity is custom for the same ruleset', () => {
+		const draft = deriveGuidedCharacterDraft(
+			{
+				...catalog,
+				backgroundOptions: [{ ...catalog.backgroundOptions[0], contentMode: 'custom' }]
+			},
+			{
+				...createDefaultGuidedCharacterInput(),
+				speciesId: 'species-1',
+				subspeciesId: 'subspecies-1',
+				classId: 'class-1',
+				subclassId: 'subclass-1',
+				backgroundId: 'background-1',
+				languageChoices: [
+					{ key: 'language:0', value: 'draconico' },
+					{ key: 'language:1', value: 'comun' },
+					{ key: 'language:1', value: 'gigante' }
+				],
+				proficiencyChoices: [
+					{ key: 'skill:0', value: 'history' },
+					{ key: 'skill:0', value: 'insight' }
+				],
+				equipmentChoices: [
+					{ key: 'equipment:0', value: 'mace' },
+					{ key: 'equipment:1', value: 'prayer-book' }
+				]
+			}
+		);
+
+		expect(draft.character.rulesetCode).toBe('dnd-2014-srd');
+		expect(draft.character.contentMode).toBe('custom');
 	});
 });

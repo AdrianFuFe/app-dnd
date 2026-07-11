@@ -583,6 +583,8 @@ async function listGuidedSpeciesOptions(
 		slug: species.slug,
 		name: species.name,
 		summary: species.summary,
+		rulesetCode: normalizeRulesetCode(species.ruleset_code ?? 'dnd-2014-srd'),
+		contentMode: normalizeContentMode(species.content_mode ?? 'canon'),
 		baseSpeed: species.base_speed,
 		mechanics: normalizeGameMechanics(species.mechanics)
 	}));
@@ -625,6 +627,8 @@ async function listGuidedSubspeciesOptions(
 		speciesSlug: subspecies.species_slug,
 		name: subspecies.name,
 		summary: subspecies.summary,
+		rulesetCode: normalizeRulesetCode(subspecies.ruleset_code ?? 'dnd-2014-srd'),
+		contentMode: normalizeContentMode(subspecies.content_mode ?? 'canon'),
 		mechanics: normalizeGameMechanics(subspecies.mechanics)
 	}));
 }
@@ -652,7 +656,7 @@ async function listGuidedClassOptions(
 	const { data, error } = await supabase
 		.from('character_classes')
 		.select(
-			'id, slug, name, ruleset_code, content_mode, editorial_status, visibility, summary, hit_die, mechanics, is_system_content'
+			'id, slug, name, ruleset_code, content_mode, editorial_status, visibility, summary, hit_die, starting_equipment, mechanics, is_system_content'
 		)
 		.order('name', { ascending: true });
 
@@ -667,6 +671,8 @@ async function listGuidedClassOptions(
 		slug: characterClass.slug,
 		name: characterClass.name,
 		summary: characterClass.summary,
+		rulesetCode: normalizeRulesetCode(characterClass.ruleset_code ?? 'dnd-2014-srd'),
+		contentMode: normalizeContentMode(characterClass.content_mode ?? 'canon'),
 		hitDie: characterClass.hit_die,
 		startingEquipment: normalizeEquipmentEntries(characterClass.starting_equipment),
 		mechanics: normalizeGameMechanics(characterClass.mechanics)
@@ -710,6 +716,8 @@ async function listGuidedSubclassOptions(
 		classSlug: subclass.class_slug,
 		name: subclass.name,
 		summary: subclass.summary,
+		rulesetCode: normalizeRulesetCode(subclass.ruleset_code ?? 'dnd-2014-srd'),
+		contentMode: normalizeContentMode(subclass.content_mode ?? 'canon'),
 		mechanics: normalizeGameMechanics(subclass.mechanics),
 		grantedSpellsByLevel: summarizeGrantedSpellsByLevel(subclass.granted_spells_by_level)
 	}));
@@ -738,7 +746,7 @@ async function listGuidedBackgroundOptions(
 	const { data, error } = await supabase
 		.from('backgrounds')
 		.select(
-			'id, slug, name, ruleset_code, content_mode, editorial_status, visibility, summary, mechanics, is_system_content'
+			'id, slug, name, ruleset_code, content_mode, editorial_status, visibility, summary, equipment, mechanics, is_system_content'
 		)
 		.order('name', { ascending: true });
 
@@ -753,6 +761,8 @@ async function listGuidedBackgroundOptions(
 		slug: background.slug,
 		name: background.name,
 		summary: background.summary,
+		rulesetCode: normalizeRulesetCode(background.ruleset_code ?? 'dnd-2014-srd'),
+		contentMode: normalizeContentMode(background.content_mode ?? 'canon'),
 		startingEquipment: normalizeEquipmentEntries(background.equipment),
 		mechanics: normalizeGameMechanics(background.mechanics)
 	}));
