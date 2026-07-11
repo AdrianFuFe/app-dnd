@@ -26,6 +26,12 @@
 	const editFeatValues = $derived(
 		(form?.editSharedFeatValues ?? data.editSharedFeatValues) as PrivateFeatFormValues
 	);
+	const reviewFeatFieldErrors = $derived(
+		(form?.reviewSharedFeatFieldErrors ?? {}) as PrivateFeatFormFieldErrors
+	);
+	const reviewFeatValues = $derived(
+		(form?.reviewSharedFeatValues ?? data.reviewSharedFeatValues) as PrivateFeatFormValues
+	);
 	const createSpellFieldErrors = $derived(
 		(form?.createPrivateSpellFieldErrors ?? {}) as PrivateSpellFormFieldErrors
 	);
@@ -35,13 +41,24 @@
 	const editSharedFeatId = $derived(
 		(form?.editSharedFeatId ?? data.editSharedFeatId) as string | null
 	);
+	const reviewSharedFeatId = $derived(
+		(form?.reviewSharedFeatId ?? data.reviewSharedFeatId) as string | null
+	);
 	const selectedManagedSharedFeat = $derived(
 		editSharedFeatId
 			? (data.manageableSharedFeats.find((feat) => feat.id === editSharedFeatId) ?? null)
 			: null
 	);
+	const selectedReviewableSharedFeat = $derived(
+		reviewSharedFeatId
+			? (data.reviewableSharedFeats.find((feat) => feat.id === reviewSharedFeatId) ?? null)
+			: null
+	);
 	const editSharedSpellId = $derived(
 		(form?.editSharedSpellId ?? data.editSharedSpellId) as string | null
+	);
+	const reviewSharedSpellId = $derived(
+		(form?.reviewSharedSpellId ?? data.reviewSharedSpellId) as string | null
 	);
 	const editSharedSpellFieldErrors = $derived(
 		(form?.editSharedSpellFieldErrors ?? {}) as PrivateSpellFormFieldErrors
@@ -49,9 +66,20 @@
 	const editSharedSpellValues = $derived(
 		(form?.editSharedSpellValues ?? data.editSharedSpellValues) as PrivateSpellFormValues
 	);
+	const reviewSharedSpellFieldErrors = $derived(
+		(form?.reviewSharedSpellFieldErrors ?? {}) as PrivateSpellFormFieldErrors
+	);
+	const reviewSharedSpellValues = $derived(
+		(form?.reviewSharedSpellValues ?? data.reviewSharedSpellValues) as PrivateSpellFormValues
+	);
 	const selectedManagedSharedSpell = $derived(
 		editSharedSpellId
 			? (data.manageableSharedSpells.find((spell) => spell.id === editSharedSpellId) ?? null)
+			: null
+	);
+	const selectedReviewableSharedSpell = $derived(
+		reviewSharedSpellId
+			? (data.reviewableSharedSpells.find((spell) => spell.id === reviewSharedSpellId) ?? null)
 			: null
 	);
 
@@ -188,6 +216,14 @@
 		return editFeatValues[field];
 	}
 
+	function reviewSharedFeatFieldError(field: PrivateFeatFormFieldName) {
+		return reviewFeatFieldErrors[field]?.[0];
+	}
+
+	function reviewSharedFeatValue(field: PrivateFeatFormFieldName) {
+		return reviewFeatValues[field];
+	}
+
 	function createPrivateSpellFieldError(field: PrivateSpellFormFieldName) {
 		return createSpellFieldErrors[field]?.[0];
 	}
@@ -202,6 +238,14 @@
 
 	function editSharedSpellValue(field: PrivateSpellFormFieldName) {
 		return editSharedSpellValues[field];
+	}
+
+	function reviewSharedSpellFieldError(field: PrivateSpellFormFieldName) {
+		return reviewSharedSpellFieldErrors[field]?.[0];
+	}
+
+	function reviewSharedSpellValue(field: PrivateSpellFormFieldName) {
+		return reviewSharedSpellValues[field];
 	}
 </script>
 
@@ -370,7 +414,7 @@
 	</section>
 
 	{#if data.roleOperations.canReviewSharedFeats}
-		<section class="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
+		<section class="grid gap-6 xl:grid-cols-[0.9fr,1fr,1fr]">
 			<div class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
 				<div class="flex items-center justify-between gap-4">
 					<div>
@@ -428,6 +472,12 @@
 										>
 											{formatContentModeLabel(feat.contentMode)}
 										</span>
+										<a
+											class="rounded-full border border-stone-300 px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-stone-700 transition hover:bg-stone-50"
+											href={`?reviewSharedFeat=${encodeURIComponent(feat.id)}`}
+										>
+											Open review editor
+										</a>
 										<form method="POST">
 											<input type="hidden" name="featId" value={feat.id} />
 											<div class="flex flex-wrap gap-2">
@@ -463,6 +513,184 @@
 							</article>
 						{/each}
 					</div>
+				{/if}
+			</div>
+
+			<div class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+				<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
+					Review editor
+				</p>
+				<h2 class="mt-2 text-2xl font-semibold text-stone-900">
+					Adjust a feat before publication
+				</h2>
+				<p class="mt-3 max-w-2xl text-sm leading-7 text-stone-600">
+					This editor is specific to entries still in `in_review`. It keeps pre-publication
+					editorial work separate from published catalog maintenance.
+				</p>
+
+				{#if data.reviewedSharedFeatUpdatedName}
+					<p class="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+						{data.reviewedSharedFeatUpdatedName} was updated and remains in editorial review.
+					</p>
+				{/if}
+				{#if form?.reviewSharedFeatFormError}
+					<p class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+						{form.reviewSharedFeatFormError}
+					</p>
+				{/if}
+
+				{#if !reviewSharedFeatId}
+					<p class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600">
+						Choose a shared feat from the review queue to load it into this pre-publication editor.
+					</p>
+				{:else}
+					<form method="POST" class="mt-6 space-y-4">
+						<input type="hidden" name="featId" value={reviewSharedFeatId} />
+						<div class="rounded-2xl bg-stone-50 px-4 py-3 text-sm text-stone-700">
+							<p class="font-medium text-stone-900">Current editorial state</p>
+							<p class="mt-2">
+								{selectedReviewableSharedFeat
+									? `${formatEditorialStatusLabel(selectedReviewableSharedFeat.editorialStatus)} | ${formatContentModeLabel(selectedReviewableSharedFeat.contentMode)}`
+									: 'No shared feat selected.'}
+							</p>
+						</div>
+						<label class="block">
+							<span class="mb-1 block text-sm font-medium text-stone-700">Feat name</span>
+							<input class="block w-full rounded-lg border-stone-300" name="name" type="text" value={reviewSharedFeatValue('name')} />
+							{#if reviewSharedFeatFieldError('name')}<p class="mt-1 text-sm text-red-700">{reviewSharedFeatFieldError('name')}</p>{/if}
+						</label>
+						<label class="block">
+							<span class="mb-1 block text-sm font-medium text-stone-700">Summary</span>
+							<input class="block w-full rounded-lg border-stone-300" name="summary" type="text" value={reviewSharedFeatValue('summary')} />
+							{#if reviewSharedFeatFieldError('summary')}<p class="mt-1 text-sm text-red-700">{reviewSharedFeatFieldError('summary')}</p>{/if}
+						</label>
+						<label class="block">
+							<span class="mb-1 block text-sm font-medium text-stone-700">Description</span>
+							<textarea class="block min-h-28 w-full rounded-lg border-stone-300" name="description">{reviewSharedFeatValue('description')}</textarea>
+							{#if reviewSharedFeatFieldError('description')}<p class="mt-1 text-sm text-red-700">{reviewSharedFeatFieldError('description')}</p>{/if}
+						</label>
+						<label class="block">
+							<span class="mb-1 block text-sm font-medium text-stone-700">Prerequisites</span>
+							<textarea class="block min-h-28 w-full rounded-lg border-stone-300" name="prerequisitesText">{reviewSharedFeatValue('prerequisitesText')}</textarea>
+							<p class="mt-1 text-sm text-stone-500">Use one prerequisite per line.</p>
+							{#if reviewSharedFeatFieldError('prerequisitesText')}<p class="mt-1 text-sm text-red-700">{reviewSharedFeatFieldError('prerequisitesText')}</p>{/if}
+						</label>
+						<button class="rounded-lg bg-stone-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-stone-700" type="submit" formaction="?/updateReviewedSharedFeat">
+							Save review changes
+						</button>
+					</form>
+				{/if}
+			</div>
+
+			<div class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+				<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
+					Review editor
+				</p>
+				<h2 class="mt-2 text-2xl font-semibold text-stone-900">
+					Adjust a spell before publication
+				</h2>
+				<p class="mt-3 max-w-2xl text-sm leading-7 text-stone-600">
+					This editor is reserved for entries still in `in_review`, so editorial cleanup
+					happens separately from published spell maintenance.
+				</p>
+
+				{#if data.reviewedSharedSpellUpdatedName}
+					<p class="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+						{data.reviewedSharedSpellUpdatedName} was updated and remains in editorial review.
+					</p>
+				{/if}
+				{#if form?.reviewSharedSpellFormError}
+					<p class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+						{form.reviewSharedSpellFormError}
+					</p>
+				{/if}
+
+				{#if !reviewSharedSpellId}
+					<p class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600">
+						Choose a shared spell from the review queue to load it into this pre-publication editor.
+					</p>
+				{:else}
+					<form method="POST" class="mt-6 space-y-4">
+						<input type="hidden" name="spellId" value={reviewSharedSpellId} />
+						<div class="rounded-2xl bg-stone-50 px-4 py-3 text-sm text-stone-700">
+							<p class="font-medium text-stone-900">Current editorial state</p>
+							<p class="mt-2">
+								{selectedReviewableSharedSpell
+									? `${formatEditorialStatusLabel(selectedReviewableSharedSpell.editorialStatus)} | ${formatContentModeLabel(selectedReviewableSharedSpell.contentMode)}`
+									: 'No shared spell selected.'}
+							</p>
+						</div>
+						<div class="grid gap-4 sm:grid-cols-2">
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700">Spell name</span>
+								<input class="block w-full rounded-lg border-stone-300" name="name" type="text" value={reviewSharedSpellValue('name')} />
+								{#if reviewSharedSpellFieldError('name')}<p class="mt-1 text-sm text-red-700">{reviewSharedSpellFieldError('name')}</p>{/if}
+							</label>
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700">Level</span>
+								<input class="block w-full rounded-lg border-stone-300" name="level" type="number" min="0" max="9" value={reviewSharedSpellValue('level')} />
+								{#if reviewSharedSpellFieldError('level')}<p class="mt-1 text-sm text-red-700">{reviewSharedSpellFieldError('level')}</p>{/if}
+							</label>
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700">School</span>
+								<input class="block w-full rounded-lg border-stone-300" name="school" type="text" value={reviewSharedSpellValue('school')} />
+								{#if reviewSharedSpellFieldError('school')}<p class="mt-1 text-sm text-red-700">{reviewSharedSpellFieldError('school')}</p>{/if}
+							</label>
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700">Casting time</span>
+								<input class="block w-full rounded-lg border-stone-300" name="castingTime" type="text" value={reviewSharedSpellValue('castingTime')} />
+								{#if reviewSharedSpellFieldError('castingTime')}<p class="mt-1 text-sm text-red-700">{reviewSharedSpellFieldError('castingTime')}</p>{/if}
+							</label>
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700">Range</span>
+								<input class="block w-full rounded-lg border-stone-300" name="range" type="text" value={reviewSharedSpellValue('range')} />
+								{#if reviewSharedSpellFieldError('range')}<p class="mt-1 text-sm text-red-700">{reviewSharedSpellFieldError('range')}</p>{/if}
+							</label>
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700">Components</span>
+								<input class="block w-full rounded-lg border-stone-300" name="components" type="text" value={reviewSharedSpellValue('components')} />
+								{#if reviewSharedSpellFieldError('components')}<p class="mt-1 text-sm text-red-700">{reviewSharedSpellFieldError('components')}</p>{/if}
+							</label>
+							<label class="block">
+								<span class="mb-1 block text-sm font-medium text-stone-700">Duration</span>
+								<input class="block w-full rounded-lg border-stone-300" name="duration" type="text" value={reviewSharedSpellValue('duration')} />
+								{#if reviewSharedSpellFieldError('duration')}<p class="mt-1 text-sm text-red-700">{reviewSharedSpellFieldError('duration')}</p>{/if}
+							</label>
+							<label class="block sm:col-span-2">
+								<span class="mb-1 block text-sm font-medium text-stone-700">Materials</span>
+								<input class="block w-full rounded-lg border-stone-300" name="materials" type="text" value={reviewSharedSpellValue('materials')} />
+								{#if reviewSharedSpellFieldError('materials')}<p class="mt-1 text-sm text-red-700">{reviewSharedSpellFieldError('materials')}</p>{/if}
+							</label>
+							<label class="block sm:col-span-2">
+								<span class="mb-1 block text-sm font-medium text-stone-700">Class slugs</span>
+								<textarea class="block min-h-24 w-full rounded-lg border-stone-300" name="classSlugsText">{reviewSharedSpellValue('classSlugsText')}</textarea>
+								{#if reviewSharedSpellFieldError('classSlugsText')}<p class="mt-1 text-sm text-red-700">{reviewSharedSpellFieldError('classSlugsText')}</p>{/if}
+							</label>
+							<label class="block sm:col-span-2">
+								<span class="mb-1 block text-sm font-medium text-stone-700">Summary</span>
+								<input class="block w-full rounded-lg border-stone-300" name="summary" type="text" value={reviewSharedSpellValue('summary')} />
+								{#if reviewSharedSpellFieldError('summary')}<p class="mt-1 text-sm text-red-700">{reviewSharedSpellFieldError('summary')}</p>{/if}
+							</label>
+							<label class="block sm:col-span-2">
+								<span class="mb-1 block text-sm font-medium text-stone-700">Description</span>
+								<textarea class="block min-h-28 w-full rounded-lg border-stone-300" name="description">{reviewSharedSpellValue('description')}</textarea>
+								{#if reviewSharedSpellFieldError('description')}<p class="mt-1 text-sm text-red-700">{reviewSharedSpellFieldError('description')}</p>{/if}
+							</label>
+						</div>
+						<div class="flex flex-wrap gap-6">
+							<label class="flex items-center gap-3 text-sm text-stone-700">
+								<input class="rounded border-stone-300" name="concentration" type="checkbox" checked={reviewSharedSpellValues.concentration} />
+								<span>Requires concentration</span>
+							</label>
+							<label class="flex items-center gap-3 text-sm text-stone-700">
+								<input class="rounded border-stone-300" name="ritual" type="checkbox" checked={reviewSharedSpellValues.ritual} />
+								<span>Can be cast as a ritual</span>
+							</label>
+						</div>
+						<button class="rounded-lg bg-stone-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-stone-700" type="submit" formaction="?/updateReviewedSharedSpell">
+							Save review changes
+						</button>
+					</form>
 				{/if}
 			</div>
 
@@ -658,7 +886,7 @@
 	{/if}
 
 	{#if data.roleOperations.canReviewSharedSpells}
-		<section class="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
+		<section class="grid gap-6 xl:grid-cols-[0.9fr,1fr,1fr]">
 			<div class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
 				<div class="flex items-center justify-between gap-4">
 					<div>
@@ -723,6 +951,12 @@
 										>
 											{formatSpellLevel(spell.level)}
 										</span>
+										<a
+											class="rounded-full border border-stone-300 px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-stone-700 transition hover:bg-stone-50"
+											href={`?reviewSharedSpell=${encodeURIComponent(spell.id)}`}
+										>
+											Open review editor
+										</a>
 										<form method="POST">
 											<input type="hidden" name="spellId" value={spell.id} />
 											<div class="flex flex-wrap gap-2">

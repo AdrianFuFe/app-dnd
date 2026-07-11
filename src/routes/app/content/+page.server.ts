@@ -21,6 +21,7 @@ import {
 	publishReviewableSharedFeat,
 	retireManagedSharedFeat,
 	returnReviewableSharedFeatToPrivate,
+	updateReviewableSharedFeat,
 	updateManagedSharedFeat
 } from '$lib/server/repositories/private-feats';
 import {
@@ -40,6 +41,7 @@ import {
 	publishReviewableSharedSpell,
 	retireManagedSharedSpell,
 	returnReviewableSharedSpellToPrivate,
+	updateReviewableSharedSpell,
 	updateManagedSharedSpell
 } from '$lib/server/repositories/private-spells';
 import {
@@ -103,9 +105,11 @@ export const load: PageServerLoad = async ({ cookies, locals, url, parent }) => 
 			publishedSharedFeatName: url.searchParams.get('publishedSharedFeat'),
 			publishedSystemFeatName: url.searchParams.get('publishedSystemFeat'),
 			returnedSharedFeatName: url.searchParams.get('returnedSharedFeat'),
+			reviewedSharedFeatUpdatedName: url.searchParams.get('reviewUpdatedSharedFeat'),
 			publishedSharedSpellName: url.searchParams.get('publishedSharedSpell'),
 			publishedSystemSpellName: url.searchParams.get('publishedSystemSpell'),
 			returnedSharedSpellName: url.searchParams.get('returnedSharedSpell'),
+			reviewedSharedSpellUpdatedName: url.searchParams.get('reviewUpdatedSharedSpell'),
 			updatedSharedFeatName: url.searchParams.get('updatedSharedFeat'),
 			updatedSharedSpellName: url.searchParams.get('updatedSharedSpell'),
 			retiredSharedFeatName: url.searchParams.get('retiredSharedFeat'),
@@ -116,8 +120,12 @@ export const load: PageServerLoad = async ({ cookies, locals, url, parent }) => 
 			createPrivateSpellValues: createPrivateSpellFormValues(),
 			editSharedFeatId: null,
 			editSharedFeatValues: createPrivateFeatFormValues(),
+			reviewSharedFeatId: null,
+			reviewSharedFeatValues: createPrivateFeatFormValues(),
 			editSharedSpellId: null,
 			editSharedSpellValues: createPrivateSpellFormValues(),
+			reviewSharedSpellId: null,
+			reviewSharedSpellValues: createPrivateSpellFormValues(),
 			roleOperations: {
 				canSubmitSharedFeats: false,
 				canSubmitSharedSpells: false,
@@ -200,10 +208,20 @@ export const load: PageServerLoad = async ({ cookies, locals, url, parent }) => 
 		typeof editSharedFeatId === 'string'
 			? (manageableSharedFeats.find((feat) => feat.id === editSharedFeatId) ?? null)
 			: null;
+	const reviewSharedFeatId = url.searchParams.get('reviewSharedFeat');
+	const reviewableSharedFeat =
+		typeof reviewSharedFeatId === 'string'
+			? (reviewableSharedFeats.find((feat) => feat.id === reviewSharedFeatId) ?? null)
+			: null;
 	const editSharedSpellId = url.searchParams.get('editSharedSpell');
 	const editableSharedSpell =
 		typeof editSharedSpellId === 'string'
 			? (manageableSharedSpells.find((spell) => spell.id === editSharedSpellId) ?? null)
+			: null;
+	const reviewSharedSpellId = url.searchParams.get('reviewSharedSpell');
+	const reviewableSharedSpell =
+		typeof reviewSharedSpellId === 'string'
+			? (reviewableSharedSpells.find((spell) => spell.id === reviewSharedSpellId) ?? null)
 			: null;
 
 	return {
@@ -216,9 +234,11 @@ export const load: PageServerLoad = async ({ cookies, locals, url, parent }) => 
 		publishedSharedFeatName: url.searchParams.get('publishedSharedFeat'),
 		publishedSystemFeatName: url.searchParams.get('publishedSystemFeat'),
 		returnedSharedFeatName: url.searchParams.get('returnedSharedFeat'),
+		reviewedSharedFeatUpdatedName: url.searchParams.get('reviewUpdatedSharedFeat'),
 		publishedSharedSpellName: url.searchParams.get('publishedSharedSpell'),
 		publishedSystemSpellName: url.searchParams.get('publishedSystemSpell'),
 		returnedSharedSpellName: url.searchParams.get('returnedSharedSpell'),
+		reviewedSharedSpellUpdatedName: url.searchParams.get('reviewUpdatedSharedSpell'),
 		updatedSharedFeatName: url.searchParams.get('updatedSharedFeat'),
 		updatedSharedSpellName: url.searchParams.get('updatedSharedSpell'),
 		retiredSharedFeatName: url.searchParams.get('retiredSharedFeat'),
@@ -231,9 +251,17 @@ export const load: PageServerLoad = async ({ cookies, locals, url, parent }) => 
 		editSharedFeatValues: editableSharedFeat
 			? createPrivateFeatFormValuesFromInput(editableSharedFeat)
 			: createPrivateFeatFormValues(),
+		reviewSharedFeatId: reviewableSharedFeat?.id ?? null,
+		reviewSharedFeatValues: reviewableSharedFeat
+			? createPrivateFeatFormValuesFromInput(reviewableSharedFeat)
+			: createPrivateFeatFormValues(),
 		editSharedSpellId: editableSharedSpell?.id ?? null,
 		editSharedSpellValues: editableSharedSpell
 			? createPrivateSpellFormValuesFromInput(editableSharedSpell)
+			: createPrivateSpellFormValues(),
+		reviewSharedSpellId: reviewableSharedSpell?.id ?? null,
+		reviewSharedSpellValues: reviewableSharedSpell
+			? createPrivateSpellFormValuesFromInput(reviewableSharedSpell)
 			: createPrivateSpellFormValues(),
 		roleOperations: {
 			canSubmitSharedFeats: Boolean(parentData.session),
@@ -664,6 +692,88 @@ export const actions: Actions = {
 						: 'The shared spell could not be returned to private draft.',
 				editSharedSpellId: spellId,
 				editSharedSpellValues: createPrivateSpellFormValues()
+			});
+		}
+	},
+	updateReviewedSharedSpell: async ({ cookies, locals, request }) => {
+		if (!locals.session) {
+			throw redirect(302, '/auth/login?redirectTo=/app/content');
+		}
+
+		if (!locals.supabase) {
+			return fail(500, {
+				reviewSharedSpellFieldErrors: {},
+				reviewSharedSpellFormError: 'Supabase is not configured yet.',
+				reviewSharedSpellId: null,
+				reviewSharedSpellValues: createPrivateSpellFormValues()
+			});
+		}
+
+		const authorization = await getContentAuthorizationContext({
+			cookies,
+			e2eRole: locals.e2eRole,
+			supabase: locals.supabase,
+			userId: locals.session.user.id
+		});
+		requirePermissionScopeAccess(authorization, 'shared_content');
+
+		const formData = await request.formData();
+		const spellId = formData.get('spellId');
+
+		if (typeof spellId !== 'string' || spellId.trim().length === 0) {
+			return fail(400, {
+				reviewSharedSpellFieldErrors: {},
+				reviewSharedSpellFormError: 'Please choose a valid shared spell to review.',
+				reviewSharedSpellId: null,
+				reviewSharedSpellValues: createPrivateSpellFormValues()
+			});
+		}
+
+		const parsedForm = parsePrivateSpellCreateValues(Object.fromEntries(formData));
+
+		if (parsedForm.response) {
+			return fail(parsedForm.response.status, {
+				reviewSharedSpellFieldErrors: parsedForm.response.data.createPrivateSpellFieldErrors,
+				reviewSharedSpellFormError: parsedForm.response.data.createPrivateSpellFormError,
+				reviewSharedSpellId: spellId,
+				reviewSharedSpellValues: parsedForm.values
+			});
+		}
+
+		try {
+			const spell = await updateReviewableSharedSpell(locals.supabase, authorization, {
+				spellId,
+				...parsedForm.data
+			});
+			const reviewSharedSpell = encodeURIComponent(spell.id);
+			const reviewUpdatedSharedSpell = encodeURIComponent(spell.name);
+
+			throw redirect(
+				303,
+				`/app/content?reviewSharedSpell=${reviewSharedSpell}&reviewUpdatedSharedSpell=${reviewUpdatedSharedSpell}`
+			);
+		} catch (error) {
+			if (isRedirect(error)) {
+				throw error;
+			}
+
+			if (
+				typeof error === 'object' &&
+				error !== null &&
+				'status' in error &&
+				error.status === 403
+			) {
+				throw error;
+			}
+
+			return fail(400, {
+				reviewSharedSpellFieldErrors: {},
+				reviewSharedSpellFormError:
+					error instanceof Error
+						? error.message
+						: 'The shared spell could not be updated during review.',
+				reviewSharedSpellId: spellId,
+				reviewSharedSpellValues: parsedForm.values
 			});
 		}
 	},
@@ -1421,6 +1531,88 @@ export const actions: Actions = {
 						: 'The shared feat could not be returned to private draft.',
 				editSharedFeatId: featId,
 				editSharedFeatValues: createPrivateFeatFormValues()
+			});
+		}
+	},
+	updateReviewedSharedFeat: async ({ cookies, locals, request }) => {
+		if (!locals.session) {
+			throw redirect(302, '/auth/login?redirectTo=/app/content');
+		}
+
+		if (!locals.supabase) {
+			return fail(500, {
+				reviewSharedFeatFieldErrors: {},
+				reviewSharedFeatFormError: 'Supabase is not configured yet.',
+				reviewSharedFeatId: null,
+				reviewSharedFeatValues: createPrivateFeatFormValues()
+			});
+		}
+
+		const authorization = await getContentAuthorizationContext({
+			cookies,
+			e2eRole: locals.e2eRole,
+			supabase: locals.supabase,
+			userId: locals.session.user.id
+		});
+		requirePermissionScopeAccess(authorization, 'shared_content');
+
+		const formData = await request.formData();
+		const featId = formData.get('featId');
+
+		if (typeof featId !== 'string' || featId.trim().length === 0) {
+			return fail(400, {
+				reviewSharedFeatFieldErrors: {},
+				reviewSharedFeatFormError: 'Please choose a valid shared feat to review.',
+				reviewSharedFeatId: null,
+				reviewSharedFeatValues: createPrivateFeatFormValues()
+			});
+		}
+
+		const parsedForm = parsePrivateFeatCreateValues(Object.fromEntries(formData));
+
+		if (parsedForm.response) {
+			return fail(parsedForm.response.status, {
+				reviewSharedFeatFieldErrors: parsedForm.response.data.createPrivateFeatFieldErrors,
+				reviewSharedFeatFormError: parsedForm.response.data.createPrivateFeatFormError,
+				reviewSharedFeatId: featId,
+				reviewSharedFeatValues: parsedForm.values
+			});
+		}
+
+		try {
+			const feat = await updateReviewableSharedFeat(locals.supabase, authorization, {
+				featId,
+				...parsedForm.data
+			});
+			const reviewSharedFeat = encodeURIComponent(feat.id);
+			const reviewUpdatedSharedFeat = encodeURIComponent(feat.name);
+
+			throw redirect(
+				303,
+				`/app/content?reviewSharedFeat=${reviewSharedFeat}&reviewUpdatedSharedFeat=${reviewUpdatedSharedFeat}`
+			);
+		} catch (error) {
+			if (isRedirect(error)) {
+				throw error;
+			}
+
+			if (
+				typeof error === 'object' &&
+				error !== null &&
+				'status' in error &&
+				error.status === 403
+			) {
+				throw error;
+			}
+
+			return fail(400, {
+				reviewSharedFeatFieldErrors: {},
+				reviewSharedFeatFormError:
+					error instanceof Error
+						? error.message
+						: 'The shared feat could not be updated during review.',
+				reviewSharedFeatId: featId,
+				reviewSharedFeatValues: parsedForm.values
 			});
 		}
 	},

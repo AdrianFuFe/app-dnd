@@ -33,6 +33,8 @@ const {
 	retireManagedSharedSpell,
 	returnReviewableSharedFeatToPrivate,
 	returnReviewableSharedSpellToPrivate,
+	updateReviewableSharedFeat,
+	updateReviewableSharedSpell,
 	updateManagedSharedSpell,
 	updateManagedSharedFeat
 } = vi.hoisted(() => ({
@@ -56,6 +58,8 @@ const {
 	retireManagedSharedSpell: vi.fn(),
 	returnReviewableSharedFeatToPrivate: vi.fn(),
 	returnReviewableSharedSpellToPrivate: vi.fn(),
+	updateReviewableSharedFeat: vi.fn(),
+	updateReviewableSharedSpell: vi.fn(),
 	updateManagedSharedSpell: vi.fn(),
 	updateManagedSharedFeat: vi.fn()
 }));
@@ -81,6 +85,7 @@ vi.mock('$lib/server/repositories/private-feats', () => ({
 	publishReviewableSharedFeat,
 	retireManagedSharedFeat,
 	returnReviewableSharedFeatToPrivate,
+	updateReviewableSharedFeat,
 	updateManagedSharedFeat
 }));
 
@@ -95,6 +100,7 @@ vi.mock('$lib/server/repositories/private-spells', () => ({
 	publishReviewableSharedSpell,
 	retireManagedSharedSpell,
 	returnReviewableSharedSpellToPrivate,
+	updateReviewableSharedSpell,
 	updateManagedSharedSpell
 }));
 
@@ -161,9 +167,11 @@ describe('/app/content load', () => {
 			publishedSharedFeatName: null,
 			publishedSystemFeatName: null,
 			returnedSharedFeatName: null,
+			reviewedSharedFeatUpdatedName: null,
 			publishedSharedSpellName: null,
 			publishedSystemSpellName: null,
 			returnedSharedSpellName: null,
+			reviewedSharedSpellUpdatedName: null,
 			updatedSharedFeatName: null,
 			updatedSharedSpellName: null,
 			retiredSharedFeatName: null,
@@ -198,8 +206,31 @@ describe('/app/content load', () => {
 				description: '',
 				prerequisitesText: ''
 			},
+			reviewSharedFeatId: null,
+			reviewSharedFeatValues: {
+				name: '',
+				summary: '',
+				description: '',
+				prerequisitesText: ''
+			},
 			editSharedSpellId: null,
 			editSharedSpellValues: {
+				name: '',
+				level: '',
+				school: '',
+				summary: '',
+				description: '',
+				castingTime: '',
+				range: '',
+				components: '',
+				materials: '',
+				duration: '',
+				classSlugsText: '',
+				concentration: false,
+				ritual: false
+			},
+			reviewSharedSpellId: null,
+			reviewSharedSpellValues: {
 				name: '',
 				level: '',
 				school: '',
@@ -565,9 +596,11 @@ describe('/app/content load', () => {
 			publishedSharedFeatName: 'Battle Lore',
 			publishedSystemFeatName: null,
 			returnedSharedFeatName: null,
+			reviewedSharedFeatUpdatedName: null,
 			publishedSharedSpellName: 'Arc Light Nova',
 			publishedSystemSpellName: 'Solar Ward',
 			returnedSharedSpellName: null,
+			reviewedSharedSpellUpdatedName: null,
 			updatedSharedFeatName: 'Battle Lore',
 			updatedSharedSpellName: 'Arc Light Nova',
 			retiredSharedFeatName: null,
@@ -602,6 +635,13 @@ describe('/app/content load', () => {
 				description: '',
 				prerequisitesText: 'level:4'
 			},
+			reviewSharedFeatId: null,
+			reviewSharedFeatValues: {
+				name: '',
+				summary: '',
+				description: '',
+				prerequisitesText: ''
+			},
 			editSharedSpellId: 'shared-spell-1',
 			editSharedSpellValues: {
 				name: 'Arc Light Nova',
@@ -615,6 +655,22 @@ describe('/app/content load', () => {
 				materials: 'A copper lens.',
 				duration: 'Instantaneous',
 				classSlugsText: 'mago',
+				concentration: false,
+				ritual: false
+			},
+			reviewSharedSpellId: null,
+			reviewSharedSpellValues: {
+				name: '',
+				level: '',
+				school: '',
+				summary: '',
+				description: '',
+				castingTime: '',
+				range: '',
+				components: '',
+				materials: '',
+				duration: '',
+				classSlugsText: '',
 				concentration: false,
 				ritual: false
 			},
@@ -677,6 +733,8 @@ describe('/app/content actions', () => {
 		retireManagedSharedSpell.mockReset();
 		returnReviewableSharedFeatToPrivate.mockReset();
 		returnReviewableSharedSpellToPrivate.mockReset();
+		updateReviewableSharedFeat.mockReset();
+		updateReviewableSharedSpell.mockReset();
 		updateManagedSharedSpell.mockReset();
 		updateManagedSharedFeat.mockReset();
 		getAuthorizationContext.mockReset().mockResolvedValue({
@@ -1757,6 +1815,147 @@ describe('/app/content actions', () => {
 			{},
 			expect.objectContaining({ globalRole: 'content_editor', userId: 'user-1' }),
 			'review-spell-1'
+		);
+	});
+
+	it('updates a reviewed shared feat without publishing it', async () => {
+		getAuthorizationContext.mockResolvedValueOnce({
+			userId: 'user-1',
+			globalRole: 'content_editor',
+			capabilities: ['manage_private_content', 'edit_shared_content']
+		});
+		updateReviewableSharedFeat.mockResolvedValueOnce({
+			id: 'review-feat-1',
+			ownerUserId: 'user-2',
+			sourceCode: 'homebrew',
+			contentMode: 'custom',
+			editorialStatus: 'in_review',
+			slug: 'pending-lore-revised',
+			name: 'Pending Lore Revised',
+			prerequisites: ['level:8'],
+			summary: 'Revised before approval.',
+			description: null,
+			visibility: 'shared',
+			isSystemContent: false,
+			createdAt: '2026-07-09T09:00:00.000Z',
+			updatedAt: '2026-07-09T09:10:00.000Z'
+		});
+
+		await expect(
+			actions.updateReviewedSharedFeat?.({
+				locals: { session: { user: { id: 'user-1' } }, supabase: {} },
+				request: new Request('http://localhost/app/content?/updateReviewedSharedFeat', {
+					method: 'POST',
+					body: new URLSearchParams({
+						featId: 'review-feat-1',
+						name: 'Pending Lore Revised',
+						summary: 'Revised before approval.',
+						description: '',
+						prerequisitesText: 'level:8'
+					})
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 303,
+			location:
+				'/app/content?reviewSharedFeat=review-feat-1&reviewUpdatedSharedFeat=Pending%20Lore%20Revised'
+		});
+
+		expect(updateReviewableSharedFeat).toHaveBeenCalledWith(
+			{},
+			expect.objectContaining({ globalRole: 'content_editor', userId: 'user-1' }),
+			{
+				featId: 'review-feat-1',
+				slug: 'pending-lore-revised',
+				name: 'Pending Lore Revised',
+				summary: 'Revised before approval.',
+				description: undefined,
+				prerequisites: ['level:8']
+			}
+		);
+	});
+
+	it('updates a reviewed shared spell without publishing it', async () => {
+		getAuthorizationContext.mockResolvedValueOnce({
+			userId: 'user-1',
+			globalRole: 'content_editor',
+			capabilities: ['manage_private_content', 'edit_shared_content']
+		});
+		updateReviewableSharedSpell.mockResolvedValueOnce({
+			id: 'review-spell-1',
+			ownerUserId: 'user-2',
+			sourceCode: 'homebrew',
+			contentMode: 'custom',
+			editorialStatus: 'in_review',
+			slug: 'pending-sigil-revised',
+			name: 'Pending Sigil Revised',
+			level: 3,
+			school: 'abjuration',
+			castingTime: '1 action',
+			range: '60 feet',
+			components: 'V, S',
+			materials: null,
+			duration: '1 minute',
+			classSlugs: ['clerigo'],
+			summary: 'Revised before approval.',
+			description: null,
+			visibility: 'shared',
+			isSystemContent: false,
+			concentration: true,
+			ritual: false,
+			createdAt: '2026-07-09T09:05:00.000Z',
+			updatedAt: '2026-07-09T09:15:00.000Z'
+		});
+
+		await expect(
+			actions.updateReviewedSharedSpell?.({
+				locals: { session: { user: { id: 'user-1' } }, supabase: {} },
+				request: new Request('http://localhost/app/content?/updateReviewedSharedSpell', {
+					method: 'POST',
+					body: new URLSearchParams({
+						spellId: 'review-spell-1',
+						name: 'Pending Sigil Revised',
+						level: '3',
+						school: 'abjuration',
+						summary: 'Revised before approval.',
+						description: '',
+						castingTime: '1 action',
+						range: '60 feet',
+						components: 'V, S',
+						materials: '',
+						duration: '1 minute',
+						classSlugsText: 'clerigo',
+						concentration: 'on',
+						ritual: ''
+					})
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 303,
+			location:
+				'/app/content?reviewSharedSpell=review-spell-1&reviewUpdatedSharedSpell=Pending%20Sigil%20Revised'
+		});
+
+		expect(updateReviewableSharedSpell).toHaveBeenCalledWith(
+			{},
+			expect.objectContaining({ globalRole: 'content_editor', userId: 'user-1' }),
+			{
+				spellId: 'review-spell-1',
+				slug: 'pending-sigil-revised',
+				name: 'Pending Sigil Revised',
+				level: 3,
+				school: 'abjuration',
+				summary: 'Revised before approval.',
+				description: undefined,
+				castingTime: '1 action',
+				range: '60 feet',
+				components: 'V, S',
+				materials: undefined,
+				duration: '1 minute',
+				classSlugs: ['clerigo'],
+				concentration: true,
+				ritual: false
+			}
 		);
 	});
 

@@ -578,6 +578,73 @@ export async function returnReviewableSharedFeatToPrivate(
 	};
 }
 
+export async function updateReviewableSharedFeat(
+	supabase: SupabaseClient<Database>,
+	authorization: AuthorizationContext,
+	input: CreatePrivateFeatInput & {
+		featId: string;
+	}
+): Promise<ManagedSharedFeatRecord> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		const feat = loadE2EReviewableSharedFeatById(input.featId);
+		assertManagedSharedFeatAccess(authorization, feat, 'update');
+		const updated = updateE2EManagedSharedFeatForUser(authorization.userId, {
+			featId: input.featId,
+			name: input.name,
+			slug: input.slug,
+			prerequisites: input.prerequisites,
+			summary: input.summary,
+			description: input.description,
+			includeSystemContent: authorization.globalRole === 'admin',
+			editorialStatus: 'in_review'
+		});
+
+		return {
+			id: updated.id,
+			sourceCode: updated.sourceCode,
+			rulesetCode: updated.rulesetCode,
+			contentMode: updated.contentMode,
+			editorialStatus: updated.editorialStatus,
+			slug: updated.slug,
+			name: updated.name,
+			prerequisites: [...updated.prerequisites],
+			summary: updated.summary,
+			description: updated.description,
+			visibility: updated.visibility === 'public' ? 'public' : 'shared',
+			isSystemContent: updated.isSystemContent,
+			createdAt: updated.createdAt,
+			updatedAt: updated.updatedAt,
+			ownerUserId: updated.userId
+		};
+	}
+
+	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
+	const feat = await loadReviewableSharedFeatById(supabase, input.featId, sourceIds);
+	assertManagedSharedFeatAccess(authorization, feat, 'update');
+	await assertNoExistingSharedFeatSlug(supabase, input.slug, sourceIds, feat.id);
+
+	const { data, error } = await supabase
+		.from('feats')
+		.update({
+			slug: input.slug,
+			name: input.name,
+			prerequisites: input.prerequisites,
+			summary: input.summary ?? null,
+			description: input.description ?? null
+		})
+		.eq('id', feat.id)
+		.select(
+			'id, owner_user_id, source_id, ruleset_code, content_mode, editorial_status, slug, name, prerequisites, summary, description, visibility, is_system_content, created_at, updated_at'
+		)
+		.single();
+
+	if (error) {
+		throw new Error(`Failed to update shared feat in review ${feat.id}`);
+	}
+
+	return mapManagedSharedFeatRecord(data, sourceIds);
+}
+
 export async function updateManagedSharedFeat(
 	supabase: SupabaseClient<Database>,
 	authorization: AuthorizationContext,
