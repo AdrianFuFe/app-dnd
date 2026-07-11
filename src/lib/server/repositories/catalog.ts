@@ -32,6 +32,11 @@ import type {
 	FeatCatalogEntry,
 	SpellCatalogEntry
 } from '$lib/types/content/expanded-content-catalog';
+import {
+	normalizeContentMode,
+	normalizeEditorialStatus,
+	normalizeRulesetCode
+} from '$lib/types/content/content';
 import type {
 	CharacterAttackItem,
 	CharacterFeatItem,
@@ -89,8 +94,10 @@ type SpellRow = {
 	id: string;
 	slug: string;
 	name: string;
-	visibility: string;
-	editorial_status: string;
+	ruleset_code?: string;
+	content_mode?: string;
+	visibility?: string;
+	editorial_status?: string;
 	level: number;
 	school: string;
 	casting_time: string | null;
@@ -102,15 +109,17 @@ type SpellRow = {
 	description: string | null;
 	concentration: boolean;
 	ritual: boolean;
-	is_system_content: boolean | undefined;
+	is_system_content?: boolean;
 };
 
 type FeatRow = {
 	id: string;
 	slug: string;
 	name: string;
-	editorial_status: string;
-	visibility: string;
+	ruleset_code?: string;
+	content_mode?: string;
+	editorial_status?: string;
+	visibility?: string;
 	prerequisites: string[];
 	summary: string | null;
 	description: string | null;
@@ -768,7 +777,7 @@ async function listSpellCatalogEntries(
 	const { data, error } = await supabase
 		.from('spells')
 		.select(
-			'id, slug, name, visibility, editorial_status, level, school, casting_time, range_text, components, duration, class_slugs, summary, description, concentration, ritual, is_system_content'
+			'id, slug, name, ruleset_code, content_mode, visibility, editorial_status, level, school, casting_time, range_text, components, duration, class_slugs, summary, description, concentration, ritual, is_system_content'
 		)
 		.order('level', { ascending: true })
 		.order('name', { ascending: true });
@@ -780,8 +789,8 @@ async function listSpellCatalogEntries(
 	return data
 		.filter((spell) =>
 			isPublishedSharedContent({
-				editorialStatus: spell.editorial_status,
-				visibility: spell.visibility
+				editorialStatus: spell.editorial_status ?? 'published',
+				visibility: spell.visibility ?? 'shared'
 			})
 		)
 		.map(mapSpellCatalogEntry);
@@ -794,7 +803,7 @@ async function loadSelectedSpellCatalogEntries(
 	const { data, error } = await supabase
 		.from('spells')
 		.select(
-			'id, slug, name, visibility, editorial_status, level, school, casting_time, range_text, components, duration, class_slugs, summary, description, concentration, ritual, is_system_content'
+			'id, slug, name, ruleset_code, content_mode, visibility, editorial_status, level, school, casting_time, range_text, components, duration, class_slugs, summary, description, concentration, ritual, is_system_content'
 		)
 		.in('id', spellIds);
 
@@ -805,8 +814,8 @@ async function loadSelectedSpellCatalogEntries(
 	return data
 		.filter((spell) =>
 			isPublishedSharedContent({
-				editorialStatus: spell.editorial_status,
-				visibility: spell.visibility
+				editorialStatus: spell.editorial_status ?? 'published',
+				visibility: spell.visibility ?? 'shared'
 			})
 		)
 		.map(mapSpellCatalogEntry);
@@ -817,7 +826,9 @@ async function listFeatCatalogEntries(
 ): Promise<FeatCatalogEntry[]> {
 	const { data, error } = await supabase
 		.from('feats')
-		.select('id, slug, name, visibility, editorial_status, prerequisites, summary, description')
+		.select(
+			'id, slug, name, ruleset_code, content_mode, visibility, editorial_status, prerequisites, summary, description'
+		)
 		.order('name', { ascending: true });
 
 	if (error) {
@@ -827,8 +838,8 @@ async function listFeatCatalogEntries(
 	return data
 		.filter((feat) =>
 			isPublishedSharedContent({
-				editorialStatus: feat.editorial_status,
-				visibility: feat.visibility
+				editorialStatus: feat.editorial_status ?? 'published',
+				visibility: feat.visibility ?? 'shared'
 			})
 		)
 		.map(mapFeatCatalogEntry);
@@ -840,7 +851,9 @@ async function loadSelectedFeatCatalogEntries(
 ): Promise<FeatCatalogEntry[]> {
 	const { data, error } = await supabase
 		.from('feats')
-		.select('id, slug, name, visibility, editorial_status, prerequisites, summary, description')
+		.select(
+			'id, slug, name, ruleset_code, content_mode, visibility, editorial_status, prerequisites, summary, description'
+		)
 		.in('id', featIds);
 
 	if (error) {
@@ -850,8 +863,8 @@ async function loadSelectedFeatCatalogEntries(
 	return data
 		.filter((feat) =>
 			isPublishedSharedContent({
-				editorialStatus: feat.editorial_status,
-				visibility: feat.visibility
+				editorialStatus: feat.editorial_status ?? 'published',
+				visibility: feat.visibility ?? 'shared'
 			})
 		)
 		.map(mapFeatCatalogEntry);
@@ -898,7 +911,10 @@ function mapSpellCatalogEntry(
 		| 'id'
 		| 'slug'
 		| 'name'
+		| 'ruleset_code'
+		| 'content_mode'
 		| 'visibility'
+		| 'editorial_status'
 		| 'level'
 		| 'school'
 		| 'casting_time'
@@ -917,6 +933,9 @@ function mapSpellCatalogEntry(
 		id: spell.id,
 		slug: spell.slug,
 		name: spell.name,
+		rulesetCode: normalizeRulesetCode(spell.ruleset_code ?? 'dnd-2014-srd'),
+		contentMode: normalizeContentMode(spell.content_mode ?? 'canon'),
+		editorialStatus: normalizeEditorialStatus(spell.editorial_status ?? 'published'),
 		level: spell.level,
 		school: spell.school,
 		castingTime: spell.casting_time,
@@ -934,12 +953,28 @@ function mapSpellCatalogEntry(
 }
 
 function mapFeatCatalogEntry(
-	feat: Pick<FeatRow, 'id' | 'slug' | 'name' | 'prerequisites' | 'summary' | 'description'>
+	feat: Pick<
+		FeatRow,
+		| 'id'
+		| 'slug'
+		| 'name'
+		| 'ruleset_code'
+		| 'content_mode'
+		| 'editorial_status'
+		| 'visibility'
+		| 'prerequisites'
+		| 'summary'
+		| 'description'
+	>
 ): FeatCatalogEntry {
 	return {
 		id: feat.id,
 		slug: feat.slug,
 		name: feat.name,
+		rulesetCode: normalizeRulesetCode(feat.ruleset_code ?? 'dnd-2014-srd'),
+		contentMode: normalizeContentMode(feat.content_mode ?? 'canon'),
+		editorialStatus: normalizeEditorialStatus(feat.editorial_status ?? 'published'),
+		visibility: feat.visibility === 'public' ? 'public' : 'shared',
 		prerequisites: feat.prerequisites,
 		summary: feat.summary,
 		description: feat.description

@@ -8,6 +8,7 @@ Apply the SQL files in this order:
 4. `002_initial_rls_policies.sql`
 5. `005_character_notes.sql`
 6. `006_ruleset_and_editorial_fields.sql`
+7. `007_editorial_rls_alignment.sql`
 
 ## Notes
 
@@ -19,6 +20,8 @@ Apply the SQL files in this order:
 - `006_ruleset_and_editorial_fields.sql` aligns characters and reusable content with the
   editorial contract by adding `ruleset_code`, `content_mode`, and where needed
   `editorial_status`.
+- `007_editorial_rls_alignment.sql` updates reusable-content RLS so the active editorial
+  workflow is enforced closer to the data layer.
 
 ## Editorial model notes
 

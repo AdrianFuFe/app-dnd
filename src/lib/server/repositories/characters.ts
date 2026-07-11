@@ -8,6 +8,7 @@ import {
 	updateE2ECharacterForUser
 } from '$lib/server/e2e/mock-app';
 import type { Database } from '$lib/types/database/supabase';
+import { normalizeContentMode, normalizeRulesetCode } from '$lib/types/content/content';
 import type {
 	CharacterAttackItem,
 	CharacterCreateInput,
@@ -307,8 +308,8 @@ export async function getCharacterForUser(
 	return {
 		id: character.id,
 		name: character.name,
-		rulesetCode: character.ruleset_code as CharacterCreateInput['rulesetCode'],
-		contentMode: character.content_mode as CharacterCreateInput['contentMode'],
+		rulesetCode: normalizeRulesetCode(character.ruleset_code),
+		contentMode: normalizeContentMode(character.content_mode),
 		speciesId: character.species_id ?? undefined,
 		subspeciesId: character.subspecies_id ?? undefined,
 		classId: character.class_id ?? undefined,

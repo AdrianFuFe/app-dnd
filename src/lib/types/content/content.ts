@@ -33,6 +33,50 @@ export const EDITORIAL_STATUSES = [
 	'retired'
 ] as const;
 
+export function isContentSource(value: string): value is ContentSource {
+	return (CONTENT_SOURCES as readonly string[]).includes(value);
+}
+
+export function isContentVisibility(value: string): value is ContentVisibility {
+	return (CONTENT_VISIBILITIES as readonly string[]).includes(value);
+}
+
+export function isSharedContentVisibility(value: string): value is SharedContentVisibility {
+	return value === 'shared' || value === 'public';
+}
+
+export function isReviewableContentVisibility(value: string): value is ReviewableContentVisibility {
+	return value === 'shared';
+}
+
+export function isRulesetCode(value: string): value is RulesetCode {
+	return (RULESET_CODES as readonly string[]).includes(value);
+}
+
+export function isContentMode(value: string): value is ContentMode {
+	return (CONTENT_MODES as readonly string[]).includes(value);
+}
+
+export function isEditorialStatus(value: string): value is EditorialStatus {
+	return (EDITORIAL_STATUSES as readonly string[]).includes(value);
+}
+
+export function normalizeRulesetCode(value: string): RulesetCode {
+	return isRulesetCode(value) ? value : 'dnd-2014-srd';
+}
+
+export function normalizeContentMode(value: string): ContentMode {
+	return isContentMode(value) ? value : 'custom';
+}
+
+export function normalizeEditorialStatus(value: string): EditorialStatus {
+	return isEditorialStatus(value) ? value : 'private_draft';
+}
+
+export function normalizeContentVisibility(value: string): ContentVisibility {
+	return isContentVisibility(value) ? value : 'private';
+}
+
 export type ContentType =
 	| 'species'
 	| 'subspecies'

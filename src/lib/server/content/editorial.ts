@@ -1,4 +1,12 @@
-import type { ContentMode, ContentVisibility, EditorialStatus } from '$lib/types/content/content';
+import {
+	isReviewableContentVisibility,
+	isSharedContentVisibility,
+	normalizeContentVisibility,
+	normalizeEditorialStatus,
+	type ContentMode,
+	type ContentVisibility,
+	type EditorialStatus
+} from '$lib/types/content/content';
 
 type SharedPublicationStateInput = {
 	isSystemContent: boolean;
@@ -60,8 +68,8 @@ export function isPublishedSharedContent(input: {
 	visibility: string;
 }): boolean {
 	return (
-		input.editorialStatus === 'published' &&
-		(input.visibility === 'shared' || input.visibility === 'public')
+		normalizeEditorialStatus(input.editorialStatus) === 'published' &&
+		isSharedContentVisibility(normalizeContentVisibility(input.visibility))
 	);
 }
 
@@ -69,9 +77,11 @@ export function isPrivateOwnedContent(input: {
 	editorialStatus: string;
 	visibility: string;
 }): boolean {
+	const editorialStatus = normalizeEditorialStatus(input.editorialStatus);
+
 	return (
-		input.visibility === 'private' &&
-		(input.editorialStatus === 'private_draft' || input.editorialStatus === 'retired')
+		normalizeContentVisibility(input.visibility) === 'private' &&
+		(editorialStatus === 'private_draft' || editorialStatus === 'retired')
 	);
 }
 
@@ -80,7 +90,7 @@ export function isReviewableSharedContent(input: {
 	visibility: string;
 }): boolean {
 	return (
-		input.editorialStatus === 'in_review' &&
-		input.visibility === 'shared'
+		normalizeEditorialStatus(input.editorialStatus) === 'in_review' &&
+		isReviewableContentVisibility(normalizeContentVisibility(input.visibility))
 	);
 }

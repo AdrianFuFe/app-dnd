@@ -547,6 +547,8 @@ describe('getCharacterForUser', () => {
 		expect(character).toEqual({
 			id: 'char-1',
 			name: 'Talia Stormstep',
+			rulesetCode: 'dnd-2014-srd',
+			contentMode: 'custom',
 			speciesId: 'species-1',
 			subspeciesId: undefined,
 			classId: 'class-1',
