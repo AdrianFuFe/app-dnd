@@ -28,6 +28,13 @@ create table if not exists species (
 	id uuid primary key default gen_random_uuid(),
 	owner_user_id uuid references auth.users (id) on delete cascade,
 	source_id uuid not null references content_sources (id),
+	ruleset_code text not null default 'dnd-2014-srd',
+	content_mode text not null default 'canon' check (
+		content_mode in ('canon', 'custom')
+	),
+	editorial_status text not null default 'published' check (
+		editorial_status in ('private_draft', 'shared_draft', 'in_review', 'published', 'retired')
+	),
 	visibility text not null default 'private' check (
 		visibility in ('private', 'campaign', 'shared', 'public')
 	),
@@ -50,6 +57,13 @@ create table if not exists subspecies (
 	id uuid primary key default gen_random_uuid(),
 	owner_user_id uuid references auth.users (id) on delete cascade,
 	source_id uuid not null references content_sources (id),
+	ruleset_code text not null default 'dnd-2014-srd',
+	content_mode text not null default 'canon' check (
+		content_mode in ('canon', 'custom')
+	),
+	editorial_status text not null default 'published' check (
+		editorial_status in ('private_draft', 'shared_draft', 'in_review', 'published', 'retired')
+	),
 	visibility text not null default 'private' check (
 		visibility in ('private', 'campaign', 'shared', 'public')
 	),
@@ -69,6 +83,13 @@ create table if not exists character_classes (
 	id uuid primary key default gen_random_uuid(),
 	owner_user_id uuid references auth.users (id) on delete cascade,
 	source_id uuid not null references content_sources (id),
+	ruleset_code text not null default 'dnd-2014-srd',
+	content_mode text not null default 'canon' check (
+		content_mode in ('canon', 'custom')
+	),
+	editorial_status text not null default 'published' check (
+		editorial_status in ('private_draft', 'shared_draft', 'in_review', 'published', 'retired')
+	),
 	visibility text not null default 'private' check (
 		visibility in ('private', 'campaign', 'shared', 'public')
 	),
@@ -97,6 +118,13 @@ create table if not exists subclasses (
 	id uuid primary key default gen_random_uuid(),
 	owner_user_id uuid references auth.users (id) on delete cascade,
 	source_id uuid not null references content_sources (id),
+	ruleset_code text not null default 'dnd-2014-srd',
+	content_mode text not null default 'canon' check (
+		content_mode in ('canon', 'custom')
+	),
+	editorial_status text not null default 'published' check (
+		editorial_status in ('private_draft', 'shared_draft', 'in_review', 'published', 'retired')
+	),
 	visibility text not null default 'private' check (
 		visibility in ('private', 'campaign', 'shared', 'public')
 	),
@@ -118,6 +146,13 @@ create table if not exists backgrounds (
 	id uuid primary key default gen_random_uuid(),
 	owner_user_id uuid references auth.users (id) on delete cascade,
 	source_id uuid not null references content_sources (id),
+	ruleset_code text not null default 'dnd-2014-srd',
+	content_mode text not null default 'canon' check (
+		content_mode in ('canon', 'custom')
+	),
+	editorial_status text not null default 'published' check (
+		editorial_status in ('private_draft', 'shared_draft', 'in_review', 'published', 'retired')
+	),
 	visibility text not null default 'private' check (
 		visibility in ('private', 'campaign', 'shared', 'public')
 	),
@@ -141,6 +176,13 @@ create table if not exists spells (
 	id uuid primary key default gen_random_uuid(),
 	owner_user_id uuid references auth.users (id) on delete cascade,
 	source_id uuid not null references content_sources (id),
+	ruleset_code text not null default 'dnd-2014-srd',
+	content_mode text not null default 'canon' check (
+		content_mode in ('canon', 'custom')
+	),
+	editorial_status text not null default 'published' check (
+		editorial_status in ('private_draft', 'shared_draft', 'in_review', 'published', 'retired')
+	),
 	visibility text not null default 'private' check (
 		visibility in ('private', 'campaign', 'shared', 'public')
 	),
@@ -169,6 +211,13 @@ create table if not exists feats (
 	id uuid primary key default gen_random_uuid(),
 	owner_user_id uuid references auth.users (id) on delete cascade,
 	source_id uuid not null references content_sources (id),
+	ruleset_code text not null default 'dnd-2014-srd',
+	content_mode text not null default 'canon' check (
+		content_mode in ('canon', 'custom')
+	),
+	editorial_status text not null default 'published' check (
+		editorial_status in ('private_draft', 'shared_draft', 'in_review', 'published', 'retired')
+	),
 	visibility text not null default 'private' check (
 		visibility in ('private', 'campaign', 'shared', 'public')
 	),
@@ -188,6 +237,13 @@ create table if not exists equipment (
 	id uuid primary key default gen_random_uuid(),
 	owner_user_id uuid references auth.users (id) on delete cascade,
 	source_id uuid not null references content_sources (id),
+	ruleset_code text not null default 'dnd-2014-srd',
+	content_mode text not null default 'canon' check (
+		content_mode in ('canon', 'custom')
+	),
+	editorial_status text not null default 'published' check (
+		editorial_status in ('private_draft', 'shared_draft', 'in_review', 'published', 'retired')
+	),
 	visibility text not null default 'private' check (
 		visibility in ('private', 'campaign', 'shared', 'public')
 	),
@@ -214,6 +270,10 @@ create table if not exists equipment (
 create table if not exists characters (
 	id uuid primary key default gen_random_uuid(),
 	user_id uuid not null references auth.users (id) on delete cascade,
+	ruleset_code text not null default 'dnd-2014-srd',
+	content_mode text not null default 'canon' check (
+		content_mode in ('canon', 'custom')
+	),
 	species_id uuid references species (id),
 	subspecies_id uuid references subspecies (id),
 	class_id uuid references character_classes (id),

@@ -2,6 +2,17 @@ export type ContentSource = 'srd-5-1' | 'srd-5-2' | 'user-private' | 'homebrew';
 
 export type ContentVisibility = 'private' | 'campaign' | 'shared' | 'public';
 
+export type RulesetCode = 'dnd-2014-srd' | 'custom';
+
+export type ContentMode = 'canon' | 'custom';
+
+export type EditorialStatus =
+	| 'private_draft'
+	| 'shared_draft'
+	| 'in_review'
+	| 'published'
+	| 'retired';
+
 export type ContentType =
 	| 'species'
 	| 'subspecies'

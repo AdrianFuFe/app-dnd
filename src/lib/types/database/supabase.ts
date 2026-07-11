@@ -387,6 +387,9 @@ export interface Database {
 					id: string;
 					owner_user_id: string | null;
 					source_id: string;
+					ruleset_code: string;
+					content_mode: string;
+					editorial_status: string;
 					visibility: string;
 					slug: string;
 					name: string;
@@ -411,6 +414,9 @@ export interface Database {
 					id?: string;
 					owner_user_id?: string | null;
 					source_id: string;
+					ruleset_code?: string;
+					content_mode?: string;
+					editorial_status?: string;
 					visibility?: string;
 					slug: string;
 					name: string;
@@ -435,6 +441,9 @@ export interface Database {
 					id?: string;
 					owner_user_id?: string | null;
 					source_id?: string;
+					ruleset_code?: string;
+					content_mode?: string;
+					editorial_status?: string;
 					visibility?: string;
 					slug?: string;
 					name?: string;
@@ -461,6 +470,8 @@ export interface Database {
 				Row: {
 					id: string;
 					user_id: string;
+					ruleset_code: string;
+					content_mode: string;
 					species_id: string | null;
 					subspecies_id: string | null;
 					class_id: string | null;
@@ -480,6 +491,8 @@ export interface Database {
 				Insert: {
 					id?: string;
 					user_id: string;
+					ruleset_code?: string;
+					content_mode?: string;
 					species_id?: string | null;
 					subspecies_id?: string | null;
 					class_id?: string | null;
@@ -499,6 +512,8 @@ export interface Database {
 				Update: {
 					id?: string;
 					user_id?: string;
+					ruleset_code?: string;
+					content_mode?: string;
 					species_id?: string | null;
 					subspecies_id?: string | null;
 					class_id?: string | null;
@@ -552,6 +567,9 @@ export interface Database {
 					id: string;
 					owner_user_id: string | null;
 					source_id: string;
+					ruleset_code: string;
+					content_mode: string;
+					editorial_status: string;
 					visibility: string;
 					slug: string;
 					name: string;
@@ -567,6 +585,9 @@ export interface Database {
 					id?: string;
 					owner_user_id?: string | null;
 					source_id: string;
+					ruleset_code?: string;
+					content_mode?: string;
+					editorial_status?: string;
 					visibility?: string;
 					slug: string;
 					name: string;
@@ -582,6 +603,9 @@ export interface Database {
 					id?: string;
 					owner_user_id?: string | null;
 					source_id?: string;
+					ruleset_code?: string;
+					content_mode?: string;
+					editorial_status?: string;
 					visibility?: string;
 					slug?: string;
 					name?: string;
@@ -600,6 +624,9 @@ export interface Database {
 					id: string;
 					owner_user_id: string | null;
 					source_id: string;
+					ruleset_code: string;
+					content_mode: string;
+					editorial_status: string;
 					visibility: string;
 					slug: string;
 					name: string;
@@ -623,6 +650,9 @@ export interface Database {
 					id?: string;
 					owner_user_id?: string | null;
 					source_id: string;
+					ruleset_code?: string;
+					content_mode?: string;
+					editorial_status?: string;
 					visibility?: string;
 					slug: string;
 					name: string;
@@ -646,6 +676,9 @@ export interface Database {
 					id?: string;
 					owner_user_id?: string | null;
 					source_id?: string;
+					ruleset_code?: string;
+					content_mode?: string;
+					editorial_status?: string;
 					visibility?: string;
 					slug?: string;
 					name?: string;
@@ -696,6 +729,9 @@ export interface Database {
 					id: string;
 					owner_user_id: string | null;
 					source_id: string;
+					ruleset_code: string;
+					content_mode: string;
+					editorial_status: string;
 					visibility: string;
 					slug: string;
 					name: string;
@@ -720,6 +756,9 @@ export interface Database {
 					id?: string;
 					owner_user_id?: string | null;
 					source_id: string;
+					ruleset_code?: string;
+					content_mode?: string;
+					editorial_status?: string;
 					visibility?: string;
 					slug: string;
 					name: string;
@@ -744,6 +783,9 @@ export interface Database {
 					id?: string;
 					owner_user_id?: string | null;
 					source_id?: string;
+					ruleset_code?: string;
+					content_mode?: string;
+					editorial_status?: string;
 					visibility?: string;
 					slug?: string;
 					name?: string;
@@ -771,6 +813,9 @@ export interface Database {
 					id: string;
 					owner_user_id: string | null;
 					source_id: string;
+					ruleset_code: string;
+					content_mode: string;
+					editorial_status: string;
 					visibility: string;
 					slug: string;
 					name: string;
@@ -789,6 +834,9 @@ export interface Database {
 					id?: string;
 					owner_user_id?: string | null;
 					source_id: string;
+					ruleset_code?: string;
+					content_mode?: string;
+					editorial_status?: string;
 					visibility?: string;
 					slug: string;
 					name: string;
@@ -807,6 +855,9 @@ export interface Database {
 					id?: string;
 					owner_user_id?: string | null;
 					source_id?: string;
+					ruleset_code?: string;
+					content_mode?: string;
+					editorial_status?: string;
 					visibility?: string;
 					slug?: string;
 					name?: string;
