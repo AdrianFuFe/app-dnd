@@ -436,4 +436,60 @@ describe('deriveGuidedCharacterDraft', () => {
 			'Uses custom background: Sage'
 		]);
 	});
+
+	it('applies manual combat overrides and marks the guided draft as custom', () => {
+		const draft = deriveGuidedCharacterDraft(catalog, {
+			...createDefaultGuidedCharacterInput(),
+			speciesId: 'species-1',
+			subspeciesId: 'subspecies-1',
+			classId: 'class-1',
+			subclassId: 'subclass-1',
+			backgroundId: 'background-1',
+			constitution: 14,
+			dexterity: 12,
+			overrideMaxHp: 12,
+			overrideCurrentHp: 20,
+			overrideTemporaryHp: 3,
+			overrideArmorClass: 15,
+			overrideInitiative: 4,
+			overrideSpeed: 35,
+			languageChoices: [
+				{ key: 'language:0', value: 'draconico' },
+				{ key: 'language:1', value: 'comun' },
+				{ key: 'language:1', value: 'gigante' }
+			],
+			proficiencyChoices: [
+				{ key: 'skill:0', value: 'history' },
+				{ key: 'skill:0', value: 'insight' }
+			],
+			equipmentChoices: [
+				{ key: 'equipment:0', value: 'mace' },
+				{ key: 'equipment:1', value: 'prayer-book' }
+			]
+		});
+
+		expect(draft.character.contentMode).toBe('custom');
+		expect(draft.character.maxHp).toBe(12);
+		expect(draft.character.currentHp).toBe(12);
+		expect(draft.character.temporaryHp).toBe(3);
+		expect(draft.character.armorClass).toBe(15);
+		expect(draft.character.initiative).toBe(4);
+		expect(draft.character.speed).toBe(35);
+		expect(draft.preview.derivedCombatStats).toEqual({
+			maxHp: 10,
+			currentHp: 10,
+			temporaryHp: 0,
+			armorClass: 12,
+			initiative: 2,
+			speed: 30
+		});
+		expect(draft.preview.customizationReasonLines).toEqual([
+			'Manual override: Max Hp',
+			'Manual override: Current Hp',
+			'Manual override: Temporary Hp',
+			'Manual override: Armor Class',
+			'Manual override: Initiative',
+			'Manual override: Speed'
+		]);
+	});
 });

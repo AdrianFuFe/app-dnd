@@ -20,6 +20,7 @@ import type {
 import type { Ability, GameMechanic } from '$lib/types/domain/game-mechanics';
 import type { CharacterGuidedInput } from '$lib/schemas/characters/character-guided.schema';
 import {
+	createCharacterManualOverride,
 	deriveCharacterContentProfile,
 	summarizeCharacterCustomizationReasons,
 	type CharacterLinkedContentSelection
@@ -126,6 +127,14 @@ export type GuidedCharacterPreview = {
 	armorClass: number;
 	initiative: number;
 	hitDice: string;
+	derivedCombatStats: {
+		maxHp: number;
+		currentHp: number;
+		temporaryHp: number;
+		armorClass: number;
+		initiative: number;
+		speed: number;
+	};
 	grantedSpellItems: CharacterSpellItem[];
 	grantedFeatureLines: string[];
 	resolvedChoiceLines: string[];
@@ -151,19 +160,6 @@ export function deriveGuidedCharacterDraft(
 ): GuidedCharacterDraft {
 	const { species, subspecies, characterClass, subclass, background, selectedMechanics } =
 		resolveGuidedSelections(catalog, input);
-	const contentProfile = deriveCharacterContentProfile({
-		baseRulesetCode: species.rulesetCode,
-		linkedContentSelections: createGuidedLinkedContentSelections(
-			species,
-			subspecies,
-			characterClass,
-			subclass,
-			background
-		)
-	});
-	const customizationReasonLines = summarizeCharacterCustomizationReasons(
-		contentProfile.customizationReasons
-	);
 
 	const baseAbilityScores = {
 		strength: input.strength,
@@ -178,8 +174,30 @@ export function deriveGuidedCharacterDraft(
 	const abilityScores = applyAbilityBonuses(baseAbilityScores, abilityBonuses);
 	const dexterityModifier = calculateAbilityModifier(abilityScores.dexterity);
 	const constitutionModifier = calculateAbilityModifier(abilityScores.constitution);
-	const speed = deriveSpeed(species.baseSpeed, selectedMechanics);
-	const maxHp = Math.max(1, characterClass.hitDie + constitutionModifier);
+	const derivedCombatStats = {
+		speed: deriveSpeed(species.baseSpeed, selectedMechanics),
+		maxHp: Math.max(1, characterClass.hitDie + constitutionModifier),
+		currentHp: Math.max(1, characterClass.hitDie + constitutionModifier),
+		temporaryHp: 0,
+		armorClass: 10 + dexterityModifier,
+		initiative: dexterityModifier
+	};
+	const manualOverrides = summarizeGuidedCombatOverrides(derivedCombatStats, input);
+	const contentProfile = deriveCharacterContentProfile({
+		baseRulesetCode: species.rulesetCode,
+		linkedContentSelections: createGuidedLinkedContentSelections(
+			species,
+			subspecies,
+			characterClass,
+			subclass,
+			background
+		),
+		manualOverrides
+	});
+	const customizationReasonLines = summarizeCharacterCustomizationReasons(
+		contentProfile.customizationReasons
+	);
+	const combatStats = applyGuidedCombatOverrides(derivedCombatStats, input);
 	const hitDice = `1d${characterClass.hitDie}`;
 	const grantedSpellItems = deriveGrantedSpellItems(
 		characterClass,
@@ -235,12 +253,12 @@ export function deriveGuidedCharacterDraft(
 			background: background.name,
 			story: input.story,
 			...abilityScores,
-			maxHp,
-			currentHp: maxHp,
-			temporaryHp: 0,
-			armorClass: 10 + dexterityModifier,
-			initiative: dexterityModifier,
-			speed,
+			maxHp: combatStats.maxHp,
+			currentHp: combatStats.currentHp,
+			temporaryHp: combatStats.temporaryHp,
+			armorClass: combatStats.armorClass,
+			initiative: combatStats.initiative,
+			speed: combatStats.speed,
 			hitDice,
 			attackItems,
 			spellItems: grantedSpellItems,
@@ -254,13 +272,14 @@ export function deriveGuidedCharacterDraft(
 		preview: {
 			abilityScores,
 			abilityBonuses,
-			speed,
-			maxHp,
-			currentHp: maxHp,
-			temporaryHp: 0,
-			armorClass: 10 + dexterityModifier,
-			initiative: dexterityModifier,
+			speed: combatStats.speed,
+			maxHp: combatStats.maxHp,
+			currentHp: combatStats.currentHp,
+			temporaryHp: combatStats.temporaryHp,
+			armorClass: combatStats.armorClass,
+			initiative: combatStats.initiative,
 			hitDice,
+			derivedCombatStats,
 			grantedSpellItems,
 			grantedFeatureLines,
 			resolvedChoiceLines,
@@ -309,6 +328,12 @@ export function createDefaultGuidedCharacterInput(): CharacterGuidedInput {
 		intelligence: 10,
 		wisdom: 10,
 		charisma: 10,
+		overrideMaxHp: undefined,
+		overrideCurrentHp: undefined,
+		overrideTemporaryHp: undefined,
+		overrideArmorClass: undefined,
+		overrideInitiative: undefined,
+		overrideSpeed: undefined,
 		languageChoices: [],
 		proficiencyChoices: [],
 		equipmentChoices: []
@@ -332,6 +357,12 @@ export function createGuidedCharacterFormValues(
 		intelligence: toFormString(source.intelligence),
 		wisdom: toFormString(source.wisdom),
 		charisma: toFormString(source.charisma),
+		overrideMaxHp: toFormString(source.overrideMaxHp),
+		overrideCurrentHp: toFormString(source.overrideCurrentHp),
+		overrideTemporaryHp: toFormString(source.overrideTemporaryHp),
+		overrideArmorClass: toFormString(source.overrideArmorClass),
+		overrideInitiative: toFormString(source.overrideInitiative),
+		overrideSpeed: toFormString(source.overrideSpeed),
 		languageChoices: toStructuredFormString(source.languageChoices),
 		proficiencyChoices: toStructuredFormString(source.proficiencyChoices),
 		equipmentChoices: toStructuredFormString(source.equipmentChoices)
@@ -410,6 +441,68 @@ function deriveSpeed(baseSpeed: number | null, mechanics: GameMechanic[]): numbe
 	}
 
 	return speed;
+}
+
+function applyGuidedCombatOverrides(
+	derivedCombatStats: GuidedCharacterPreview['derivedCombatStats'],
+	input: CharacterGuidedInput
+) {
+	const maxHp = input.overrideMaxHp ?? derivedCombatStats.maxHp;
+	const currentHp = Math.min(input.overrideCurrentHp ?? maxHp, maxHp);
+
+	return {
+		maxHp,
+		currentHp,
+		temporaryHp: input.overrideTemporaryHp ?? derivedCombatStats.temporaryHp,
+		armorClass: input.overrideArmorClass ?? derivedCombatStats.armorClass,
+		initiative: input.overrideInitiative ?? derivedCombatStats.initiative,
+		speed: input.overrideSpeed ?? derivedCombatStats.speed
+	};
+}
+
+function summarizeGuidedCombatOverrides(
+	derivedCombatStats: GuidedCharacterPreview['derivedCombatStats'],
+	input: CharacterGuidedInput
+) {
+	const manualOverrides: Array<{ field: string }> = [];
+
+	if (input.overrideMaxHp !== undefined && input.overrideMaxHp !== derivedCombatStats.maxHp) {
+		manualOverrides.push(createCharacterManualOverride('max_hp'));
+	}
+
+	if (
+		input.overrideCurrentHp !== undefined &&
+		input.overrideCurrentHp !== derivedCombatStats.currentHp
+	) {
+		manualOverrides.push(createCharacterManualOverride('current_hp'));
+	}
+
+	if (
+		input.overrideTemporaryHp !== undefined &&
+		input.overrideTemporaryHp !== derivedCombatStats.temporaryHp
+	) {
+		manualOverrides.push(createCharacterManualOverride('temporary_hp'));
+	}
+
+	if (
+		input.overrideArmorClass !== undefined &&
+		input.overrideArmorClass !== derivedCombatStats.armorClass
+	) {
+		manualOverrides.push(createCharacterManualOverride('armor_class'));
+	}
+
+	if (
+		input.overrideInitiative !== undefined &&
+		input.overrideInitiative !== derivedCombatStats.initiative
+	) {
+		manualOverrides.push(createCharacterManualOverride('initiative'));
+	}
+
+	if (input.overrideSpeed !== undefined && input.overrideSpeed !== derivedCombatStats.speed) {
+		manualOverrides.push(createCharacterManualOverride('speed'));
+	}
+
+	return manualOverrides;
 }
 
 function deriveGrantedSpellItems(
