@@ -65,7 +65,8 @@ describe('managed shared feat lifecycle', () => {
 				expect.objectContaining({
 					id: created.id,
 					sourceCode: 'homebrew',
-					name: 'Battle Lore'
+					name: 'Battle Lore',
+					editorialStatus: 'retired'
 				})
 			])
 		);

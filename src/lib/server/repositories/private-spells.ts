@@ -12,6 +12,13 @@ import {
 	retireE2EManagedSharedSpellForUser,
 	updateE2EManagedSharedSpellForUser
 } from '$lib/server/e2e/mock-app';
+import {
+	isPrivateOwnedContent,
+	isPublishedSharedContent,
+	resolvePrivateDraftState,
+	resolveRetiredState,
+	resolveSharedPublicationState
+} from '$lib/server/content/editorial';
 import type { Database } from '$lib/types/database/supabase';
 import type { GameMechanic } from '$lib/types/domain/game-mechanics';
 import type { AuthorizationContext } from '$lib/types/permissions/permissions';
@@ -195,7 +202,14 @@ export async function listPrivateSpellsForUser(
 		throw new Error(`Failed to load private spells for user ${userId}`);
 	}
 
-	return data.map((spell) => mapPrivateSpellRecord(spell, sourceIds));
+	return data
+		.filter((spell) =>
+			isPrivateOwnedContent({
+				editorialStatus: spell.editorial_status,
+				visibility: 'private'
+			})
+		)
+		.map((spell) => mapPrivateSpellRecord(spell, sourceIds));
 }
 
 export async function createPrivateSpell(
@@ -209,14 +223,15 @@ export async function createPrivateSpell(
 
 	const sourceIds = await loadContentSourceIds(supabase, ['user-private', 'homebrew']);
 	await assertNoExistingPrivateSpellSlug(supabase, userId, input.slug, sourceIds);
+	const privateDraftState = resolvePrivateDraftState();
 
 	const insert: SpellInsert = {
 		owner_user_id: userId,
 		source_id: sourceIds['user-private'],
 		ruleset_code: 'dnd-2014-srd',
-		content_mode: 'custom',
-		editorial_status: 'private_draft',
-		visibility: 'private',
+		content_mode: privateDraftState.contentMode,
+		editorial_status: privateDraftState.editorialStatus,
+		visibility: privateDraftState.visibility,
 		slug: input.slug,
 		name: input.name,
 		level: input.level,
@@ -294,6 +309,7 @@ export async function derivePrivateSpellFromSharedCatalog(
 	]);
 
 	await assertNoExistingPrivateSpellSlug(supabase, userId, sharedSpell.slug, privateSourceIds);
+	const privateDraftState = resolvePrivateDraftState();
 
 	const sharedSourceCode =
 		findSourceCodeById(allSourceIds, sharedSpell.source_id) === 'srd-5-2'
@@ -303,9 +319,9 @@ export async function derivePrivateSpellFromSharedCatalog(
 		owner_user_id: userId,
 		source_id: privateSourceIds.homebrew,
 		ruleset_code: 'dnd-2014-srd',
-		content_mode: 'custom',
-		editorial_status: 'private_draft',
-		visibility: 'private',
+		content_mode: privateDraftState.contentMode,
+		editorial_status: privateDraftState.editorialStatus,
+		visibility: privateDraftState.visibility,
 		slug: sharedSpell.slug,
 		name: sharedSpell.name,
 		level: sharedSpell.level,
@@ -383,14 +399,18 @@ export async function createSharedSpell(
 
 	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
 	await assertNoExistingSharedSpellSlug(supabase, input.slug, sourceIds);
+	const publicationState = resolveSharedPublicationState({
+		isSystemContent: input.isSystemContent,
+		visibility: input.visibility
+	});
 
 	const insert: SpellInsert = {
 		owner_user_id: input.isSystemContent ? null : userId,
 		source_id: sourceIds.homebrew,
 		ruleset_code: 'dnd-2014-srd',
-		content_mode: input.isSystemContent ? 'canon' : 'custom',
-		editorial_status: 'published',
-		visibility: input.visibility,
+		content_mode: publicationState.contentMode,
+		editorial_status: publicationState.editorialStatus,
+		visibility: publicationState.visibility,
 		slug: input.slug,
 		name: input.name,
 		level: input.level,
@@ -483,7 +503,14 @@ export async function listManagedSharedSpells(
 		throw new Error(`Failed to load managed shared spells for user ${authorization.userId}`);
 	}
 
-	return data.map((spell) => mapManagedSharedSpellRecord(spell, sourceIds));
+	return data
+		.filter((spell) =>
+			isPublishedSharedContent({
+				editorialStatus: spell.editorial_status,
+				visibility: spell.visibility
+			})
+		)
+		.map((spell) => mapManagedSharedSpellRecord(spell, sourceIds));
 }
 
 export async function updateManagedSharedSpell(
@@ -602,10 +629,14 @@ export async function retireManagedSharedSpell(
 	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
 	const spell = await loadManagedSharedSpellById(supabase, spellId, sourceIds);
 	assertManagedSharedSpellAccess(authorization, spell, 'retire');
+	const retiredState = resolveRetiredState();
 
 	const { error } = await supabase
 		.from('spells')
-		.update({ visibility: 'private' })
+		.update({
+			visibility: retiredState.visibility,
+			editorial_status: retiredState.editorialStatus
+		})
 		.eq('id', spell.id);
 
 	if (error) {
@@ -718,7 +749,7 @@ async function assertNoExistingPrivateSpellSlug(
 ) {
 	const { data, error } = await supabase
 		.from('spells')
-		.select('id')
+		.select('id, editorial_status, visibility')
 		.eq('owner_user_id', userId)
 		.eq('slug', slug)
 		.in('source_id', [sourceIds['user-private'], sourceIds.homebrew])
@@ -728,7 +759,14 @@ async function assertNoExistingPrivateSpellSlug(
 		throw new Error(`Failed to check private spell slug "${slug}"`);
 	}
 
-	if (data.length > 0) {
+	if (
+		data.some((spell) =>
+			isPrivateOwnedContent({
+				editorialStatus: spell.editorial_status ?? 'private_draft',
+				visibility: spell.visibility ?? 'private'
+			})
+		)
+	) {
 		throw new Error('You already have a private spell with that slug. Try a different name.');
 	}
 }
@@ -741,10 +779,9 @@ async function assertNoExistingSharedSpellSlug(
 ) {
 	const query = supabase
 		.from('spells')
-		.select('id')
+		.select('id, editorial_status, visibility')
 		.eq('slug', slug)
 		.eq('source_id', sourceIds.homebrew)
-		.not('visibility', 'in', '(private,campaign)')
 		.limit(2);
 
 	const { data, error } = excludeSpellId ? await query.neq('id', excludeSpellId) : await query;
@@ -753,7 +790,14 @@ async function assertNoExistingSharedSpellSlug(
 		throw new Error(`Failed to check shared spell slug "${slug}"`);
 	}
 
-	if (data.length > 0) {
+	if (
+		data.some((spell) =>
+			isPublishedSharedContent({
+				editorialStatus: spell.editorial_status,
+				visibility: spell.visibility
+			})
+		)
+	) {
 		throw new Error('A shared spell with that slug already exists. Try a different name.');
 	}
 }
@@ -792,7 +836,14 @@ async function loadSharedSpellForDerivation(
 		.eq('id', spellId)
 		.single();
 
-	if (error || !data || data.visibility === 'private' || data.visibility === 'campaign') {
+	if (
+		error ||
+		!data ||
+		!isPublishedSharedContent({
+			editorialStatus: data.editorial_status,
+			visibility: data.visibility
+		})
+	) {
 		throw new Error('Please choose a valid shared spell to copy.');
 	}
 
@@ -813,7 +864,14 @@ async function loadManagedSharedSpellById(
 		.eq('source_id', sourceIds.homebrew)
 		.single();
 
-	if (error || !data || data.visibility === 'private' || data.visibility === 'campaign') {
+	if (
+		error ||
+		!data ||
+		!isPublishedSharedContent({
+			editorialStatus: data.editorial_status,
+			visibility: data.visibility
+		})
+	) {
 		throw new Error('Please choose a valid shared spell to maintain.');
 	}
 
@@ -911,7 +969,13 @@ function findSourceCodeById(
 function loadE2EManagedSharedSpellById(spellId: string) {
 	const spell = getE2EManagedSharedSpellById(spellId);
 
-	if (!spell || spell.visibility === 'private' || spell.visibility === 'campaign') {
+	if (
+		!spell ||
+		!isPublishedSharedContent({
+			editorialStatus: spell.editorialStatus,
+			visibility: spell.visibility
+		})
+	) {
 		throw new Error('Please choose a valid shared spell to maintain.');
 	}
 

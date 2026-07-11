@@ -823,8 +823,41 @@ export function listE2EPrivateFeatsForUser(userId: string) {
 }
 
 export function listE2EPrivateSpellsForUser(userId: string) {
-	return state.privateSpells
-		.filter((spell) => spell.userId === userId)
+	return [
+		...state.privateSpells.filter((spell) => spell.userId === userId),
+		...state.sharedSpells
+			.filter(
+				(spell) =>
+					spell.userId === userId &&
+					!spell.isSystemContent &&
+					spell.visibility === 'private'
+			)
+			.map((spell) => ({
+				id: spell.id,
+				userId,
+				sourceCode: spell.sourceCode,
+				rulesetCode: spell.rulesetCode,
+				contentMode: spell.contentMode,
+				editorialStatus: spell.editorialStatus,
+				slug: spell.slug,
+				name: spell.name,
+				level: spell.level,
+				school: spell.school,
+				castingTime: spell.castingTime,
+				range: spell.range,
+				components: spell.components,
+				materials: spell.materials,
+				duration: spell.duration,
+				classSlugs: [...spell.classSlugs],
+				summary: spell.summary,
+				description: spell.description,
+				derivation: null,
+				concentration: spell.concentration,
+				ritual: spell.ritual,
+				createdAt: spell.createdAt,
+				updatedAt: spell.updatedAt
+			}))
+	]
 		.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
 		.map((spell) => ({
 			...spell,
@@ -1010,6 +1043,7 @@ export function createE2ESharedSpellForUser(
 
 export function listE2EManagedSharedSpellsForUser(userId: string, includeSystemContent: boolean) {
 	return state.sharedSpells
+		.filter((spell) => spell.editorialStatus === 'published')
 		.filter((spell) => spell.visibility !== 'private' && spell.visibility !== 'campaign')
 		.filter((spell) => (includeSystemContent ? true : !spell.isSystemContent))
 		.filter((spell) => (includeSystemContent ? true : spell.userId === userId))
@@ -1047,7 +1081,7 @@ export function updateE2EManagedSharedSpellForUser(
 		throw new Error('Please choose a valid shared spell to maintain.');
 	}
 
-	if (spell.visibility === 'private' || spell.visibility === 'campaign') {
+	if (spell.editorialStatus !== 'published') {
 		throw new Error('Please choose a valid shared spell to maintain.');
 	}
 
@@ -1096,7 +1130,7 @@ export function retireE2EManagedSharedSpellForUser(
 ) {
 	const spell = state.sharedSpells.find((entry) => entry.id === input.spellId);
 
-	if (!spell || spell.visibility === 'private' || spell.visibility === 'campaign') {
+	if (!spell || spell.editorialStatus !== 'published') {
 		throw new Error('Please choose a valid shared spell to maintain.');
 	}
 
@@ -1106,6 +1140,7 @@ export function retireE2EManagedSharedSpellForUser(
 
 	Object.assign(spell, {
 		visibility: 'private',
+		editorialStatus: 'retired',
 		updatedAt: nextUpdatedAt()
 	});
 
@@ -1130,7 +1165,7 @@ export function deleteE2EManagedSharedSpellForUser(
 
 	const spell = state.sharedSpells[index];
 
-	if (spell.visibility === 'private' || spell.visibility === 'campaign') {
+	if (spell.editorialStatus !== 'published') {
 		throw new Error('Please choose a valid shared spell to maintain.');
 	}
 
@@ -1194,6 +1229,7 @@ export function createE2ESharedFeatForUser(
 
 export function listE2EManagedSharedFeatsForUser(userId: string, includeSystemContent: boolean) {
 	return state.sharedFeats
+		.filter((feat) => feat.editorialStatus === 'published')
 		.filter((feat) => feat.visibility !== 'private' && feat.visibility !== 'campaign')
 		.filter((feat) => (includeSystemContent ? true : !feat.isSystemContent))
 		.filter((feat) => (includeSystemContent ? true : feat.userId === userId))
@@ -1219,7 +1255,7 @@ export function updateE2EManagedSharedFeatForUser(
 		throw new Error('Please choose a valid shared feat to maintain.');
 	}
 
-	if (feat.visibility === 'private' || feat.visibility === 'campaign') {
+	if (feat.editorialStatus !== 'published') {
 		throw new Error('Please choose a valid shared feat to maintain.');
 	}
 
@@ -1256,7 +1292,7 @@ export function retireE2EManagedSharedFeatForUser(
 ) {
 	const feat = state.sharedFeats.find((entry) => entry.id === input.featId);
 
-	if (!feat || feat.visibility === 'private' || feat.visibility === 'campaign') {
+	if (!feat || feat.editorialStatus !== 'published') {
 		throw new Error('Please choose a valid shared feat to maintain.');
 	}
 
@@ -1266,6 +1302,7 @@ export function retireE2EManagedSharedFeatForUser(
 
 	Object.assign(feat, {
 		visibility: 'private',
+		editorialStatus: 'retired',
 		updatedAt: nextUpdatedAt()
 	});
 
@@ -1287,7 +1324,7 @@ export function deleteE2EManagedSharedFeatForUser(
 
 	const feat = state.sharedFeats[index];
 
-	if (feat.visibility === 'private' || feat.visibility === 'campaign') {
+	if (feat.editorialStatus !== 'published') {
 		throw new Error('Please choose a valid shared feat to maintain.');
 	}
 

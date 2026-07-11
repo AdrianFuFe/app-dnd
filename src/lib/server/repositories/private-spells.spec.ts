@@ -170,6 +170,8 @@ describe('private spells repository', () => {
 			expect.objectContaining({
 				sourceCode: 'homebrew',
 				slug: 'arc-light-nova',
+				contentMode: 'custom',
+				editorialStatus: 'published',
 				visibility: 'shared',
 				isSystemContent: false
 			})
@@ -306,6 +308,15 @@ describe('private spells repository', () => {
 		});
 
 		await expect(listManagedSharedSpells(supabase, authorization)).resolves.toEqual([]);
+		await expect(listPrivateSpellsForUser(supabase, 'user-1')).resolves.toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: created.id,
+					name: 'Arc Light Nova',
+					editorialStatus: 'retired'
+				})
+			])
+		);
 	});
 
 	it('deletes a system-owned shared spell for admins in the E2E repository path', async () => {

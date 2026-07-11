@@ -12,6 +12,13 @@ import {
 	retireE2EManagedSharedFeatForUser,
 	updateE2EManagedSharedFeatForUser
 } from '$lib/server/e2e/mock-app';
+import {
+	isPrivateOwnedContent,
+	isPublishedSharedContent,
+	resolvePrivateDraftState,
+	resolveRetiredState,
+	resolveSharedPublicationState
+} from '$lib/server/content/editorial';
 import type { Database } from '$lib/types/database/supabase';
 import type { GameMechanic } from '$lib/types/domain/game-mechanics';
 import type { AuthorizationContext } from '$lib/types/permissions/permissions';
@@ -148,7 +155,14 @@ export async function listPrivateFeatsForUser(
 		throw new Error(`Failed to load private feats for user ${userId}`);
 	}
 
-	return data.map((feat) => mapPrivateFeatRecord(feat, sourceIds));
+	return data
+		.filter((feat) =>
+			isPrivateOwnedContent({
+				editorialStatus: feat.editorial_status,
+				visibility: 'private'
+			})
+		)
+		.map((feat) => mapPrivateFeatRecord(feat, sourceIds));
 }
 
 export async function createPrivateFeat(
@@ -162,14 +176,15 @@ export async function createPrivateFeat(
 
 	const sourceIds = await loadContentSourceIds(supabase, ['user-private', 'homebrew']);
 	await assertNoExistingPrivateFeatSlug(supabase, userId, input.slug, sourceIds);
+	const privateDraftState = resolvePrivateDraftState();
 
 	const insert: FeatInsert = {
 		owner_user_id: userId,
 		source_id: sourceIds['user-private'],
 		ruleset_code: 'dnd-2014-srd',
-		content_mode: 'custom',
-		editorial_status: 'private_draft',
-		visibility: 'private',
+		content_mode: privateDraftState.contentMode,
+		editorial_status: privateDraftState.editorialStatus,
+		visibility: privateDraftState.visibility,
 		slug: input.slug,
 		name: input.name,
 		prerequisites: input.prerequisites,
@@ -229,6 +244,7 @@ export async function derivePrivateFeatFromSharedCatalog(
 	]);
 
 	await assertNoExistingPrivateFeatSlug(supabase, userId, sharedFeat.slug, privateSourceIds);
+	const privateDraftState = resolvePrivateDraftState();
 
 	const sharedSourceCode =
 		findSourceCodeById(allSourceIds, sharedFeat.source_id) === 'srd-5-2'
@@ -238,9 +254,9 @@ export async function derivePrivateFeatFromSharedCatalog(
 		owner_user_id: userId,
 		source_id: privateSourceIds.homebrew,
 		ruleset_code: 'dnd-2014-srd',
-		content_mode: 'custom',
-		editorial_status: 'private_draft',
-		visibility: 'private',
+		content_mode: privateDraftState.contentMode,
+		editorial_status: privateDraftState.editorialStatus,
+		visibility: privateDraftState.visibility,
 		slug: sharedFeat.slug,
 		name: sharedFeat.name,
 		prerequisites: sharedFeat.prerequisites,
@@ -300,14 +316,18 @@ export async function createSharedFeat(
 
 	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
 	await assertNoExistingSharedFeatSlug(supabase, input.slug, sourceIds);
+	const publicationState = resolveSharedPublicationState({
+		isSystemContent: input.isSystemContent,
+		visibility: input.visibility
+	});
 
 	const insert: FeatInsert = {
 		owner_user_id: input.isSystemContent ? null : userId,
 		source_id: sourceIds.homebrew,
 		ruleset_code: 'dnd-2014-srd',
-		content_mode: input.isSystemContent ? 'canon' : 'custom',
-		editorial_status: 'published',
-		visibility: input.visibility,
+		content_mode: publicationState.contentMode,
+		editorial_status: publicationState.editorialStatus,
+		visibility: publicationState.visibility,
 		slug: input.slug,
 		name: input.name,
 		prerequisites: input.prerequisites,
@@ -382,7 +402,14 @@ export async function listManagedSharedFeats(
 		throw new Error(`Failed to load managed shared feats for user ${authorization.userId}`);
 	}
 
-	return data.map((feat) => mapManagedSharedFeatRecord(feat, sourceIds));
+	return data
+		.filter((feat) =>
+			isPublishedSharedContent({
+				editorialStatus: feat.editorial_status,
+				visibility: feat.visibility
+			})
+		)
+		.map((feat) => mapManagedSharedFeatRecord(feat, sourceIds));
 }
 
 export async function updateManagedSharedFeat(
@@ -474,10 +501,14 @@ export async function retireManagedSharedFeat(
 	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
 	const feat = await loadManagedSharedFeatById(supabase, featId, sourceIds);
 	assertManagedSharedFeatAccess(authorization, feat, 'retire');
+	const retiredState = resolveRetiredState();
 
 	const { error } = await supabase
 		.from('feats')
-		.update({ visibility: 'private' })
+		.update({
+			visibility: retiredState.visibility,
+			editorial_status: retiredState.editorialStatus
+		})
 		.eq('id', feat.id);
 
 	if (error) {
@@ -594,7 +625,14 @@ async function loadSharedFeatForDerivation(
 		.eq('id', featId)
 		.single();
 
-	if (error || !data || data.visibility === 'private' || data.visibility === 'campaign') {
+	if (
+		error ||
+		!data ||
+		!isPublishedSharedContent({
+			editorialStatus: data.editorial_status,
+			visibility: data.visibility
+		})
+	) {
 		throw new Error('Please choose a valid shared feat to copy.');
 	}
 
@@ -615,7 +653,14 @@ async function loadManagedSharedFeatById(
 		.eq('source_id', sourceIds.homebrew)
 		.single();
 
-	if (error || !data || data.visibility === 'private' || data.visibility === 'campaign') {
+	if (
+		error ||
+		!data ||
+		!isPublishedSharedContent({
+			editorialStatus: data.editorial_status,
+			visibility: data.visibility
+		})
+	) {
 		throw new Error('Please choose a valid shared feat to maintain.');
 	}
 
@@ -630,7 +675,7 @@ async function assertNoExistingPrivateFeatSlug(
 ) {
 	const { data, error } = await supabase
 		.from('feats')
-		.select('id')
+		.select('id, editorial_status, visibility')
 		.eq('owner_user_id', userId)
 		.eq('slug', slug)
 		.in('source_id', [sourceIds['user-private'], sourceIds.homebrew])
@@ -640,7 +685,14 @@ async function assertNoExistingPrivateFeatSlug(
 		throw new Error(`Failed to check private feat slug "${slug}"`);
 	}
 
-	if (data.length > 0) {
+	if (
+		data.some((feat) =>
+			isPrivateOwnedContent({
+				editorialStatus: feat.editorial_status ?? 'private_draft',
+				visibility: feat.visibility ?? 'private'
+			})
+		)
+	) {
 		throw new Error('You already have a private feat with that slug. Try a different name.');
 	}
 }
@@ -653,10 +705,9 @@ async function assertNoExistingSharedFeatSlug(
 ) {
 	const query = supabase
 		.from('feats')
-		.select('id')
+		.select('id, editorial_status, visibility')
 		.eq('slug', slug)
 		.eq('source_id', sourceIds.homebrew)
-		.not('visibility', 'in', '(private,campaign)')
 		.limit(2);
 
 	const { data, error } = excludeFeatId ? await query.neq('id', excludeFeatId) : await query;
@@ -665,7 +716,14 @@ async function assertNoExistingSharedFeatSlug(
 		throw new Error(`Failed to check shared feat slug "${slug}"`);
 	}
 
-	if (data.length > 0) {
+	if (
+		data.some((feat) =>
+			isPublishedSharedContent({
+				editorialStatus: feat.editorial_status,
+				visibility: feat.visibility
+			})
+		)
+	) {
 		throw new Error('A shared feat with that slug already exists. Try a different name.');
 	}
 }
@@ -763,7 +821,13 @@ function normalizeMechanics(mechanics: unknown): GameMechanic[] {
 function loadE2EManagedSharedFeatById(featId: string) {
 	const feat = getE2EManagedSharedFeatById(featId);
 
-	if (!feat || feat.visibility === 'private' || feat.visibility === 'campaign') {
+	if (
+		!feat ||
+		!isPublishedSharedContent({
+			editorialStatus: feat.editorialStatus,
+			visibility: feat.visibility
+		})
+	) {
 		throw new Error('Please choose a valid shared feat to maintain.');
 	}
 
