@@ -5,10 +5,17 @@ import {
 	createCharacterFormValuesFromInput,
 	createCharacterFormValues
 } from '$lib/domain/characters/character-form';
+import {
+	createDefaultGuidedCharacterInput,
+	createGuidedCharacterFormValues,
+	deriveGuidedCharacterDraft
+} from '$lib/domain/characters/guided-character';
 import { characterCreateInputSchema } from '$lib/schemas/characters/character.schema';
+import { characterGuidedInputSchema } from '$lib/schemas/characters/character-guided.schema';
 import {
 	listCharacterCreationCatalog,
 	listExpandedContentCatalog,
+	listGuidedCharacterCatalog,
 	resolveCharacterAttackCatalogSelections,
 	resolveCharacterCreationCatalogSelections,
 	resolveCharacterFeatCatalogSelections,
@@ -18,10 +25,11 @@ import {
 import { createCharacter } from '$lib/server/repositories/characters';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	const [catalog, expandedContentCatalog] = locals.supabase
+	const [catalog, expandedContentCatalog, guidedCatalog] = locals.supabase
 		? await Promise.all([
 				listCharacterCreationCatalog(locals.supabase),
-				listExpandedContentCatalog(locals.supabase)
+				listExpandedContentCatalog(locals.supabase),
+				listGuidedCharacterCatalog(locals.supabase)
 			])
 		: [
 				{
@@ -51,12 +59,34 @@ export const load: PageServerLoad = async ({ locals }) => {
 						toolProficiencies: [],
 						savingThrowProficiencies: []
 					}
+				},
+				{
+					speciesOptions: [],
+					subspeciesOptions: [],
+					classOptions: [],
+					subclassOptions: [],
+					backgroundOptions: [],
+					spellCatalog: [],
+					equipmentCatalog: [],
+					vocabularies: {
+						abilities: [],
+						languages: [],
+						damageTypes: [],
+						spellSchools: [],
+						skillProficiencies: [],
+						armorProficiencies: [],
+						weaponProficiencies: [],
+						toolProficiencies: [],
+						savingThrowProficiencies: []
+					}
 				}
 			];
 
 	return {
 		values: createCharacterFormValuesFromInput(createDefaultCharacterInput()),
+		guidedValues: createGuidedCharacterFormValues(createDefaultGuidedCharacterInput()),
 		catalog,
+		guidedCatalog,
 		featCatalog: expandedContentCatalog.feats,
 		spellCatalog: expandedContentCatalog.spells,
 		equipmentCatalog: expandedContentCatalog.equipment
@@ -64,6 +94,73 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 export const actions: Actions = {
+	guided: async ({ locals, request }) => {
+		if (!locals.session) {
+			throw redirect(302, '/auth/login?redirectTo=/app/characters/new');
+		}
+
+		if (!locals.supabase) {
+			return fail(500, {
+				guidedFormError: 'Supabase is not configured yet.',
+				guidedFieldErrors: {},
+				guidedValues: createGuidedCharacterFormValues(createDefaultGuidedCharacterInput())
+			});
+		}
+
+		const formData = Object.fromEntries(await request.formData());
+		const parsed = characterGuidedInputSchema.safeParse(formData);
+		const guidedValues = createGuidedCharacterFormValues(formData);
+
+		if (!parsed.success) {
+			return fail(400, {
+				guidedFormError: 'Please correct the highlighted guided fields.',
+				guidedFieldErrors: parsed.error.flatten().fieldErrors,
+				guidedValues
+			});
+		}
+
+		try {
+			const guidedCatalog = await listGuidedCharacterCatalog(locals.supabase);
+			const guidedDraft = deriveGuidedCharacterDraft(guidedCatalog, parsed.data);
+			const catalogSelection = await resolveCharacterCreationCatalogSelections(
+				locals.supabase,
+				{
+					speciesId: guidedDraft.character.speciesId,
+					subspeciesId: guidedDraft.character.subspeciesId,
+					classId: guidedDraft.character.classId,
+					subclassId: guidedDraft.character.subclassId,
+					backgroundId: guidedDraft.character.backgroundId
+				}
+			);
+			const spellItems = await resolveCharacterSpellCatalogSelections(locals.supabase, {
+				classId: catalogSelection.classId,
+				subclassId: catalogSelection.subclassId,
+				spellItems: guidedDraft.character.spellItems
+			});
+
+			const character = await createCharacter(locals.supabase, locals.session.user.id, {
+				...guidedDraft.character,
+				...catalogSelection,
+				spellItems
+			});
+			const createdName = encodeURIComponent(character.name);
+
+			throw redirect(303, `/app/characters?created=${createdName}`);
+		} catch (error) {
+			if (isRedirect(error)) {
+				throw error;
+			}
+
+			return fail(400, {
+				guidedFormError:
+					error instanceof Error
+						? error.message
+						: 'The guided character could not be saved. Please try again.',
+				guidedFieldErrors: {},
+				guidedValues
+			});
+		}
+	},
 	default: async ({ locals, request }) => {
 		if (!locals.session) {
 			throw redirect(302, '/auth/login?redirectTo=/app/characters/new');

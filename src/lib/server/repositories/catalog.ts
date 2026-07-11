@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
+	listE2EGuidedCharacterCatalog,
 	getE2EBackgroundOption,
 	getE2EClassOption,
 	getE2EEquipmentCatalogEntry,
@@ -13,6 +14,11 @@ import {
 	isE2EMockSupabaseClient,
 	listE2ECatalog
 } from '$lib/server/e2e/mock-app';
+import type {
+	GuidedCharacterCatalog,
+	GuidedEquipmentEntry
+} from '$lib/domain/characters/guided-character';
+import { gameMechanicsSchema } from '$lib/schemas/content/game-mechanics.schema';
 import { isPublishedSharedContent } from '$lib/server/content/editorial';
 import { summarizeCatalogMechanics } from '$lib/server/repositories/catalog-mechanic-summary';
 import { listSharedRulesVocabularies } from '$lib/server/repositories/shared-rules-vocabularies';
@@ -83,6 +89,7 @@ type CharacterClassRow = {
 	visibility?: Database['public']['Tables']['character_classes']['Row']['visibility'];
 	summary: string | null;
 	hit_die: number;
+	starting_equipment?: unknown;
 	mechanics: Database['public']['Tables']['character_classes']['Row']['mechanics'];
 	is_system_content?: Database['public']['Tables']['character_classes']['Row']['is_system_content'];
 };
@@ -111,6 +118,7 @@ type BackgroundRow = {
 	editorial_status?: Database['public']['Tables']['backgrounds']['Row']['editorial_status'];
 	visibility?: Database['public']['Tables']['backgrounds']['Row']['visibility'];
 	summary: string | null;
+	equipment?: unknown;
 	mechanics: Database['public']['Tables']['backgrounds']['Row']['mechanics'];
 	is_system_content?: Database['public']['Tables']['backgrounds']['Row']['is_system_content'];
 };
@@ -225,6 +233,44 @@ export async function listExpandedContentCatalog(
 		spells,
 		feats,
 		equipment,
+		vocabularies: listSharedRulesVocabularies()
+	};
+}
+
+export async function listGuidedCharacterCatalog(
+	supabase: SupabaseClient<Database>
+): Promise<GuidedCharacterCatalog> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		return listE2EGuidedCharacterCatalog();
+	}
+
+	const [
+		speciesRows,
+		subspeciesRows,
+		classRows,
+		subclassRows,
+		backgroundRows,
+		spellCatalog,
+		equipmentCatalog
+	] =
+		await Promise.all([
+			listGuidedSpeciesOptions(supabase),
+			listGuidedSubspeciesOptions(supabase),
+			listGuidedClassOptions(supabase),
+			listGuidedSubclassOptions(supabase),
+			listGuidedBackgroundOptions(supabase),
+			listSpellCatalogEntries(supabase),
+			listEquipmentCatalogEntries(supabase)
+		]);
+
+	return {
+		speciesOptions: speciesRows,
+		subspeciesOptions: subspeciesRows,
+		classOptions: classRows,
+		subclassOptions: subclassRows,
+		backgroundOptions: backgroundRows,
+		spellCatalog,
+		equipmentCatalog,
 		vocabularies: listSharedRulesVocabularies()
 	};
 }
@@ -518,6 +564,30 @@ async function listSpeciesOptions(
 	return data.filter(isPublishedCatalogEntry).map(mapSpeciesOption);
 }
 
+async function listGuidedSpeciesOptions(
+	supabase: SupabaseClient<Database>
+) {
+	const { data, error } = await supabase
+		.from('species')
+		.select(
+			'id, slug, name, ruleset_code, content_mode, editorial_status, visibility, summary, base_speed, mechanics, is_system_content'
+		)
+		.order('name', { ascending: true });
+
+	if (error) {
+		throw new Error('Failed to load species catalog options.');
+	}
+
+	return data.filter(isPublishedCatalogEntry).map((species) => ({
+		id: species.id,
+		slug: species.slug,
+		name: species.name,
+		summary: species.summary,
+		baseSpeed: species.base_speed,
+		mechanics: normalizeGameMechanics(species.mechanics)
+	}));
+}
+
 async function listSubspeciesOptions(
 	supabase: SupabaseClient<Database>
 ): Promise<CharacterSubspeciesOption[]> {
@@ -535,9 +605,50 @@ async function listSubspeciesOptions(
 	return data.filter(isPublishedCatalogEntry).map(mapSubspeciesOption);
 }
 
+async function listGuidedSubspeciesOptions(
+	supabase: SupabaseClient<Database>
+) {
+	const { data, error } = await supabase
+		.from('subspecies')
+		.select(
+			'id, slug, species_slug, name, ruleset_code, content_mode, editorial_status, visibility, summary, mechanics, is_system_content'
+		)
+		.order('name', { ascending: true });
+
+	if (error) {
+		throw new Error('Failed to load subspecies catalog options.');
+	}
+
+	return data.filter(isPublishedCatalogEntry).map((subspecies) => ({
+		id: subspecies.id,
+		slug: subspecies.slug,
+		speciesSlug: subspecies.species_slug,
+		name: subspecies.name,
+		summary: subspecies.summary,
+		mechanics: normalizeGameMechanics(subspecies.mechanics)
+	}));
+}
+
 async function listCharacterClassOptions(
 	supabase: SupabaseClient<Database>
 ): Promise<CharacterClassOption[]> {
+	const { data, error } = await supabase
+		.from('character_classes')
+		.select(
+			'id, slug, name, ruleset_code, content_mode, editorial_status, visibility, summary, hit_die, starting_equipment, mechanics, is_system_content'
+		)
+		.order('name', { ascending: true });
+
+	if (error) {
+		throw new Error('Failed to load class catalog options.');
+	}
+
+	return data.filter(isPublishedCatalogEntry).map(mapCharacterClassOption);
+}
+
+async function listGuidedClassOptions(
+	supabase: SupabaseClient<Database>
+) {
 	const { data, error } = await supabase
 		.from('character_classes')
 		.select(
@@ -549,7 +660,17 @@ async function listCharacterClassOptions(
 		throw new Error('Failed to load class catalog options.');
 	}
 
-	return data.filter(isPublishedCatalogEntry).map(mapCharacterClassOption);
+	const classRows = data as CharacterClassRow[];
+
+	return classRows.filter(isPublishedCatalogEntry).map((characterClass) => ({
+		id: characterClass.id,
+		slug: characterClass.slug,
+		name: characterClass.name,
+		summary: characterClass.summary,
+		hitDie: characterClass.hit_die,
+		startingEquipment: normalizeEquipmentEntries(characterClass.starting_equipment),
+		mechanics: normalizeGameMechanics(characterClass.mechanics)
+	}));
 }
 
 async function listSubclassOptions(
@@ -569,9 +690,51 @@ async function listSubclassOptions(
 	return data.filter(isPublishedCatalogEntry).map(mapSubclassOption);
 }
 
+async function listGuidedSubclassOptions(
+	supabase: SupabaseClient<Database>
+) {
+	const { data, error } = await supabase
+		.from('subclasses')
+		.select(
+			'id, slug, class_slug, name, ruleset_code, content_mode, editorial_status, visibility, summary, mechanics, granted_spells_by_level, is_system_content'
+		)
+		.order('name', { ascending: true });
+
+	if (error) {
+		throw new Error('Failed to load subclass catalog options.');
+	}
+
+	return data.filter(isPublishedCatalogEntry).map((subclass) => ({
+		id: subclass.id,
+		slug: subclass.slug,
+		classSlug: subclass.class_slug,
+		name: subclass.name,
+		summary: subclass.summary,
+		mechanics: normalizeGameMechanics(subclass.mechanics),
+		grantedSpellsByLevel: summarizeGrantedSpellsByLevel(subclass.granted_spells_by_level)
+	}));
+}
+
 async function listBackgroundOptions(
 	supabase: SupabaseClient<Database>
 ): Promise<CharacterBackgroundOption[]> {
+	const { data, error } = await supabase
+		.from('backgrounds')
+		.select(
+			'id, slug, name, ruleset_code, content_mode, editorial_status, visibility, summary, equipment, mechanics, is_system_content'
+		)
+		.order('name', { ascending: true });
+
+	if (error) {
+		throw new Error('Failed to load background catalog options.');
+	}
+
+	return data.filter(isPublishedCatalogEntry).map(mapBackgroundOption);
+}
+
+async function listGuidedBackgroundOptions(
+	supabase: SupabaseClient<Database>
+) {
 	const { data, error } = await supabase
 		.from('backgrounds')
 		.select(
@@ -583,7 +746,16 @@ async function listBackgroundOptions(
 		throw new Error('Failed to load background catalog options.');
 	}
 
-	return data.filter(isPublishedCatalogEntry).map(mapBackgroundOption);
+	const backgroundRows = data as BackgroundRow[];
+
+	return backgroundRows.filter(isPublishedCatalogEntry).map((background) => ({
+		id: background.id,
+		slug: background.slug,
+		name: background.name,
+		summary: background.summary,
+		startingEquipment: normalizeEquipmentEntries(background.equipment),
+		mechanics: normalizeGameMechanics(background.mechanics)
+	}));
 }
 
 async function loadSelectedSpecies(
@@ -1117,6 +1289,60 @@ function mapEquipmentCatalogEntry(
 		isWeapon: equipment.is_weapon,
 		isEquippable: equipment.is_equippable
 	};
+}
+
+function normalizeGameMechanics(mechanics: unknown) {
+	const parsed = gameMechanicsSchema.safeParse(mechanics);
+	return parsed.success ? parsed.data : [];
+}
+
+function normalizeEquipmentEntries(entries: unknown): GuidedEquipmentEntry[] {
+	if (!Array.isArray(entries)) {
+		return [];
+	}
+
+	return entries.flatMap<GuidedEquipmentEntry>((entry) => {
+		if (typeof entry !== 'object' || entry === null || !('type' in entry)) {
+			return [];
+		}
+
+		if (
+			entry.type === 'item' &&
+			'id' in entry &&
+			typeof entry.id === 'string'
+		) {
+			return [
+				{
+					type: 'item' as const,
+					id: entry.id,
+					quantity:
+						'quantity' in entry && typeof entry.quantity === 'number'
+							? entry.quantity
+							: undefined,
+					note: 'note' in entry && typeof entry.note === 'string' ? entry.note : undefined
+				}
+			];
+		}
+
+		if (
+			entry.type === 'choice' &&
+			'options' in entry &&
+			Array.isArray(entry.options)
+		) {
+			return [
+				{
+					type: 'choice' as const,
+					options: entry.options.filter(
+						(option: unknown): option is string =>
+							typeof option === 'string' && option.length > 0
+					),
+					note: 'note' in entry && typeof entry.note === 'string' ? entry.note : undefined
+				}
+			];
+		}
+
+		return [];
+	});
 }
 
 function normalizeCharacterSpellItem(

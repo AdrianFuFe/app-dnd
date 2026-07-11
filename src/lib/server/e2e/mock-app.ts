@@ -17,6 +17,7 @@ import type {
 	FeatCatalogEntry,
 	SpellCatalogEntry
 } from '$lib/types/content/expanded-content-catalog';
+import type { GuidedCharacterCatalog } from '$lib/domain/characters/guided-character';
 import type { CharacterCreateInput } from '$lib/types/domain/character';
 import speciesFile from '../../../../data/srd-5-1/species.json';
 import subspeciesFile from '../../../../data/srd-5-1/subspecies.json';
@@ -160,6 +161,10 @@ type ClassSourceItem = {
 	name: string;
 	summary?: string | null;
 	hitDie: number;
+	startingEquipment?: Array<
+		| { type: 'item'; id: string; quantity?: number; note?: string }
+		| { type: 'choice'; options: string[]; note?: string }
+	>;
 	mechanics?: unknown[];
 };
 
@@ -181,6 +186,10 @@ type BackgroundSourceItem = {
 	slug: string;
 	name: string;
 	summary?: string | null;
+	equipment?: Array<
+		| { type: 'item'; id: string; quantity?: number; note?: string }
+		| { type: 'choice'; options: string[]; note?: string }
+	>;
 	mechanics?: unknown[];
 };
 
@@ -602,6 +611,59 @@ export function listE2EExpandedContentCatalog(): ExpandedContentCatalog {
 		],
 		equipment: e2eExpandedContentCatalog.equipment.map(cloneEquipmentCatalogEntry),
 		vocabularies: cloneSharedRulesVocabularyCatalog(e2eExpandedContentCatalog.vocabularies)
+	};
+}
+
+export function listE2EGuidedCharacterCatalog(): GuidedCharacterCatalog {
+	return {
+		speciesOptions: asContentFile<SpeciesSourceItem>(speciesFile).items.map((item) => ({
+			id: buildCatalogId('species', item.slug),
+			slug: item.slug,
+			name: item.name,
+			summary: item.summary ?? null,
+			baseSpeed: item.baseSpeed ?? null,
+			mechanics: (item.mechanics ?? []) as never
+		})),
+		subspeciesOptions: asContentFile<SubspeciesSourceItem>(subspeciesFile).items.map((item) => ({
+			id: buildCatalogId('subspecies', item.slug),
+			slug: item.slug,
+			speciesSlug: item.speciesSlug,
+			name: item.name,
+			summary: item.summary ?? null,
+			mechanics: (item.mechanics ?? []) as never
+		})),
+		classOptions: asContentFile<ClassSourceItem>(classesFile).items.map((item) => ({
+			id: buildCatalogId('class', item.slug),
+			slug: item.slug,
+			name: item.name,
+			summary: item.summary ?? null,
+			hitDie: item.hitDie,
+			startingEquipment: item.startingEquipment ?? [],
+			mechanics: (item.mechanics ?? []) as never
+		})),
+		subclassOptions: asContentFile<SubclassSourceItem>(subclassesFile).items.map((item) => ({
+			id: buildCatalogId('subclass', item.slug),
+			slug: item.slug,
+			classSlug: item.classSlug,
+			name: item.name,
+			summary: item.summary ?? null,
+			mechanics: (item.mechanics ?? []) as never,
+			grantedSpellsByLevel: (item.grantedSpellsByLevel ?? []).map((group) => ({
+				level: group.level,
+				spellSlugs: [...group.spellSlugs]
+			}))
+		})),
+		backgroundOptions: asContentFile<BackgroundSourceItem>(backgroundsFile).items.map((item) => ({
+			id: buildCatalogId('background', item.slug),
+			slug: item.slug,
+			name: item.name,
+			summary: item.summary ?? null,
+			startingEquipment: item.equipment ?? [],
+			mechanics: (item.mechanics ?? []) as never
+		})),
+		spellCatalog: listE2EExpandedContentCatalog().spells,
+		equipmentCatalog: listE2EExpandedContentCatalog().equipment,
+		vocabularies: listSharedRulesVocabularies()
 	};
 }
 
