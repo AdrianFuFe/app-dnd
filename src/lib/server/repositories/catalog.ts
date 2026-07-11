@@ -13,6 +13,7 @@ import {
 	isE2EMockSupabaseClient,
 	listE2ECatalog
 } from '$lib/server/e2e/mock-app';
+import { isPublishedSharedContent } from '$lib/server/content/editorial';
 import { summarizeCatalogMechanics } from '$lib/server/repositories/catalog-mechanic-summary';
 import { listSharedRulesVocabularies } from '$lib/server/repositories/shared-rules-vocabularies';
 import type { Database } from '$lib/types/database/supabase';
@@ -89,6 +90,7 @@ type SpellRow = {
 	slug: string;
 	name: string;
 	visibility: string;
+	editorial_status: string;
 	level: number;
 	school: string;
 	casting_time: string | null;
@@ -107,6 +109,8 @@ type FeatRow = {
 	id: string;
 	slug: string;
 	name: string;
+	editorial_status: string;
+	visibility: string;
 	prerequisites: string[];
 	summary: string | null;
 	description: string | null;
@@ -764,7 +768,7 @@ async function listSpellCatalogEntries(
 	const { data, error } = await supabase
 		.from('spells')
 		.select(
-			'id, slug, name, visibility, level, school, casting_time, range_text, components, duration, class_slugs, summary, description, concentration, ritual, is_system_content'
+			'id, slug, name, visibility, editorial_status, level, school, casting_time, range_text, components, duration, class_slugs, summary, description, concentration, ritual, is_system_content'
 		)
 		.order('level', { ascending: true })
 		.order('name', { ascending: true });
@@ -774,7 +778,12 @@ async function listSpellCatalogEntries(
 	}
 
 	return data
-		.filter((spell) => spell.visibility !== 'private' && spell.visibility !== 'campaign')
+		.filter((spell) =>
+			isPublishedSharedContent({
+				editorialStatus: spell.editorial_status,
+				visibility: spell.visibility
+			})
+		)
 		.map(mapSpellCatalogEntry);
 }
 
@@ -785,7 +794,7 @@ async function loadSelectedSpellCatalogEntries(
 	const { data, error } = await supabase
 		.from('spells')
 		.select(
-			'id, slug, name, visibility, level, school, casting_time, range_text, components, duration, class_slugs, summary, description, concentration, ritual, is_system_content'
+			'id, slug, name, visibility, editorial_status, level, school, casting_time, range_text, components, duration, class_slugs, summary, description, concentration, ritual, is_system_content'
 		)
 		.in('id', spellIds);
 
@@ -794,7 +803,12 @@ async function loadSelectedSpellCatalogEntries(
 	}
 
 	return data
-		.filter((spell) => spell.visibility !== 'private' && spell.visibility !== 'campaign')
+		.filter((spell) =>
+			isPublishedSharedContent({
+				editorialStatus: spell.editorial_status,
+				visibility: spell.visibility
+			})
+		)
 		.map(mapSpellCatalogEntry);
 }
 
@@ -803,7 +817,7 @@ async function listFeatCatalogEntries(
 ): Promise<FeatCatalogEntry[]> {
 	const { data, error } = await supabase
 		.from('feats')
-		.select('id, slug, name, visibility, prerequisites, summary, description')
+		.select('id, slug, name, visibility, editorial_status, prerequisites, summary, description')
 		.order('name', { ascending: true });
 
 	if (error) {
@@ -811,7 +825,12 @@ async function listFeatCatalogEntries(
 	}
 
 	return data
-		.filter((feat) => feat.visibility !== 'private' && feat.visibility !== 'campaign')
+		.filter((feat) =>
+			isPublishedSharedContent({
+				editorialStatus: feat.editorial_status,
+				visibility: feat.visibility
+			})
+		)
 		.map(mapFeatCatalogEntry);
 }
 
@@ -821,7 +840,7 @@ async function loadSelectedFeatCatalogEntries(
 ): Promise<FeatCatalogEntry[]> {
 	const { data, error } = await supabase
 		.from('feats')
-		.select('id, slug, name, visibility, prerequisites, summary, description')
+		.select('id, slug, name, visibility, editorial_status, prerequisites, summary, description')
 		.in('id', featIds);
 
 	if (error) {
@@ -829,7 +848,12 @@ async function loadSelectedFeatCatalogEntries(
 	}
 
 	return data
-		.filter((feat) => feat.visibility !== 'private' && feat.visibility !== 'campaign')
+		.filter((feat) =>
+			isPublishedSharedContent({
+				editorialStatus: feat.editorial_status,
+				visibility: feat.visibility
+			})
+		)
 		.map(mapFeatCatalogEntry);
 }
 

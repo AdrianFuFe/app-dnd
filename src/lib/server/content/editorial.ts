@@ -5,6 +5,10 @@ type SharedPublicationStateInput = {
 	visibility: 'shared' | 'public';
 };
 
+type SharedReviewStateInput = {
+	visibility: 'shared';
+};
+
 export function resolvePrivateDraftState(): {
 	contentMode: ContentMode;
 	editorialStatus: EditorialStatus;
@@ -25,6 +29,18 @@ export function resolveSharedPublicationState(input: SharedPublicationStateInput
 	return {
 		contentMode: input.isSystemContent ? 'canon' : 'custom',
 		editorialStatus: 'published',
+		visibility: input.visibility
+	};
+}
+
+export function resolveSharedReviewState(input: SharedReviewStateInput): {
+	contentMode: ContentMode;
+	editorialStatus: EditorialStatus;
+	visibility: ContentVisibility;
+} {
+	return {
+		contentMode: 'custom',
+		editorialStatus: 'in_review',
 		visibility: input.visibility
 	};
 }
@@ -56,5 +72,15 @@ export function isPrivateOwnedContent(input: {
 	return (
 		input.visibility === 'private' &&
 		(input.editorialStatus === 'private_draft' || input.editorialStatus === 'retired')
+	);
+}
+
+export function isReviewableSharedContent(input: {
+	editorialStatus: string;
+	visibility: string;
+}): boolean {
+	return (
+		input.editorialStatus === 'in_review' &&
+		input.visibility === 'shared'
 	);
 }

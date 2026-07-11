@@ -10,13 +10,16 @@ import {
 	listE2EManagedSharedSpellsForUser,
 	listE2EPrivateSpellsForUser,
 	retireE2EManagedSharedSpellForUser,
+	returnE2EReviewableSharedSpellToPrivateForUser,
 	updateE2EManagedSharedSpellForUser
 } from '$lib/server/e2e/mock-app';
 import {
 	isPrivateOwnedContent,
 	isPublishedSharedContent,
+	isReviewableSharedContent,
 	resolvePrivateDraftState,
 	resolveRetiredState,
+	resolveSharedReviewState,
 	resolveSharedPublicationState
 } from '$lib/server/content/editorial';
 import type { Database } from '$lib/types/database/supabase';
@@ -87,6 +90,7 @@ export type CreateSharedSpellInput = CreatePrivateSpellInput & {
 	sourceCode?: SharedSpellSourceCode;
 	visibility: ManagedSpellVisibility;
 	isSystemContent: boolean;
+	editorialStatus?: 'in_review' | 'published';
 };
 
 export type SharedSpellRecord = {
@@ -399,10 +403,13 @@ export async function createSharedSpell(
 
 	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
 	await assertNoExistingSharedSpellSlug(supabase, input.slug, sourceIds);
-	const publicationState = resolveSharedPublicationState({
-		isSystemContent: input.isSystemContent,
-		visibility: input.visibility
-	});
+	const publicationState =
+		input.editorialStatus === 'in_review'
+			? resolveSharedReviewState({ visibility: 'shared' })
+			: resolveSharedPublicationState({
+					isSystemContent: input.isSystemContent,
+					visibility: input.visibility
+				});
 
 	const insert: SpellInsert = {
 		owner_user_id: input.isSystemContent ? null : userId,
@@ -511,6 +518,192 @@ export async function listManagedSharedSpells(
 			})
 		)
 		.map((spell) => mapManagedSharedSpellRecord(spell, sourceIds));
+}
+
+export async function listReviewableSharedSpells(
+	supabase: SupabaseClient<Database>,
+	authorization: AuthorizationContext
+): Promise<ManagedSharedSpellRecord[]> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		return listE2EManagedSharedSpellsForUser(
+			authorization.userId,
+			authorization.globalRole === 'admin',
+			'in_review'
+		).map((spell) => ({
+			id: spell.id,
+			sourceCode: spell.sourceCode,
+			rulesetCode: spell.rulesetCode,
+			contentMode: spell.contentMode,
+			editorialStatus: spell.editorialStatus,
+			slug: spell.slug,
+			name: spell.name,
+			level: spell.level,
+			school: spell.school,
+			castingTime: spell.castingTime,
+			range: spell.range,
+			components: spell.components,
+			materials: spell.materials,
+			duration: spell.duration,
+			classSlugs: [...spell.classSlugs],
+			summary: spell.summary,
+			description: spell.description,
+			visibility: spell.visibility === 'public' ? 'public' : 'shared',
+			isSystemContent: spell.isSystemContent,
+			concentration: spell.concentration,
+			ritual: spell.ritual,
+			createdAt: spell.createdAt,
+			updatedAt: spell.updatedAt,
+			ownerUserId: spell.userId
+		}));
+	}
+
+	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
+	const query = supabase
+		.from('spells')
+		.select(
+			'id, owner_user_id, source_id, ruleset_code, content_mode, editorial_status, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, visibility, concentration, ritual, is_system_content, created_at, updated_at'
+		)
+		.eq('source_id', sourceIds.homebrew)
+		.eq('editorial_status', 'in_review')
+		.eq('visibility', 'shared')
+		.order('updated_at', { ascending: false });
+
+	const { data, error } =
+		authorization.globalRole === 'admin'
+			? await query
+			: await query.eq('is_system_content', false);
+
+	if (error) {
+		throw new Error(`Failed to load reviewable shared spells for user ${authorization.userId}`);
+	}
+
+	return data
+		.filter((spell) =>
+			isReviewableSharedContent({
+				editorialStatus: spell.editorial_status,
+				visibility: spell.visibility
+			})
+		)
+		.map((spell) => mapManagedSharedSpellRecord(spell, sourceIds));
+}
+
+export async function publishReviewableSharedSpell(
+	supabase: SupabaseClient<Database>,
+	authorization: AuthorizationContext,
+	spellId: string
+): Promise<ManagedSharedSpellRecord> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		const spell = loadE2EReviewableSharedSpellById(spellId);
+		assertManagedSharedSpellAccess(authorization, spell, 'update');
+		const updated = updateE2EManagedSharedSpellForUser(authorization.userId, {
+			spellId,
+			name: spell.name,
+			slug: spell.slug,
+			level: spell.level,
+			school: spell.school,
+			castingTime: spell.casting_time ?? undefined,
+			range: spell.range_text ?? undefined,
+			components: spell.components ?? undefined,
+			materials: spell.materials ?? undefined,
+			duration: spell.duration ?? undefined,
+			classSlugs: spell.class_slugs,
+			summary: spell.summary ?? undefined,
+			description: spell.description ?? undefined,
+			concentration: spell.concentration,
+			ritual: spell.ritual,
+			includeSystemContent: authorization.globalRole === 'admin',
+			editorialStatus: 'published'
+		});
+
+		return {
+			id: updated.id,
+			sourceCode: updated.sourceCode,
+			rulesetCode: updated.rulesetCode,
+			contentMode: updated.contentMode,
+			editorialStatus: updated.editorialStatus,
+			slug: updated.slug,
+			name: updated.name,
+			level: updated.level,
+			school: updated.school,
+			castingTime: updated.castingTime,
+			range: updated.range,
+			components: updated.components,
+			materials: updated.materials,
+			duration: updated.duration,
+			classSlugs: [...updated.classSlugs],
+			summary: updated.summary,
+			description: updated.description,
+			visibility: updated.visibility === 'public' ? 'public' : 'shared',
+			isSystemContent: updated.isSystemContent,
+			concentration: updated.concentration,
+			ritual: updated.ritual,
+			createdAt: updated.createdAt,
+			updatedAt: updated.updatedAt,
+			ownerUserId: updated.userId
+		};
+	}
+
+	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
+	const spell = await loadReviewableSharedSpellById(supabase, spellId, sourceIds);
+	assertManagedSharedSpellAccess(authorization, spell, 'update');
+	await assertNoExistingSharedSpellSlug(supabase, spell.slug, sourceIds, spell.id);
+
+	const { data, error } = await supabase
+		.from('spells')
+		.update({ editorial_status: 'published' })
+		.eq('id', spell.id)
+		.select(
+			'id, owner_user_id, source_id, ruleset_code, content_mode, editorial_status, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, visibility, concentration, ritual, is_system_content, created_at, updated_at'
+		)
+		.single();
+
+	if (error) {
+		throw new Error(`Failed to publish reviewed spell ${spell.id}`);
+	}
+
+	return mapManagedSharedSpellRecord(data, sourceIds);
+}
+
+export async function returnReviewableSharedSpellToPrivate(
+	supabase: SupabaseClient<Database>,
+	authorization: AuthorizationContext,
+	spellId: string
+): Promise<ManagedSharedSpellLifecycleResult> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		const spell = loadE2EReviewableSharedSpellById(spellId);
+		assertManagedSharedSpellAccess(authorization, spell, 'update');
+		const returned = returnE2EReviewableSharedSpellToPrivateForUser(authorization.userId, {
+			spellId,
+			includeSystemContent: authorization.globalRole === 'admin'
+		});
+
+		return {
+			id: returned.id,
+			name: returned.name
+		};
+	}
+
+	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
+	const spell = await loadReviewableSharedSpellById(supabase, spellId, sourceIds);
+	assertManagedSharedSpellAccess(authorization, spell, 'update');
+	const privateDraftState = resolvePrivateDraftState();
+
+	const { error } = await supabase
+		.from('spells')
+		.update({
+			visibility: privateDraftState.visibility,
+			editorial_status: privateDraftState.editorialStatus
+		})
+		.eq('id', spell.id);
+
+	if (error) {
+		throw new Error(`Failed to return reviewed spell ${spell.id} to private draft`);
+	}
+
+	return {
+		id: spell.id,
+		name: spell.name
+	};
 }
 
 export async function updateManagedSharedSpell(
@@ -878,6 +1071,34 @@ async function loadManagedSharedSpellById(
 	return data;
 }
 
+async function loadReviewableSharedSpellById(
+	supabase: SupabaseClient<Database>,
+	spellId: string,
+	sourceIds: Record<SharedSpellSourceCode, string>
+): Promise<SharedSpellRow> {
+	const { data, error } = await supabase
+		.from('spells')
+		.select(
+			'id, owner_user_id, source_id, ruleset_code, content_mode, editorial_status, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, visibility, concentration, ritual, is_system_content, created_at, updated_at'
+		)
+		.eq('id', spellId)
+		.eq('source_id', sourceIds.homebrew)
+		.single();
+
+	if (
+		error ||
+		!data ||
+		!isReviewableSharedContent({
+			editorialStatus: data.editorial_status,
+			visibility: data.visibility
+		})
+	) {
+		throw new Error('Please choose a valid shared spell to review.');
+	}
+
+	return data;
+}
+
 function mapPrivateSpellRecord(
 	spell: PrivateSpellRow,
 	sourceIds: Record<PrivateSpellSourceCode, string>
@@ -983,6 +1204,29 @@ function loadE2EManagedSharedSpellById(spellId: string) {
 		...spell,
 		owner_user_id: spell.userId,
 		is_system_content: spell.isSystemContent
+	};
+}
+
+function loadE2EReviewableSharedSpellById(spellId: string) {
+	const spell = getE2EManagedSharedSpellById(spellId);
+
+	if (
+		!spell ||
+		!isReviewableSharedContent({
+			editorialStatus: spell.editorialStatus,
+			visibility: spell.visibility
+		})
+	) {
+		throw new Error('Please choose a valid shared spell to review.');
+	}
+
+	return {
+		...spell,
+		owner_user_id: spell.userId,
+		is_system_content: spell.isSystemContent,
+		casting_time: spell.castingTime,
+		range_text: spell.range,
+		class_slugs: [...spell.classSlugs]
 	};
 }
 

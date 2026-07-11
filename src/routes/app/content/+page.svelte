@@ -70,6 +70,42 @@
 		return level === 0 ? 'Cantrip' : `Level ${level}`;
 	}
 
+	function formatEditorialStatusLabel(value: string): string {
+		switch (value) {
+			case 'private_draft':
+				return 'Private draft';
+			case 'shared_draft':
+				return 'Shared draft';
+			case 'in_review':
+				return 'In review';
+			case 'published':
+				return 'Published';
+			case 'retired':
+				return 'Retired';
+			default:
+				return formatSlugLabel(value);
+		}
+	}
+
+	function formatContentModeLabel(value: string): string {
+		return value === 'canon' ? 'Canon' : 'Custom';
+	}
+
+	function getEditorialStatusBadgeClass(value: string): string {
+		switch (value) {
+			case 'published':
+				return 'bg-emerald-100 text-emerald-900';
+			case 'retired':
+				return 'bg-amber-100 text-amber-900';
+			case 'in_review':
+				return 'bg-sky-100 text-sky-900';
+			case 'shared_draft':
+				return 'bg-indigo-100 text-indigo-900';
+			default:
+				return 'bg-stone-100 text-stone-900';
+		}
+	}
+
 	function formatClassList(classSlugs: string[]): string {
 		return classSlugs.length > 0 ? classSlugs.map(formatSlugLabel).join(', ') : 'General';
 	}
@@ -333,35 +369,35 @@
 		</div>
 	</section>
 
-	{#if data.roleOperations.canMaintainSharedFeats}
+	{#if data.roleOperations.canReviewSharedFeats}
 		<section class="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
 			<div class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
 				<div class="flex items-center justify-between gap-4">
 					<div>
 						<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
-							Shared feat maintenance
+							Shared feat review
 						</p>
 						<h2 class="mt-2 text-2xl font-semibold text-stone-900">
-							Review trusted shared entries
+							Editorial review queue
 						</h2>
 					</div>
-					<p class="text-sm text-stone-500">{data.manageableSharedFeats.length} total</p>
+					<p class="text-sm text-stone-500">{data.reviewableSharedFeats.length} waiting</p>
 				</div>
 				<p class="mt-3 max-w-2xl text-sm leading-7 text-stone-600">
-					This queue only shows shared homebrew feats your current role is allowed to
-					maintain. Normal users never see this workflow.
+					This queue only shows shared feats currently in review. Editors and admins can
+					either publish them into the shared catalog or return them to a private draft for
+					revision.
 				</p>
 
-				{#if data.manageableSharedFeats.length === 0}
+				{#if data.reviewableSharedFeats.length === 0}
 					<p
 						class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600"
 					>
-						No maintainable shared feats yet. Publish one first, or use an admin account
-						to review system-owned entries.
+						No shared feats are currently waiting for editorial review.
 					</p>
 				{:else}
 					<div class="mt-6 space-y-4">
-						{#each data.manageableSharedFeats as feat (feat.id)}
+						{#each data.reviewableSharedFeats as feat (feat.id)}
 							<article class="rounded-2xl border border-stone-200 p-4">
 								<div class="flex flex-wrap items-start justify-between gap-3">
 									<div>
@@ -380,16 +416,37 @@
 										>
 											{feat.isSystemContent ? 'System' : 'Shared'}
 										</span>
-										<a
-											class={`rounded-full px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-white transition ${
-												editSharedFeatId === feat.id
-													? 'bg-stone-500 hover:bg-stone-500'
-													: 'bg-stone-900 hover:bg-stone-700'
-											}`}
-											href={resolve(`/app/content?editSharedFeat=${feat.id}`)}
+										<span
+											class={`rounded-full px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] ${getEditorialStatusBadgeClass(
+												feat.editorialStatus
+											)}`}
 										>
-											{editSharedFeatId === feat.id ? 'Editing' : 'Edit'}
-										</a>
+											{formatEditorialStatusLabel(feat.editorialStatus)}
+										</span>
+										<span
+											class="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-stone-900"
+										>
+											{formatContentModeLabel(feat.contentMode)}
+										</span>
+										<form method="POST">
+											<input type="hidden" name="featId" value={feat.id} />
+											<div class="flex flex-wrap gap-2">
+												<button
+													class="rounded-full border border-amber-300 bg-white px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-amber-900 transition hover:bg-amber-50"
+													type="submit"
+													formaction="?/returnReviewedSharedFeat"
+												>
+													Return to private draft
+												</button>
+												<button
+													class="rounded-full bg-stone-900 px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-white transition hover:bg-stone-700"
+													type="submit"
+													formaction="?/publishReviewedSharedFeat"
+												>
+													Publish now
+												</button>
+											</div>
+										</form>
 									</div>
 								</div>
 								<p class="mt-3 text-sm text-stone-600">
@@ -417,8 +474,8 @@
 					Update a managed shared feat
 				</h2>
 				<p class="mt-3 max-w-2xl text-sm leading-7 text-stone-600">
-					Editors can update, retire, or delete their own shared homebrew feats. Admins
-					can apply the same lifecycle controls to system-owned entries.
+					Editors can update, retire, or delete their own published shared homebrew
+					feats. Admins can apply the same lifecycle controls to system-owned entries.
 				</p>
 
 				{#if data.updatedSharedFeatName}
@@ -433,6 +490,13 @@
 						class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
 					>
 						{data.retiredSharedFeatName} was retired from the shared catalog.
+					</p>
+				{/if}
+				{#if data.returnedSharedFeatName}
+					<p
+						class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+					>
+						{data.returnedSharedFeatName} was returned to a private draft for revision.
 					</p>
 				{/if}
 				{#if data.deletedSharedFeatName}
@@ -460,6 +524,15 @@
 				{:else}
 					<form method="POST" class="mt-6 space-y-4">
 						<input type="hidden" name="featId" value={editSharedFeatId} />
+
+						<div class="rounded-2xl bg-stone-50 px-4 py-3 text-sm text-stone-700">
+							<p class="font-medium text-stone-900">Current editorial state</p>
+							<p class="mt-2">
+								{selectedManagedSharedFeat
+									? `${formatEditorialStatusLabel(selectedManagedSharedFeat.editorialStatus)} | ${formatContentModeLabel(selectedManagedSharedFeat.contentMode)}`
+									: 'No shared feat selected.'}
+							</p>
+						</div>
 
 						<label class="block">
 							<span class="mb-1 block text-sm font-medium text-stone-700"
@@ -542,9 +615,9 @@
 					<div class="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
 						<p class="text-sm font-medium text-amber-950">Lifecycle controls</p>
 						<p class="mt-2 text-sm leading-6 text-amber-900">
-							Retiring removes this feat from shared browsing without permanently
-							deleting the stored row. Deleting removes it permanently from managed
-							shared content.
+							Retiring moves this entry from `published` to `retired` and removes it
+							from shared browsing without permanently deleting the stored row.
+							Deleting removes it permanently from managed shared content.
 						</p>
 						<p class="mt-2 text-sm leading-6 text-amber-900">
 							{#if selectedManagedSharedFeat?.isSystemContent}
@@ -584,35 +657,35 @@
 		</section>
 	{/if}
 
-	{#if data.roleOperations.canMaintainSharedSpells}
+	{#if data.roleOperations.canReviewSharedSpells}
 		<section class="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
 			<div class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
 				<div class="flex items-center justify-between gap-4">
 					<div>
 						<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
-							Shared spell maintenance
+							Shared spell review
 						</p>
 						<h2 class="mt-2 text-2xl font-semibold text-stone-900">
-							Review trusted shared spells
+							Editorial spell queue
 						</h2>
 					</div>
-					<p class="text-sm text-stone-500">{data.manageableSharedSpells.length} total</p>
+					<p class="text-sm text-stone-500">{data.reviewableSharedSpells.length} waiting</p>
 				</div>
 				<p class="mt-3 max-w-2xl text-sm leading-7 text-stone-600">
-					This queue only shows shared homebrew spells your current role is allowed to
-					maintain. Normal users never see this workflow.
+					This queue only shows shared spells currently in review. Editors and admins can
+					either publish them into the shared catalog or return them to a private draft for
+					revision.
 				</p>
 
-				{#if data.manageableSharedSpells.length === 0}
+				{#if data.reviewableSharedSpells.length === 0}
 					<p
 						class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600"
 					>
-						No maintainable shared spells yet. Publish one first, or use an admin
-						account to review system-owned entries.
+						No shared spells are currently waiting for editorial review.
 					</p>
 				{:else}
 					<div class="mt-6 space-y-4">
-						{#each data.manageableSharedSpells as spell (spell.id)}
+						{#each data.reviewableSharedSpells as spell (spell.id)}
 							<article class="rounded-2xl border border-stone-200 p-4">
 								<div class="flex flex-wrap items-start justify-between gap-3">
 									<div>
@@ -634,22 +707,41 @@
 											{spell.isSystemContent ? 'System' : 'Shared'}
 										</span>
 										<span
+											class={`rounded-full px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] ${getEditorialStatusBadgeClass(
+												spell.editorialStatus
+											)}`}
+										>
+											{formatEditorialStatusLabel(spell.editorialStatus)}
+										</span>
+										<span
+											class="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-stone-900"
+										>
+											{formatContentModeLabel(spell.contentMode)}
+										</span>
+										<span
 											class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-amber-900"
 										>
 											{formatSpellLevel(spell.level)}
 										</span>
-										<a
-											class={`rounded-full px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-white transition ${
-												editSharedSpellId === spell.id
-													? 'bg-stone-500 hover:bg-stone-500'
-													: 'bg-stone-900 hover:bg-stone-700'
-											}`}
-											href={resolve(
-												`/app/content?editSharedSpell=${spell.id}`
-											)}
-										>
-											{editSharedSpellId === spell.id ? 'Editing' : 'Edit'}
-										</a>
+										<form method="POST">
+											<input type="hidden" name="spellId" value={spell.id} />
+											<div class="flex flex-wrap gap-2">
+												<button
+													class="rounded-full border border-amber-300 bg-white px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-amber-900 transition hover:bg-amber-50"
+													type="submit"
+													formaction="?/returnReviewedSharedSpell"
+												>
+													Return to private draft
+												</button>
+												<button
+													class="rounded-full bg-stone-900 px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-white transition hover:bg-stone-700"
+													type="submit"
+													formaction="?/publishReviewedSharedSpell"
+												>
+													Publish now
+												</button>
+											</div>
+										</form>
 									</div>
 								</div>
 								<p class="mt-3 text-sm text-stone-600">
@@ -672,8 +764,9 @@
 					Update a managed shared spell
 				</h2>
 				<p class="mt-3 max-w-2xl text-sm leading-7 text-stone-600">
-					Editors can update, retire, or delete their own shared homebrew spells. Admins
-					can apply the same lifecycle controls to system-owned spell entries.
+					Editors can update, retire, or delete their own published shared homebrew
+					spells. Admins can apply the same lifecycle controls to system-owned spell
+					entries.
 				</p>
 
 				{#if data.updatedSharedSpellName}
@@ -688,6 +781,13 @@
 						class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
 					>
 						{data.retiredSharedSpellName} was retired from the shared catalog.
+					</p>
+				{/if}
+				{#if data.returnedSharedSpellName}
+					<p
+						class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+					>
+						{data.returnedSharedSpellName} was returned to a private draft for revision.
 					</p>
 				{/if}
 				{#if data.deletedSharedSpellName}
@@ -715,6 +815,15 @@
 				{:else}
 					<form method="POST" class="mt-6 space-y-4">
 						<input type="hidden" name="spellId" value={editSharedSpellId} />
+
+						<div class="rounded-2xl bg-stone-50 px-4 py-3 text-sm text-stone-700">
+							<p class="font-medium text-stone-900">Current editorial state</p>
+							<p class="mt-2">
+								{selectedManagedSharedSpell
+									? `${formatEditorialStatusLabel(selectedManagedSharedSpell.editorialStatus)} | ${formatContentModeLabel(selectedManagedSharedSpell.contentMode)}`
+									: 'No shared spell selected.'}
+							</p>
+						</div>
 
 						<div class="grid gap-4 sm:grid-cols-2">
 							<label class="block sm:col-span-2">
@@ -942,9 +1051,9 @@
 					<div class="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
 						<p class="text-sm font-medium text-amber-950">Lifecycle controls</p>
 						<p class="mt-2 text-sm leading-6 text-amber-900">
-							Retiring removes this spell from shared browsing without permanently
-							deleting the stored row. Deleting removes it permanently from managed
-							shared content.
+							Retiring moves this entry from `published` to `retired` and removes it
+							from shared browsing without permanently deleting the stored row.
+							Deleting removes it permanently from managed shared content.
 						</p>
 						<p class="mt-2 text-sm leading-6 text-amber-900">
 							{#if selectedManagedSharedSpell?.isSystemContent}
@@ -1010,11 +1119,18 @@
 					feats.
 				</p>
 			{/if}
+			{#if data.submittedSharedFeatName}
+				<p
+					class="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800"
+				>
+					{data.submittedSharedFeatName} was submitted for editorial review.
+				</p>
+			{/if}
 			{#if data.publishedSharedFeatName}
 				<p
 					class="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800"
 				>
-					{data.publishedSharedFeatName} was published to the shared homebrew catalog.
+					{data.publishedSharedFeatName} is now published for shared reuse.
 				</p>
 			{/if}
 			{#if data.publishedSystemFeatName}
@@ -1109,26 +1225,36 @@
 				>
 					Create private feat
 				</button>
-				{#if data.roleOperations.canPublishSharedFeats || data.roleOperations.canPublishSystemFeats}
+				{#if data.roleOperations.canSubmitSharedFeats || data.roleOperations.canPublishSharedFeats || data.roleOperations.canPublishSystemFeats}
 					<div
 						class="rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4"
 					>
 						<p class="text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
-							Privileged publishing
+							Editorial actions
 						</p>
 						<p class="mt-2 text-sm text-stone-600">
-							These actions reuse the same validated feat draft, but publish it beyond
-							your private workspace. Role assignment still stays outside the runtime
-							UI.
+							These actions reuse the same validated private draft, but apply
+							different editorial outcomes. Shared publish keeps the entry reusable for
+							trusted maintenance. System publish promotes it into canon-like
+							system-owned content.
 						</p>
 						<div class="mt-4 flex flex-wrap gap-3">
+							{#if data.roleOperations.canSubmitSharedFeats}
+								<button
+									class="rounded-lg border border-sky-300 bg-white px-5 py-3 text-sm font-medium text-sky-900 transition hover:bg-sky-50"
+									type="submit"
+									formaction="?/submitSharedFeat"
+								>
+									Submit for editorial review
+								</button>
+							{/if}
 							{#if data.roleOperations.canPublishSharedFeats}
 								<button
 									class="rounded-lg bg-indigo-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-indigo-500"
 									type="submit"
 									formaction="?/publishSharedFeat"
 								>
-									Publish shared feat
+									Publish now as shared feat
 								</button>
 							{/if}
 							{#if data.roleOperations.canPublishSystemFeats}
@@ -1137,7 +1263,7 @@
 									type="submit"
 									formaction="?/publishSystemFeat"
 								>
-									Publish system feat
+									Promote now to system feat
 								</button>
 							{/if}
 						</div>
@@ -1152,7 +1278,7 @@
 					<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">
 						Your private feats
 					</p>
-					<h2 class="mt-2 text-2xl font-semibold text-stone-900">Owner-scoped content</h2>
+					<h2 class="mt-2 text-2xl font-semibold text-stone-900">Owner-scoped feat drafts</h2>
 				</div>
 				<p class="text-sm text-stone-500">{data.privateFeats.length} total</p>
 			</div>
@@ -1180,6 +1306,18 @@
 										class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-amber-900"
 									>
 										Private
+									</span>
+									<span
+										class={`rounded-full px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] ${getEditorialStatusBadgeClass(
+											feat.editorialStatus
+										)}`}
+									>
+										{formatEditorialStatusLabel(feat.editorialStatus)}
+									</span>
+									<span
+										class="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-stone-900"
+									>
+										{formatContentModeLabel(feat.contentMode)}
 									</span>
 									{#if feat.derivation}
 										<span
@@ -1574,11 +1712,18 @@
 					private spells.
 				</p>
 			{/if}
+			{#if data.submittedSharedSpellName}
+				<p
+					class="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800"
+				>
+					{data.submittedSharedSpellName} was submitted for editorial review.
+				</p>
+			{/if}
 			{#if data.publishedSharedSpellName}
 				<p
 					class="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800"
 				>
-					{data.publishedSharedSpellName} was published to the shared homebrew catalog.
+					{data.publishedSharedSpellName} is now published for shared reuse.
 				</p>
 			{/if}
 			{#if data.publishedSystemSpellName}
@@ -1820,26 +1965,36 @@
 				>
 					Create private spell
 				</button>
-				{#if data.roleOperations.canPublishSharedSpells || data.roleOperations.canPublishSystemSpells}
+				{#if data.roleOperations.canSubmitSharedSpells || data.roleOperations.canPublishSharedSpells || data.roleOperations.canPublishSystemSpells}
 					<div
 						class="rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4"
 					>
 						<p class="text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
-							Privileged publishing
+							Editorial actions
 						</p>
 						<p class="mt-2 text-sm text-stone-600">
-							These actions reuse the same validated spell draft, but publish it
-							beyond your private workspace. Role assignment still stays outside the
-							runtime UI.
+							These actions reuse the same validated private draft, but apply
+							different editorial outcomes. Shared publish keeps the spell reusable for
+							trusted maintenance. System publish promotes it into canon-like
+							system-owned content.
 						</p>
 						<div class="mt-4 flex flex-wrap gap-3">
+							{#if data.roleOperations.canSubmitSharedSpells}
+								<button
+									class="rounded-lg border border-sky-300 bg-white px-5 py-3 text-sm font-medium text-sky-900 transition hover:bg-sky-50"
+									type="submit"
+									formaction="?/submitSharedSpell"
+								>
+									Submit for editorial review
+								</button>
+							{/if}
 							{#if data.roleOperations.canPublishSharedSpells}
 								<button
 									class="rounded-lg bg-indigo-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-indigo-500"
 									type="submit"
 									formaction="?/publishSharedSpell"
 								>
-									Publish shared spell
+									Publish now as shared spell
 								</button>
 							{/if}
 							{#if data.roleOperations.canPublishSystemSpells}
@@ -1848,7 +2003,7 @@
 									type="submit"
 									formaction="?/publishSystemSpell"
 								>
-									Publish system spell
+									Promote now to system spell
 								</button>
 							{/if}
 						</div>
@@ -1895,6 +2050,18 @@
 										class="rounded-full bg-amber-100 px-3 py-1 text-amber-900"
 									>
 										Private
+									</span>
+									<span
+										class={`rounded-full px-3 py-1 ${getEditorialStatusBadgeClass(
+											spell.editorialStatus
+										)}`}
+									>
+										{formatEditorialStatusLabel(spell.editorialStatus)}
+									</span>
+									<span
+										class="rounded-full bg-stone-100 px-3 py-1 text-stone-900"
+									>
+										{formatContentModeLabel(spell.contentMode)}
 									</span>
 									{#if spell.derivation}
 										<span

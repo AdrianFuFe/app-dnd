@@ -23,10 +23,16 @@ const {
 	derivePrivateSpellFromSharedCatalog,
 	listManagedSharedFeats,
 	listManagedSharedSpells,
+	listReviewableSharedFeats,
+	listReviewableSharedSpells,
 	listPrivateFeatsForUser,
 	listPrivateSpellsForUser,
+	publishReviewableSharedFeat,
+	publishReviewableSharedSpell,
 	retireManagedSharedFeat,
 	retireManagedSharedSpell,
+	returnReviewableSharedFeatToPrivate,
+	returnReviewableSharedSpellToPrivate,
 	updateManagedSharedSpell,
 	updateManagedSharedFeat
 } = vi.hoisted(() => ({
@@ -40,10 +46,16 @@ const {
 	derivePrivateSpellFromSharedCatalog: vi.fn(),
 	listManagedSharedFeats: vi.fn(),
 	listManagedSharedSpells: vi.fn(),
+	listReviewableSharedFeats: vi.fn(),
+	listReviewableSharedSpells: vi.fn(),
 	listPrivateFeatsForUser: vi.fn(),
 	listPrivateSpellsForUser: vi.fn(),
+	publishReviewableSharedFeat: vi.fn(),
+	publishReviewableSharedSpell: vi.fn(),
 	retireManagedSharedFeat: vi.fn(),
 	retireManagedSharedSpell: vi.fn(),
+	returnReviewableSharedFeatToPrivate: vi.fn(),
+	returnReviewableSharedSpellToPrivate: vi.fn(),
 	updateManagedSharedSpell: vi.fn(),
 	updateManagedSharedFeat: vi.fn()
 }));
@@ -65,7 +77,10 @@ vi.mock('$lib/server/repositories/private-feats', () => ({
 	derivePrivateFeatFromSharedCatalog,
 	listManagedSharedFeats,
 	listPrivateFeatsForUser,
+	listReviewableSharedFeats,
+	publishReviewableSharedFeat,
 	retireManagedSharedFeat,
+	returnReviewableSharedFeatToPrivate,
 	updateManagedSharedFeat
 }));
 
@@ -76,7 +91,10 @@ vi.mock('$lib/server/repositories/private-spells', () => ({
 	derivePrivateSpellFromSharedCatalog,
 	listManagedSharedSpells,
 	listPrivateSpellsForUser,
+	listReviewableSharedSpells,
+	publishReviewableSharedSpell,
 	retireManagedSharedSpell,
+	returnReviewableSharedSpellToPrivate,
 	updateManagedSharedSpell
 }));
 
@@ -121,6 +139,8 @@ describe('/app/content load', () => {
 		listPrivateSpellsForUser.mockReset().mockResolvedValue([]);
 		listManagedSharedFeats.mockReset().mockResolvedValue([]);
 		listManagedSharedSpells.mockReset().mockResolvedValue([]);
+		listReviewableSharedFeats.mockReset().mockResolvedValue([]);
+		listReviewableSharedSpells.mockReset().mockResolvedValue([]);
 	});
 
 	it('returns empty catalog slices when Supabase is unavailable', async () => {
@@ -136,10 +156,14 @@ describe('/app/content load', () => {
 			createdPrivateSpellName: null,
 			derivedPrivateFeatName: null,
 			derivedPrivateSpellName: null,
+			submittedSharedFeatName: null,
+			submittedSharedSpellName: null,
 			publishedSharedFeatName: null,
 			publishedSystemFeatName: null,
+			returnedSharedFeatName: null,
 			publishedSharedSpellName: null,
 			publishedSystemSpellName: null,
+			returnedSharedSpellName: null,
 			updatedSharedFeatName: null,
 			updatedSharedSpellName: null,
 			retiredSharedFeatName: null,
@@ -191,6 +215,10 @@ describe('/app/content load', () => {
 				ritual: false
 			},
 			roleOperations: {
+				canSubmitSharedFeats: false,
+				canSubmitSharedSpells: false,
+				canReviewSharedFeats: false,
+				canReviewSharedSpells: false,
 				canPublishSharedFeats: false,
 				canPublishSystemFeats: false,
 				canPublishSharedSpells: false,
@@ -209,6 +237,8 @@ describe('/app/content load', () => {
 			},
 			manageableSharedFeats: [],
 			manageableSharedSpells: [],
+			reviewableSharedFeats: [],
+			reviewableSharedSpells: [],
 			privateFeats: [],
 			privateSpells: [],
 			sharedCatalog: {
@@ -448,6 +478,51 @@ describe('/app/content load', () => {
 				updatedAt: '2026-07-08T10:15:00.000Z'
 			}
 		];
+		const reviewableSharedFeats = [
+			{
+				id: 'review-feat-1',
+				ownerUserId: 'user-2',
+				sourceCode: 'homebrew',
+				contentMode: 'custom' as const,
+				editorialStatus: 'in_review' as const,
+				slug: 'pending-lore',
+				name: 'Pending Lore',
+				prerequisites: [],
+				summary: 'Awaiting review.',
+				description: null,
+				visibility: 'shared' as const,
+				isSystemContent: false,
+				createdAt: '2026-07-08T08:15:00.000Z',
+				updatedAt: '2026-07-08T08:15:00.000Z'
+			}
+		];
+		const reviewableSharedSpells = [
+			{
+				id: 'review-spell-1',
+				ownerUserId: 'user-2',
+				sourceCode: 'homebrew',
+				contentMode: 'custom' as const,
+				editorialStatus: 'in_review' as const,
+				slug: 'pending-sigil',
+				name: 'Pending Sigil',
+				level: 2,
+				school: 'abjuration',
+				castingTime: '1 action',
+				range: '30 feet',
+				components: 'V, S',
+				materials: null,
+				duration: '1 minute',
+				classSlugs: ['clerigo'],
+				summary: 'Awaiting review.',
+				description: null,
+				visibility: 'shared' as const,
+				isSystemContent: false,
+				concentration: true,
+				ritual: false,
+				createdAt: '2026-07-08T08:30:00.000Z',
+				updatedAt: '2026-07-08T08:30:00.000Z'
+			}
+		];
 
 		listCharacterCreationCatalog.mockResolvedValueOnce(characterCatalog);
 		listExpandedContentCatalog.mockResolvedValueOnce(sharedCatalog);
@@ -455,6 +530,8 @@ describe('/app/content load', () => {
 		listPrivateSpellsForUser.mockResolvedValueOnce(privateSpells);
 		listManagedSharedFeats.mockResolvedValueOnce(manageableSharedFeats);
 		listManagedSharedSpells.mockResolvedValueOnce(manageableSharedSpells);
+		listReviewableSharedFeats.mockResolvedValueOnce(reviewableSharedFeats);
+		listReviewableSharedSpells.mockResolvedValueOnce(reviewableSharedSpells);
 
 		await expect(
 			load({
@@ -474,8 +551,8 @@ describe('/app/content load', () => {
 					}
 				}),
 				url: new URL(
-					'http://localhost/app/content?createdPrivateFeat=Observant%20Echo&createdPrivateSpell=Arc%20Light&derivedPrivateFeat=Alert&derivedPrivateSpell=Magic%20Missile&publishedSharedFeat=Battle%20Lore&editSharedFeat=shared-feat-1&updatedSharedFeat=Battle%20Lore' +
-						'&publishedSharedSpell=Arc%20Light%20Nova&publishedSystemSpell=Solar%20Ward&editSharedSpell=shared-spell-1&updatedSharedSpell=Arc%20Light%20Nova&retiredSharedSpell=Old%20Ward&deletedSharedSpell=Lost%20Sigil'
+					'http://localhost/app/content?createdPrivateFeat=Observant%20Echo&createdPrivateSpell=Arc%20Light&derivedPrivateFeat=Alert&derivedPrivateSpell=Magic%20Missile&submittedSharedFeat=Pending%20Lore&publishedSharedFeat=Battle%20Lore&editSharedFeat=shared-feat-1&updatedSharedFeat=Battle%20Lore' +
+						'&submittedSharedSpell=Pending%20Sigil&publishedSharedSpell=Arc%20Light%20Nova&publishedSystemSpell=Solar%20Ward&editSharedSpell=shared-spell-1&updatedSharedSpell=Arc%20Light%20Nova&retiredSharedSpell=Old%20Ward&deletedSharedSpell=Lost%20Sigil'
 				)
 			} as never)
 		).resolves.toEqual({
@@ -483,10 +560,14 @@ describe('/app/content load', () => {
 			createdPrivateSpellName: 'Arc Light',
 			derivedPrivateFeatName: 'Alert',
 			derivedPrivateSpellName: 'Magic Missile',
+			submittedSharedFeatName: 'Pending Lore',
+			submittedSharedSpellName: 'Pending Sigil',
 			publishedSharedFeatName: 'Battle Lore',
 			publishedSystemFeatName: null,
+			returnedSharedFeatName: null,
 			publishedSharedSpellName: 'Arc Light Nova',
 			publishedSystemSpellName: 'Solar Ward',
+			returnedSharedSpellName: null,
 			updatedSharedFeatName: 'Battle Lore',
 			updatedSharedSpellName: 'Arc Light Nova',
 			retiredSharedFeatName: null,
@@ -538,6 +619,10 @@ describe('/app/content load', () => {
 				ritual: false
 			},
 			roleOperations: {
+				canSubmitSharedFeats: true,
+				canSubmitSharedSpells: true,
+				canReviewSharedFeats: true,
+				canReviewSharedSpells: true,
 				canPublishSharedFeats: true,
 				canPublishSystemFeats: false,
 				canPublishSharedSpells: true,
@@ -550,6 +635,8 @@ describe('/app/content load', () => {
 			characterCatalog,
 			manageableSharedFeats,
 			manageableSharedSpells,
+			reviewableSharedFeats,
+			reviewableSharedSpells,
 			privateFeats,
 			privateSpells,
 			sharedCatalog
@@ -565,6 +652,8 @@ describe('/app/content load', () => {
 		expect(listPrivateSpellsForUser).toHaveBeenCalledWith(supabase, session.user.id);
 		expect(listManagedSharedFeats).toHaveBeenCalledOnce();
 		expect(listManagedSharedSpells).toHaveBeenCalledOnce();
+		expect(listReviewableSharedFeats).toHaveBeenCalledOnce();
+		expect(listReviewableSharedSpells).toHaveBeenCalledOnce();
 	});
 });
 
@@ -580,8 +669,14 @@ describe('/app/content actions', () => {
 		derivePrivateSpellFromSharedCatalog.mockReset();
 		listManagedSharedFeats.mockReset();
 		listManagedSharedSpells.mockReset();
+		listReviewableSharedFeats.mockReset();
+		listReviewableSharedSpells.mockReset();
+		publishReviewableSharedFeat.mockReset();
+		publishReviewableSharedSpell.mockReset();
 		retireManagedSharedFeat.mockReset();
 		retireManagedSharedSpell.mockReset();
+		returnReviewableSharedFeatToPrivate.mockReset();
+		returnReviewableSharedSpellToPrivate.mockReset();
 		updateManagedSharedSpell.mockReset();
 		updateManagedSharedFeat.mockReset();
 		getAuthorizationContext.mockReset().mockResolvedValue({
@@ -1239,6 +1334,64 @@ describe('/app/content actions', () => {
 		expect(createSharedFeat).not.toHaveBeenCalled();
 	});
 
+	it('submits a shared feat into editorial review for standard users', async () => {
+		createSharedFeat.mockResolvedValueOnce({
+			id: 'review-feat-1',
+			sourceCode: 'homebrew',
+			contentMode: 'custom',
+			editorialStatus: 'in_review',
+			slug: 'pending-lore',
+			name: 'Pending Lore',
+			prerequisites: ['level:4'],
+			summary: 'Awaiting review.',
+			description: null,
+			visibility: 'shared',
+			isSystemContent: false,
+			createdAt: '2026-07-09T09:00:00.000Z',
+			updatedAt: '2026-07-09T09:00:00.000Z'
+		});
+
+		await expect(
+			actions.submitSharedFeat?.({
+				locals: {
+					session: {
+						user: {
+							id: 'user-1'
+						}
+					},
+					supabase: {}
+				},
+				request: new Request('http://localhost/app/content?/submitSharedFeat', {
+					method: 'POST',
+					body: new URLSearchParams({
+						name: 'Pending Lore',
+						summary: 'Awaiting review.',
+						description: '',
+						prerequisitesText: 'level:4'
+					})
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 303,
+			location: '/app/content?submittedSharedFeat=Pending%20Lore'
+		});
+
+		expect(requirePermissionScopeAccess).toHaveBeenCalledWith(
+			expect.objectContaining({ globalRole: 'user' }),
+			'private_content'
+		);
+		expect(createSharedFeat).toHaveBeenCalledWith({}, 'user-1', {
+			slug: 'pending-lore',
+			name: 'Pending Lore',
+			summary: 'Awaiting review.',
+			description: undefined,
+			prerequisites: ['level:4'],
+			visibility: 'shared',
+			isSystemContent: false,
+			editorialStatus: 'in_review'
+		});
+	});
+
 	it('blocks standard users from shared spell publishing', async () => {
 		requirePermissionScopeAccess.mockImplementationOnce(() => {
 			throw Object.assign(new Error('forbidden'), { status: 403 });
@@ -1268,6 +1421,91 @@ describe('/app/content actions', () => {
 		});
 
 		expect(createSharedSpell).not.toHaveBeenCalled();
+	});
+
+	it('submits a shared spell into editorial review for standard users', async () => {
+		createSharedSpell.mockResolvedValueOnce({
+			id: 'review-spell-1',
+			sourceCode: 'homebrew',
+			contentMode: 'custom',
+			editorialStatus: 'in_review',
+			slug: 'pending-sigil',
+			name: 'Pending Sigil',
+			level: 2,
+			school: 'abjuration',
+			castingTime: '1 action',
+			range: '30 feet',
+			components: 'V, S',
+			materials: null,
+			duration: '1 minute',
+			classSlugs: ['clerigo'],
+			summary: 'Awaiting review.',
+			description: null,
+			visibility: 'shared',
+			isSystemContent: false,
+			concentration: true,
+			ritual: false,
+			createdAt: '2026-07-09T09:05:00.000Z',
+			updatedAt: '2026-07-09T09:05:00.000Z'
+		});
+
+		await expect(
+			actions.submitSharedSpell?.({
+				locals: {
+					session: {
+						user: {
+							id: 'user-1'
+						}
+					},
+					supabase: {}
+				},
+				request: new Request('http://localhost/app/content?/submitSharedSpell', {
+					method: 'POST',
+					body: new URLSearchParams({
+						name: 'Pending Sigil',
+						level: '2',
+						school: 'abjuration',
+						summary: 'Awaiting review.',
+						description: '',
+						castingTime: '1 action',
+						range: '30 feet',
+						components: 'V, S',
+						materials: '',
+						duration: '1 minute',
+						classSlugsText: 'clerigo',
+						concentration: 'on',
+						ritual: ''
+					})
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 303,
+			location: '/app/content?submittedSharedSpell=Pending%20Sigil'
+		});
+
+		expect(requirePermissionScopeAccess).toHaveBeenCalledWith(
+			expect.objectContaining({ globalRole: 'user' }),
+			'private_content'
+		);
+		expect(createSharedSpell).toHaveBeenCalledWith({}, 'user-1', {
+			slug: 'pending-sigil',
+			name: 'Pending Sigil',
+			level: 2,
+			school: 'abjuration',
+			summary: 'Awaiting review.',
+			description: undefined,
+			castingTime: '1 action',
+			range: '30 feet',
+			components: 'V, S',
+			materials: undefined,
+			duration: '1 minute',
+			classSlugs: ['clerigo'],
+			concentration: true,
+			ritual: false,
+			visibility: 'shared',
+			isSystemContent: false,
+			editorialStatus: 'in_review'
+		});
 	});
 
 	it('blocks content editors from system publishing', async () => {
@@ -1351,6 +1589,175 @@ describe('/app/content actions', () => {
 		});
 
 		expect(createSharedSpell).not.toHaveBeenCalled();
+	});
+
+	it('publishes a reviewed shared feat for editors', async () => {
+		getAuthorizationContext.mockResolvedValueOnce({
+			userId: 'user-1',
+			globalRole: 'content_editor',
+			capabilities: ['manage_private_content', 'edit_shared_content']
+		});
+		publishReviewableSharedFeat.mockResolvedValueOnce({
+			id: 'review-feat-1',
+			ownerUserId: 'user-2',
+			sourceCode: 'homebrew',
+			contentMode: 'custom',
+			editorialStatus: 'published',
+			slug: 'pending-lore',
+			name: 'Pending Lore',
+			prerequisites: ['level:4'],
+			summary: 'Approved.',
+			description: null,
+			visibility: 'shared',
+			isSystemContent: false,
+			createdAt: '2026-07-09T09:00:00.000Z',
+			updatedAt: '2026-07-09T09:10:00.000Z'
+		});
+
+		await expect(
+			actions.publishReviewedSharedFeat?.({
+				locals: {
+					session: { user: { id: 'user-1' } },
+					supabase: {}
+				},
+				request: new Request('http://localhost/app/content?/publishReviewedSharedFeat', {
+					method: 'POST',
+					body: new URLSearchParams({ featId: 'review-feat-1' })
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 303,
+			location: '/app/content?publishedSharedFeat=Pending%20Lore'
+		});
+
+		expect(publishReviewableSharedFeat).toHaveBeenCalledWith(
+			{},
+			expect.objectContaining({ globalRole: 'content_editor', userId: 'user-1' }),
+			'review-feat-1'
+		);
+	});
+
+	it('publishes a reviewed shared spell for editors', async () => {
+		getAuthorizationContext.mockResolvedValueOnce({
+			userId: 'user-1',
+			globalRole: 'content_editor',
+			capabilities: ['manage_private_content', 'edit_shared_content']
+		});
+		publishReviewableSharedSpell.mockResolvedValueOnce({
+			id: 'review-spell-1',
+			ownerUserId: 'user-2',
+			sourceCode: 'homebrew',
+			contentMode: 'custom',
+			editorialStatus: 'published',
+			slug: 'pending-sigil',
+			name: 'Pending Sigil',
+			level: 2,
+			school: 'abjuration',
+			castingTime: '1 action',
+			range: '30 feet',
+			components: 'V, S',
+			materials: null,
+			duration: '1 minute',
+			classSlugs: ['clerigo'],
+			summary: 'Approved.',
+			description: null,
+			visibility: 'shared',
+			isSystemContent: false,
+			concentration: true,
+			ritual: false,
+			createdAt: '2026-07-09T09:05:00.000Z',
+			updatedAt: '2026-07-09T09:15:00.000Z'
+		});
+
+		await expect(
+			actions.publishReviewedSharedSpell?.({
+				locals: {
+					session: { user: { id: 'user-1' } },
+					supabase: {}
+				},
+				request: new Request('http://localhost/app/content?/publishReviewedSharedSpell', {
+					method: 'POST',
+					body: new URLSearchParams({ spellId: 'review-spell-1' })
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 303,
+			location: '/app/content?publishedSharedSpell=Pending%20Sigil'
+		});
+
+		expect(publishReviewableSharedSpell).toHaveBeenCalledWith(
+			{},
+			expect.objectContaining({ globalRole: 'content_editor', userId: 'user-1' }),
+			'review-spell-1'
+		);
+	});
+
+	it('returns a reviewed shared feat to private draft for editors', async () => {
+		getAuthorizationContext.mockResolvedValueOnce({
+			userId: 'user-1',
+			globalRole: 'content_editor',
+			capabilities: ['manage_private_content', 'edit_shared_content']
+		});
+		returnReviewableSharedFeatToPrivate.mockResolvedValueOnce({
+			id: 'review-feat-1',
+			name: 'Pending Lore'
+		});
+
+		await expect(
+			actions.returnReviewedSharedFeat?.({
+				locals: {
+					session: { user: { id: 'user-1' } },
+					supabase: {}
+				},
+				request: new Request('http://localhost/app/content?/returnReviewedSharedFeat', {
+					method: 'POST',
+					body: new URLSearchParams({ featId: 'review-feat-1' })
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 303,
+			location: '/app/content?returnedSharedFeat=Pending%20Lore'
+		});
+
+		expect(returnReviewableSharedFeatToPrivate).toHaveBeenCalledWith(
+			{},
+			expect.objectContaining({ globalRole: 'content_editor', userId: 'user-1' }),
+			'review-feat-1'
+		);
+	});
+
+	it('returns a reviewed shared spell to private draft for editors', async () => {
+		getAuthorizationContext.mockResolvedValueOnce({
+			userId: 'user-1',
+			globalRole: 'content_editor',
+			capabilities: ['manage_private_content', 'edit_shared_content']
+		});
+		returnReviewableSharedSpellToPrivate.mockResolvedValueOnce({
+			id: 'review-spell-1',
+			name: 'Pending Sigil'
+		});
+
+		await expect(
+			actions.returnReviewedSharedSpell?.({
+				locals: {
+					session: { user: { id: 'user-1' } },
+					supabase: {}
+				},
+				request: new Request('http://localhost/app/content?/returnReviewedSharedSpell', {
+					method: 'POST',
+					body: new URLSearchParams({ spellId: 'review-spell-1' })
+				})
+			} as never)
+		).rejects.toMatchObject({
+			status: 303,
+			location: '/app/content?returnedSharedSpell=Pending%20Sigil'
+		});
+
+		expect(returnReviewableSharedSpellToPrivate).toHaveBeenCalledWith(
+			{},
+			expect.objectContaining({ globalRole: 'content_editor', userId: 'user-1' }),
+			'review-spell-1'
+		);
 	});
 
 	it('updates a managed shared feat for content editors', async () => {

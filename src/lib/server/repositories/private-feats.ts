@@ -10,13 +10,16 @@ import {
 	listE2EManagedSharedFeatsForUser,
 	listE2EPrivateFeatsForUser,
 	retireE2EManagedSharedFeatForUser,
+	returnE2EReviewableSharedFeatToPrivateForUser,
 	updateE2EManagedSharedFeatForUser
 } from '$lib/server/e2e/mock-app';
 import {
 	isPrivateOwnedContent,
 	isPublishedSharedContent,
+	isReviewableSharedContent,
 	resolvePrivateDraftState,
 	resolveRetiredState,
+	resolveSharedReviewState,
 	resolveSharedPublicationState
 } from '$lib/server/content/editorial';
 import type { Database } from '$lib/types/database/supabase';
@@ -69,6 +72,7 @@ export type CreateSharedFeatInput = CreatePrivateFeatInput & {
 	sourceCode?: SharedFeatSourceCode;
 	visibility: ManagedFeatVisibility;
 	isSystemContent: boolean;
+	editorialStatus?: 'in_review' | 'published';
 };
 
 export type SharedFeatRecord = {
@@ -316,10 +320,13 @@ export async function createSharedFeat(
 
 	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
 	await assertNoExistingSharedFeatSlug(supabase, input.slug, sourceIds);
-	const publicationState = resolveSharedPublicationState({
-		isSystemContent: input.isSystemContent,
-		visibility: input.visibility
-	});
+	const publicationState =
+		input.editorialStatus === 'in_review'
+			? resolveSharedReviewState({ visibility: 'shared' })
+			: resolveSharedPublicationState({
+					isSystemContent: input.isSystemContent,
+					visibility: input.visibility
+				});
 
 	const insert: FeatInsert = {
 		owner_user_id: input.isSystemContent ? null : userId,
@@ -410,6 +417,165 @@ export async function listManagedSharedFeats(
 			})
 		)
 		.map((feat) => mapManagedSharedFeatRecord(feat, sourceIds));
+}
+
+export async function listReviewableSharedFeats(
+	supabase: SupabaseClient<Database>,
+	authorization: AuthorizationContext
+): Promise<ManagedSharedFeatRecord[]> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		return listE2EManagedSharedFeatsForUser(
+			authorization.userId,
+			authorization.globalRole === 'admin',
+			'in_review'
+		).map((feat) => ({
+			id: feat.id,
+			sourceCode: feat.sourceCode,
+			rulesetCode: feat.rulesetCode,
+			contentMode: feat.contentMode,
+			editorialStatus: feat.editorialStatus,
+			slug: feat.slug,
+			name: feat.name,
+			prerequisites: [...feat.prerequisites],
+			summary: feat.summary,
+			description: feat.description,
+			visibility: feat.visibility === 'public' ? 'public' : 'shared',
+			isSystemContent: feat.isSystemContent,
+			createdAt: feat.createdAt,
+			updatedAt: feat.updatedAt,
+			ownerUserId: feat.userId
+		}));
+	}
+
+	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
+	const query = supabase
+		.from('feats')
+		.select(
+			'id, owner_user_id, source_id, ruleset_code, content_mode, editorial_status, slug, name, prerequisites, summary, description, visibility, is_system_content, created_at, updated_at'
+		)
+		.eq('source_id', sourceIds.homebrew)
+		.eq('editorial_status', 'in_review')
+		.eq('visibility', 'shared')
+		.order('updated_at', { ascending: false });
+
+	const { data, error } =
+		authorization.globalRole === 'admin'
+			? await query
+			: await query.eq('is_system_content', false);
+
+	if (error) {
+		throw new Error(`Failed to load reviewable shared feats for user ${authorization.userId}`);
+	}
+
+	return data
+		.filter((feat) =>
+			isReviewableSharedContent({
+				editorialStatus: feat.editorial_status,
+				visibility: feat.visibility
+			})
+		)
+		.map((feat) => mapManagedSharedFeatRecord(feat, sourceIds));
+}
+
+export async function publishReviewableSharedFeat(
+	supabase: SupabaseClient<Database>,
+	authorization: AuthorizationContext,
+	featId: string
+): Promise<ManagedSharedFeatRecord> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		const feat = loadE2EReviewableSharedFeatById(featId);
+		assertManagedSharedFeatAccess(authorization, feat, 'update');
+		const updated = updateE2EManagedSharedFeatForUser(authorization.userId, {
+			featId,
+			name: feat.name,
+			slug: feat.slug,
+			prerequisites: feat.prerequisites,
+			summary: feat.summary ?? undefined,
+			description: feat.description ?? undefined,
+			includeSystemContent: authorization.globalRole === 'admin',
+			editorialStatus: 'published'
+		});
+
+		return {
+			id: updated.id,
+			sourceCode: updated.sourceCode,
+			rulesetCode: updated.rulesetCode,
+			contentMode: updated.contentMode,
+			editorialStatus: updated.editorialStatus,
+			slug: updated.slug,
+			name: updated.name,
+			prerequisites: [...updated.prerequisites],
+			summary: updated.summary,
+			description: updated.description,
+			visibility: updated.visibility === 'public' ? 'public' : 'shared',
+			isSystemContent: updated.isSystemContent,
+			createdAt: updated.createdAt,
+			updatedAt: updated.updatedAt,
+			ownerUserId: updated.userId
+		};
+	}
+
+	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
+	const feat = await loadReviewableSharedFeatById(supabase, featId, sourceIds);
+	assertManagedSharedFeatAccess(authorization, feat, 'update');
+	await assertNoExistingSharedFeatSlug(supabase, feat.slug, sourceIds, feat.id);
+
+	const { data, error } = await supabase
+		.from('feats')
+		.update({ editorial_status: 'published' })
+		.eq('id', feat.id)
+		.select(
+			'id, owner_user_id, source_id, ruleset_code, content_mode, editorial_status, slug, name, prerequisites, summary, description, visibility, is_system_content, created_at, updated_at'
+		)
+		.single();
+
+	if (error) {
+		throw new Error(`Failed to publish reviewed feat ${feat.id}`);
+	}
+
+	return mapManagedSharedFeatRecord(data, sourceIds);
+}
+
+export async function returnReviewableSharedFeatToPrivate(
+	supabase: SupabaseClient<Database>,
+	authorization: AuthorizationContext,
+	featId: string
+): Promise<ManagedSharedFeatLifecycleResult> {
+	if (isE2EMockSupabaseClient(supabase)) {
+		const feat = loadE2EReviewableSharedFeatById(featId);
+		assertManagedSharedFeatAccess(authorization, feat, 'update');
+		const returned = returnE2EReviewableSharedFeatToPrivateForUser(authorization.userId, {
+			featId,
+			includeSystemContent: authorization.globalRole === 'admin'
+		});
+
+		return {
+			id: returned.id,
+			name: returned.name
+		};
+	}
+
+	const sourceIds = await loadContentSourceIds(supabase, ['homebrew']);
+	const feat = await loadReviewableSharedFeatById(supabase, featId, sourceIds);
+	assertManagedSharedFeatAccess(authorization, feat, 'update');
+	const privateDraftState = resolvePrivateDraftState();
+
+	const { error } = await supabase
+		.from('feats')
+		.update({
+			visibility: privateDraftState.visibility,
+			editorial_status: privateDraftState.editorialStatus
+		})
+		.eq('id', feat.id);
+
+	if (error) {
+		throw new Error(`Failed to return reviewed feat ${feat.id} to private draft`);
+	}
+
+	return {
+		id: feat.id,
+		name: feat.name
+	};
 }
 
 export async function updateManagedSharedFeat(
@@ -667,6 +833,34 @@ async function loadManagedSharedFeatById(
 	return data;
 }
 
+async function loadReviewableSharedFeatById(
+	supabase: SupabaseClient<Database>,
+	featId: string,
+	sourceIds: Record<SharedFeatSourceCode, string>
+): Promise<SharedFeatRow> {
+	const { data, error } = await supabase
+		.from('feats')
+		.select(
+			'id, owner_user_id, source_id, ruleset_code, content_mode, editorial_status, visibility, slug, name, prerequisites, summary, description, mechanics, is_system_content'
+		)
+		.eq('id', featId)
+		.eq('source_id', sourceIds.homebrew)
+		.single();
+
+	if (
+		error ||
+		!data ||
+		!isReviewableSharedContent({
+			editorialStatus: data.editorial_status,
+			visibility: data.visibility
+		})
+	) {
+		throw new Error('Please choose a valid shared feat to review.');
+	}
+
+	return data;
+}
+
 async function assertNoExistingPrivateFeatSlug(
 	supabase: SupabaseClient<Database>,
 	userId: string,
@@ -829,6 +1023,26 @@ function loadE2EManagedSharedFeatById(featId: string) {
 		})
 	) {
 		throw new Error('Please choose a valid shared feat to maintain.');
+	}
+
+	return {
+		...feat,
+		owner_user_id: feat.userId,
+		is_system_content: feat.isSystemContent
+	};
+}
+
+function loadE2EReviewableSharedFeatById(featId: string) {
+	const feat = getE2EManagedSharedFeatById(featId);
+
+	if (
+		!feat ||
+		!isReviewableSharedContent({
+			editorialStatus: feat.editorialStatus,
+			visibility: feat.visibility
+		})
+	) {
+		throw new Error('Please choose a valid shared feat to review.');
 	}
 
 	return {

@@ -992,6 +992,7 @@ export function createE2ESharedSpellForUser(
 		description?: string;
 		visibility: 'shared' | 'public';
 		isSystemContent: boolean;
+		editorialStatus?: 'in_review' | 'published';
 		concentration: boolean;
 		ritual: boolean;
 	}
@@ -1011,7 +1012,7 @@ export function createE2ESharedSpellForUser(
 		sourceCode: input.sourceCode ?? 'homebrew',
 		rulesetCode: 'dnd-2014-srd',
 		contentMode: input.isSystemContent ? 'canon' : 'custom',
-		editorialStatus: 'published',
+		editorialStatus: input.editorialStatus ?? 'published',
 		slug: input.slug,
 		name: input.name,
 		level: input.level,
@@ -1041,9 +1042,13 @@ export function createE2ESharedSpellForUser(
 	};
 }
 
-export function listE2EManagedSharedSpellsForUser(userId: string, includeSystemContent: boolean) {
+export function listE2EManagedSharedSpellsForUser(
+	userId: string,
+	includeSystemContent: boolean,
+	editorialStatus: 'published' | 'in_review' = 'published'
+) {
 	return state.sharedSpells
-		.filter((spell) => spell.editorialStatus === 'published')
+		.filter((spell) => spell.editorialStatus === editorialStatus)
 		.filter((spell) => spell.visibility !== 'private' && spell.visibility !== 'campaign')
 		.filter((spell) => (includeSystemContent ? true : !spell.isSystemContent))
 		.filter((spell) => (includeSystemContent ? true : spell.userId === userId))
@@ -1073,6 +1078,7 @@ export function updateE2EManagedSharedSpellForUser(
 		concentration: boolean;
 		ritual: boolean;
 		includeSystemContent: boolean;
+		editorialStatus?: 'in_review' | 'published';
 	}
 ) {
 	const spell = state.sharedSpells.find((entry) => entry.id === input.spellId);
@@ -1112,6 +1118,7 @@ export function updateE2EManagedSharedSpellForUser(
 		description: input.description ?? null,
 		concentration: input.concentration,
 		ritual: input.ritual,
+		editorialStatus: input.editorialStatus ?? spell.editorialStatus,
 		updatedAt: nextUpdatedAt()
 	});
 
@@ -1141,6 +1148,35 @@ export function retireE2EManagedSharedSpellForUser(
 	Object.assign(spell, {
 		visibility: 'private',
 		editorialStatus: 'retired',
+		updatedAt: nextUpdatedAt()
+	});
+
+	return {
+		...spell,
+		classSlugs: [...spell.classSlugs]
+	};
+}
+
+export function returnE2EReviewableSharedSpellToPrivateForUser(
+	userId: string,
+	input: {
+		spellId: string;
+		includeSystemContent: boolean;
+	}
+) {
+	const spell = state.sharedSpells.find((entry) => entry.id === input.spellId);
+
+	if (!spell || spell.editorialStatus !== 'in_review') {
+		throw new Error('Please choose a valid shared spell to review.');
+	}
+
+	if (!input.includeSystemContent && spell.isSystemContent) {
+		throw new Error('Please choose a valid shared spell to review.');
+	}
+
+	Object.assign(spell, {
+		visibility: 'private',
+		editorialStatus: 'private_draft',
 		updatedAt: nextUpdatedAt()
 	});
 
@@ -1192,6 +1228,7 @@ export function createE2ESharedFeatForUser(
 		description?: string;
 		visibility: 'shared' | 'public';
 		isSystemContent: boolean;
+		editorialStatus?: 'in_review' | 'published';
 	}
 ) {
 	const duplicate =
@@ -1209,7 +1246,7 @@ export function createE2ESharedFeatForUser(
 		sourceCode: input.sourceCode ?? 'homebrew',
 		rulesetCode: 'dnd-2014-srd',
 		contentMode: input.isSystemContent ? 'canon' : 'custom',
-		editorialStatus: 'published',
+		editorialStatus: input.editorialStatus ?? 'published',
 		slug: input.slug,
 		name: input.name,
 		prerequisites: [...input.prerequisites],
@@ -1227,9 +1264,13 @@ export function createE2ESharedFeatForUser(
 	return { ...feat };
 }
 
-export function listE2EManagedSharedFeatsForUser(userId: string, includeSystemContent: boolean) {
+export function listE2EManagedSharedFeatsForUser(
+	userId: string,
+	includeSystemContent: boolean,
+	editorialStatus: 'published' | 'in_review' = 'published'
+) {
 	return state.sharedFeats
-		.filter((feat) => feat.editorialStatus === 'published')
+		.filter((feat) => feat.editorialStatus === editorialStatus)
 		.filter((feat) => feat.visibility !== 'private' && feat.visibility !== 'campaign')
 		.filter((feat) => (includeSystemContent ? true : !feat.isSystemContent))
 		.filter((feat) => (includeSystemContent ? true : feat.userId === userId))
@@ -1247,6 +1288,7 @@ export function updateE2EManagedSharedFeatForUser(
 		summary?: string;
 		description?: string;
 		includeSystemContent: boolean;
+		editorialStatus?: 'in_review' | 'published';
 	}
 ) {
 	const feat = state.sharedFeats.find((entry) => entry.id === input.featId);
@@ -1277,6 +1319,7 @@ export function updateE2EManagedSharedFeatForUser(
 		prerequisites: [...input.prerequisites],
 		summary: input.summary ?? null,
 		description: input.description ?? null,
+		editorialStatus: input.editorialStatus ?? feat.editorialStatus,
 		updatedAt: nextUpdatedAt()
 	});
 
@@ -1303,6 +1346,32 @@ export function retireE2EManagedSharedFeatForUser(
 	Object.assign(feat, {
 		visibility: 'private',
 		editorialStatus: 'retired',
+		updatedAt: nextUpdatedAt()
+	});
+
+	return { ...feat };
+}
+
+export function returnE2EReviewableSharedFeatToPrivateForUser(
+	userId: string,
+	input: {
+		featId: string;
+		includeSystemContent: boolean;
+	}
+) {
+	const feat = state.sharedFeats.find((entry) => entry.id === input.featId);
+
+	if (!feat || feat.editorialStatus !== 'in_review') {
+		throw new Error('Please choose a valid shared feat to review.');
+	}
+
+	if (!input.includeSystemContent && feat.isSystemContent) {
+		throw new Error('Please choose a valid shared feat to review.');
+	}
+
+	Object.assign(feat, {
+		visibility: 'private',
+		editorialStatus: 'private_draft',
 		updatedAt: nextUpdatedAt()
 	});
 
