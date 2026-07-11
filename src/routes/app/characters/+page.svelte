@@ -3,6 +3,10 @@
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
+
+	function formatUpdatedAt(value: string): string {
+		return new Date(value).toLocaleString();
+	}
 </script>
 
 <svelte:head>
@@ -31,6 +35,24 @@
 			>
 				New character
 			</a>
+		</div>
+
+		<div class="mt-6 grid gap-3 md:grid-cols-3">
+			<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+				<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">Roster</p>
+				<p class="mt-2 text-2xl font-semibold text-stone-900">{data.characters.length}</p>
+				<p class="mt-1 text-sm text-stone-600">Private drafts currently tracked.</p>
+			</div>
+			<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+				<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">Workflow</p>
+				<p class="mt-2 text-base font-semibold text-stone-900">Detail and edit stay separate</p>
+				<p class="mt-1 text-sm text-stone-600">Review first, then jump back into editing.</p>
+			</div>
+			<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+				<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">Safety</p>
+				<p class="mt-2 text-base font-semibold text-stone-900">Delete now needs confirmation</p>
+				<p class="mt-1 text-sm text-stone-600">Accidental draft loss is much harder.</p>
+			</div>
 		</div>
 
 		{#if data.createdName}
@@ -84,13 +106,24 @@
 									- {character.className}
 								{/if}
 							</p>
+							<p class="mt-3 text-xs uppercase tracking-[0.16em] text-stone-500">
+								Updated {formatUpdatedAt(character.updatedAt)}
+							</p>
 						</div>
+					</div>
 
+					<div class="mt-6 flex flex-wrap gap-3">
 						<a
 							class="rounded-lg border border-stone-300 px-3 py-2 text-sm font-medium text-stone-900 transition hover:border-stone-400"
 							href={resolve(`/app/characters/${character.id}`)}
 						>
 							View details
+						</a>
+						<a
+							class="rounded-lg bg-stone-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-stone-700"
+							href={resolve(`/app/characters/${character.id}/edit`)}
+						>
+							Continue editing
 						</a>
 					</div>
 				</article>

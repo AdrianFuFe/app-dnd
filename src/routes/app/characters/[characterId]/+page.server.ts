@@ -29,7 +29,7 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 };
 
 export const actions: Actions = {
-	delete: async ({ locals, params, url }) => {
+	delete: async ({ locals, params, request, url }) => {
 		if (!locals.session) {
 			throw redirect(302, `/auth/login?redirectTo=${encodeURIComponent(url.pathname)}`);
 		}
@@ -41,6 +41,29 @@ export const actions: Actions = {
 		}
 
 		try {
+			const existingCharacter = await getCharacterForUser(
+				locals.supabase,
+				locals.session.user.id,
+				params.characterId
+			);
+
+			if (!existingCharacter) {
+				return fail(404, {
+					formError: 'That character could not be found.'
+				});
+			}
+
+			const formData = await request.formData();
+			const confirmDelete = formData.get('confirmDelete');
+			const confirmNameEntry = formData.get('confirmName');
+			const confirmName = typeof confirmNameEntry === 'string' ? confirmNameEntry.trim() : '';
+
+			if (confirmDelete !== 'on' || confirmName !== existingCharacter.name) {
+				return fail(400, {
+					formError: 'Confirm the delete checkbox and type the exact character name.'
+				});
+			}
+
 			const character = await deleteCharacter(
 				locals.supabase,
 				locals.session.user.id,

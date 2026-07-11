@@ -4,6 +4,9 @@
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+	let deleteConfirmed = $state(false);
+	let deleteConfirmationName = $state('');
+	let deletePromptError = $state<string | null>(null);
 
 	const abilityFields = [
 		{ key: 'strength', label: 'STR' },
@@ -45,6 +48,24 @@
 	function findEquipmentCatalogEntry(equipmentId: string | undefined) {
 		return data.equipmentCatalog.find((entry) => entry.id === equipmentId);
 	}
+
+	function formatRuleset(value: string): string {
+		return value === 'dnd-2014-srd' ? 'DnD 2014 SRD' : value;
+	}
+
+	function isDeleteReady(): boolean {
+		return deleteConfirmed && deleteConfirmationName.trim() === data.character.name;
+	}
+
+	function guardDeleteSubmit(event: SubmitEvent) {
+		if (isDeleteReady()) {
+			deletePromptError = null;
+			return;
+		}
+
+		event.preventDefault();
+		deletePromptError = 'Confirm the delete checkbox and type the exact character name.';
+	}
 </script>
 
 <svelte:head>
@@ -71,6 +92,16 @@
 			</div>
 
 			<div class="flex flex-wrap gap-3">
+				<span
+					class="rounded-full bg-stone-100 px-3 py-2 text-xs font-medium uppercase tracking-[0.16em] text-stone-700"
+				>
+					{formatRuleset(data.character.rulesetCode)}
+				</span>
+				<span
+					class="rounded-full bg-emerald-100 px-3 py-2 text-xs font-medium uppercase tracking-[0.16em] text-emerald-800"
+				>
+					{data.character.contentMode}
+				</span>
 				<a
 					class="rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-900 transition hover:border-stone-400"
 					href={resolve('/app/characters')}
@@ -102,15 +133,67 @@
 			</p>
 		{/if}
 
+		<div class="mt-6 grid gap-3 md:grid-cols-4">
+			<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+				<p class="text-sm font-medium text-stone-500">Level</p>
+				<p class="mt-2 text-2xl font-semibold text-stone-900">{data.character.level}</p>
+			</div>
+			<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+				<p class="text-sm font-medium text-stone-500">Structured attacks</p>
+				<p class="mt-2 text-2xl font-semibold text-stone-900">
+					{data.character.attackItems.length}
+				</p>
+			</div>
+			<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+				<p class="text-sm font-medium text-stone-500">Structured spells</p>
+				<p class="mt-2 text-2xl font-semibold text-stone-900">
+					{data.character.spellItems.length}
+				</p>
+			</div>
+			<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+				<p class="text-sm font-medium text-stone-500">Inventory rows</p>
+				<p class="mt-2 text-2xl font-semibold text-stone-900">
+					{data.character.inventoryItems.length}
+				</p>
+			</div>
+		</div>
+
 		<div class="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4">
 			<p class="text-sm font-semibold text-rose-900">Delete draft</p>
 			<p class="mt-2 max-w-2xl text-sm leading-6 text-rose-800">
 				Remove this character draft and its current MVP slices from your private roster.
+				This action now requires explicit confirmation.
 			</p>
-			<form class="mt-4" method="POST" action="?/delete">
+			<form class="mt-4" method="POST" action="?/delete" onsubmit={guardDeleteSubmit}>
+				<label class="block">
+					<span class="mb-1 block text-sm font-medium text-rose-900">
+						Type the character name to confirm
+					</span>
+					<input
+						class="block w-full rounded-lg border-rose-300 bg-white"
+						type="text"
+						name="confirmName"
+						bind:value={deleteConfirmationName}
+					/>
+				</label>
+				<label class="mt-4 inline-flex items-center gap-3">
+					<input
+						class="rounded border-rose-300 text-rose-700 focus:ring-rose-500"
+						type="checkbox"
+						name="confirmDelete"
+						bind:checked={deleteConfirmed}
+					/>
+					<span class="text-sm font-medium text-rose-900">
+						I understand this deletes the draft permanently
+					</span>
+				</label>
+				{#if deletePromptError}
+					<p class="mt-4 text-sm text-rose-800">{deletePromptError}</p>
+				{/if}
 				<button
-					class="rounded-lg bg-rose-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-800"
+					class="mt-4 rounded-lg bg-rose-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-800 disabled:cursor-not-allowed disabled:bg-rose-300"
 					type="submit"
+					disabled={!isDeleteReady()}
 				>
 					Delete character
 				</button>

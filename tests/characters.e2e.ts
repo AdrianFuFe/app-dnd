@@ -239,7 +239,13 @@ test('character detail route supports deleting a draft', async ({ page }) => {
 	await expect(page.getByRole('heading', { name: 'Talia Stormstep' })).toBeVisible();
 	await expect(page.getByText('Character detail')).toBeVisible();
 
-	await page.getByRole('button', { name: 'Delete character' }).click();
+	const deleteButton = page.getByRole('button', { name: 'Delete character' });
+	await expect(deleteButton).toBeDisabled();
+	await page.getByLabel('Type the character name to confirm').fill('Talia Stormstep');
+	await page.getByLabel('I understand this deletes the draft permanently').check();
+
+	await expect(deleteButton).toBeEnabled();
+	await deleteButton.click();
 
 	await expect(page).toHaveURL('/app/characters?deleted=Talia%20Stormstep');
 	await expect(page.getByText('Talia Stormstep was deleted successfully.')).toBeVisible();

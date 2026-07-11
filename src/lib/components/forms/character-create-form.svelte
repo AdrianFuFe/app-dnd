@@ -108,6 +108,17 @@
 		{ name: 'speed', label: 'Speed', min: 0 }
 	] as const;
 
+	const formSections = [
+		{ id: 'identity', label: 'Identity', detail: 'Name, ancestry, class path, background' },
+		{ id: 'ability-scores', label: 'Ability Scores', detail: 'Core six ability values' },
+		{ id: 'combat-snapshot', label: 'Combat Snapshot', detail: 'HP, AC, initiative, speed' },
+		{ id: 'attacks', label: 'Attacks', detail: 'Weapons and attack rows' },
+		{ id: 'spells', label: 'Spells', detail: 'Prepared and catalog-linked spells' },
+		{ id: 'feats', label: 'Feats', detail: 'Structured feat rows' },
+		{ id: 'inventory', label: 'Inventory', detail: 'Gear and equipped items' },
+		{ id: 'notes', label: 'Notes', detail: 'Named note sections' }
+	] as const;
+
 	let formValues = $state(createCharacterFormValues());
 	let attackItems = $state<AttackFormItem[]>([]);
 	let spellItems = $state<SpellFormItem[]>([]);
@@ -886,6 +897,26 @@
 					: noteRows.map((item) => `${item.title}\n${item.content}`).join('\n\n');
 		}
 	}
+
+	function structuredDraftCount(): number {
+		return (
+			attackItems.length +
+			spellItems.length +
+			featItems.length +
+			inventoryItems.length +
+			sanitizeNoteItems(noteItems).length
+		);
+	}
+
+	function selectedIdentityCount(): number {
+		return [
+			formValues.speciesId,
+			formValues.subspeciesId,
+			formValues.classId,
+			formValues.subclassId,
+			formValues.backgroundId
+		].filter((value) => value.trim().length > 0).length;
+	}
 </script>
 
 <form method="POST" class="space-y-8" onsubmit={syncStructuredFieldValues}>
@@ -896,6 +927,82 @@
 	{/if}
 
 	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+		<div class="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+			<div class="max-w-2xl space-y-2">
+				<h2 class="text-xl font-semibold text-stone-900">Draft overview</h2>
+				<p class="text-sm leading-6 text-stone-600">
+					Use this pass to keep the current character workflow easier to scan. Jump to any
+					section below, then come back later for deeper guided creation.
+				</p>
+			</div>
+
+			<div class="grid gap-3 sm:grid-cols-3 xl:min-w-[26rem]">
+				<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+					<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">
+						Ruleset
+					</p>
+					<p class="mt-2 text-sm font-semibold text-stone-900">DnD 2014 SRD</p>
+				</div>
+				<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+					<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">
+						Draft mode
+					</p>
+					<p class="mt-2 text-sm font-semibold text-stone-900">Canon baseline</p>
+				</div>
+				<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+					<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">
+						Structured rows
+					</p>
+					<p class="mt-2 text-sm font-semibold text-stone-900">{structuredDraftCount()}</p>
+				</div>
+			</div>
+		</div>
+
+		<div class="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+			<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+				<p class="text-sm font-medium text-stone-500">Draft name</p>
+				<p class="mt-2 text-base font-semibold text-stone-900">
+					{formValues.name.trim().length > 0 ? formValues.name : 'Not named yet'}
+				</p>
+			</div>
+			<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+				<p class="text-sm font-medium text-stone-500">Identity selections</p>
+				<p class="mt-2 text-base font-semibold text-stone-900">{selectedIdentityCount()} / 5</p>
+			</div>
+			<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+				<p class="text-sm font-medium text-stone-500">Level</p>
+				<p class="mt-2 text-base font-semibold text-stone-900">
+					{formValues.level.trim().length > 0 ? formValues.level : 'Unset'}
+				</p>
+			</div>
+			<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+				<p class="text-sm font-medium text-stone-500">Combat baseline</p>
+				<p class="mt-2 text-base font-semibold text-stone-900">
+					HP {formValues.currentHp || '0'} / {formValues.maxHp || '0'} · AC {formValues.armorClass || '0'}
+				</p>
+			</div>
+		</div>
+
+		<div class="mt-6">
+			<p class="text-sm font-medium text-stone-700">Jump to section</p>
+			<div class="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+				{#each formSections as section (section.id)}
+					<a
+						class="rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm transition hover:border-stone-400 hover:bg-stone-50"
+						href={`#${section.id}`}
+					>
+						<p class="font-semibold text-stone-900">{section.label}</p>
+						<p class="mt-1 text-stone-500">{section.detail}</p>
+					</a>
+				{/each}
+			</div>
+		</div>
+
+		<input type="hidden" name="rulesetCode" value="dnd-2014-srd" />
+		<input type="hidden" name="contentMode" value="canon" />
+	</section>
+
+	<section id="identity" class="scroll-mt-24 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
 		<div class="space-y-1">
 			<h2 class="text-xl font-semibold text-stone-900">Identity</h2>
 			<p class="text-sm text-stone-600">
@@ -1100,7 +1207,10 @@
 		</div>
 	</section>
 
-	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+	<section
+		id="ability-scores"
+		class="scroll-mt-24 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm"
+	>
 		<div class="space-y-1">
 			<h2 class="text-xl font-semibold text-stone-900">Ability Scores</h2>
 			<p class="text-sm text-stone-600">Use the first stat block for the character draft.</p>
@@ -1127,7 +1237,10 @@
 		</div>
 	</section>
 
-	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+	<section
+		id="combat-snapshot"
+		class="scroll-mt-24 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm"
+	>
 		<div class="space-y-1">
 			<h2 class="text-xl font-semibold text-stone-900">Combat Snapshot</h2>
 			<p class="text-sm text-stone-600">
@@ -1165,7 +1278,7 @@
 		</div>
 	</section>
 
-	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+	<section id="attacks" class="scroll-mt-24 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
 		<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
 			<div class="space-y-1">
 				<h2 class="text-xl font-semibold text-stone-900">Attacks</h2>
@@ -1344,7 +1457,7 @@
 		{/if}
 	</section>
 
-	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+	<section id="spells" class="scroll-mt-24 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
 		<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
 			<div class="space-y-1">
 				<h2 class="text-xl font-semibold text-stone-900">Spells</h2>
@@ -1646,7 +1759,7 @@
 		{/if}
 	</section>
 
-	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+	<section id="feats" class="scroll-mt-24 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
 		<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
 			<div class="space-y-1">
 				<h2 class="text-xl font-semibold text-stone-900">Feats</h2>
@@ -1754,7 +1867,10 @@
 		{/if}
 	</section>
 
-	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+	<section
+		id="inventory"
+		class="scroll-mt-24 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm"
+	>
 		<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
 			<div class="space-y-1">
 				<h2 class="text-xl font-semibold text-stone-900">Inventory</h2>
@@ -1931,7 +2047,7 @@
 		{/if}
 	</section>
 
-	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+	<section id="notes" class="scroll-mt-24 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
 		<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
 			<div class="space-y-1">
 				<h2 class="text-xl font-semibold text-stone-900">Notes</h2>
