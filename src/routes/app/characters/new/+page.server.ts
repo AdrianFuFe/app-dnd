@@ -10,6 +10,7 @@ import {
 	createGuidedCharacterFormValues,
 	deriveGuidedCharacterDraft
 } from '$lib/domain/characters/guided-character';
+import { deriveManualCharacterContentProfile } from '$lib/domain/characters/manual-character-content-profile';
 import { characterCreateInputSchema } from '$lib/schemas/characters/character.schema';
 import { characterGuidedInputSchema } from '$lib/schemas/characters/character-guided.schema';
 import {
@@ -143,11 +144,13 @@ export const actions: Actions = {
 				...catalogSelection,
 				spellItems
 			});
-			const createdName = encodeURIComponent(character.name);
-
 			throw redirect(
 				303,
-				`/app/characters/${character.id}?created=${createdName}&guided=1`
+				buildCharacterDetailRedirect(character.id, {
+					created: character.name,
+					guided: '1',
+					profileMode: guidedDraft.character.contentMode
+				})
 			);
 		} catch (error) {
 			if (isRedirect(error)) {
@@ -190,6 +193,10 @@ export const actions: Actions = {
 		}
 
 		try {
+			const [guidedCatalog, expandedContentCatalog] = await Promise.all([
+				listGuidedCharacterCatalog(locals.supabase),
+				listExpandedContentCatalog(locals.supabase)
+			]);
 			const catalogSelection = await resolveCharacterCreationCatalogSelections(
 				locals.supabase,
 				{
@@ -217,9 +224,27 @@ export const actions: Actions = {
 					inventoryItems: parsed.data.inventoryItems
 				}
 			);
+			const contentProfileResult = deriveManualCharacterContentProfile(
+				{
+					...parsed.data,
+					rulesetCode: 'dnd-2014-srd',
+					contentMode: 'canon',
+					attackItems,
+					featItems,
+					spellItems,
+					inventoryItems
+				},
+				{
+					guidedCatalog,
+					spellCatalog: expandedContentCatalog.spells,
+					featCatalog: expandedContentCatalog.feats
+				}
+			);
 
 			const character = await createCharacter(locals.supabase, locals.session.user.id, {
 				...parsed.data,
+				rulesetCode: contentProfileResult.profile.rulesetCode,
+				contentMode: contentProfileResult.profile.contentMode,
 				speciesId: catalogSelection.speciesId,
 				race: catalogSelection.race,
 				subspeciesId: catalogSelection.subspeciesId,
@@ -235,9 +260,14 @@ export const actions: Actions = {
 				spellItems,
 				inventoryItems
 			});
-			const createdName = encodeURIComponent(character.name);
-
-			throw redirect(303, `/app/characters?created=${createdName}`);
+			throw redirect(
+				303,
+				buildCharacterDetailRedirect(character.id, {
+					created: character.name,
+					profileMode: contentProfileResult.profile.contentMode,
+					profileReason: contentProfileResult.reasonLines
+				})
+			);
 		} catch (error) {
 			if (isRedirect(error)) {
 				throw error;
@@ -258,3 +288,36 @@ export const actions: Actions = {
 		}
 	}
 };
+
+function buildCharacterDetailRedirect(
+	characterId: string,
+	params: {
+		created?: string;
+		guided?: '1';
+		profileMode?: 'canon' | 'custom';
+		profileReason?: string[];
+	}
+) {
+	const searchParams = new URLSearchParams();
+
+	if (params.created) {
+		searchParams.set('created', params.created);
+	}
+
+	if (params.guided) {
+		searchParams.set('guided', params.guided);
+	}
+
+	if (params.profileMode) {
+		searchParams.set('profileMode', params.profileMode);
+	}
+
+	for (const reason of params.profileReason ?? []) {
+		searchParams.append('profileReason', reason);
+	}
+
+	const query = searchParams.toString();
+	return query.length > 0
+		? `/app/characters/${characterId}?${query}`
+		: `/app/characters/${characterId}`;
+}

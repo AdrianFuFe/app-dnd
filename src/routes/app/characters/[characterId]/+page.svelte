@@ -162,6 +162,21 @@
 			</div>
 		{/if}
 
+		{#if data.profileMode === 'custom' && data.profileReasonLines.length > 0}
+			<div class="mt-4 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-4">
+				<p class="text-sm font-semibold text-violet-950">Custom path reasons</p>
+				<p class="mt-2 max-w-2xl text-sm leading-6 text-violet-900">
+					This save is currently tracked as custom for its ruleset because of the changes
+					below.
+				</p>
+				<ul class="mt-3 space-y-2 text-sm text-violet-900">
+					{#each data.profileReasonLines as line}
+						<li>{line}</li>
+					{/each}
+				</ul>
+			</div>
+		{/if}
+
 		{#if form?.formError}
 			<p
 				class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"

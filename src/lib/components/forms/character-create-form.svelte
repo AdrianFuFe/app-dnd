@@ -947,7 +947,7 @@
 					<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">
 						Draft mode
 					</p>
-					<p class="mt-2 text-sm font-semibold text-stone-900">Canon baseline</p>
+					<p class="mt-2 text-sm font-semibold text-stone-900">Derived on save</p>
 				</div>
 				<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
 					<p class="text-xs font-medium uppercase tracking-[0.18em] text-stone-500">

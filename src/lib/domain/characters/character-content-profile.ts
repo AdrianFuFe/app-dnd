@@ -5,7 +5,9 @@ export type CharacterLinkedContentType =
 	| 'subspecies'
 	| 'class'
 	| 'subclass'
-	| 'background';
+	| 'background'
+	| 'spell'
+	| 'feat';
 
 export type CharacterLinkedContentSelection = {
 	entityType: CharacterLinkedContentType;

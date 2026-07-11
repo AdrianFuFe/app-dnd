@@ -4,10 +4,12 @@ import {
 	createCharacterFormValues,
 	createCharacterFormValuesFromInput
 } from '$lib/domain/characters/character-form';
+import { deriveManualCharacterContentProfile } from '$lib/domain/characters/manual-character-content-profile';
 import { characterCreateInputSchema } from '$lib/schemas/characters/character.schema';
 import {
 	listCharacterCreationCatalog,
 	listExpandedContentCatalog,
+	listGuidedCharacterCatalog,
 	resolveCharacterAttackCatalogSelections,
 	resolveCharacterCreationCatalogSelections,
 	resolveCharacterFeatCatalogSelections,
@@ -73,6 +75,18 @@ export const actions: Actions = {
 		}
 
 		try {
+			const [guidedCatalog, expandedContentCatalog, existingCharacter] = await Promise.all([
+				listGuidedCharacterCatalog(locals.supabase),
+				listExpandedContentCatalog(locals.supabase),
+				getCharacterForUser(locals.supabase, locals.session.user.id, params.characterId)
+			]);
+
+			if (!existingCharacter) {
+				throw new Error(
+					`Character ${params.characterId} was not found for user ${locals.session.user.id}`
+				);
+			}
+
 			const catalogSelection = await resolveCharacterCreationCatalogSelections(
 				locals.supabase,
 				{
@@ -100,6 +114,23 @@ export const actions: Actions = {
 					inventoryItems: parsed.data.inventoryItems
 				}
 			);
+			const contentProfileResult = deriveManualCharacterContentProfile(
+				{
+					...parsed.data,
+					rulesetCode: existingCharacter.rulesetCode,
+					contentMode: existingCharacter.contentMode,
+					attackItems,
+					featItems,
+					spellItems,
+					inventoryItems
+				},
+				{
+					guidedCatalog,
+					spellCatalog: expandedContentCatalog.spells,
+					featCatalog: expandedContentCatalog.feats,
+					existingCharacter
+				}
+			);
 
 			const character = await updateCharacter(
 				locals.supabase,
@@ -107,6 +138,8 @@ export const actions: Actions = {
 				params.characterId,
 				{
 					...parsed.data,
+					rulesetCode: contentProfileResult.profile.rulesetCode,
+					contentMode: contentProfileResult.profile.contentMode,
 					speciesId: catalogSelection.speciesId,
 					race: catalogSelection.race,
 					subspeciesId: catalogSelection.subspeciesId,
@@ -123,9 +156,14 @@ export const actions: Actions = {
 					inventoryItems
 				}
 			);
-			const updatedName = encodeURIComponent(character.name);
-
-			throw redirect(303, `/app/characters/${character.id}?updated=${updatedName}`);
+			throw redirect(
+				303,
+				buildCharacterDetailRedirect(character.id, {
+					updated: character.name,
+					profileMode: contentProfileResult.profile.contentMode,
+					profileReason: contentProfileResult.reasonLines
+				})
+			);
 		} catch (caught) {
 			if (isRedirect(caught)) {
 				throw caught;
@@ -152,3 +190,31 @@ export const actions: Actions = {
 		}
 	}
 };
+
+function buildCharacterDetailRedirect(
+	characterId: string,
+	params: {
+		updated?: string;
+		profileMode?: 'canon' | 'custom';
+		profileReason?: string[];
+	}
+) {
+	const searchParams = new URLSearchParams();
+
+	if (params.updated) {
+		searchParams.set('updated', params.updated);
+	}
+
+	if (params.profileMode) {
+		searchParams.set('profileMode', params.profileMode);
+	}
+
+	for (const reason of params.profileReason ?? []) {
+		searchParams.append('profileReason', reason);
+	}
+
+	const query = searchParams.toString();
+	return query.length > 0
+		? `/app/characters/${characterId}?${query}`
+		: `/app/characters/${characterId}`;
+}

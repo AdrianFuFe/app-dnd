@@ -26,6 +26,8 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 		equipmentCatalog: expandedContentCatalog.equipment,
 		createdName: url.searchParams.get('created'),
 		guidedHandoff: url.searchParams.get('guided') === '1',
+		profileMode: url.searchParams.get('profileMode'),
+		profileReasonLines: url.searchParams.getAll('profileReason'),
 		updatedName: url.searchParams.get('updated')
 	};
 };
