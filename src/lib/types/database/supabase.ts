@@ -154,6 +154,35 @@ export interface Database {
 					}
 				];
 			};
+			character_content_profiles: {
+				Row: {
+					character_id: string;
+					reason_lines: JsonValue;
+					created_at: string;
+					updated_at: string;
+				};
+				Insert: {
+					character_id: string;
+					reason_lines?: JsonValue;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Update: {
+					character_id?: string;
+					reason_lines?: JsonValue;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'character_content_profiles_character_id_fkey';
+						columns: ['character_id'];
+						isOneToOne: true;
+						referencedRelation: 'characters';
+						referencedColumns: ['id'];
+					}
+				];
+			};
 			character_notes: {
 				Row: {
 					id: string;

@@ -346,7 +346,7 @@ describe('createCharacter', () => {
 		expect(deleteEqUserId).toHaveBeenCalledWith('user_id', 'user-1');
 	});
 
-	it('persists custom profile metadata as a reserved note row', async () => {
+	it('persists custom profile metadata in the dedicated content-profile table', async () => {
 		const charactersSingle = vi.fn().mockResolvedValue({
 			data: {
 				id: 'char-1',
@@ -357,6 +357,7 @@ describe('createCharacter', () => {
 		const charactersSelect = vi.fn().mockReturnValue({ single: charactersSingle });
 		const charactersInsert = vi.fn().mockReturnValue({ select: charactersSelect });
 		const notesInsert = vi.fn().mockResolvedValue({ error: null });
+		const contentProfilesInsert = vi.fn().mockResolvedValue({ error: null });
 
 		const from = vi.fn((table: string) => {
 			if (table === 'characters') {
@@ -386,6 +387,10 @@ describe('createCharacter', () => {
 
 			if (table === 'character_notes') {
 				return { insert: notesInsert };
+			}
+
+			if (table === 'character_content_profiles') {
+				return { insert: contentProfilesInsert };
 			}
 
 			throw new Error(`Unexpected table ${table}`);
@@ -422,12 +427,14 @@ describe('createCharacter', () => {
 			expect.objectContaining({
 				title: 'Goals',
 				content: 'Protect the archive.'
-			}),
-			expect.objectContaining({
-				title: 'System: Content Profile',
-				content: JSON.stringify({ reasonLines: ['Manual override: Armor Class'] })
 			})
 		]);
+		expect(contentProfilesInsert).toHaveBeenCalledWith(
+			expect.objectContaining({
+				character_id: 'char-1',
+				reason_lines: ['Manual override: Armor Class']
+			})
+		);
 	});
 });
 
@@ -567,6 +574,12 @@ describe('getCharacterForUser', () => {
 			error: null
 		});
 		const notesSelect = vi.fn().mockReturnValue({ eq: notesEq });
+		const contentProfileMaybeSingle = vi.fn().mockResolvedValue({
+			data: null,
+			error: null
+		});
+		const contentProfileEq = vi.fn().mockReturnValue({ maybeSingle: contentProfileMaybeSingle });
+		const contentProfileSelect = vi.fn().mockReturnValue({ eq: contentProfileEq });
 
 		const from = vi.fn((table: string) => {
 			if (table === 'characters') {
@@ -620,6 +633,12 @@ describe('getCharacterForUser', () => {
 			if (table === 'character_notes') {
 				return {
 					select: notesSelect
+				};
+			}
+
+			if (table === 'character_content_profiles') {
+				return {
+					select: contentProfileSelect
 				};
 			}
 
@@ -837,6 +856,19 @@ describe('getCharacterForUser', () => {
 				return { select: vi.fn().mockReturnValue({ eq: notesEq }) };
 			}
 
+			if (table === 'character_content_profiles') {
+				return {
+					select: vi.fn().mockReturnValue({
+						eq: vi.fn().mockReturnValue({
+							maybeSingle: vi.fn().mockResolvedValue({
+								data: null,
+								error: null
+							})
+						})
+					})
+				};
+			}
+
 			throw new Error(`Unexpected table ${table}`);
 		});
 
@@ -996,6 +1028,19 @@ describe('getCharacterForUser', () => {
 				};
 			}
 
+			if (table === 'character_content_profiles') {
+				return {
+					select: vi.fn().mockReturnValue({
+						eq: vi.fn().mockReturnValue({
+							maybeSingle: vi.fn().mockResolvedValue({
+								data: null,
+								error: null
+							})
+						})
+					})
+				};
+			}
+
 			throw new Error(`Unexpected table ${table}`);
 		});
 
@@ -1024,7 +1069,7 @@ describe('getCharacterForUser', () => {
 		expect(character).toBeNull();
 	});
 
-	it('extracts persisted custom profile metadata without leaking it into visible notes', async () => {
+	it('extracts persisted custom profile metadata from the dedicated content-profile table', async () => {
 		const characterMaybeSingle = vi.fn().mockResolvedValue({
 			data: {
 				id: 'char-1',
@@ -1139,15 +1184,24 @@ describe('getCharacterForUser', () => {
 								{
 									title: 'Goals',
 									content: 'Protect the archive.'
-								},
-								{
-									title: 'System: Content Profile',
-									content: JSON.stringify({
-										reasonLines: ['Manual override: Armor Class']
-									})
 								}
 							],
 							error: null
+						})
+					})
+				};
+			}
+
+			if (table === 'character_content_profiles') {
+				return {
+					select: vi.fn().mockReturnValue({
+						eq: vi.fn().mockReturnValue({
+							maybeSingle: vi.fn().mockResolvedValue({
+								data: {
+									reason_lines: ['Manual override: Armor Class']
+								},
+								error: null
+							})
 						})
 					})
 				};
@@ -1248,6 +1302,9 @@ describe('updateCharacter', () => {
 		const notesDeleteEq = vi.fn().mockResolvedValue({ error: null });
 		const notesDelete = vi.fn().mockReturnValue({ eq: notesDeleteEq });
 		const notesInsert = vi.fn().mockResolvedValue({ error: null });
+		const contentProfilesDeleteEq = vi.fn().mockResolvedValue({ error: null });
+		const contentProfilesDelete = vi.fn().mockReturnValue({ eq: contentProfilesDeleteEq });
+		const contentProfilesInsert = vi.fn().mockResolvedValue({ error: null });
 
 		const from = vi.fn((table: string) => {
 			if (table === 'characters') {
@@ -1310,6 +1367,13 @@ describe('updateCharacter', () => {
 					select: notesSelect,
 					delete: notesDelete,
 					insert: notesInsert
+				};
+			}
+
+			if (table === 'character_content_profiles') {
+				return {
+					delete: contentProfilesDelete,
+					insert: contentProfilesInsert
 				};
 			}
 
@@ -1457,6 +1521,7 @@ describe('updateCharacter', () => {
 				content: 'Carries a lantern relic.'
 			})
 		]);
+		expect(contentProfilesDeleteEq).toHaveBeenCalledWith('character_id', 'char-1');
 	});
 
 	it('throws when the character is not owned by the user', async () => {
@@ -1619,6 +1684,15 @@ describe('updateCharacter', () => {
 							error: null
 						})
 					}),
+					delete: vi
+						.fn()
+						.mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+					insert: vi.fn().mockResolvedValue({ error: null })
+				};
+			}
+
+			if (table === 'character_content_profiles') {
+				return {
 					delete: vi
 						.fn()
 						.mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),

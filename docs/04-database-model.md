@@ -80,6 +80,19 @@ Recommended constraints:
 
 Characters do not need the full editorial lifecycle in the immediate phase.
 
+## Character custom-profile metadata
+
+Guided and manual customizations can also persist a narrow metadata slice for why a
+character moved onto the custom path.
+
+Recommended near-term shape:
+
+- `character_content_profiles`
+- `character_id uuid primary key references characters(id) on delete cascade`
+- `reason_lines jsonb not null default '[]'::jsonb`
+
+This keeps custom-profile explanation data separate from player-visible notes.
+
 ## Current character references
 
 These remain valid:

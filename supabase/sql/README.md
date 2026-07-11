@@ -9,6 +9,7 @@ Apply the SQL files in this order:
 5. `005_character_notes.sql`
 6. `006_ruleset_and_editorial_fields.sql`
 7. `007_editorial_rls_alignment.sql`
+8. `008_character_content_profiles.sql`
 
 ## Notes
 
@@ -22,6 +23,8 @@ Apply the SQL files in this order:
   `editorial_status`.
 - `007_editorial_rls_alignment.sql` updates reusable-content RLS so the active editorial
   workflow is enforced closer to the data layer.
+- `008_character_content_profiles.sql` adds a dedicated per-character store for guided or
+  manual custom-profile reason lines.
 
 ## Editorial model notes
 

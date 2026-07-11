@@ -34,6 +34,10 @@ type CharacterInventoryItemInsert =
 	Database['public']['Tables']['character_inventory_items']['Insert'];
 type CharacterNoteInsert = Database['public']['Tables']['character_notes']['Insert'];
 type CharacterNoteRow = Database['public']['Tables']['character_notes']['Row'];
+type CharacterContentProfileInsert =
+	Database['public']['Tables']['character_content_profiles']['Insert'];
+type CharacterContentProfileRow =
+	Database['public']['Tables']['character_content_profiles']['Row'];
 
 export type CharacterListItem = {
 	id: string;
@@ -48,8 +52,6 @@ export type CharacterDetail = CharacterCreateInput & {
 	id: string;
 	updatedAt: string;
 };
-
-const CONTENT_PROFILE_NOTE_TITLE = 'System: Content Profile';
 
 export async function listCharactersForUser(
 	supabase: SupabaseClient<Database>,
@@ -126,7 +128,8 @@ export async function createCharacter(
 		spellsResult,
 		featsResult,
 		inventoryResult,
-		notesResult
+		notesResult,
+		contentProfileResult
 	] = await Promise.all([
 		supabase.from('character_stats').insert(statsInsert),
 		supabase.from('character_combat_stats').insert(combatStatsInsert),
@@ -135,7 +138,12 @@ export async function createCharacter(
 		insertCharacterSpellItems(supabase, character.id, input.spellItems),
 		insertCharacterFeatItems(supabase, character.id, input.featItems),
 		insertCharacterInventoryItems(supabase, character.id, input.inventoryItems),
-		insertCharacterNoteItems(supabase, character.id, prepareCharacterNoteItems(input))
+		insertCharacterNoteItems(supabase, character.id, input.noteItems),
+		insertCharacterContentProfileMetadata(
+			supabase,
+			character.id,
+			input.contentProfileMetadata
+		)
 	]);
 
 	const childError =
@@ -146,7 +154,8 @@ export async function createCharacter(
 		spellsResult.error ??
 		featsResult.error ??
 		inventoryResult.error ??
-		notesResult.error;
+		notesResult.error ??
+		contentProfileResult.error;
 
 	if (childError) {
 		await supabase.from('characters').delete().eq('id', character.id).eq('user_id', userId);
@@ -190,7 +199,8 @@ export async function getCharacterForUser(
 		spellsResult,
 		featsResult,
 		inventoryResult,
-		notesResult
+		notesResult,
+		contentProfileResult
 	] = await Promise.all([
 		supabase
 			.from('character_stats')
@@ -225,7 +235,12 @@ export async function getCharacterForUser(
 			.from('character_inventory_items')
 			.select('equipment_id, name, quantity, description, weight, value, is_equipped')
 			.eq('character_id', characterId),
-		supabase.from('character_notes').select('title, content').eq('character_id', characterId)
+		supabase.from('character_notes').select('title, content').eq('character_id', characterId),
+		supabase
+			.from('character_content_profiles')
+			.select('reason_lines')
+			.eq('character_id', characterId)
+			.maybeSingle()
 	]);
 
 	const childError =
@@ -236,7 +251,8 @@ export async function getCharacterForUser(
 		spellsResult.error ??
 		featsResult.error ??
 		inventoryResult.error ??
-		notesResult.error;
+		notesResult.error ??
+		contentProfileResult.error;
 
 	if (
 		childError ||
@@ -299,13 +315,11 @@ export async function getCharacterForUser(
 		name: item.name,
 		description: item.description ?? undefined
 	}));
-	const contentProfileMetadata = extractCharacterContentProfileMetadata(notesResult.data);
+	const contentProfileMetadata = extractCharacterContentProfileMetadata(contentProfileResult.data);
 
 	const noteItems =
 		notesResult.data.length > 0
-			? notesResult.data
-					.filter((item) => item.title !== CONTENT_PROFILE_NOTE_TITLE)
-					.map((item) => ({
+			? notesResult.data.map((item) => ({
 					title: item.title,
 					content: item.content
 				}))
@@ -394,7 +408,8 @@ export async function updateCharacter(
 		spellsResult,
 		featsResult,
 		inventoryResult,
-		notesResult
+		notesResult,
+		contentProfileResult
 	] = await Promise.all([
 		supabase
 			.from('character_stats')
@@ -412,7 +427,12 @@ export async function updateCharacter(
 		replaceCharacterSpellItems(supabase, characterId, input.spellItems),
 		replaceCharacterFeatItems(supabase, characterId, input.featItems),
 		replaceCharacterInventoryItems(supabase, characterId, input.inventoryItems),
-		replaceCharacterNoteItems(supabase, characterId, prepareCharacterNoteItems(input))
+		replaceCharacterNoteItems(supabase, characterId, input.noteItems),
+		replaceCharacterContentProfileMetadata(
+			supabase,
+			characterId,
+			input.contentProfileMetadata
+		)
 	]);
 
 	const childError =
@@ -423,7 +443,8 @@ export async function updateCharacter(
 		spellsResult.error ??
 		featsResult.error ??
 		inventoryResult.error ??
-		notesResult.error;
+		notesResult.error ??
+		contentProfileResult.error;
 
 	if (childError) {
 		throw new Error(`Failed to update character details for user ${userId}`);
@@ -522,22 +543,6 @@ function toCharacterTextSectionsFields(
 		inventory: toLegacyInventoryText(input.inventoryItems),
 		notes: toLegacyNoteText(input.noteItems, input.notes)
 	};
-}
-
-function prepareCharacterNoteItems(input: CharacterCreateInput): CharacterNoteItem[] {
-	const visibleItems = input.noteItems.filter((item) => item.title !== CONTENT_PROFILE_NOTE_TITLE);
-
-	if (!input.contentProfileMetadata || input.contentProfileMetadata.reasonLines.length === 0) {
-		return visibleItems;
-	}
-
-	return [
-		...visibleItems,
-		{
-			title: CONTENT_PROFILE_NOTE_TITLE,
-			content: JSON.stringify(input.contentProfileMetadata)
-		}
-	];
 }
 
 async function insertCharacterAttackItems(
@@ -657,6 +662,20 @@ async function insertCharacterNoteItems(
 	return supabase
 		.from('character_notes')
 		.insert(items.map((item) => toCharacterNoteItemInsert(characterId, item)));
+}
+
+async function insertCharacterContentProfileMetadata(
+	supabase: SupabaseClient<Database>,
+	characterId: string,
+	metadata?: CharacterContentProfileMetadata
+) {
+	if (!metadata || metadata.reasonLines.length === 0) {
+		return { error: null };
+	}
+
+	return supabase
+		.from('character_content_profiles')
+		.insert(toCharacterContentProfileInsert(characterId, metadata));
 }
 
 async function insertCharacterFeatItems(
@@ -807,6 +826,25 @@ async function replaceCharacterNoteItems(
 	};
 }
 
+async function replaceCharacterContentProfileMetadata(
+	supabase: SupabaseClient<Database>,
+	characterId: string,
+	metadata?: CharacterContentProfileMetadata
+) {
+	const deleteResult = await supabase
+		.from('character_content_profiles')
+		.delete()
+		.eq('character_id', characterId);
+
+	if (deleteResult.error || !metadata || metadata.reasonLines.length === 0) {
+		return deleteResult;
+	}
+
+	return supabase
+		.from('character_content_profiles')
+		.insert(toCharacterContentProfileInsert(characterId, metadata));
+}
+
 function toCharacterInventoryItemInsert(
 	characterId: string,
 	item: CharacterInventoryItem
@@ -866,6 +904,16 @@ function toCharacterNoteItemInsert(
 		character_id: characterId,
 		title: item.title,
 		content: item.content
+	};
+}
+
+function toCharacterContentProfileInsert(
+	characterId: string,
+	metadata: CharacterContentProfileMetadata
+): CharacterContentProfileInsert {
+	return {
+		character_id: characterId,
+		reason_lines: metadata.reasonLines
 	};
 }
 
@@ -1004,25 +1052,15 @@ function splitLegacyAttackEntries(value: string): string[] {
 }
 
 function extractCharacterContentProfileMetadata(
-	items: Array<Pick<CharacterNoteRow, 'title' | 'content'>>
+	row: Pick<CharacterContentProfileRow, 'reason_lines'> | null
 ): CharacterContentProfileMetadata | undefined {
-	const metadataNote = items.find((item) => item.title === CONTENT_PROFILE_NOTE_TITLE);
-
-	if (!metadataNote) {
+	if (!row || !Array.isArray(row.reason_lines)) {
 		return undefined;
 	}
 
-	try {
-		const parsed = JSON.parse(metadataNote.content) as {
-			reasonLines?: unknown;
-		};
-		return Array.isArray(parsed.reasonLines) &&
-			parsed.reasonLines.every((line) => typeof line === 'string')
-			? { reasonLines: parsed.reasonLines }
-			: undefined;
-	} catch {
-		return undefined;
-	}
+	return row.reason_lines.every((line) => typeof line === 'string')
+		? { reasonLines: row.reason_lines }
+		: undefined;
 }
 
 function mapAttackRow(
