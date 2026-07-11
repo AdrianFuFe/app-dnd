@@ -265,14 +265,26 @@ Documento de referencia:
 
 ## Proximo trabajo recomendado
 
-El siguiente bloque con mas sentido ahora es:
+El siguiente bloque con mas sentido ahora ya no es abrir mas modelo editorial basico, porque esa parte ha avanzado bastante mas de lo que reflejaba esta revision.
+
+Hoy ya existe progreso tecnico real en:
+
+- uso efectivo de `editorial_status` y `content_mode` para `spells` y `feats`
+- filtrado editorial real del catalogo reutilizable usado por personajes
+- alineacion tipada de `species`, `subspecies`, `character_classes`, `subclasses`, `backgrounds`, `equipment`, `spells` y `feats`
+
+Por eso, el siguiente bloque recomendado pasa a ser:
 
 - `B3 - Character Area UX Consolidation`
 
-Y en paralelo o inmediatamente despues:
+Y justo despues:
 
-- traducir el contrato documental a SQL y tipos cuando decidamos abrir el bloque tecnico de modelo de datos
 - `B4 - Character Creation V1 Guided Design`
+
+Como trabajo tecnico transversal, sigue teniendo mucho sentido:
+
+- endurecer RLS para que el contrato editorial quede mas cerca de la base de datos
+- decidir si hacen falta superficies editoriales equivalentes para entidades reutilizables mas alla de `spells` y `feats`
 
 ## Recomendacion practica
 

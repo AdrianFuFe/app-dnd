@@ -365,11 +365,173 @@ describe('resolveCharacterCreationCatalogSelections', () => {
 			throw new Error(`Unexpected table ${table}`);
 		});
 
+	await expect(
+		resolveCharacterCreationCatalogSelections({ from } as never, {
+			speciesId: 'missing-species'
+		})
+	).rejects.toThrow('Please choose a valid species from the catalog.');
+	});
+
+	it('rejects species and classes that are not published shared content', async () => {
+		const speciesSingle = vi.fn().mockResolvedValue({
+			data: {
+				id: 'species-1',
+				slug: 'elfo',
+				name: 'Elfo',
+				editorial_status: 'in_review',
+				visibility: 'shared'
+			},
+			error: null
+		});
+		const speciesEq = vi.fn().mockReturnValue({ single: speciesSingle });
+		const speciesSelect = vi.fn().mockReturnValue({ eq: speciesEq });
+
+		const classSingle = vi.fn().mockResolvedValue({
+			data: {
+				id: 'class-1',
+				slug: 'fighter',
+				name: 'Fighter',
+				editorial_status: 'private_draft',
+				visibility: 'private'
+			},
+			error: null
+		});
+		const classEq = vi.fn().mockReturnValue({ single: classSingle });
+		const classSelect = vi.fn().mockReturnValue({ eq: classEq });
+
+		const from = vi.fn((table: string) => {
+			if (table === 'species') {
+				return { select: speciesSelect };
+			}
+
+			if (table === 'character_classes') {
+				return { select: classSelect };
+			}
+
+			if (table === 'subspecies' || table === 'subclasses' || table === 'backgrounds') {
+				return { select: vi.fn() };
+			}
+
+			throw new Error(`Unexpected table ${table}`);
+		});
+
 		await expect(
 			resolveCharacterCreationCatalogSelections({ from } as never, {
-				speciesId: 'missing-species'
+				speciesId: 'species-1'
 			})
 		).rejects.toThrow('Please choose a valid species from the catalog.');
+
+		await expect(
+			resolveCharacterCreationCatalogSelections({ from } as never, {
+				classId: 'class-1'
+			})
+		).rejects.toThrow('Please choose a valid class from the catalog.');
+	});
+
+	it('rejects subspecies that are not published shared content', async () => {
+		const speciesSingle = vi.fn().mockResolvedValue({
+			data: {
+				id: 'species-1',
+				slug: 'elfo',
+				name: 'Elfo',
+				editorial_status: 'published',
+				visibility: 'shared'
+			},
+			error: null
+		});
+		const speciesEq = vi.fn().mockReturnValue({ single: speciesSingle });
+		const speciesSelect = vi.fn().mockReturnValue({ eq: speciesEq });
+
+		const subspeciesSingle = vi.fn().mockResolvedValue({
+			data: {
+				id: 'subspecies-1',
+				species_slug: 'elfo',
+				name: 'High Elf',
+				editorial_status: 'in_review',
+				visibility: 'shared'
+			},
+			error: null
+		});
+		const subspeciesEq = vi.fn().mockReturnValue({ single: subspeciesSingle });
+		const subspeciesSelect = vi.fn().mockReturnValue({ eq: subspeciesEq });
+
+		const from = vi.fn((table: string) => {
+			if (table === 'species') {
+				return { select: speciesSelect };
+			}
+
+			if (table === 'subspecies') {
+				return { select: subspeciesSelect };
+			}
+
+			if (table === 'character_classes' || table === 'subclasses' || table === 'backgrounds') {
+				return { select: vi.fn() };
+			}
+
+			throw new Error(`Unexpected table ${table}`);
+		});
+
+		await expect(
+			resolveCharacterCreationCatalogSelections({ from } as never, {
+				speciesId: 'species-1',
+				subspeciesId: 'subspecies-1'
+			})
+		).rejects.toThrow('Please choose a valid subspecies from the catalog.');
+	});
+
+	it('rejects subclasses and backgrounds that are not published shared content', async () => {
+		const subclassSingle = vi.fn().mockResolvedValue({
+			data: {
+				id: 'subclass-1',
+				class_slug: 'fighter',
+				name: 'Prototype Domain',
+				editorial_status: 'in_review',
+				visibility: 'shared'
+			},
+			error: null
+		});
+		const subclassEq = vi.fn().mockReturnValue({ single: subclassSingle });
+		const subclassSelect = vi.fn().mockReturnValue({ eq: subclassEq });
+
+		const backgroundSingle = vi.fn().mockResolvedValue({
+			data: {
+				id: 'background-1',
+				name: 'Secret Sage',
+				editorial_status: 'private_draft',
+				visibility: 'private'
+			},
+			error: null
+		});
+		const backgroundEq = vi.fn().mockReturnValue({ single: backgroundSingle });
+		const backgroundSelect = vi.fn().mockReturnValue({ eq: backgroundEq });
+
+		const from = vi.fn((table: string) => {
+			if (table === 'subclasses') {
+				return { select: subclassSelect };
+			}
+
+			if (table === 'backgrounds') {
+				return { select: backgroundSelect };
+			}
+
+			if (table === 'species' || table === 'subspecies' || table === 'character_classes') {
+				return { select: vi.fn() };
+			}
+
+			throw new Error(`Unexpected table ${table}`);
+		});
+
+		await expect(
+			resolveCharacterCreationCatalogSelections({ from } as never, {
+				subclassId: 'subclass-1'
+			})
+		).rejects.toThrow('Please choose a valid subclass from the catalog.');
+
+		await expect(
+			resolveCharacterCreationCatalogSelections({ from } as never, {
+				backgroundId: 'background-1'
+			})
+		).rejects.toThrow('Please choose a valid background from the catalog.');
 	});
 });
 
@@ -728,6 +890,370 @@ describe('listExpandedContentCatalog', () => {
 			proficiencyType: 'saving_throw'
 		});
 	});
+
+	it('filters species, classes and equipment to published shared catalog entries', async () => {
+		const speciesOrder = vi.fn().mockResolvedValue({
+			data: [
+				{
+					id: 'species-published',
+					slug: 'elfo',
+					name: 'Elfo',
+					editorial_status: 'published',
+					visibility: 'shared',
+					summary: 'Visible species.',
+					base_speed: 30,
+					mechanics: []
+				},
+				{
+					id: 'species-review',
+					slug: 'draft-elf',
+					name: 'Draft Elf',
+					editorial_status: 'in_review',
+					visibility: 'shared',
+					summary: 'Hidden species.',
+					base_speed: 30,
+					mechanics: []
+				}
+			],
+			error: null
+		});
+		const speciesSelect = vi.fn().mockReturnValue({ order: speciesOrder });
+
+		const subspeciesOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+		const subspeciesSelect = vi.fn().mockReturnValue({ order: subspeciesOrder });
+
+		const classesOrder = vi.fn().mockResolvedValue({
+			data: [
+				{
+					id: 'class-published',
+					slug: 'fighter',
+					name: 'Fighter',
+					editorial_status: 'published',
+					visibility: 'shared',
+					summary: 'Visible class.',
+					hit_die: 10,
+					mechanics: []
+				},
+				{
+					id: 'class-draft',
+					slug: 'prototype',
+					name: 'Prototype',
+					editorial_status: 'private_draft',
+					visibility: 'private',
+					summary: 'Hidden class.',
+					hit_die: 8,
+					mechanics: []
+				}
+			],
+			error: null
+		});
+		const classesSelect = vi.fn().mockReturnValue({ order: classesOrder });
+
+		const subclassOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+		const subclassSelect = vi.fn().mockReturnValue({ order: subclassOrder });
+
+		const backgroundOrder = vi.fn().mockResolvedValue({
+			data: [
+				{
+					id: 'background-published',
+					slug: 'sage',
+					name: 'Sage',
+					editorial_status: 'published',
+					visibility: 'shared',
+					summary: 'Visible background.',
+					mechanics: []
+				},
+				{
+					id: 'background-draft',
+					slug: 'secret-sage',
+					name: 'Secret Sage',
+					editorial_status: 'private_draft',
+					visibility: 'private',
+					summary: 'Hidden background.',
+					mechanics: []
+				}
+			],
+			error: null
+		});
+		const backgroundSelect = vi.fn().mockReturnValue({ order: backgroundOrder });
+
+		const spellNameOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+		const spellLevelOrder = vi.fn().mockReturnValue({ order: spellNameOrder });
+		const spellSelect = vi.fn().mockReturnValue({ order: spellLevelOrder });
+
+		const featOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+		const featSelect = vi.fn().mockReturnValue({ order: featOrder });
+
+		const equipmentOrder = vi.fn().mockResolvedValue({
+			data: [
+				{
+					id: 'equipment-published',
+					slug: 'longsword',
+					name: 'Longsword',
+					editorial_status: 'published',
+					visibility: 'shared',
+					category: 'weapon',
+					summary: 'Visible weapon.',
+					description: 'A reliable blade.',
+					weight: 3,
+					value: '15 gp',
+					damage: '1d8',
+					damage_type: 'slashing',
+					range_text: 'Melee',
+					properties: ['versatile (1d10)'],
+					is_weapon: true,
+					is_equippable: true
+				},
+				{
+					id: 'equipment-review',
+					slug: 'prototype-sword',
+					name: 'Prototype Sword',
+					editorial_status: 'in_review',
+					visibility: 'shared',
+					category: 'weapon',
+					summary: 'Hidden weapon.',
+					description: 'Not yet published.',
+					weight: 3,
+					value: '15 gp',
+					damage: '1d8',
+					damage_type: 'slashing',
+					range_text: 'Melee',
+					properties: [],
+					is_weapon: true,
+					is_equippable: true
+				}
+			],
+			error: null
+		});
+		const equipmentSelect = vi.fn().mockReturnValue({ order: equipmentOrder });
+
+		const from = vi.fn((table: string) => {
+			if (table === 'species') {
+				return { select: speciesSelect };
+			}
+
+			if (table === 'subspecies') {
+				return { select: subspeciesSelect };
+			}
+
+			if (table === 'character_classes') {
+				return { select: classesSelect };
+			}
+
+			if (table === 'subclasses') {
+				return { select: subclassSelect };
+			}
+
+			if (table === 'backgrounds') {
+				return { select: backgroundSelect };
+			}
+
+			if (table === 'spells') {
+				return { select: spellSelect };
+			}
+
+			if (table === 'feats') {
+				return { select: featSelect };
+			}
+
+			if (table === 'equipment') {
+				return { select: equipmentSelect };
+			}
+
+			throw new Error(`Unexpected table ${table}`);
+		});
+
+		const catalog = await listExpandedContentCatalog({ from } as never);
+
+		expect(catalog.species.map((entry) => entry.id)).toEqual(['species-published']);
+		expect(catalog.classes.map((entry) => entry.id)).toEqual(['class-published']);
+		expect(catalog.backgrounds.map((entry) => entry.id)).toEqual(['background-published']);
+		expect(catalog.equipment.map((entry) => entry.id)).toEqual(['equipment-published']);
+	});
+
+	it('filters subspecies to published shared catalog entries', async () => {
+		const speciesOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+		const speciesSelect = vi.fn().mockReturnValue({ order: speciesOrder });
+
+		const subspeciesOrder = vi.fn().mockResolvedValue({
+			data: [
+				{
+					id: 'subspecies-published',
+					slug: 'high-elf',
+					species_slug: 'elfo',
+					name: 'High Elf',
+					editorial_status: 'published',
+					visibility: 'shared',
+					summary: 'Visible subspecies.',
+					mechanics: []
+				},
+				{
+					id: 'subspecies-review',
+					slug: 'prototype-elf',
+					species_slug: 'elfo',
+					name: 'Prototype Elf',
+					editorial_status: 'in_review',
+					visibility: 'shared',
+					summary: 'Hidden subspecies.',
+					mechanics: []
+				}
+			],
+			error: null
+		});
+		const subspeciesSelect = vi.fn().mockReturnValue({ order: subspeciesOrder });
+
+		const classesOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+		const classesSelect = vi.fn().mockReturnValue({ order: classesOrder });
+
+		const subclassOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+		const subclassSelect = vi.fn().mockReturnValue({ order: subclassOrder });
+
+		const backgroundOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+		const backgroundSelect = vi.fn().mockReturnValue({ order: backgroundOrder });
+
+		const spellNameOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+		const spellLevelOrder = vi.fn().mockReturnValue({ order: spellNameOrder });
+		const spellSelect = vi.fn().mockReturnValue({ order: spellLevelOrder });
+
+		const featOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+		const featSelect = vi.fn().mockReturnValue({ order: featOrder });
+
+		const equipmentOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+		const equipmentSelect = vi.fn().mockReturnValue({ order: equipmentOrder });
+
+		const from = vi.fn((table: string) => {
+			if (table === 'species') {
+				return { select: speciesSelect };
+			}
+
+			if (table === 'subspecies') {
+				return { select: subspeciesSelect };
+			}
+
+			if (table === 'character_classes') {
+				return { select: classesSelect };
+			}
+
+			if (table === 'subclasses') {
+				return { select: subclassSelect };
+			}
+
+			if (table === 'backgrounds') {
+				return { select: backgroundSelect };
+			}
+
+			if (table === 'spells') {
+				return { select: spellSelect };
+			}
+
+			if (table === 'feats') {
+				return { select: featSelect };
+			}
+
+			if (table === 'equipment') {
+				return { select: equipmentSelect };
+			}
+
+			throw new Error(`Unexpected table ${table}`);
+		});
+
+		const catalog = await listExpandedContentCatalog({ from } as never);
+
+		expect(catalog.subspecies.map((entry) => entry.id)).toEqual(['subspecies-published']);
+	});
+
+	it('filters subclasses to published shared catalog entries', async () => {
+		const speciesOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+		const speciesSelect = vi.fn().mockReturnValue({ order: speciesOrder });
+
+		const subspeciesOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+		const subspeciesSelect = vi.fn().mockReturnValue({ order: subspeciesOrder });
+
+		const classesOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+		const classesSelect = vi.fn().mockReturnValue({ order: classesOrder });
+
+		const subclassOrder = vi.fn().mockResolvedValue({
+			data: [
+				{
+					id: 'subclass-published',
+					slug: 'life-domain',
+					class_slug: 'clerigo',
+					name: 'Life Domain',
+					editorial_status: 'published',
+					visibility: 'shared',
+					summary: 'Visible subclass.',
+					mechanics: [],
+					granted_spells_by_level: []
+				},
+				{
+					id: 'subclass-review',
+					slug: 'prototype-domain',
+					class_slug: 'clerigo',
+					name: 'Prototype Domain',
+					editorial_status: 'in_review',
+					visibility: 'shared',
+					summary: 'Hidden subclass.',
+					mechanics: [],
+					granted_spells_by_level: []
+				}
+			],
+			error: null
+		});
+		const subclassSelect = vi.fn().mockReturnValue({ order: subclassOrder });
+
+		const backgroundOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+		const backgroundSelect = vi.fn().mockReturnValue({ order: backgroundOrder });
+
+		const spellNameOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+		const spellLevelOrder = vi.fn().mockReturnValue({ order: spellNameOrder });
+		const spellSelect = vi.fn().mockReturnValue({ order: spellLevelOrder });
+
+		const featOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+		const featSelect = vi.fn().mockReturnValue({ order: featOrder });
+
+		const equipmentOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+		const equipmentSelect = vi.fn().mockReturnValue({ order: equipmentOrder });
+
+		const from = vi.fn((table: string) => {
+			if (table === 'species') {
+				return { select: speciesSelect };
+			}
+
+			if (table === 'subspecies') {
+				return { select: subspeciesSelect };
+			}
+
+			if (table === 'character_classes') {
+				return { select: classesSelect };
+			}
+
+			if (table === 'subclasses') {
+				return { select: subclassSelect };
+			}
+
+			if (table === 'backgrounds') {
+				return { select: backgroundSelect };
+			}
+
+			if (table === 'spells') {
+				return { select: spellSelect };
+			}
+
+			if (table === 'feats') {
+				return { select: featSelect };
+			}
+
+			if (table === 'equipment') {
+				return { select: equipmentSelect };
+			}
+
+			throw new Error(`Unexpected table ${table}`);
+		});
+
+		const catalog = await listExpandedContentCatalog({ from } as never);
+
+		expect(catalog.subclasses.map((entry) => entry.id)).toEqual(['subclass-published']);
+	});
 });
 
 describe('resolveCharacterSpellCatalogSelections', () => {
@@ -951,6 +1477,63 @@ describe('resolveCharacterSpellCatalogSelections', () => {
 
 		expect(spellItems[0]?.name).toBe('Identify');
 		expect(spellItems[0]?.spellId).toBe('spell-1');
+	});
+
+	it('rejects selected subclasses that are not published shared content', async () => {
+		const classesSingle = vi.fn().mockResolvedValue({
+			data: {
+				id: 'class-1',
+				slug: 'clerigo',
+				name: 'Clerigo',
+				mechanics: [],
+				editorial_status: 'published',
+				visibility: 'shared'
+			},
+			error: null
+		});
+		const classesEq = vi.fn().mockReturnValue({ single: classesSingle });
+		const classesSelect = vi.fn().mockReturnValue({ eq: classesEq });
+
+		const subclassesSingle = vi.fn().mockResolvedValue({
+			data: {
+				id: 'subclass-1',
+				class_slug: 'clerigo',
+				name: 'Knowledge Domain',
+				mechanics: [],
+				granted_spells_by_level: [],
+				editorial_status: 'in_review',
+				visibility: 'shared'
+			},
+			error: null
+		});
+		const subclassesEq = vi.fn().mockReturnValue({ single: subclassesSingle });
+		const subclassesSelect = vi.fn().mockReturnValue({ eq: subclassesEq });
+		const spellsIn = vi.fn().mockResolvedValue({ data: [], error: null });
+		const spellsSelect = vi.fn().mockReturnValue({ in: spellsIn });
+
+		const from = vi.fn((table: string) => {
+			if (table === 'character_classes') {
+				return { select: classesSelect };
+			}
+
+			if (table === 'subclasses') {
+				return { select: subclassesSelect };
+			}
+
+			if (table === 'spells') {
+				return { select: spellsSelect };
+			}
+
+			throw new Error(`Unexpected table ${table}`);
+		});
+
+		await expect(
+			resolveCharacterSpellCatalogSelections({ from } as never, {
+				classId: 'class-1',
+				subclassId: 'subclass-1',
+				spellItems: [{ spellId: 'spell-1', name: 'Old Name', isPrepared: true }]
+			})
+		).rejects.toThrow('Please choose a valid subclass from the catalog.');
 	});
 
 	it('accepts linked spells granted by subclass spell_grant mechanics', async () => {
@@ -1280,5 +1863,52 @@ describe('resolveCharacterInventoryCatalogSelections', () => {
 				isEquipped: false
 			}
 		]);
+	});
+
+	it('rejects inventory items linked to unpublished equipment', async () => {
+		const equipmentIn = vi.fn().mockResolvedValue({
+			data: [
+				{
+					id: 'equipment-1',
+					slug: 'prototype-sword',
+					name: 'Prototype Sword',
+					editorial_status: 'in_review',
+					visibility: 'shared',
+					category: 'weapon',
+					summary: 'Hidden weapon.',
+					description: 'Not yet published.',
+					weight: 3,
+					value: '15 gp',
+					damage: '1d8',
+					damage_type: 'slashing',
+					range_text: 'Melee',
+					properties: [],
+					is_weapon: true,
+					is_equippable: true
+				}
+			],
+			error: null
+		});
+		const equipmentSelect = vi.fn().mockReturnValue({ in: equipmentIn });
+		const from = vi.fn((table: string) => {
+			if (table === 'equipment') {
+				return { select: equipmentSelect };
+			}
+
+			throw new Error(`Unexpected table ${table}`);
+		});
+
+		await expect(
+			resolveCharacterInventoryCatalogSelections({ from } as never, {
+				inventoryItems: [
+					{
+						equipmentId: 'equipment-1',
+						name: 'User supplied name',
+						quantity: 1,
+						isEquipped: false
+					}
+				]
+			})
+		).rejects.toThrow('Please choose a valid inventory item from the catalog.');
 	});
 });

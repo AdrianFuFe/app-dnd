@@ -1,3 +1,10 @@
+import type {
+	ContentMode,
+	ContentVisibility,
+	EditorialStatus,
+	RulesetCode
+} from '$lib/types/content/content';
+
 export interface JsonObject {
 	[key: string]: JsonValue | undefined;
 }
@@ -387,10 +394,10 @@ export interface Database {
 					id: string;
 					owner_user_id: string | null;
 					source_id: string;
-					ruleset_code: string;
-					content_mode: string;
-					editorial_status: string;
-					visibility: string;
+					ruleset_code: RulesetCode;
+					content_mode: ContentMode;
+					editorial_status: EditorialStatus;
+					visibility: ContentVisibility;
 					slug: string;
 					name: string;
 					hit_die: number;
@@ -414,10 +421,10 @@ export interface Database {
 					id?: string;
 					owner_user_id?: string | null;
 					source_id: string;
-					ruleset_code?: string;
-					content_mode?: string;
-					editorial_status?: string;
-					visibility?: string;
+					ruleset_code?: RulesetCode;
+					content_mode?: ContentMode;
+					editorial_status?: EditorialStatus;
+					visibility?: ContentVisibility;
 					slug: string;
 					name: string;
 					hit_die: number;
@@ -441,10 +448,10 @@ export interface Database {
 					id?: string;
 					owner_user_id?: string | null;
 					source_id?: string;
-					ruleset_code?: string;
-					content_mode?: string;
-					editorial_status?: string;
-					visibility?: string;
+					ruleset_code?: RulesetCode;
+					content_mode?: ContentMode;
+					editorial_status?: EditorialStatus;
+					visibility?: ContentVisibility;
 					slug?: string;
 					name?: string;
 					hit_die?: number;
@@ -470,8 +477,8 @@ export interface Database {
 				Row: {
 					id: string;
 					user_id: string;
-					ruleset_code: string;
-					content_mode: string;
+					ruleset_code: RulesetCode;
+					content_mode: ContentMode;
 					species_id: string | null;
 					subspecies_id: string | null;
 					class_id: string | null;
@@ -491,8 +498,8 @@ export interface Database {
 				Insert: {
 					id?: string;
 					user_id: string;
-					ruleset_code?: string;
-					content_mode?: string;
+					ruleset_code?: RulesetCode;
+					content_mode?: ContentMode;
 					species_id?: string | null;
 					subspecies_id?: string | null;
 					class_id?: string | null;
@@ -512,8 +519,8 @@ export interface Database {
 				Update: {
 					id?: string;
 					user_id?: string;
-					ruleset_code?: string;
-					content_mode?: string;
+					ruleset_code?: RulesetCode;
+					content_mode?: ContentMode;
 					species_id?: string | null;
 					subspecies_id?: string | null;
 					class_id?: string | null;
@@ -567,10 +574,10 @@ export interface Database {
 					id: string;
 					owner_user_id: string | null;
 					source_id: string;
-					ruleset_code: string;
-					content_mode: string;
-					editorial_status: string;
-					visibility: string;
+					ruleset_code: RulesetCode;
+					content_mode: ContentMode;
+					editorial_status: EditorialStatus;
+					visibility: ContentVisibility;
 					slug: string;
 					name: string;
 					prerequisites: string[];
@@ -585,10 +592,10 @@ export interface Database {
 					id?: string;
 					owner_user_id?: string | null;
 					source_id: string;
-					ruleset_code?: string;
-					content_mode?: string;
-					editorial_status?: string;
-					visibility?: string;
+					ruleset_code?: RulesetCode;
+					content_mode?: ContentMode;
+					editorial_status?: EditorialStatus;
+					visibility?: ContentVisibility;
 					slug: string;
 					name: string;
 					prerequisites?: string[];
@@ -603,10 +610,10 @@ export interface Database {
 					id?: string;
 					owner_user_id?: string | null;
 					source_id?: string;
-					ruleset_code?: string;
-					content_mode?: string;
-					editorial_status?: string;
-					visibility?: string;
+					ruleset_code?: RulesetCode;
+					content_mode?: ContentMode;
+					editorial_status?: EditorialStatus;
+					visibility?: ContentVisibility;
 					slug?: string;
 					name?: string;
 					prerequisites?: string[];
@@ -624,10 +631,10 @@ export interface Database {
 					id: string;
 					owner_user_id: string | null;
 					source_id: string;
-					ruleset_code: string;
-					content_mode: string;
-					editorial_status: string;
-					visibility: string;
+					ruleset_code: RulesetCode;
+					content_mode: ContentMode;
+					editorial_status: EditorialStatus;
+					visibility: ContentVisibility;
 					slug: string;
 					name: string;
 					category: string;
@@ -650,10 +657,10 @@ export interface Database {
 					id?: string;
 					owner_user_id?: string | null;
 					source_id: string;
-					ruleset_code?: string;
-					content_mode?: string;
-					editorial_status?: string;
-					visibility?: string;
+					ruleset_code?: RulesetCode;
+					content_mode?: ContentMode;
+					editorial_status?: EditorialStatus;
+					visibility?: ContentVisibility;
 					slug: string;
 					name: string;
 					category: string;
@@ -676,10 +683,10 @@ export interface Database {
 					id?: string;
 					owner_user_id?: string | null;
 					source_id?: string;
-					ruleset_code?: string;
-					content_mode?: string;
-					editorial_status?: string;
-					visibility?: string;
+					ruleset_code?: RulesetCode;
+					content_mode?: ContentMode;
+					editorial_status?: EditorialStatus;
+					visibility?: ContentVisibility;
 					slug?: string;
 					name?: string;
 					category?: string;
@@ -724,15 +731,84 @@ export interface Database {
 				};
 				Relationships: [];
 			};
+			backgrounds: {
+				Row: {
+					id: string;
+					owner_user_id: string | null;
+					source_id: string;
+					ruleset_code: RulesetCode;
+					content_mode: ContentMode;
+					editorial_status: EditorialStatus;
+					visibility: ContentVisibility;
+					slug: string;
+					name: string;
+					skill_proficiencies: string[];
+					tool_proficiencies: string[];
+					languages: string[];
+					equipment: JsonValue;
+					feature_name: string | null;
+					summary: string | null;
+					description: string | null;
+					mechanics: JsonValue;
+					is_system_content: boolean;
+					created_at: string;
+					updated_at: string;
+				};
+				Insert: {
+					id?: string;
+					owner_user_id?: string | null;
+					source_id: string;
+					ruleset_code?: RulesetCode;
+					content_mode?: ContentMode;
+					editorial_status?: EditorialStatus;
+					visibility?: ContentVisibility;
+					slug: string;
+					name: string;
+					skill_proficiencies?: string[];
+					tool_proficiencies?: string[];
+					languages?: string[];
+					equipment?: JsonValue;
+					feature_name?: string | null;
+					summary?: string | null;
+					description?: string | null;
+					mechanics?: JsonValue;
+					is_system_content?: boolean;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Update: {
+					id?: string;
+					owner_user_id?: string | null;
+					source_id?: string;
+					ruleset_code?: RulesetCode;
+					content_mode?: ContentMode;
+					editorial_status?: EditorialStatus;
+					visibility?: ContentVisibility;
+					slug?: string;
+					name?: string;
+					skill_proficiencies?: string[];
+					tool_proficiencies?: string[];
+					languages?: string[];
+					equipment?: JsonValue;
+					feature_name?: string | null;
+					summary?: string | null;
+					description?: string | null;
+					mechanics?: JsonValue;
+					is_system_content?: boolean;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Relationships: [];
+			};
 			spells: {
 				Row: {
 					id: string;
 					owner_user_id: string | null;
 					source_id: string;
-					ruleset_code: string;
-					content_mode: string;
-					editorial_status: string;
-					visibility: string;
+					ruleset_code: RulesetCode;
+					content_mode: ContentMode;
+					editorial_status: EditorialStatus;
+					visibility: ContentVisibility;
 					slug: string;
 					name: string;
 					level: number;
@@ -756,10 +832,10 @@ export interface Database {
 					id?: string;
 					owner_user_id?: string | null;
 					source_id: string;
-					ruleset_code?: string;
-					content_mode?: string;
-					editorial_status?: string;
-					visibility?: string;
+					ruleset_code?: RulesetCode;
+					content_mode?: ContentMode;
+					editorial_status?: EditorialStatus;
+					visibility?: ContentVisibility;
 					slug: string;
 					name: string;
 					level: number;
@@ -783,10 +859,10 @@ export interface Database {
 					id?: string;
 					owner_user_id?: string | null;
 					source_id?: string;
-					ruleset_code?: string;
-					content_mode?: string;
-					editorial_status?: string;
-					visibility?: string;
+					ruleset_code?: RulesetCode;
+					content_mode?: ContentMode;
+					editorial_status?: EditorialStatus;
+					visibility?: ContentVisibility;
 					slug?: string;
 					name?: string;
 					level?: number;
@@ -808,15 +884,135 @@ export interface Database {
 				};
 				Relationships: [];
 			};
+			subclasses: {
+				Row: {
+					id: string;
+					owner_user_id: string | null;
+					source_id: string;
+					ruleset_code: RulesetCode;
+					content_mode: ContentMode;
+					editorial_status: EditorialStatus;
+					visibility: ContentVisibility;
+					class_slug: string;
+					slug: string;
+					name: string;
+					summary: string | null;
+					description: string | null;
+					granted_spells_by_level: JsonValue;
+					features: JsonValue;
+					mechanics: JsonValue;
+					is_system_content: boolean;
+					created_at: string;
+					updated_at: string;
+				};
+				Insert: {
+					id?: string;
+					owner_user_id?: string | null;
+					source_id: string;
+					ruleset_code?: RulesetCode;
+					content_mode?: ContentMode;
+					editorial_status?: EditorialStatus;
+					visibility?: ContentVisibility;
+					class_slug: string;
+					slug: string;
+					name: string;
+					summary?: string | null;
+					description?: string | null;
+					granted_spells_by_level?: JsonValue;
+					features?: JsonValue;
+					mechanics?: JsonValue;
+					is_system_content?: boolean;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Update: {
+					id?: string;
+					owner_user_id?: string | null;
+					source_id?: string;
+					ruleset_code?: RulesetCode;
+					content_mode?: ContentMode;
+					editorial_status?: EditorialStatus;
+					visibility?: ContentVisibility;
+					class_slug?: string;
+					slug?: string;
+					name?: string;
+					summary?: string | null;
+					description?: string | null;
+					granted_spells_by_level?: JsonValue;
+					features?: JsonValue;
+					mechanics?: JsonValue;
+					is_system_content?: boolean;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Relationships: [];
+			};
+			subspecies: {
+				Row: {
+					id: string;
+					owner_user_id: string | null;
+					source_id: string;
+					ruleset_code: RulesetCode;
+					content_mode: ContentMode;
+					editorial_status: EditorialStatus;
+					visibility: ContentVisibility;
+					species_slug: string;
+					slug: string;
+					name: string;
+					summary: string | null;
+					description: string | null;
+					mechanics: JsonValue;
+					is_system_content: boolean;
+					created_at: string;
+					updated_at: string;
+				};
+				Insert: {
+					id?: string;
+					owner_user_id?: string | null;
+					source_id: string;
+					ruleset_code?: RulesetCode;
+					content_mode?: ContentMode;
+					editorial_status?: EditorialStatus;
+					visibility?: ContentVisibility;
+					species_slug: string;
+					slug: string;
+					name: string;
+					summary?: string | null;
+					description?: string | null;
+					mechanics?: JsonValue;
+					is_system_content?: boolean;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Update: {
+					id?: string;
+					owner_user_id?: string | null;
+					source_id?: string;
+					ruleset_code?: RulesetCode;
+					content_mode?: ContentMode;
+					editorial_status?: EditorialStatus;
+					visibility?: ContentVisibility;
+					species_slug?: string;
+					slug?: string;
+					name?: string;
+					summary?: string | null;
+					description?: string | null;
+					mechanics?: JsonValue;
+					is_system_content?: boolean;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Relationships: [];
+			};
 			species: {
 				Row: {
 					id: string;
 					owner_user_id: string | null;
 					source_id: string;
-					ruleset_code: string;
-					content_mode: string;
-					editorial_status: string;
-					visibility: string;
+					ruleset_code: RulesetCode;
+					content_mode: ContentMode;
+					editorial_status: EditorialStatus;
+					visibility: ContentVisibility;
 					slug: string;
 					name: string;
 					summary: string | null;
@@ -834,10 +1030,10 @@ export interface Database {
 					id?: string;
 					owner_user_id?: string | null;
 					source_id: string;
-					ruleset_code?: string;
-					content_mode?: string;
-					editorial_status?: string;
-					visibility?: string;
+					ruleset_code?: RulesetCode;
+					content_mode?: ContentMode;
+					editorial_status?: EditorialStatus;
+					visibility?: ContentVisibility;
 					slug: string;
 					name: string;
 					summary?: string | null;
@@ -855,10 +1051,10 @@ export interface Database {
 					id?: string;
 					owner_user_id?: string | null;
 					source_id?: string;
-					ruleset_code?: string;
-					content_mode?: string;
-					editorial_status?: string;
-					visibility?: string;
+					ruleset_code?: RulesetCode;
+					content_mode?: ContentMode;
+					editorial_status?: EditorialStatus;
+					visibility?: ContentVisibility;
 					slug?: string;
 					name?: string;
 					summary?: string | null;

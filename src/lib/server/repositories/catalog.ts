@@ -49,9 +49,14 @@ type SpeciesRow = {
 	id: string;
 	slug: string;
 	name: string;
+	ruleset_code?: Database['public']['Tables']['species']['Row']['ruleset_code'];
+	content_mode?: Database['public']['Tables']['species']['Row']['content_mode'];
+	editorial_status?: Database['public']['Tables']['species']['Row']['editorial_status'];
+	visibility?: Database['public']['Tables']['species']['Row']['visibility'];
 	summary: string | null;
 	base_speed: number | null;
 	mechanics: Database['public']['Tables']['species']['Row']['mechanics'];
+	is_system_content?: Database['public']['Tables']['species']['Row']['is_system_content'];
 };
 
 type SubspeciesRow = {
@@ -59,17 +64,27 @@ type SubspeciesRow = {
 	slug: string;
 	species_slug: string;
 	name: string;
+	ruleset_code?: Database['public']['Tables']['subspecies']['Row']['ruleset_code'];
+	content_mode?: Database['public']['Tables']['subspecies']['Row']['content_mode'];
+	editorial_status?: Database['public']['Tables']['subspecies']['Row']['editorial_status'];
+	visibility?: Database['public']['Tables']['subspecies']['Row']['visibility'];
 	summary: string | null;
-	mechanics: unknown;
+	mechanics: Database['public']['Tables']['subspecies']['Row']['mechanics'];
+	is_system_content?: Database['public']['Tables']['subspecies']['Row']['is_system_content'];
 };
 
 type CharacterClassRow = {
 	id: string;
 	slug: string;
 	name: string;
+	ruleset_code?: Database['public']['Tables']['character_classes']['Row']['ruleset_code'];
+	content_mode?: Database['public']['Tables']['character_classes']['Row']['content_mode'];
+	editorial_status?: Database['public']['Tables']['character_classes']['Row']['editorial_status'];
+	visibility?: Database['public']['Tables']['character_classes']['Row']['visibility'];
 	summary: string | null;
 	hit_die: number;
 	mechanics: Database['public']['Tables']['character_classes']['Row']['mechanics'];
+	is_system_content?: Database['public']['Tables']['character_classes']['Row']['is_system_content'];
 };
 
 type SubclassRow = {
@@ -77,17 +92,27 @@ type SubclassRow = {
 	slug: string;
 	class_slug: string;
 	name: string;
+	ruleset_code?: Database['public']['Tables']['subclasses']['Row']['ruleset_code'];
+	content_mode?: Database['public']['Tables']['subclasses']['Row']['content_mode'];
+	editorial_status?: Database['public']['Tables']['subclasses']['Row']['editorial_status'];
+	visibility?: Database['public']['Tables']['subclasses']['Row']['visibility'];
 	summary: string | null;
-	mechanics: unknown;
-	granted_spells_by_level?: unknown;
+	mechanics: Database['public']['Tables']['subclasses']['Row']['mechanics'];
+	granted_spells_by_level?: Database['public']['Tables']['subclasses']['Row']['granted_spells_by_level'];
+	is_system_content?: Database['public']['Tables']['subclasses']['Row']['is_system_content'];
 };
 
 type BackgroundRow = {
 	id: string;
 	slug: string;
 	name: string;
+	ruleset_code?: Database['public']['Tables']['backgrounds']['Row']['ruleset_code'];
+	content_mode?: Database['public']['Tables']['backgrounds']['Row']['content_mode'];
+	editorial_status?: Database['public']['Tables']['backgrounds']['Row']['editorial_status'];
+	visibility?: Database['public']['Tables']['backgrounds']['Row']['visibility'];
 	summary: string | null;
-	mechanics: unknown;
+	mechanics: Database['public']['Tables']['backgrounds']['Row']['mechanics'];
+	is_system_content?: Database['public']['Tables']['backgrounds']['Row']['is_system_content'];
 };
 
 type SpellRow = {
@@ -129,6 +154,10 @@ type EquipmentRow = {
 	id: string;
 	slug: string;
 	name: string;
+	ruleset_code?: Database['public']['Tables']['equipment']['Row']['ruleset_code'];
+	content_mode?: Database['public']['Tables']['equipment']['Row']['content_mode'];
+	editorial_status?: Database['public']['Tables']['equipment']['Row']['editorial_status'];
+	visibility?: Database['public']['Tables']['equipment']['Row']['visibility'];
 	category: string;
 	summary: string | null;
 	description: string | null;
@@ -140,6 +169,7 @@ type EquipmentRow = {
 	properties: string[];
 	is_weapon: boolean;
 	is_equippable: boolean;
+	is_system_content?: Database['public']['Tables']['equipment']['Row']['is_system_content'];
 };
 
 export async function listCharacterCreationCatalog(
@@ -476,14 +506,16 @@ async function listSpeciesOptions(
 ): Promise<CharacterSpeciesOption[]> {
 	const { data, error } = await supabase
 		.from('species')
-		.select('id, slug, name, summary, base_speed, mechanics')
+		.select(
+			'id, slug, name, ruleset_code, content_mode, editorial_status, visibility, summary, base_speed, mechanics, is_system_content'
+		)
 		.order('name', { ascending: true });
 
 	if (error) {
 		throw new Error('Failed to load species catalog options.');
 	}
 
-	return data.map(mapSpeciesOption);
+	return data.filter(isPublishedCatalogEntry).map(mapSpeciesOption);
 }
 
 async function listSubspeciesOptions(
@@ -491,14 +523,16 @@ async function listSubspeciesOptions(
 ): Promise<CharacterSubspeciesOption[]> {
 	const { data, error } = await supabase
 		.from('subspecies')
-		.select('id, slug, species_slug, name, summary, mechanics')
+		.select(
+			'id, slug, species_slug, name, ruleset_code, content_mode, editorial_status, visibility, summary, mechanics, is_system_content'
+		)
 		.order('name', { ascending: true });
 
 	if (error) {
 		throw new Error('Failed to load subspecies catalog options.');
 	}
 
-	return data.map(mapSubspeciesOption);
+	return data.filter(isPublishedCatalogEntry).map(mapSubspeciesOption);
 }
 
 async function listCharacterClassOptions(
@@ -506,14 +540,16 @@ async function listCharacterClassOptions(
 ): Promise<CharacterClassOption[]> {
 	const { data, error } = await supabase
 		.from('character_classes')
-		.select('id, slug, name, summary, hit_die, mechanics')
+		.select(
+			'id, slug, name, ruleset_code, content_mode, editorial_status, visibility, summary, hit_die, mechanics, is_system_content'
+		)
 		.order('name', { ascending: true });
 
 	if (error) {
 		throw new Error('Failed to load class catalog options.');
 	}
 
-	return data.map(mapCharacterClassOption);
+	return data.filter(isPublishedCatalogEntry).map(mapCharacterClassOption);
 }
 
 async function listSubclassOptions(
@@ -521,14 +557,16 @@ async function listSubclassOptions(
 ): Promise<CharacterSubclassOption[]> {
 	const { data, error } = await supabase
 		.from('subclasses')
-		.select('id, slug, class_slug, name, summary, mechanics, granted_spells_by_level')
+		.select(
+			'id, slug, class_slug, name, ruleset_code, content_mode, editorial_status, visibility, summary, mechanics, granted_spells_by_level, is_system_content'
+		)
 		.order('name', { ascending: true });
 
 	if (error) {
 		throw new Error('Failed to load subclass catalog options.');
 	}
 
-	return data.map(mapSubclassOption);
+	return data.filter(isPublishedCatalogEntry).map(mapSubclassOption);
 }
 
 async function listBackgroundOptions(
@@ -536,14 +574,16 @@ async function listBackgroundOptions(
 ): Promise<CharacterBackgroundOption[]> {
 	const { data, error } = await supabase
 		.from('backgrounds')
-		.select('id, slug, name, summary, mechanics')
+		.select(
+			'id, slug, name, ruleset_code, content_mode, editorial_status, visibility, summary, mechanics, is_system_content'
+		)
 		.order('name', { ascending: true });
 
 	if (error) {
 		throw new Error('Failed to load background catalog options.');
 	}
 
-	return data.map(mapBackgroundOption);
+	return data.filter(isPublishedCatalogEntry).map(mapBackgroundOption);
 }
 
 async function loadSelectedSpecies(
@@ -556,11 +596,18 @@ async function loadSelectedSpecies(
 
 	const { data, error } = await supabase
 		.from('species')
-		.select('id, slug, name')
+		.select('id, slug, name, editorial_status, visibility')
 		.eq('id', speciesId)
 		.single();
 
-	if (error || !data) {
+	if (
+		error ||
+		!data ||
+		!isPublishedCatalogEntry({
+			editorial_status: data.editorial_status,
+			visibility: data.visibility
+		})
+	) {
 		throw new Error('Please choose a valid species from the catalog.');
 	}
 
@@ -577,11 +624,18 @@ async function loadSelectedSubspecies(
 
 	const { data, error } = await supabase
 		.from('subspecies')
-		.select('id, species_slug, name')
+		.select('id, species_slug, name, editorial_status, visibility')
 		.eq('id', subspeciesId)
 		.single();
 
-	if (error || !data) {
+	if (
+		error ||
+		!data ||
+		!isPublishedCatalogEntry({
+			editorial_status: data.editorial_status,
+			visibility: data.visibility
+		})
+	) {
 		throw new Error('Please choose a valid subspecies from the catalog.');
 	}
 
@@ -598,11 +652,18 @@ async function loadSelectedCharacterClass(
 
 	const { data, error } = await supabase
 		.from('character_classes')
-		.select('id, slug, name')
+		.select('id, slug, name, editorial_status, visibility')
 		.eq('id', classId)
 		.single();
 
-	if (error || !data) {
+	if (
+		error ||
+		!data ||
+		!isPublishedCatalogEntry({
+			editorial_status: data.editorial_status,
+			visibility: data.visibility
+		})
+	) {
 		throw new Error('Please choose a valid class from the catalog.');
 	}
 
@@ -619,11 +680,18 @@ async function loadSelectedCharacterClassForSpellSelection(
 
 	const { data, error } = await supabase
 		.from('character_classes')
-		.select('id, slug, name, mechanics')
+		.select('id, slug, name, mechanics, editorial_status, visibility')
 		.eq('id', classId)
 		.single();
 
-	if (error || !data) {
+	if (
+		error ||
+		!data ||
+		!isPublishedCatalogEntry({
+			editorial_status: data.editorial_status,
+			visibility: data.visibility
+		})
+	) {
 		throw new Error('Please choose a valid class from the catalog.');
 	}
 
@@ -640,11 +708,18 @@ async function loadSelectedSubclass(
 
 	const { data, error } = await supabase
 		.from('subclasses')
-		.select('id, class_slug, name')
+		.select('id, class_slug, name, editorial_status, visibility')
 		.eq('id', subclassId)
 		.single();
 
-	if (error || !data) {
+	if (
+		error ||
+		!data ||
+		!isPublishedCatalogEntry({
+			editorial_status: data.editorial_status,
+			visibility: data.visibility
+		})
+	) {
 		throw new Error('Please choose a valid subclass from the catalog.');
 	}
 
@@ -664,11 +739,20 @@ async function loadSelectedSubclassForSpellSelection(
 
 	const { data, error } = await supabase
 		.from('subclasses')
-		.select('id, class_slug, name, mechanics, granted_spells_by_level')
+		.select(
+			'id, class_slug, name, mechanics, granted_spells_by_level, editorial_status, visibility'
+		)
 		.eq('id', subclassId)
 		.single();
 
-	if (error || !data) {
+	if (
+		error ||
+		!data ||
+		!isPublishedCatalogEntry({
+			editorial_status: data.editorial_status,
+			visibility: data.visibility
+		})
+	) {
 		throw new Error('Please choose a valid subclass from the catalog.');
 	}
 
@@ -685,11 +769,18 @@ async function loadSelectedBackground(
 
 	const { data, error } = await supabase
 		.from('backgrounds')
-		.select('id, name')
+		.select('id, name, editorial_status, visibility')
 		.eq('id', backgroundId)
 		.single();
 
-	if (error || !data) {
+	if (
+		error ||
+		!data ||
+		!isPublishedCatalogEntry({
+			editorial_status: data.editorial_status,
+			visibility: data.visibility
+		})
+	) {
 		throw new Error('Please choose a valid background from the catalog.');
 	}
 
@@ -876,7 +967,7 @@ async function listEquipmentCatalogEntries(
 	const { data, error } = await supabase
 		.from('equipment')
 		.select(
-			'id, slug, name, category, summary, description, weight, value, damage, damage_type, range_text, properties, is_weapon, is_equippable'
+			'id, slug, name, ruleset_code, content_mode, editorial_status, visibility, category, summary, description, weight, value, damage, damage_type, range_text, properties, is_weapon, is_equippable, is_system_content'
 		)
 		.order('name', { ascending: true });
 
@@ -884,7 +975,7 @@ async function listEquipmentCatalogEntries(
 		throw new Error('Failed to load equipment catalog entries.');
 	}
 
-	return data.map(mapEquipmentCatalogEntry);
+	return data.filter(isPublishedCatalogEntry).map(mapEquipmentCatalogEntry);
 }
 
 async function loadSelectedEquipmentCatalogEntries(
@@ -894,7 +985,7 @@ async function loadSelectedEquipmentCatalogEntries(
 	const { data, error } = await supabase
 		.from('equipment')
 		.select(
-			'id, slug, name, category, summary, description, weight, value, damage, damage_type, range_text, properties, is_weapon, is_equippable'
+			'id, slug, name, ruleset_code, content_mode, editorial_status, visibility, category, summary, description, weight, value, damage, damage_type, range_text, properties, is_weapon, is_equippable, is_system_content'
 		)
 		.in('id', equipmentIds);
 
@@ -902,7 +993,17 @@ async function loadSelectedEquipmentCatalogEntries(
 		throw new Error('Failed to load selected equipment catalog entries.');
 	}
 
-	return data.map(mapEquipmentCatalogEntry);
+	return data.filter(isPublishedCatalogEntry).map(mapEquipmentCatalogEntry);
+}
+
+function isPublishedCatalogEntry(entry: {
+	editorial_status?: string;
+	visibility?: string;
+}): boolean {
+	return isPublishedSharedContent({
+		editorialStatus: entry.editorial_status ?? 'published',
+		visibility: entry.visibility ?? 'shared'
+	});
 }
 
 function mapSpellCatalogEntry(

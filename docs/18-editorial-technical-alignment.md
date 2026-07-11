@@ -19,7 +19,7 @@ The repository already contains the core technical primitives for the editorial 
 - repository logic for `private_draft`, `in_review`, `published`, and `retired`
 - UI flows that now use those states in real creation, review, and publication behavior
 
-This means the project is no longer at a "metadata only" stage for spells and feats.
+This means the project is no longer at a "metadata only" stage for the reusable catalog paths already used by characters and content management.
 
 ## SQL baseline already present
 
@@ -78,12 +78,13 @@ Even with the current progress, there are still technical gaps to close:
 
 ### 1. Generated database types remain stringly typed
 
-The generated Supabase database types still expose many of these fields as generic `string`.
+The generated Supabase database types have already been narrowed for the reusable catalog tables currently exercised by the app.
 
 Impact:
 
-- repository code still needs explicit narrowing and local casting
-- invalid values are easier to introduce accidentally at integration boundaries
+- repository code now needs fewer casts and less defensive narrowing
+- invalid values are harder to introduce accidentally at integration boundaries
+- the remaining risk is now unevenness, not absence of typed editorial vocabulary
 
 ### 2. RLS still follows mostly visibility-era assumptions
 
@@ -103,14 +104,29 @@ Impact:
 - some consumers know content is visible, but not always why
 - future admin/editorial surfaces may need richer metadata
 
+## Recent implementation progress
+
+The repository now already applies real editorial semantics in more places than the original baseline assumed:
+
+- `spells` and `feats` use `editorial_status` and `content_mode` in creation, review, return, publication, and catalog visibility
+- the `/app/content` area exposes editorial state to privileged flows
+- `species`
+- `subspecies`
+- `character_classes`
+- `subclasses`
+- `backgrounds`
+- `equipment`
+
+These catalog entities now follow published/shared filtering in character-facing catalog resolution, so users cannot link non-published reusable content through creation or editing flows by ID alone.
+
 ## Recommended next technical steps
 
 The next sensible technical sequence is:
 
-1. keep consolidating shared editorial unions and metadata types
-2. audit generated database types and narrow them where the app relies on fixed enumerations
-3. revisit RLS so editorial state is protected closer to the data layer
-4. only after that, expand the same editorial model beyond spells and feats
+1. document the now-implemented editorial behavior as the current baseline, not future intent
+2. revisit RLS so editorial state is protected closer to the data layer across all reusable catalog tables
+3. decide which admin or editorial surfaces should expose richer metadata for species, classes, subclasses, backgrounds, and equipment
+4. only after that, expand equivalent create/review/maintenance tooling beyond spells and feats where product value justifies it
 
 ## Outcome
 
