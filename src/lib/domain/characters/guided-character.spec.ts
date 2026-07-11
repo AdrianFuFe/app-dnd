@@ -301,6 +301,9 @@ describe('deriveGuidedCharacterDraft', () => {
 			'Chosen equipment: Prayer Book'
 		]);
 		expect(draft.preview.pendingChoiceLines).toEqual([]);
+		expect(draft.preview.rulesetCode).toBe('dnd-2014-srd');
+		expect(draft.preview.contentMode).toBe('canon');
+		expect(draft.preview.customizationReasonLines).toEqual([]);
 		expect(draft.preview.derivedInventoryItems.map((entry) => entry.name)).toEqual([
 			'Mace',
 			'Shield',
@@ -428,5 +431,9 @@ describe('deriveGuidedCharacterDraft', () => {
 
 		expect(draft.character.rulesetCode).toBe('dnd-2014-srd');
 		expect(draft.character.contentMode).toBe('custom');
+		expect(draft.preview.contentMode).toBe('custom');
+		expect(draft.preview.customizationReasonLines).toEqual([
+			'Uses custom background: Sage'
+		]);
 	});
 });

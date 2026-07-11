@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { deriveCharacterContentProfile } from './character-content-profile';
+import {
+	createCharacterManualOverride,
+	deriveCharacterContentProfile,
+	summarizeCharacterCustomizationReasons
+} from './character-content-profile';
 
 describe('deriveCharacterContentProfile', () => {
 	it('keeps canon mode when linked content stays canonical inside one ruleset', () => {
@@ -75,5 +79,36 @@ describe('deriveCharacterContentProfile', () => {
 		).toThrow(
 			'Selected species "Custom Species" does not match the dnd-2014-srd ruleset.'
 		);
+	});
+
+	it('switches to custom mode when manual overrides are present', () => {
+		expect(
+			deriveCharacterContentProfile({
+				baseRulesetCode: 'dnd-2014-srd',
+				linkedContentSelections: [],
+				manualOverrides: [createCharacterManualOverride('armor_class')]
+			})
+		).toEqual({
+			rulesetCode: 'dnd-2014-srd',
+			contentMode: 'custom',
+			customizationReasons: [{ type: 'manual-override', field: 'armor_class' }]
+		});
+	});
+
+	it('summarizes customization reasons for preview surfaces', () => {
+		expect(
+			summarizeCharacterCustomizationReasons([
+				{
+					type: 'linked-custom-content',
+					entityType: 'background',
+					entityId: 'background-1',
+					entityName: 'Sage Variant'
+				},
+				{
+					type: 'manual-override',
+					field: 'armor_class'
+				}
+			])
+		).toEqual(['Uses custom background: Sage Variant', 'Manual override: Armor Class']);
 	});
 });

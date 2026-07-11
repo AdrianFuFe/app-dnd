@@ -610,6 +610,33 @@
 
 				<div class="space-y-4">
 					<div class="rounded-2xl border border-stone-800 bg-stone-900/70 p-4">
+						<p class="text-sm font-semibold text-stone-100">Content profile</p>
+						<div class="mt-3 flex flex-wrap gap-2">
+							<span class="rounded-full border border-sky-400/40 bg-sky-300/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.15em] text-sky-100">
+								Ruleset {preview.preview.rulesetCode}
+							</span>
+							<span
+								class="rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-[0.15em] {preview.preview.contentMode === 'canon'
+									? 'border-emerald-400/40 bg-emerald-300/10 text-emerald-100'
+									: 'border-amber-400/40 bg-amber-300/10 text-amber-100'}"
+							>
+								Mode {preview.preview.contentMode}
+							</span>
+						</div>
+						{#if preview.preview.customizationReasonLines.length === 0}
+							<p class="mt-3 text-sm text-stone-400">
+								This guided draft is still following the canonical path.
+							</p>
+						{:else}
+							<ul class="mt-3 space-y-2 text-sm text-stone-300">
+								{#each preview.preview.customizationReasonLines as line}
+									<li>{line}</li>
+								{/each}
+							</ul>
+						{/if}
+					</div>
+
+					<div class="rounded-2xl border border-stone-800 bg-stone-900/70 p-4">
 						<p class="text-sm font-semibold text-stone-100">Auto-applied bonuses</p>
 						{#if preview.preview.abilityBonuses.length === 0}
 							<p class="mt-2 text-sm text-stone-400">No direct ability bonuses resolved yet.</p>
@@ -667,7 +694,7 @@
 													attack.range
 												]
 													.filter(Boolean)
-													.join(' • ')})
+													.join(' | ')})
 											</span>
 										{/if}
 									</li>

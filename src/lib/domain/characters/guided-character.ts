@@ -21,6 +21,7 @@ import type { Ability, GameMechanic } from '$lib/types/domain/game-mechanics';
 import type { CharacterGuidedInput } from '$lib/schemas/characters/character-guided.schema';
 import {
 	deriveCharacterContentProfile,
+	summarizeCharacterCustomizationReasons,
 	type CharacterLinkedContentSelection
 } from './character-content-profile';
 
@@ -129,6 +130,9 @@ export type GuidedCharacterPreview = {
 	grantedFeatureLines: string[];
 	resolvedChoiceLines: string[];
 	pendingChoiceLines: string[];
+	rulesetCode: RulesetCode;
+	contentMode: ContentMode;
+	customizationReasonLines: string[];
 	choiceResolution: GuidedChoiceResolution;
 	derivedInventoryItems: CharacterInventoryItem[];
 	derivedAttackItems: CharacterAttackItem[];
@@ -157,6 +161,9 @@ export function deriveGuidedCharacterDraft(
 			background
 		)
 	});
+	const customizationReasonLines = summarizeCharacterCustomizationReasons(
+		contentProfile.customizationReasons
+	);
 
 	const baseAbilityScores = {
 		strength: input.strength,
@@ -258,6 +265,9 @@ export function deriveGuidedCharacterDraft(
 			grantedFeatureLines,
 			resolvedChoiceLines,
 			pendingChoiceLines,
+			rulesetCode: contentProfile.rulesetCode,
+			contentMode: contentProfile.contentMode,
+			customizationReasonLines,
 			choiceResolution,
 			derivedInventoryItems: inventoryItems,
 			derivedAttackItems: attackItems

@@ -37,6 +37,10 @@ export type CharacterContentProfile = {
 	customizationReasons: CharacterCustomizationReason[];
 };
 
+export function createCharacterManualOverride(field: string) {
+	return { field };
+}
+
 export function deriveCharacterContentProfile(input: {
 	baseRulesetCode: RulesetCode;
 	linkedContentSelections: CharacterLinkedContentSelection[];
@@ -81,4 +85,28 @@ export function deriveCharacterContentProfile(input: {
 		contentMode: customizationReasons.length > 0 ? 'custom' : 'canon',
 		customizationReasons
 	};
+}
+
+export function summarizeCharacterCustomizationReasons(
+	reasons: CharacterCustomizationReason[]
+): string[] {
+	return reasons.map((reason) => {
+		if (reason.type === 'linked-custom-content') {
+			return `Uses custom ${reason.entityType}: ${reason.entityName}`;
+		}
+
+		if (reason.type === 'manual-override') {
+			return `Manual override: ${humanizeToken(reason.field)}`;
+		}
+
+		return `Custom ruleset: ${humanizeToken(reason.rulesetCode)}`;
+	});
+}
+
+function humanizeToken(value: string): string {
+	return value
+		.split(/[-_:]/)
+		.filter((part) => part.length > 0)
+		.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+		.join(' ');
 }
