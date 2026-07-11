@@ -33,6 +33,9 @@ export type PrivateFeatDerivation = {
 export type PrivateFeatRecord = {
 	id: string;
 	sourceCode: PrivateFeatSourceCode;
+	rulesetCode: string;
+	contentMode: 'canon' | 'custom';
+	editorialStatus: 'private_draft' | 'shared_draft' | 'in_review' | 'published' | 'retired';
 	slug: string;
 	name: string;
 	prerequisites: string[];
@@ -64,6 +67,9 @@ export type CreateSharedFeatInput = CreatePrivateFeatInput & {
 export type SharedFeatRecord = {
 	id: string;
 	sourceCode: SharedFeatSourceCode;
+	rulesetCode: string;
+	contentMode: 'canon' | 'custom';
+	editorialStatus: 'private_draft' | 'shared_draft' | 'in_review' | 'published' | 'retired';
 	slug: string;
 	name: string;
 	prerequisites: string[];
@@ -88,6 +94,9 @@ type PrivateFeatRow = Pick<
 	FeatRow,
 	| 'id'
 	| 'source_id'
+	| 'ruleset_code'
+	| 'content_mode'
+	| 'editorial_status'
 	| 'slug'
 	| 'name'
 	| 'prerequisites'
@@ -103,6 +112,9 @@ type SharedFeatRow = Pick<
 	| 'id'
 	| 'owner_user_id'
 	| 'source_id'
+	| 'ruleset_code'
+	| 'content_mode'
+	| 'editorial_status'
 	| 'visibility'
 	| 'slug'
 	| 'name'
@@ -125,7 +137,7 @@ export async function listPrivateFeatsForUser(
 	const { data, error } = await supabase
 		.from('feats')
 		.select(
-			'id, source_id, slug, name, prerequisites, summary, description, mechanics, created_at, updated_at'
+			'id, source_id, ruleset_code, content_mode, editorial_status, slug, name, prerequisites, summary, description, mechanics, created_at, updated_at'
 		)
 		.eq('owner_user_id', userId)
 		.in('source_id', [sourceIds['user-private'], sourceIds.homebrew])
@@ -154,6 +166,9 @@ export async function createPrivateFeat(
 	const insert: FeatInsert = {
 		owner_user_id: userId,
 		source_id: sourceIds['user-private'],
+		ruleset_code: 'dnd-2014-srd',
+		content_mode: 'custom',
+		editorial_status: 'private_draft',
 		visibility: 'private',
 		slug: input.slug,
 		name: input.name,
@@ -168,7 +183,7 @@ export async function createPrivateFeat(
 		.from('feats')
 		.insert(insert)
 		.select(
-			'id, source_id, slug, name, prerequisites, summary, description, mechanics, created_at, updated_at'
+			'id, source_id, ruleset_code, content_mode, editorial_status, slug, name, prerequisites, summary, description, mechanics, created_at, updated_at'
 		)
 		.single();
 
@@ -222,6 +237,9 @@ export async function derivePrivateFeatFromSharedCatalog(
 	const insert: FeatInsert = {
 		owner_user_id: userId,
 		source_id: privateSourceIds.homebrew,
+		ruleset_code: 'dnd-2014-srd',
+		content_mode: 'custom',
+		editorial_status: 'private_draft',
 		visibility: 'private',
 		slug: sharedFeat.slug,
 		name: sharedFeat.name,
@@ -243,7 +261,7 @@ export async function derivePrivateFeatFromSharedCatalog(
 		.from('feats')
 		.insert(insert)
 		.select(
-			'id, source_id, slug, name, prerequisites, summary, description, mechanics, created_at, updated_at'
+			'id, source_id, ruleset_code, content_mode, editorial_status, slug, name, prerequisites, summary, description, mechanics, created_at, updated_at'
 		)
 		.single();
 
@@ -265,6 +283,9 @@ export async function createSharedFeat(
 		return {
 			id: created.id,
 			sourceCode: created.sourceCode,
+			rulesetCode: created.rulesetCode,
+			contentMode: created.contentMode,
+			editorialStatus: created.editorialStatus,
 			slug: created.slug,
 			name: created.name,
 			prerequisites: [...created.prerequisites],
@@ -283,6 +304,9 @@ export async function createSharedFeat(
 	const insert: FeatInsert = {
 		owner_user_id: input.isSystemContent ? null : userId,
 		source_id: sourceIds.homebrew,
+		ruleset_code: 'dnd-2014-srd',
+		content_mode: input.isSystemContent ? 'canon' : 'custom',
+		editorial_status: 'published',
 		visibility: input.visibility,
 		slug: input.slug,
 		name: input.name,
@@ -297,7 +321,7 @@ export async function createSharedFeat(
 		.from('feats')
 		.insert(insert)
 		.select(
-			'id, source_id, slug, name, prerequisites, summary, description, visibility, is_system_content, created_at, updated_at'
+			'id, source_id, ruleset_code, content_mode, editorial_status, slug, name, prerequisites, summary, description, visibility, is_system_content, created_at, updated_at'
 		)
 		.single();
 
@@ -323,6 +347,9 @@ export async function listManagedSharedFeats(
 		).map((feat) => ({
 			id: feat.id,
 			sourceCode: feat.sourceCode,
+			rulesetCode: feat.rulesetCode,
+			contentMode: feat.contentMode,
+			editorialStatus: feat.editorialStatus,
 			slug: feat.slug,
 			name: feat.name,
 			prerequisites: [...feat.prerequisites],
@@ -340,7 +367,7 @@ export async function listManagedSharedFeats(
 	const query = supabase
 		.from('feats')
 		.select(
-			'id, owner_user_id, source_id, slug, name, prerequisites, summary, description, visibility, is_system_content, created_at, updated_at'
+			'id, owner_user_id, source_id, ruleset_code, content_mode, editorial_status, slug, name, prerequisites, summary, description, visibility, is_system_content, created_at, updated_at'
 		)
 		.eq('source_id', sourceIds.homebrew)
 		.not('visibility', 'in', '(private,campaign)')
@@ -381,6 +408,9 @@ export async function updateManagedSharedFeat(
 		return {
 			id: updated.id,
 			sourceCode: updated.sourceCode,
+			rulesetCode: updated.rulesetCode,
+			contentMode: updated.contentMode,
+			editorialStatus: updated.editorialStatus,
 			slug: updated.slug,
 			name: updated.name,
 			prerequisites: [...updated.prerequisites],
@@ -411,7 +441,7 @@ export async function updateManagedSharedFeat(
 		})
 		.eq('id', feat.id)
 		.select(
-			'id, owner_user_id, source_id, slug, name, prerequisites, summary, description, visibility, is_system_content, created_at, updated_at'
+			'id, owner_user_id, source_id, ruleset_code, content_mode, editorial_status, slug, name, prerequisites, summary, description, visibility, is_system_content, created_at, updated_at'
 		)
 		.single();
 
@@ -559,7 +589,7 @@ async function loadSharedFeatForDerivation(
 	const { data, error } = await supabase
 		.from('feats')
 		.select(
-			'id, owner_user_id, source_id, visibility, slug, name, prerequisites, summary, description, mechanics, is_system_content'
+			'id, owner_user_id, source_id, ruleset_code, content_mode, editorial_status, visibility, slug, name, prerequisites, summary, description, mechanics, is_system_content'
 		)
 		.eq('id', featId)
 		.single();
@@ -579,7 +609,7 @@ async function loadManagedSharedFeatById(
 	const { data, error } = await supabase
 		.from('feats')
 		.select(
-			'id, owner_user_id, source_id, visibility, slug, name, prerequisites, summary, description, mechanics, is_system_content'
+			'id, owner_user_id, source_id, ruleset_code, content_mode, editorial_status, visibility, slug, name, prerequisites, summary, description, mechanics, is_system_content'
 		)
 		.eq('id', featId)
 		.eq('source_id', sourceIds.homebrew)
@@ -647,6 +677,9 @@ function mapPrivateFeatRecord(
 	return {
 		id: feat.id,
 		sourceCode: feat.source_id === sourceIds.homebrew ? 'homebrew' : 'user-private',
+		rulesetCode: feat.ruleset_code,
+		contentMode: feat.content_mode as PrivateFeatRecord['contentMode'],
+		editorialStatus: feat.editorial_status as PrivateFeatRecord['editorialStatus'],
 		slug: feat.slug,
 		name: feat.name,
 		prerequisites: feat.prerequisites,
@@ -663,6 +696,9 @@ function mapSharedFeatRecord(
 		FeatRow,
 		| 'id'
 		| 'source_id'
+		| 'ruleset_code'
+		| 'content_mode'
+		| 'editorial_status'
 		| 'slug'
 		| 'name'
 		| 'prerequisites'
@@ -678,6 +714,9 @@ function mapSharedFeatRecord(
 	return {
 		id: feat.id,
 		sourceCode: feat.source_id === sourceIds.homebrew ? 'homebrew' : 'homebrew',
+		rulesetCode: feat.ruleset_code,
+		contentMode: feat.content_mode as SharedFeatRecord['contentMode'],
+		editorialStatus: feat.editorial_status as SharedFeatRecord['editorialStatus'],
 		slug: feat.slug,
 		name: feat.name,
 		prerequisites: feat.prerequisites,
@@ -696,6 +735,9 @@ function mapManagedSharedFeatRecord(
 		| 'id'
 		| 'owner_user_id'
 		| 'source_id'
+		| 'ruleset_code'
+		| 'content_mode'
+		| 'editorial_status'
 		| 'slug'
 		| 'name'
 		| 'prerequisites'

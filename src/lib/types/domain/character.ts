@@ -1,3 +1,4 @@
+import type { ContentMode, RulesetCode } from '$lib/types/content/content';
 import type { Ability } from './game-mechanics';
 
 export const abilityNames = [
@@ -23,6 +24,8 @@ export type CharacterCatalogRefs = {
 
 export type CharacterIdentity = CharacterCatalogRefs & {
 	name: string;
+	rulesetCode: RulesetCode;
+	contentMode: ContentMode;
 	race?: string;
 	subrace?: string;
 	className?: string;

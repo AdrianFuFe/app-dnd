@@ -164,7 +164,7 @@ export async function getCharacterForUser(
 	const { data: character, error: characterError } = await supabase
 		.from('characters')
 		.select(
-			'id, name, species_id, subspecies_id, class_id, subclass_id, background_id, race, subrace, class_name, subclass, level, background, story, updated_at'
+			'id, name, ruleset_code, content_mode, species_id, subspecies_id, class_id, subclass_id, background_id, race, subrace, class_name, subclass, level, background, story, updated_at'
 		)
 		.eq('id', characterId)
 		.eq('user_id', userId)
@@ -307,6 +307,8 @@ export async function getCharacterForUser(
 	return {
 		id: character.id,
 		name: character.name,
+		rulesetCode: character.ruleset_code as CharacterCreateInput['rulesetCode'],
+		contentMode: character.content_mode as CharacterCreateInput['contentMode'],
 		speciesId: character.species_id ?? undefined,
 		subspeciesId: character.subspecies_id ?? undefined,
 		classId: character.class_id ?? undefined,
@@ -459,6 +461,8 @@ export async function deleteCharacter(
 function toCharacterRowFields(input: CharacterCreateInput): Omit<CharactersInsert, 'user_id'> {
 	return {
 		name: input.name,
+		ruleset_code: input.rulesetCode,
+		content_mode: input.contentMode,
 		species_id: input.speciesId ?? null,
 		subspecies_id: input.subspeciesId ?? null,
 		class_id: input.classId ?? null,

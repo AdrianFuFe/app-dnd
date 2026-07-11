@@ -131,6 +131,8 @@ describe('createCharacter', () => {
 
 		const result = await createCharacter({ from } as never, 'user-1', {
 			name: 'Talia Stormstep',
+			rulesetCode: 'dnd-2014-srd',
+			contentMode: 'canon',
 			race: 'Elf',
 			className: 'Wizard',
 			level: 3,
@@ -316,6 +318,8 @@ describe('createCharacter', () => {
 		await expect(
 			createCharacter({ from } as never, 'user-1', {
 				name: 'Broken Draft',
+				rulesetCode: 'dnd-2014-srd',
+				contentMode: 'canon',
 				level: 1,
 				strength: 10,
 				dexterity: 10,
@@ -1083,6 +1087,8 @@ describe('updateCharacter', () => {
 
 		const result = await updateCharacter({ from } as never, 'user-1', 'char-1', {
 			name: 'Talia Stormstep',
+			rulesetCode: 'dnd-2014-srd',
+			contentMode: 'canon',
 			race: 'Elf',
 			className: 'Wizard',
 			level: 4,
@@ -1236,6 +1242,8 @@ describe('updateCharacter', () => {
 		await expect(
 			updateCharacter({ from } as never, 'user-1', 'missing', {
 				name: 'Missing Draft',
+				rulesetCode: 'dnd-2014-srd',
+				contentMode: 'canon',
 				level: 1,
 				strength: 10,
 				dexterity: 10,
@@ -1393,6 +1401,8 @@ describe('updateCharacter', () => {
 		await expect(
 			updateCharacter({ from } as never, 'user-1', 'char-1', {
 				name: 'Talia Stormstep',
+				rulesetCode: 'dnd-2014-srd',
+				contentMode: 'canon',
 				race: 'Elf',
 				className: 'Wizard',
 				level: 4,

@@ -33,6 +33,9 @@ export type PrivateSpellDerivation = {
 export type PrivateSpellRecord = {
 	id: string;
 	sourceCode: PrivateSpellSourceCode;
+	rulesetCode: string;
+	contentMode: 'canon' | 'custom';
+	editorialStatus: 'private_draft' | 'shared_draft' | 'in_review' | 'published' | 'retired';
 	slug: string;
 	name: string;
 	level: number;
@@ -82,6 +85,9 @@ export type CreateSharedSpellInput = CreatePrivateSpellInput & {
 export type SharedSpellRecord = {
 	id: string;
 	sourceCode: SharedSpellSourceCode;
+	rulesetCode: string;
+	contentMode: 'canon' | 'custom';
+	editorialStatus: 'private_draft' | 'shared_draft' | 'in_review' | 'published' | 'retired';
 	slug: string;
 	name: string;
 	level: number;
@@ -115,6 +121,9 @@ type PrivateSpellRow = Pick<
 	SpellRow,
 	| 'id'
 	| 'source_id'
+	| 'ruleset_code'
+	| 'content_mode'
+	| 'editorial_status'
 	| 'slug'
 	| 'name'
 	| 'level'
@@ -139,6 +148,9 @@ type SharedSpellRow = Pick<
 	| 'id'
 	| 'owner_user_id'
 	| 'source_id'
+	| 'ruleset_code'
+	| 'content_mode'
+	| 'editorial_status'
 	| 'slug'
 	| 'name'
 	| 'level'
@@ -171,7 +183,7 @@ export async function listPrivateSpellsForUser(
 	const { data, error } = await supabase
 		.from('spells')
 		.select(
-			'id, source_id, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, mechanics, concentration, ritual, created_at, updated_at'
+			'id, source_id, ruleset_code, content_mode, editorial_status, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, mechanics, concentration, ritual, created_at, updated_at'
 		)
 		.eq('owner_user_id', userId)
 		.in('source_id', [sourceIds['user-private'], sourceIds.homebrew])
@@ -201,6 +213,9 @@ export async function createPrivateSpell(
 	const insert: SpellInsert = {
 		owner_user_id: userId,
 		source_id: sourceIds['user-private'],
+		ruleset_code: 'dnd-2014-srd',
+		content_mode: 'custom',
+		editorial_status: 'private_draft',
 		visibility: 'private',
 		slug: input.slug,
 		name: input.name,
@@ -224,7 +239,7 @@ export async function createPrivateSpell(
 		.from('spells')
 		.insert(insert)
 		.select(
-			'id, source_id, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, mechanics, concentration, ritual, created_at, updated_at'
+			'id, source_id, ruleset_code, content_mode, editorial_status, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, mechanics, concentration, ritual, created_at, updated_at'
 		)
 		.single();
 
@@ -287,6 +302,9 @@ export async function derivePrivateSpellFromSharedCatalog(
 	const insert: SpellInsert = {
 		owner_user_id: userId,
 		source_id: privateSourceIds.homebrew,
+		ruleset_code: 'dnd-2014-srd',
+		content_mode: 'custom',
+		editorial_status: 'private_draft',
 		visibility: 'private',
 		slug: sharedSpell.slug,
 		name: sharedSpell.name,
@@ -317,7 +335,7 @@ export async function derivePrivateSpellFromSharedCatalog(
 		.from('spells')
 		.insert(insert)
 		.select(
-			'id, source_id, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, mechanics, concentration, ritual, created_at, updated_at'
+			'id, source_id, ruleset_code, content_mode, editorial_status, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, mechanics, concentration, ritual, created_at, updated_at'
 		)
 		.single();
 
@@ -339,6 +357,9 @@ export async function createSharedSpell(
 		return {
 			id: created.id,
 			sourceCode: created.sourceCode,
+			rulesetCode: created.rulesetCode,
+			contentMode: created.contentMode,
+			editorialStatus: created.editorialStatus,
 			slug: created.slug,
 			name: created.name,
 			level: created.level,
@@ -366,6 +387,9 @@ export async function createSharedSpell(
 	const insert: SpellInsert = {
 		owner_user_id: input.isSystemContent ? null : userId,
 		source_id: sourceIds.homebrew,
+		ruleset_code: 'dnd-2014-srd',
+		content_mode: input.isSystemContent ? 'canon' : 'custom',
+		editorial_status: 'published',
 		visibility: input.visibility,
 		slug: input.slug,
 		name: input.name,
@@ -389,7 +413,7 @@ export async function createSharedSpell(
 		.from('spells')
 		.insert(insert)
 		.select(
-			'id, owner_user_id, source_id, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, visibility, concentration, ritual, is_system_content, created_at, updated_at'
+			'id, owner_user_id, source_id, ruleset_code, content_mode, editorial_status, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, visibility, concentration, ritual, is_system_content, created_at, updated_at'
 		)
 		.single();
 
@@ -415,6 +439,9 @@ export async function listManagedSharedSpells(
 		).map((spell) => ({
 			id: spell.id,
 			sourceCode: spell.sourceCode,
+			rulesetCode: spell.rulesetCode,
+			contentMode: spell.contentMode,
+			editorialStatus: spell.editorialStatus,
 			slug: spell.slug,
 			name: spell.name,
 			level: spell.level,
@@ -441,7 +468,7 @@ export async function listManagedSharedSpells(
 	const query = supabase
 		.from('spells')
 		.select(
-			'id, owner_user_id, source_id, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, visibility, concentration, ritual, is_system_content, created_at, updated_at'
+			'id, owner_user_id, source_id, ruleset_code, content_mode, editorial_status, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, visibility, concentration, ritual, is_system_content, created_at, updated_at'
 		)
 		.eq('source_id', sourceIds.homebrew)
 		.not('visibility', 'in', '(private,campaign)')
@@ -491,6 +518,9 @@ export async function updateManagedSharedSpell(
 		return {
 			id: updated.id,
 			sourceCode: updated.sourceCode,
+			rulesetCode: updated.rulesetCode,
+			contentMode: updated.contentMode,
+			editorialStatus: updated.editorialStatus,
 			slug: updated.slug,
 			name: updated.name,
 			level: updated.level,
@@ -539,7 +569,7 @@ export async function updateManagedSharedSpell(
 		})
 		.eq('id', spell.id)
 		.select(
-			'id, owner_user_id, source_id, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, visibility, concentration, ritual, is_system_content, created_at, updated_at'
+			'id, owner_user_id, source_id, ruleset_code, content_mode, editorial_status, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, visibility, concentration, ritual, is_system_content, created_at, updated_at'
 		)
 		.single();
 
@@ -757,7 +787,7 @@ async function loadSharedSpellForDerivation(
 	const { data, error } = await supabase
 		.from('spells')
 		.select(
-			'id, source_id, visibility, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, mechanics, concentration, ritual'
+			'id, source_id, visibility, ruleset_code, content_mode, editorial_status, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, mechanics, concentration, ritual'
 		)
 		.eq('id', spellId)
 		.single();
@@ -777,7 +807,7 @@ async function loadManagedSharedSpellById(
 	const { data, error } = await supabase
 		.from('spells')
 		.select(
-			'id, owner_user_id, source_id, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, visibility, concentration, ritual, is_system_content, created_at, updated_at'
+			'id, owner_user_id, source_id, ruleset_code, content_mode, editorial_status, slug, name, level, school, casting_time, range_text, components, materials, duration, class_slugs, summary, description, visibility, concentration, ritual, is_system_content, created_at, updated_at'
 		)
 		.eq('id', spellId)
 		.eq('source_id', sourceIds.homebrew)
@@ -797,6 +827,9 @@ function mapPrivateSpellRecord(
 	return {
 		id: spell.id,
 		sourceCode: spell.source_id === sourceIds.homebrew ? 'homebrew' : 'user-private',
+		rulesetCode: spell.ruleset_code,
+		contentMode: spell.content_mode as PrivateSpellRecord['contentMode'],
+		editorialStatus: spell.editorial_status as PrivateSpellRecord['editorialStatus'],
 		slug: spell.slug,
 		name: spell.name,
 		level: spell.level,
@@ -824,6 +857,9 @@ function mapSharedSpellRecord(
 	return {
 		id: spell.id,
 		sourceCode: spell.source_id === sourceIds.homebrew ? 'homebrew' : 'homebrew',
+		rulesetCode: spell.ruleset_code,
+		contentMode: spell.content_mode as SharedSpellRecord['contentMode'],
+		editorialStatus: spell.editorial_status as SharedSpellRecord['editorialStatus'],
 		slug: spell.slug,
 		name: spell.name,
 		level: spell.level,

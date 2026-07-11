@@ -41,6 +41,9 @@ type E2EPrivateFeatRecord = {
 	id: string;
 	userId: string;
 	sourceCode: 'user-private' | 'homebrew';
+	rulesetCode: 'dnd-2014-srd' | 'custom';
+	contentMode: 'canon' | 'custom';
+	editorialStatus: 'private_draft' | 'shared_draft' | 'in_review' | 'published' | 'retired';
 	slug: string;
 	name: string;
 	prerequisites: string[];
@@ -60,6 +63,9 @@ type E2EPrivateSpellRecord = {
 	id: string;
 	userId: string;
 	sourceCode: 'user-private' | 'homebrew';
+	rulesetCode: 'dnd-2014-srd' | 'custom';
+	contentMode: 'canon' | 'custom';
+	editorialStatus: 'private_draft' | 'shared_draft' | 'in_review' | 'published' | 'retired';
 	slug: string;
 	name: string;
 	level: number;
@@ -88,6 +94,9 @@ type E2ESharedSpellRecord = {
 	id: string;
 	userId: string | null;
 	sourceCode: 'homebrew';
+	rulesetCode: 'dnd-2014-srd' | 'custom';
+	contentMode: 'canon' | 'custom';
+	editorialStatus: 'private_draft' | 'shared_draft' | 'in_review' | 'published' | 'retired';
 	slug: string;
 	name: string;
 	level: number;
@@ -112,6 +121,9 @@ type E2ESharedFeatRecord = {
 	id: string;
 	userId: string | null;
 	sourceCode: 'homebrew';
+	rulesetCode: 'dnd-2014-srd' | 'custom';
+	contentMode: 'canon' | 'custom';
+	editorialStatus: 'private_draft' | 'shared_draft' | 'in_review' | 'published' | 'retired';
 	slug: string;
 	name: string;
 	prerequisites: string[];
@@ -344,6 +356,8 @@ const initialCharacters: E2ECharacterRecord[] = [
 		userId: E2E_USER_ID,
 		updatedAt: '2026-06-25T09:00:00.000Z',
 		name: 'Talia Stormstep',
+		rulesetCode: 'dnd-2014-srd',
+		contentMode: 'canon',
 		speciesId: buildCatalogId('species', 'elfo'),
 		subspeciesId: buildCatalogId('subspecies', 'high-elf'),
 		classId: buildCatalogId('class', 'mago'),
@@ -791,6 +805,9 @@ export function listE2EPrivateFeatsForUser(userId: string) {
 				id: feat.id,
 				userId,
 				sourceCode: feat.sourceCode,
+				rulesetCode: feat.rulesetCode,
+				contentMode: feat.contentMode,
+				editorialStatus: feat.editorialStatus,
 				slug: feat.slug,
 				name: feat.name,
 				prerequisites: [...feat.prerequisites],
@@ -840,6 +857,9 @@ export function createE2EPrivateFeatForUser(
 		id: `private-feat-e2e-${state.nextPrivateFeatSequence}`,
 		userId,
 		sourceCode: input.sourceCode ?? 'user-private',
+		rulesetCode: 'dnd-2014-srd',
+		contentMode: 'custom',
+		editorialStatus: 'private_draft',
 		slug: input.slug,
 		name: input.name,
 		prerequisites: [...input.prerequisites],
@@ -890,6 +910,9 @@ export function createE2EPrivateSpellForUser(
 		id: `private-spell-e2e-${state.nextPrivateSpellSequence}`,
 		userId,
 		sourceCode: input.sourceCode ?? 'user-private',
+		rulesetCode: 'dnd-2014-srd',
+		contentMode: 'custom',
+		editorialStatus: 'private_draft',
 		slug: input.slug,
 		name: input.name,
 		level: input.level,
@@ -953,6 +976,9 @@ export function createE2ESharedSpellForUser(
 		id: `shared-spell-e2e-${state.nextPrivateSpellSequence}`,
 		userId: input.isSystemContent ? null : userId,
 		sourceCode: input.sourceCode ?? 'homebrew',
+		rulesetCode: 'dnd-2014-srd',
+		contentMode: input.isSystemContent ? 'canon' : 'custom',
+		editorialStatus: 'published',
 		slug: input.slug,
 		name: input.name,
 		level: input.level,
@@ -1146,6 +1172,9 @@ export function createE2ESharedFeatForUser(
 		id: `shared-feat-e2e-${state.nextPrivateFeatSequence}`,
 		userId: input.isSystemContent ? null : userId,
 		sourceCode: input.sourceCode ?? 'homebrew',
+		rulesetCode: 'dnd-2014-srd',
+		contentMode: input.isSystemContent ? 'canon' : 'custom',
+		editorialStatus: 'published',
 		slug: input.slug,
 		name: input.name,
 		prerequisites: [...input.prerequisites],

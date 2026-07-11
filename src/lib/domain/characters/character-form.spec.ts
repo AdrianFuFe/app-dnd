@@ -35,6 +35,8 @@ describe('createCharacterFormValuesFromInput', () => {
 	it('keeps optional blank sections empty while preserving required defaults', () => {
 		const values = createCharacterFormValuesFromInput({
 			name: 'New Character',
+			rulesetCode: 'dnd-2014-srd',
+			contentMode: 'canon',
 			level: 1,
 			strength: 10,
 			dexterity: 10,

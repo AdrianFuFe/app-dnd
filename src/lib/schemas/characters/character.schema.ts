@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { abilityNames } from '$lib/types/domain/character';
 
 const requiredTextSchema = z.string().trim().min(1);
+const rulesetCodeSchema = z.enum(['dnd-2014-srd', 'custom']);
+const contentModeSchema = z.enum(['canon', 'custom']);
 
 const optionalTextSchema = z.preprocess((value) => {
 	if (typeof value !== 'string') {
@@ -249,6 +251,14 @@ export const characterNoteItemsSchema = z.preprocess((value) => {
 
 export const characterIdentitySchema = z.object({
 	name: requiredTextSchema,
+	rulesetCode: z.preprocess(
+		(value) => (value === undefined || value === null || value === '' ? 'dnd-2014-srd' : value),
+		rulesetCodeSchema
+	),
+	contentMode: z.preprocess(
+		(value) => (value === undefined || value === null || value === '' ? 'canon' : value),
+		contentModeSchema
+	),
 	speciesId: optionalUuidSchema,
 	subspeciesId: optionalUuidSchema,
 	classId: optionalUuidSchema,
