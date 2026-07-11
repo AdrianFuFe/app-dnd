@@ -5,8 +5,22 @@ import type {
 	CharacterSubclassOption,
 	CharacterSubspeciesOption
 } from './character-catalog';
+import type {
+	ContentMode,
+	EditorialStatus,
+	RulesetCode,
+	SharedContentVisibility
+} from './content';
 
-export type SpellCatalogEntry = {
+type SharedCatalogEntryMetadata = {
+	rulesetCode?: RulesetCode;
+	contentMode?: ContentMode;
+	editorialStatus?: EditorialStatus;
+	visibility?: SharedContentVisibility;
+	isSystemContent?: boolean;
+};
+
+export type SpellCatalogEntry = SharedCatalogEntryMetadata & {
 	id: string;
 	slug: string;
 	name: string;
@@ -21,19 +35,15 @@ export type SpellCatalogEntry = {
 	description: string | null;
 	concentration: boolean;
 	ritual: boolean;
-	visibility?: 'shared' | 'public';
-	isSystemContent?: boolean;
 };
 
-export type FeatCatalogEntry = {
+export type FeatCatalogEntry = SharedCatalogEntryMetadata & {
 	id: string;
 	slug: string;
 	name: string;
 	prerequisites: string[];
 	summary: string | null;
 	description: string | null;
-	visibility?: 'shared' | 'public';
-	isSystemContent?: boolean;
 };
 
 export type EquipmentCatalogEntry = {
