@@ -18,6 +18,14 @@
 			structured notes, and structured inventory flow used during creation, now anchored to
 			this saved draft.
 		</p>
+		<div class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
+			<p class="text-sm font-semibold text-amber-950">Guided-to-custom handoff</p>
+			<p class="mt-2 max-w-3xl text-sm leading-6 text-amber-900">
+				If this character started in the guided creator, this editor is the next step for
+				deeper control. Changes here can intentionally move the draft beyond the canonical
+				guided baseline while keeping the same ruleset.
+			</p>
+		</div>
 	</section>
 
 	<CharacterCreateForm

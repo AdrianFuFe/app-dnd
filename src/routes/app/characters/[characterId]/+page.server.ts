@@ -24,6 +24,8 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 	return {
 		character,
 		equipmentCatalog: expandedContentCatalog.equipment,
+		createdName: url.searchParams.get('created'),
+		guidedHandoff: url.searchParams.get('guided') === '1',
 		updatedName: url.searchParams.get('updated')
 	};
 };

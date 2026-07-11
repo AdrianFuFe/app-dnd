@@ -145,7 +145,10 @@ export const actions: Actions = {
 			});
 			const createdName = encodeURIComponent(character.name);
 
-			throw redirect(303, `/app/characters?created=${createdName}`);
+			throw redirect(
+				303,
+				`/app/characters/${character.id}?created=${createdName}&guided=1`
+			);
 		} catch (error) {
 			if (isRedirect(error)) {
 				throw error;
