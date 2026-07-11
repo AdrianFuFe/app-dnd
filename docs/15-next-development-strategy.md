@@ -2,323 +2,446 @@
 
 ## Objetivo
 
-Este documento define el orden recomendado para continuar el desarrollo de `app-dnd` ahora que:
+Este documento redefine la siguiente fase de `app-dnd` a partir de tres entradas:
 
-- Supabase real ya está conectado
-- autenticación y sesión básica funcionan
-- CRUD principal de personajes funciona
-- la base de contenido estructurado y contenido privado funciona
+- lo que ya existe en el proyecto
+- la estrategia anterior
+- el nuevo alcance funcional deseado para producto
 
-La idea no es hacer todo a la vez. La idea es fijar primero la dirección correcta para que las próximas mejoras crezcan sobre una base coherente.
+La idea principal es simple: construir una base solida, priorizando primero las funcionalidades nucleares y dejando preparadas las decisiones que afectaran a futuras ampliaciones.
 
-## Situación actual resumida
+## Punto de partida
 
-El proyecto ya tiene una base bastante buena:
+Actualmente el proyecto ya cuenta con una base valida sobre la que seguir creciendo:
 
-- autenticación con Supabase
-- RLS y modelo inicial de roles
-- gestión de personajes
-- catálogo SRD inicial
-- contenido privado y compartido con permisos base
-- pruebas automáticas y validación local útiles
+- autenticacion y sesion con Supabase
+- CRUD principal de personajes
+- modelo inicial de roles
+- contenido estructurado SRD inicial
+- contenido privado y compartido
+- RLS y permisos base
+- validacion y pruebas utiles para iterar
 
-Lo que falta ya no es tanto "conectar piezas", sino definir mejor el producto:
+Esto significa que el siguiente paso no es "anadir cosas sin mas", sino ordenar bien el producto para evitar retrabajo.
 
-- qué puede hacer cada rol
-- cómo debe sentirse la app en móvil y escritorio
-- cómo convivirán español e inglés
-- cómo evolucionará la creación de personajes
-- qué partes deben ser automáticas y cuáles deben seguir siendo manuales
+## Nuevo norte de producto
 
-## Decisión estratégica recomendada
+La aplicacion debe evolucionar hacia estos bloques funcionales:
 
-El orden más lógico ahora es este:
+1. creacion de personajes
+2. galeria de personajes
+3. creacion y gestion de entidades de juego
+4. registro, login y configuracion de usuario
+5. gestion de contenidos, usuarios, roles y revisiones
 
-1. definir bien roles, capacidades y límites
-2. preparar la base transversal de UX, responsive, tema claro/oscuro e i18n
-3. rediseñar la estrategia de creación de personajes sobre esa base
-4. después ampliar automatización, contenido y vistas avanzadas
+El criterio de priorizacion no debe ser solo complejidad tecnica, sino valor de producto y dependencia entre bloques.
 
-Este orden reduce retrabajo. Si primero se añaden pantallas y automatismos sin cerrar roles, UX base e idioma, luego tocará rehacer mucho.
+## Vision funcional consolidada
 
-## Prioridad 1: roles y capacidades
+### 1. Creacion de personajes
 
-### Por qué va primero
+Es la funcionalidad central del producto y debe ser el foco principal de la siguiente gran fase.
 
-Ahora mismo el proyecto ya tiene una base técnica de permisos, pero todavía falta convertirla en producto claro:
+La aplicacion debe acabar ofreciendo dos modos:
 
-- qué ve un `user`
-- qué ve y mantiene un `content_editor`
-- qué hace un `admin`
-- qué acciones estarán fuera de la UI normal
+- `guided`
+- `custom`
 
-Sin esta definición, cualquier trabajo en navegación, paneles o formularios corre el riesgo de quedarse corto o de exponer opciones que luego habrá que mover.
+#### Modo guiado
 
-### Resultado que conviene conseguir
-
-Definir una matriz simple y estable:
-
-- `guest`
-  - solo acceso público, landing y auth
-- `user`
-  - gestionar sus personajes
-  - gestionar su contenido privado
-  - consultar contenido SRD y compartido permitido
-- `content_editor`
-  - todo lo anterior
-  - mantener contenido compartido no sistema dentro de ámbitos permitidos
-- `admin`
-  - todo lo anterior
-  - supervisión global
-  - operaciones sensibles y soporte
-
-### Decisiones que conviene dejar cerradas
-
-- si habrá o no panel admin dentro de la app en esta fase
-- si `content_editor` podrá editar cualquier contenido compartido o solo el suyo
-- si un `user` podrá duplicar más tipos de contenido SRD a privado además de feats y spells
-- si el futuro modelo de campañas añadirá nuevos roles o se apoyará en roles de campaña separados del `global_role`
-
-### Entregable recomendado
-
-Crear o actualizar documentación que deje explícito:
-
-- responsabilidades por rol
-- vistas permitidas por rol
-- acciones permitidas por rol
-- acciones prohibidas aunque el dato exista en base de datos
-- decisiones aplazadas
-
-## Prioridad 2: base UX, responsive, temas e idiomas
-
-### Por qué va antes que nuevas features grandes
-
-La aplicación ya tiene suficiente superficie para que el diseño base empiece a condicionar todo lo que venga después. Si esperamos demasiado:
-
-- los formularios crecerán con patrones inconsistentes
-- el responsive será más caro de corregir
-- el modo claro/oscuro obligará a rehacer estilos
-- las traducciones acabarán mezcladas con la lógica
-
-### Objetivos de esta fase
-
-- establecer layout base móvil + escritorio
-- definir sistema visual base
-- introducir tokens de color y espaciado
-- preparar tema claro y oscuro
-- introducir infraestructura de traducción
-- separar textos UI del código de negocio
-
-### Decisiones recomendadas
-
-- idioma base de la UI: español primero, con soporte real para inglés desde el inicio
-- estrategia de traducción:
-  - textos UI en diccionarios
-  - contenido SRD/localizable separado de etiquetas de interfaz
-- modo de tema:
-  - `system`
-  - `light`
-  - `dark`
-- prioridad responsive:
-  - móvil primero en formularios
-  - escritorio optimizado para lectura, paneles y edición avanzada
-
-### Resultado que conviene conseguir
-
-Una base reusable para el resto del proyecto:
-
-- shell de aplicación más clara
-- navegación más sólida
-- paneles y formularios consistentes
-- base visual preparada para crecer
-- infraestructura i18n lista para extender
-
-## Prioridad 3: creación de personajes v2
-
-### Idea principal
-
-La creación de personaje debería dividirse en dos modos claros:
-
-- modo guiado
-- modo manual o custom
-
-### Modo guiado
-
-Pensado para usuarios que quieren apoyo del sistema.
-
-Debe priorizar:
-
-- flujo paso a paso
-- dependencias entre especie/subespecie y clase/subclase
-- ayudas de reglas
-- autocompletado de campos derivados
-- validaciones comprensibles
-
-### Modo manual o custom
-
-Pensado para usuarios que quieren libertad o adaptar material propio.
-
-Debe permitir:
-
-- edición directa
-- sobrescribir selecciones estructuradas cuando tenga sentido
-- introducir combinaciones no cubiertas todavía por automatización
-- convivir con contenido privado y homebrew
-
-### Principio importante
-
-La automatización no debe bloquear el modo manual. La app debe ayudar, no encerrar.
-
-### Decisiones que conviene tomar antes de implementar mucho más
-
-- qué campos serán siempre automáticos
-- qué campos serán sugeridos pero editables
-- qué campos seguirán siendo manuales bastante tiempo
-- cómo se mostrarán conflictos entre datos estructurados y texto libre heredado
-- qué partes del cálculo se harán ahora y cuáles más adelante
-
-## Lo que dejaría para después
-
-No parece el mejor momento para priorizar todavía:
-
-- hosting final
-- despliegue público estable
-- campañas completas
-- permisos avanzados por campaña
-- automatización profunda de todas las reglas
-- expansión masiva de todo el contenido si la UX base aún no está consolidada
-
-Eso no significa abandonarlo. Significa no mezclar ahora un bloque de plataforma con un bloque de producto que todavía está madurando.
-
-## Orden recomendado de próximas sesiones
-
-### Bloque A
-
-`A1 - Role And Capability Review`
+Debe ser la primera implementacion real de referencia.
 
 Objetivo:
 
-- convertir el modelo actual de roles en contrato funcional de producto
+- crear personajes siguiendo las reglas de DND 2014 SRD
+- automatizar al maximo lo derivado de raza, subraza, clase, subclase, nivel, caracteristicas y rasgos
+- reducir errores manuales
+- ofrecer un flujo comprensible paso a paso
 
-Cierre esperado:
+Condiciones importantes:
 
-- matriz de roles
-- mapa de vistas
-- mapa de acciones
-- lista de decisiones aplazadas
+- en la primera version solo se soporta `dnd-2014-srd`
+- mas adelante podran existir otros sistemas o versiones
+- aunque al principio solo haya un sistema, el diseno debe dejar preparado un futuro selector de sistema
 
-### Bloque B
+#### Modo custom
 
-`A2 - App UX Foundation`
-
-Objetivo:
-
-- revisar shell, navegación, paneles, densidad de información y patrones de formularios
-
-Cierre esperado:
-
-- documento de estrategia UX
-- lista de mejoras base antes de rediseñar pantallas concretas
-
-### Bloque C
-
-`A3 - Theme And Responsive Foundation`
+Debe existir como objetivo de arquitectura, pero no como prioridad de implementacion inmediata.
 
 Objetivo:
 
-- preparar la base técnica para móvil/escritorio y claro/oscuro
-
-Cierre esperado:
-
-- tokens visuales
-- layout base revisado
-- estrategia responsive definida
-
-### Bloque D
-
-`A4 - I18n Foundation`
-
-Objetivo:
-
-- introducir traducciones reales de UI sin mezclar texto y lógica
-
-Cierre esperado:
-
-- estructura de diccionarios
-- selector o estrategia de idioma
-- primera superficie UI traducible
-
-### Bloque E
-
-`A5 - Character Creation V2 Design`
-
-Objetivo:
-
-- diseñar bien el flujo guiado y el flujo manual antes de ampliar automatización
-
-Cierre esperado:
-
-- mapa de pasos
-- campos automáticos vs editables
-- dependencias de catálogo
-- backlog técnico por fases
-
-### Bloque F
-
-`A6 - Character Creation V2 Implementation`
-
-Objetivo:
-
-- implementar el primer tramo real del nuevo flujo
-
-Cierre esperado:
-
-- una versión mejorada y usable del flujo de creación
-- validación manual y automática suficiente
-
-## Recomendación práctica inmediata
-
-Si seguimos una línea limpia, el siguiente paso más valioso ahora mismo es:
-
-`A1 - Role And Capability Review`
-
-Después:
-
-`A2 - App UX Foundation`
-
-Y después:
-
-`A3/A4 - Theme, Responsive And I18n Foundation`
-
-Solo entonces pasaría a:
-
-`A5 - Character Creation V2 Design`
-
-## Riesgos a evitar
-
-- mezclar rediseño visual, permisos, i18n y automatización en una sola sesión
-- rehacer formularios antes de definir la estructura responsive y de temas
-- automatizar reglas que todavía no tienen un contrato UX claro
-- introducir traducciones directamente dentro de componentes sin capa intermedia
-- crear UI admin demasiado pronto sin cerrar antes el modelo operativo real
-
-## Cómo usar este documento en una sesión nueva
-
-Puedes abrir un chat nuevo y pedir exactamente uno de estos bloques.
+- partir del flujo guiado
+- permitir valores fuera de las normas automatizadas
+- convivir con contenido homebrew
+- permitir seleccionar o crear sobre la marcha entidades propias del usuario
 
 Ejemplos:
 
-- `Quiero trabajar el bloque A1 - Role And Capability Review. Revisa el proyecto actual y propón una matriz final de roles, vistas y acciones.`
-- `Quiero trabajar el bloque A2 - App UX Foundation. Analiza la UI actual y crea una estrategia base para móvil, escritorio, paneles y formularios.`
-- `Quiero trabajar el bloque A4 - I18n Foundation. Propón la estructura técnica para soportar español e inglés en la UI actual.`
-- `Quiero trabajar el bloque A5 - Character Creation V2 Design. Diseña el flujo guiado y el flujo manual con prioridades realistas.`
+- razas custom
+- subrazas custom
+- clases y subclases custom
+- hechizos, habilidades, trasfondos u objetos custom
 
-## Conclusión
+Principio clave:
 
-La base técnica actual ya permite dejar de pensar solo en "que funcione" y pasar a "qué producto queremos construir". El mejor movimiento ahora es consolidar dirección:
+- el modo guiado se implementa primero
+- el modo custom se deja para una fase posterior
+- pero el modo guiado no debe cerrarnos puertas de cara al modo custom
 
-- primero permisos y alcance funcional
-- luego base UX e idioma
-- después creación de personaje v2
+En otras palabras: la arquitectura del creador debe separar bien:
 
-Ese orden debería permitir avanzar con mucha menos fricción y con menos retrabajo en las siguientes iteraciones.
+- reglas automatizadas
+- datos base del sistema
+- overrides manuales
+- contenido canon frente a contenido custom
+
+### 2. Galeria de personajes
+
+Debe consolidarse como la vista principal del usuario autenticado.
+
+Capacidades esperadas:
+
+- ver lista de personajes
+- acceder al detalle
+- editar
+- borrar
+
+Decision de UX obligatoria:
+
+- cualquier eliminacion debe usar doble confirmacion
+
+Esta parte ya tiene base, pero debe revisarse para asegurar que encaja con el flujo futuro del creador de personajes.
+
+### 3. Creacion de entidades
+
+La aplicacion debe permitir crear entidades de juego como:
+
+- raza
+- subraza
+- clase
+- subclase
+- hechizo
+- habilidad
+- objeto
+- trasfondo
+- otras entidades que se incorporen despues
+
+Este bloque no debe ir antes del creador guiado, pero si debe quedar contemplado desde ya porque afecta al modelo de datos y a la estrategia de contenidos.
+
+Cada entidad deberia poder asociarse a una version o sistema, por ejemplo:
+
+- `srd5.1-2014`
+- `dnd-5e-2014`
+- `custom`
+
+Esto permitira en el futuro:
+
+- soportar multiples reglas o ediciones
+- distinguir contenido canon y contenido libre
+- alimentar correctamente el creador guiado segun el sistema activo
+
+### 4. Contenidos canon y custom
+
+El producto necesita una distincion clara entre tipos de contenido.
+
+#### Contenido canon
+
+Caracteristicas:
+
+- compartido
+- estructurado
+- asociado a una version o sistema
+- apto para alimentar automatizaciones del creador guiado
+
+#### Contenido custom
+
+Caracteristicas:
+
+- creado por usuarios
+- puede ser privado o publico
+- puede basarse en contenido canon o ser libre
+
+#### Flujo de revision
+
+Tambien hace falta un estado intermedio para propuestas de canon.
+
+Escenario recomendado:
+
+- un usuario normal crea contenido
+- si ese contenido es personal, se guarda como `custom`
+- si se propone como contenido compartido tipo canon, pasa a estado `in_review`
+- un usuario con privilegios suficientes lo revisa
+- tras la revision, ese contenido puede:
+  - aprobarse como contenido compartido
+  - corregirse
+  - rechazarse como canon y quedarse como custom
+
+Este flujo encaja bien con los roles actuales:
+
+- `user`
+- `content_editor`
+- `admin`
+
+### 5. Gestion y administracion
+
+La aplicacion tambien debe tener superficies de gestion para monitorizar y mantener el sistema.
+
+Vistas objetivo:
+
+- vista de permisos y roles
+- vista de usuarios registrados
+- vistas de gestion para cada tipo de contenido
+- vista de revision de contenidos enviados por usuarios
+
+Esto no debe ser la siguiente prioridad de implementacion, pero si debe entrar ya en la estrategia porque condiciona:
+
+- el modelo de estados del contenido
+- la visibilidad por rol
+- las acciones permitidas por vista
+
+## Relectura de roles
+
+La propuesta funcional nueva encaja razonablemente bien con los roles actuales del proyecto:
+
+- `user`
+- `content_editor`
+- `admin`
+
+La interpretacion recomendada ahora es esta.
+
+### `user`
+
+Acceso a:
+
+- registro y login
+- configuracion de usuario
+- creacion de personajes
+- gestion de sus personajes
+- consulta de contenido permitido
+- contenido custom propio
+
+No deberia tener acceso a:
+
+- vistas administrativas
+- aprobacion de contenido canon
+- gestion global de usuarios o permisos
+
+### `content_editor`
+
+Acceso a todo lo de `user`, mas:
+
+- creacion de contenido estructurado necesario para nutrir la aplicacion
+- acceso a zonas restringidas de contenido
+- revision basica o mantenimiento de contenidos segun el alcance final que se decida
+
+Punto que hay que cerrar:
+
+- si `content_editor` puede aprobar canon
+- o si solo puede preparar, editar y revisar sin publicacion final
+
+### `admin`
+
+Acceso total:
+
+- gestion de usuarios
+- gestion de roles y permisos
+- gestion global de contenidos
+- revision y aprobacion final
+- operaciones sensibles
+
+### Decision de arquitectura recomendada
+
+Mantener de momento estos tres roles como contrato funcional base, pero dejando el sistema preparado para crecer con permisos mas finos o roles nuevos en el futuro.
+
+## Cambio de prioridad respecto a la estrategia anterior
+
+La estrategia anterior iba bien encaminada, pero con el nuevo alcance conviene ajustarla.
+
+### Lo que se mantiene
+
+Sigue teniendo sentido:
+
+- no mezclar demasiadas capas a la vez
+- preparar una buena base de UX
+- pensar en responsive, temas e i18n antes de crecer demasiado
+- separar automatizacion y libertad manual en el creador
+
+### Lo que cambia
+
+La prioridad funcional ahora debe quedar mas centrada en producto:
+
+1. cerrar contrato funcional de roles, contenidos y estados
+2. consolidar la experiencia base del area de personajes
+3. disenar e implementar el creador guiado de personajes v1
+4. dejar preparado el camino para contenido custom y entidades editables
+5. despues ampliar gestion administrativa, i18n, tema y mejoras avanzadas
+
+La diferencia importante es que ahora el creador guiado pasa a ser el corazon del roadmap cercano, no solo una fase posterior de diseno.
+
+## Orden recomendado de desarrollo
+
+## Fase A - Revision funcional del modelo actual
+
+Objetivo:
+
+- revisar lo ya implementado
+- compararlo con el nuevo alcance
+- detectar huecos, conflictos y oportunidades de reutilizacion
+
+Entregables:
+
+- mapa de lo ya construido
+- diferencias entre plan inicial, estado actual y nuevo objetivo
+- decisiones de continuidad o correccion
+
+Esta fase es importante porque el proyecto ya tiene bastante trabajo hecho y no conviene rehacer por intuicion.
+
+## Fase B - Contrato de roles, contenido y estados
+
+Objetivo:
+
+- definir con claridad que puede hacer cada rol
+- definir tipos de contenido
+- definir estados del contenido
+- definir visibilidad y flujos de revision
+
+Entregables:
+
+- matriz de roles
+- matriz de acciones
+- estados de contenido como minimo:
+  - `private`
+  - `public_custom`
+  - `shared_canon`
+  - `in_review`
+- decisiones abiertas documentadas
+
+Sin esta fase, el sistema de entidades y revision quedara ambiguo.
+
+## Fase C - UX base del area de personajes
+
+Objetivo:
+
+- consolidar la zona autenticada del usuario
+- revisar shell, navegacion y vistas de personajes
+- asegurar que la galeria de personajes es una base buena para crecer
+
+Entregables:
+
+- flujo claro de entrada del usuario autenticado
+- galeria revisada
+- detalle y edicion alineados con el futuro creador
+- patron de doble confirmacion para borrado
+
+## Fase D - Character Creation V1 Guided
+
+Objetivo:
+
+- implementar el primer creador guiado realmente util
+- centrado en `dnd-2014-srd`
+
+Capacidades objetivo:
+
+- paso a paso
+- seleccion de opciones del sistema
+- automatizacion de datos derivados
+- validaciones comprensibles
+- estructura preparada para futuras extensiones
+
+Decisiones de diseno necesarias:
+
+- que campos son calculados y bloqueados
+- que campos son sugeridos pero editables
+- que campos seguiran siendo manuales
+- como se desacopla la logica de reglas del formulario
+
+Esta es la siguiente gran funcionalidad de producto.
+
+## Fase E - Fundacion para custom y entidades editables
+
+Objetivo:
+
+- preparar la evolucion desde el creador guiado a un sistema mas abierto
+
+Incluye:
+
+- formularios por tipo de entidad
+- relacion de entidades con sistema o version
+- estrategia para creacion sobre la marcha
+- soporte para homebrew privado y publico
+
+Importante:
+
+- esta fase puede empezar con diseno y modelo de datos antes que con UI completa
+
+## Fase F - Gestion de revisiones y administracion
+
+Objetivo:
+
+- activar el circuito de moderacion y gobierno del contenido
+
+Incluye:
+
+- vistas de revision
+- vistas de usuarios
+- vistas de permisos
+- vistas de gestion por entidad
+
+## Fase G - Capas transversales
+
+Estas capas siguen siendo importantes, pero ahora deben acompanar el roadmap, no frenarlo si bloquean el creador guiado:
+
+- responsive
+- temas claro/oscuro
+- i18n ES/EN
+
+Recomendacion:
+
+- introducirlas de forma progresiva mientras se construyen las fases C y D
+- evitar una gran fase aislada de infraestructura visual si retrasa demasiado el valor principal
+
+## Recomendacion practica inmediata
+
+El siguiente paso con mas valor ahora mismo es:
+
+`A1 - Revision funcional del estado actual frente al nuevo alcance`
+
+Ese trabajo deberia responder:
+
+- que partes actuales ya encajan
+- que partes hay que corregir
+- que partes se pueden reaprovechar para el creador guiado
+- que cambios de modelo de datos seran necesarios para contenidos y revisiones
+
+Despues, el orden recomendado seria:
+
+`A2 - Contrato de roles, contenidos y estados`
+
+`A3 - UX base de personajes`
+
+`A4 - Character Creation V1 Guided`
+
+## Riesgos a evitar
+
+- intentar construir a la vez el modo guiado y el modo custom
+- mezclar revision de contenidos, admin completo y creador guiado en una sola fase
+- automatizar reglas sin separar bien datos canon, datos custom y overrides
+- disenar formularios de entidades sin cerrar antes estados y permisos
+- rehacer demasiada UI antes de decidir el flujo central del usuario autenticado
+
+## Conclusiones
+
+La nueva direccion es bastante clara:
+
+- el centro del producto debe ser la creacion guiada de personajes
+- el modo custom debe influir en la arquitectura, pero no bloquear la primera entrega
+- el sistema de contenidos debe distinguir canon, custom y revision
+- los roles actuales encajan, siempre que concretemos mejor sus acciones reales
+
+La mejor estrategia no es abrir todos los frentes, sino avanzar en este orden:
+
+1. revisar lo ya construido frente al nuevo alcance
+2. cerrar roles, estados y modelo funcional
+3. consolidar area de personajes
+4. entregar creador guiado v1
+5. ampliar a entidades editables, custom y revision avanzada

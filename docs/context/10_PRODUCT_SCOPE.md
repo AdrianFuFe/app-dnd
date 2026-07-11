@@ -2,32 +2,50 @@
 
 ## Current Product Goal
 
-`app-dnd` is a SvelteKit app for:
+`app-dnd` is a SvelteKit app whose main product direction is:
 
-- private DnD character management
-- reusable SRD-backed catalog content
-- future controlled sharing and campaign-aware visibility
+- guided character creation based on a selected ruleset
 
-## MVP Priorities
+The current product should grow around that flow, not around disconnected feature breadth.
+
+## Current Priorities
 
 - stable auth and session flow
-- ownership-safe data model
-- structured catalog content
-- E2E-stable character creation and editing flows
-- first user-facing private user content workflow
-- first role-aware shared content workflow for trusted editors/admins
+- ownership-safe character and content model
+- reusable structured content catalogs
+- explicit `ruleset` and `content_mode` support for characters and entities
+- editorial workflow for shared and canonical content
+- `Character Creation V1 Guided` for `dnd-2014-srd`
+
+## Ruleset Direction
+
+Every character and every reusable entity should be understood through:
+
+- `ruleset`
+- `content_mode`
+
+Examples:
+
+- `ruleset = dnd-2014-srd` + `content_mode = canon`
+- `ruleset = dnd-2014-srd` + `content_mode = custom`
+
+Future support for fully freeform `ruleset = custom` should exist in the model, but can wait as a later product phase.
+
+## Editorial Direction
+
+The product must distinguish clearly between:
+
+- private content
+- shared content
+- canonical content
+- review-state content
+
+Shared and canonical must not be treated as synonyms.
 
 ## Deferred Scope
 
+- full freeform custom workflows
 - advanced campaign collaboration
-- broad self-service publishing workflows beyond the current guarded feat/spell path for trusted roles
-- full automation of all DnD rules
-- broad social or community features
-
-## Product Constraint
-
-The app must distinguish clearly between:
-
-- system SRD content
-- user-private content
-- shared homebrew and derived content
+- broad admin console coverage
+- full automation of every DnD rule
+- broad community publishing or social features

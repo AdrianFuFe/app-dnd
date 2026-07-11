@@ -1,22 +1,70 @@
 # Content And Permissions
 
-## Content Sources
+## Core Product Concepts
 
-- `srd-5-1`
-- `user-private`
-- `homebrew`
+All characters and reusable entities should eventually support:
 
-## Core Rule
+- `ruleset`
+- `content_mode`
 
-SRD content is structured reusable catalog data and should remain distinct from user-owned content.
+Recommended meaning:
 
-## Permission Direction
+- `ruleset`: which rule system or version the item follows
+- `content_mode`: whether the item follows that ruleset canonically or as a custom variation
 
-- SRD/system content is readable but not editable through normal user flows
-- private content belongs to one user
-- shared non-system content is editable only through explicitly authorized editor/admin flows
-- visibility must be modeled explicitly
-- RLS is the enforcement layer for persisted data
+Examples:
+
+- `dnd-2014-srd` + `canon`
+- `dnd-2014-srd` + `custom`
+- future: `custom` + `custom`
+
+## Shared Vs Canonical
+
+Shared content is not automatically canonical content.
+
+Recommended distinction:
+
+- shared: reusable outside one private owner
+- canonical: approved baseline content for a ruleset
+
+## Editorial Direction
+
+The product should be ready for a review workflow such as:
+
+- private custom
+- shared custom
+- in review
+- approved canon
+- retired
+
+The exact persistence fields may still evolve, but the workflow direction should stay explicit.
+
+## Current Roles
+
+- `user`
+- `content_editor`
+- `admin`
+
+## Intended Role Direction
+
+### `user`
+
+- manages own characters
+- manages own private content
+- consumes visible shared content
+- may submit shared proposals where enabled
+
+### `content_editor`
+
+- does everything `user` can do
+- creates, edits, reviews, and maintains shared content
+- manages canonical content
+- can convert reviewed content into final canonical content
+
+### `admin`
+
+- does everything `content_editor` can do
+- manages users, roles, and other sensitive global operations
 
 ## Current Modeling Focus
 
@@ -29,10 +77,16 @@ SRD content is structured reusable catalog data and should remain distinct from 
 - feats
 - equipment
 - character ownership
-- user-private feats now have create and SRD-derivation workflows
-- shared and system feat publishing now has an initial role-aware UI surface
-- user-private spells now also have create, SRD-derivation, and guarded shared/system publishing workflows
-- trusted editor/admin users can now review, update, retire, and delete maintained shared feats and spells
+- current bounded private/shared workflows for feats and spells
+
+## Near-Term Constraint
+
+Do not treat the current feat/spell editorial UI as the final generalized content model.
+
+It should be treated as:
+
+- a useful bounded implementation
+- a stepping stone toward a broader ruleset-aware editorial system
 
 ## Import Rule
 

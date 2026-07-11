@@ -1,148 +1,175 @@
 # Roadmap
 
-## Iteration 0
+## Roadmap Status
 
-- create project baseline files
-- document requirements, architecture, database model, and roadmap
-- prepare source folders for upcoming features
+The project already completed a strong technical foundation:
 
-## Iteration 1
+- auth and protected app shell
+- character CRUD
+- structured SRD-backed catalog content
+- role-aware content operations for bounded content families
+- tests and validation strong enough for iterative work
 
-- align documentation with SRD, content, and permission guidance
-- create TypeScript types for content and permissions
-- prepare `src/lib/schemas/content`
-- install `zod` only when schema validation work begins
+The next roadmap should now shift from "more breadth first" to "stronger product direction first".
 
-## Iteration 2
+## Completed Foundation
 
-- install and configure `zod`
-- create content schemas and validation tests
-- validate local JSON templates and future import files
+These blocks are already substantially in place:
 
-## Iteration 3
+1. baseline documentation and project structure
+2. schema and validation groundwork for content
+3. SQL and RLS foundations
+4. initial SRD seed/import direction
+5. protected app shell and auth flows
+6. character create/edit/detail/delete workflow
+7. first private content CRUD for bounded families
+8. first role-aware shared content publishing and maintenance for bounded families
 
-- add content-oriented SQL drafts
-- add `content_sources` and core catalog tables
-- prepare MVP RLS for SRD and private content
-- define seeds/import boundaries
+This foundation should now be reused rather than replaced.
 
-## Iteration 4
+## Next Strategic Block
 
-- implement local content import and validation workflow
-- support versioned files under `data/`
-- prepare minimal SRD seeds and private templates
+The next recommended block is:
 
-## Iteration 5
+- `B1 - Product Contract Alignment`
 
-- integrate catalog content into character creation and editing
-- keep free-text fallbacks during the transition
-- complete basic auth and protected app flows with Supabase Auth
+This block should lock down:
 
-## Iteration 6
+- `ruleset` and `content_mode` as first-class product concepts
+- role responsibilities
+- editorial review flow
+- scope of `Character Creation V1 Guided`
 
-- stabilize the completed character create/edit workflow with green E2E coverage
-- keep session planning documents aligned with the current implementation
-- treat broken workflow tests as the first priority before adding wider product scope
+## Near-Term Roadmap
 
-Status on 2026-07-07:
+## B1 - Product Contract Alignment
 
-- character create/edit/delete E2E flows are green again
-- structured note placeholder rows no longer block submit
-- the next development focus moves back to product breadth instead of workflow repair
+Objective:
 
-## Iteration 7
+- align requirements, roadmap, and context docs with the current product direction
 
-- create the first user-facing private/manual content CRUD workflow
-- start with one bounded content family such as spells or feats
-- preserve clear boundaries between SRD/system content and user-private content
+Expected output:
 
-## Iteration 8
+- updated requirements
+- clarified product scope
+- clarified content/editorial model
+- clarified next implementation priorities
 
-- support copying SRD entries into private editable content
-- track source metadata for derived private entries
-- keep original SRD entries read-only in normal user flows
+## B2 - Editorial Model And Content States
 
-## Iteration 9
+Objective:
 
-- expose role-aware content behavior for `user`, `content_editor`, and `admin`
-- keep role assignment in explicit operator tooling unless a hardened admin console is deliberately added
-- add focused tests for permission-sensitive content operations
+- define how shared, canonical, custom, and review-state content should coexist
 
-Status on 2026-07-08:
+Key decisions:
 
-- authenticated users can create private feats and derive private copies from shared SRD feats
-- `content_editor` users can publish validated shared homebrew feats from the app content surface
-- `admin` users can publish system-owned feat entries from the same guarded workflow
-- authenticated users can also create private spells and derive private copies from shared SRD spells
-- `content_editor` users can now publish validated shared homebrew spells from the app content surface
-- `admin` users can now publish system-owned spell entries from the same guarded workflow
-- role assignment still remains outside the runtime UI and inside operator tooling
+- every entity should support `ruleset`
+- every entity should support `content_mode`
+- characters should also support `ruleset` and `content_mode`
+- editorial status should be modeled separately from content mode when review workflows are needed
 
-## Iteration 10
+Expected output:
 
-- add the first bounded shared-content maintenance workflow after publishing
-- let editor/admin users review and update shared feat entries without weakening ownership boundaries
-- keep normal users read-only for shared and system-owned content
-- add focused tests for shared-content update behavior and visibility rules
+- agreed state model
+- target field naming
+- target data-model direction before SQL changes
 
-Status on 2026-07-08:
+## B3 - Character Area UX Consolidation
 
-- editor/admin users can now review shared homebrew feats they are allowed to maintain
-- `content_editor` users can update their own shared homebrew feats
-- `admin` users can update both shared and system-owned homebrew feats
-- shared spell editing is now also available for trusted roles through the app content surface
+Objective:
 
-## Iteration 11
+- improve the current character area before rebuilding the main creation flow
 
-- add explicit lifecycle controls for maintained shared feats
-- let trusted roles retire or delete shared homebrew entries through guarded app-side authorization
-- keep system-owned lifecycle operations admin-only
-- preserve normal-user read-only behavior for shared and system-owned content
+Expected work:
 
-Status on 2026-07-08:
+- gallery polish
+- clearer detail/edit flow
+- double confirmation for destructive delete operations
+- UI cleanup that reduces friction before the guided creator lands
 
-- trusted roles can now retire or permanently delete maintained shared feats
-- shared spell publishing and maintenance now exist, but spell lifecycle controls are still missing
+## B4 - Character Creation V1 Guided Design
 
-Status on 2026-07-09:
+Objective:
 
-- trusted roles can now retire or permanently delete maintained shared spells
-- the E2E mock runtime now has role-override groundwork for future privileged content browser coverage
-- privileged `/app/content` browser coverage now exercises trusted feat and spell publish, edit, retire, and delete workflows across `user`, `content_editor`, and `admin` roles
-- invalid privileged feat and spell publish attempts now keep users on `/app/content` with stable field-level validation feedback in Playwright coverage
+- design the first real guided creator before implementation
 
-Status on 2026-07-10:
+Scope:
 
-- invalid trusted-role shared feat and shared spell edits now keep the maintenance editor loaded with stable field-level feedback in Playwright coverage
-- SRD seed coverage now includes additional `subspecies` and `subclasses` entries for existing species/class consumers
-- the next nearby confidence slice is targeted browser coverage for dependent subspecies and subclass selection behavior in character forms
+- first ruleset: `dnd-2014-srd`
+- step-based experience
+- heavy automation for canonical progression
+- architecture prepared for future custom overrides
 
-Planning review on 2026-07-10:
+Expected output:
 
-- `pnpm check` and `pnpm build` currently pass
-- the repo is not fully green yet because `pnpm lint` still reports formatting drift and `pnpm test` currently stops in unit coverage where the content-template fixture expectations still match the older pre-expansion SRD counts
-- the next recommended implementation block remains `S33 - Character Catalog Dependent Selection E2E`
-- the next two follow-up blocks after `S33` should be:
-    - restore green quality gates by realigning content-template expectations and formatting
-    - run a real Supabase smoke test and deployment-readiness pass so the MVP can move from "implemented" to "operational for internal testing"
+- step map
+- automatic vs editable field policy
+- progression and rule-application contract
+- integration plan with the current catalog
 
-Status on 2026-07-10:
+## B5 - Character Creation V1 Guided Implementation
 
-- `pnpm lint`, `pnpm check`, and `pnpm test` now pass again after the expanded SRD seed follow-up work
-- the remaining MVP-closeout gap is no longer internal quality drift, but an external live Supabase smoke pass plus a concrete hosting decision
-- the next recommended step is to execute `S35 - Live Supabase Smoke And Deploy Readiness` against a real Supabase environment and record the outcome
+Objective:
 
-## Future Iterations
+- build the new guided creator as the next major product delivery
 
-- short-term MVP closeout:
-    - validate auth, character CRUD, and `/app/content` flows against a real Supabase project
-    - make hosting/deployment prerequisites explicit for the first internal test build
-    - record the first live smoke result and selected host assumptions in repo docs
-- advanced permissions and sharing
-- campaign-aware visibility
-- future campaign and companion features
+Expected work:
+
+- step-based UI
+- rule application layer
+- validation updates
+- integration with catalog entities
+- automated test coverage
+
+## B6 - Custom Foundation
+
+Objective:
+
+- prepare the second-phase path for custom behavior without blocking guided v1
+
+Expected work:
+
+- override model
+- custom entity linkage to an existing ruleset
+- foundation for future `ruleset = custom`
+
+Important note:
+
+- this foundation should be prepared after guided v1 is clearly defined, not before
+
+## B7 - Generalized Entity Authoring
+
+Objective:
+
+- expand content creation beyond the currently bounded feat/spell flows
+
+Expected work:
+
+- reusable authoring patterns by entity type
+- ruleset-aware and content-mode-aware forms
+- alignment with the editorial flow
+
+This should happen after the editorial contract is clear enough to avoid rework.
+
+## Supporting Workstreams
+
+These should continue, but should not distract from the guided creator roadmap:
+
+- live Supabase smoke validation
+- deployment readiness
+- documentation hygiene
+- quality gates
+- progressive i18n preparation
+
+## Product Rules For Upcoming Work
+
+- do not treat shared content and canonical content as the same thing
+- do not implement full custom mode before guided v1 has a stable contract
+- do not expand admin UI broadly before the editorial model is clear
+- do not keep adding horizontal CRUD surfaces unless they directly support the guided creator or the agreed editorial model
 
 ## Cross-Cutting Workflow
 
 - maintain focused context slices under `docs/context/`
-- favor small tasks with proportional validation to reduce token waste
+- favor small implementation blocks with validation
+- document product decisions before broadening the surface area again
