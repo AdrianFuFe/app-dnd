@@ -247,24 +247,32 @@ Resultado fijado:
 - alcance de `Character Creation V1 Guided` aclarado
 - aplazamiento formal del modo custom completo
 
+## Estado del bloque B2
+
+`B2 - Editorial Model And Content States` ya queda cerrado a nivel documental inicial.
+
+Resultado fijado:
+
+- separacion entre `ruleset`, `content_mode` y `editorial_status`
+- personajes alineados con `ruleset` y `content_mode`
+- entidades reutilizables alineadas con `ruleset`, `content_mode` y `editorial_status`
+- distincion formal entre contenido compartido y contenido canonico
+- propuesta de nombres de campos orientada a implementacion
+
+Documento de referencia:
+
+- `docs/17-editorial-model-and-content-states.md`
+
 ## Proximo trabajo recomendado
 
 El siguiente bloque con mas sentido ahora es:
 
-- `B2 - Editorial Model And Content States`
-
-Ese bloque deberia aterrizar:
-
-- nombres finales de campos
-- separacion entre `content_mode` y estado editorial
-- propuesta de estados de revision y publicacion
-- impacto esperado en SQL, tipos y repositorios
-
-Despues, el orden recomendado seria:
-
 - `B3 - Character Area UX Consolidation`
+
+Y en paralelo o inmediatamente despues:
+
+- traducir el contrato documental a SQL y tipos cuando decidamos abrir el bloque tecnico de modelo de datos
 - `B4 - Character Creation V1 Guided Design`
-- `B5 - Character Creation V1 Guided Implementation`
 
 ## Recomendacion practica
 

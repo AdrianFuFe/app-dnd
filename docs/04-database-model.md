@@ -1,20 +1,54 @@
 # Database Model
 
-## Iteration Status
+## Current Direction
 
-This document captures the initial relational model without enabling a working Supabase integration yet.
+This document reflects the database direction after closing:
 
-Implementation is intentionally split in stages:
+- `B1 - Product Contract Alignment`
+- `B2 - Editorial Model And Content States`
 
-- character tables remain the first editable user data slice
-- the initial SQL now includes the first catalog and permission foundations needed for character references
-- deeper character automation still stays incremental
+The current target is no longer just "character CRUD plus content tables".
 
-The detailed future content model is documented in `docs/rules/06_MODELO_DATOS_CONTENIDO_Y_PERMISOS.md`.
+The target is:
 
-## Core Tables
+- characters with explicit ruleset identity
+- reusable entities with explicit ruleset identity
+- separation between canonical/custom mode and editorial publication state
 
-### `profiles`
+## Core Concepts
+
+The data model should distinguish these concerns clearly:
+
+- ownership
+- ruleset
+- content mode
+- editorial status
+- visibility
+- provenance
+
+These concepts should not be merged into one overloaded field.
+
+## Roles In The Model
+
+The global roles remain:
+
+- `user`
+- `content_editor`
+- `admin`
+
+The role model is still enforced through:
+
+- SQL RLS
+- server-side authorization
+
+## `profiles`
+
+Current direction:
+
+- keep `global_role`
+- continue using it as the application contract for authorization
+
+Expected shape:
 
 - `id uuid primary key references auth.users(id) on delete cascade`
 - `display_name text`
@@ -22,170 +56,168 @@ The detailed future content model is documented in `docs/rules/06_MODELO_DATOS_C
 - `created_at timestamptz`
 - `updated_at timestamptz`
 
-### `characters`
+## Characters
 
-- `id uuid primary key`
-- `user_id uuid references auth.users(id) on delete cascade`
-- `name text not null`
-- `species_id uuid nullable references species(id)`
-- `subspecies_id uuid nullable references subspecies(id)`
-- `class_id uuid nullable references character_classes(id)`
-- `subclass_id uuid nullable references subclasses(id)`
-- `background_id uuid nullable references backgrounds(id)`
-- `race text`
-- `subrace text`
-- `class_name text`
-- `subclass text`
-- `level integer default 1 check 1-20`
-- `background text`
-- `story text`
-- `created_at timestamptz`
-- `updated_at timestamptz`
+## Character identity
 
-The free-text identity fields remain useful during the MVP as a compatibility layer while reusable catalog entities are introduced.
+Characters should continue to own their current structured identity and detail fields.
 
-## Current Content Tables
+## New required product fields
 
-These now belong to the initial working schema:
+Characters should also track:
 
-- `content_sources`
+- `ruleset_code`
+- `content_mode`
+
+Recommended shape additions:
+
+- `ruleset_code text not null default 'dnd-2014-srd'`
+- `content_mode text not null default 'canon'`
+
+Recommended constraints:
+
+- `content_mode in ('canon', 'custom')`
+
+Characters do not need the full editorial lifecycle in the immediate phase.
+
+## Current character references
+
+These remain valid:
+
+- `species_id`
+- `subspecies_id`
+- `class_id`
+- `subclass_id`
+- `background_id`
+
+The existing free-text compatibility fields may remain temporarily during transition.
+
+## Reusable Entity Tables
+
+The reusable content families remain:
+
 - `species`
 - `subspecies`
 - `character_classes`
 - `subclasses`
 - `backgrounds`
 - `spells`
+- `feats`
+- `equipment`
 
-The implementation order remains:
+Future families can follow the same contract.
 
-1. add `content_sources`
-2. add core content tables
-3. relate `characters` to those content tables
-4. add advanced permissions later
+## Shared reusable entity contract
 
-### `character_stats`
+Each reusable entity should eventually track at least:
 
-- `character_id uuid primary key references characters(id) on delete cascade`
-- `strength integer default 10 check 1-30`
-- `dexterity integer default 10 check 1-30`
-- `constitution integer default 10 check 1-30`
-- `intelligence integer default 10 check 1-30`
-- `wisdom integer default 10 check 1-30`
-- `charisma integer default 10 check 1-30`
+- `owner_user_id`
+- `source_id`
+- `ruleset_code`
+- `content_mode`
+- `editorial_status`
+- `visibility`
+- structured fields for its domain
+- `is_system_content`
+- audit timestamps
 
-### `character_combat_stats`
+## Recommended field additions for each entity table
 
-- `character_id uuid primary key references characters(id) on delete cascade`
-- `max_hp integer default 1 check >= 1`
-- `current_hp integer default 1 check >= 0 and <= max_hp`
-- `temporary_hp integer default 0 check >= 0`
-- `armor_class integer default 10 check >= 0`
-- `initiative integer default 0`
-- `speed integer default 30 check >= 0`
-- `hit_dice text`
+- `ruleset_code text not null default 'dnd-2014-srd'`
+- `content_mode text not null default 'canon'`
+- `editorial_status text not null default 'published'`
 
-### `character_text_sections`
+Recommended constraints:
 
-- `character_id uuid primary key references characters(id) on delete cascade`
-- `attacks text`
-- `spells text`
-- `inventory text`
-- `notes text`
+- `content_mode in ('canon', 'custom')`
+- `editorial_status in ('private_draft', 'shared_draft', 'in_review', 'published', 'retired')`
 
-This table is the first persistence step for the free-text character sections already modeled in the MVP form schema. More structured child tables can still replace or complement these fields later.
+## Meaning of these fields
 
-### `character_inventory_items`
+### `ruleset_code`
 
-- `id uuid primary key`
-- `character_id uuid references characters(id) on delete cascade`
-- `name text not null`
-- `quantity integer default 1 check >= 0`
-- `description text`
-- `weight numeric check null or >= 0`
-- `value text`
-- `is_equipped boolean default false`
-- `created_at timestamptz`
-- `updated_at timestamptz`
+- identifies which rule system or rules version the entity follows
 
-### `character_attacks`
+### `content_mode`
 
-- `id uuid primary key`
-- `character_id uuid references characters(id) on delete cascade`
-- `name text not null`
-- `attack_bonus text`
-- `damage text`
-- `damage_type text`
-- `range text`
-- `description text`
-- `created_at timestamptz`
-- `updated_at timestamptz`
+- `canon`: follows that ruleset faithfully
+- `custom`: extends or varies that ruleset
 
-### `character_spells`
+### `editorial_status`
 
-- `id uuid primary key`
-- `character_id uuid references characters(id) on delete cascade`
-- `name text not null`
-- `level integer check null or 0-9`
-- `school text`
-- `casting_time text`
-- `range text`
-- `components text`
-- `duration text`
-- `description text`
-- `is_prepared boolean default false`
-- `created_at timestamptz`
-- `updated_at timestamptz`
+- `private_draft`
+- `shared_draft`
+- `in_review`
+- `published`
+- `retired`
 
-### `character_notes`
+### `visibility`
 
-- `id uuid primary key`
-- `character_id uuid references characters(id) on delete cascade`
-- `title text not null`
-- `content text`
-- `note_type text default general`
-- `created_at timestamptz`
-- `updated_at timestamptz`
+Should remain focused on access scope, not editorial meaning.
+
+Near-term guidance:
+
+- keep `private`
+- keep `shared`
+- preserve room for future `campaign`
+
+Avoid treating `public` as a synonym for canonical content.
+
+## Existing fields that stay useful
+
+### `source_id`
+
+Still useful for provenance, licensing, and import origin.
+
+But:
+
+- it should not replace `ruleset_code`
+
+### `is_system_content`
+
+Still useful as an operational flag for protected or system-maintained rows.
+
+But:
+
+- it should not be the main expression of whether content is canon
+
+## Content Sources
+
+`content_sources` still remains useful for provenance metadata such as:
+
+- source code
+- source name
+- license
+- attribution
+- whether the source is system-owned
+
+This should coexist with `ruleset_code`, not replace it.
 
 ## Security Model
 
+The current direction remains:
+
 - enable RLS on every app table
-- standard users can only access their own `profiles` row
-- standard users can only access their own `characters`
-- child tables must resolve ownership through the parent `characters.user_id = auth.uid()`
-- SRD/system content should be readable by authenticated users but not editable from the normal UI
-- manual/private content should be owner-scoped by default
-- no broad public write policies by default
+- standard users access only their own character data
+- child tables resolve ownership through the parent character
+- shared readable content should remain distinct from owner-only content
+- editor/admin write behavior should be explicit and guarded
 
-## Role Enforcement Foundation
+## Migration Direction
 
-The repo now treats global roles as an explicit application contract instead of a passive column:
+The next technical migration block should focus on:
 
-- `user`: can manage their own characters and private content
-- `content_editor`: inherits `user` behavior and can edit shared non-system content
-- `admin`: inherits `content_editor` behavior and can read or update protected app data across users
+1. add `ruleset_code` and `content_mode` to `characters`
+2. add `ruleset_code`, `content_mode`, and `editorial_status` to reusable entities
+3. update TypeScript content model types
+4. update repository queries and filters
+5. update authorization expectations around editorial status transitions
 
-Enforcement is intentionally split across two layers:
+## Deferred Model Areas
 
-- SQL RLS in `supabase/sql/002_initial_rls_policies.sql` remains the persistence boundary
-- server-side route and action checks should use `src/lib/server/permissions/authorization.ts` before admin-only or editor-only behavior runs
+These remain later-phase concerns:
 
-The current boundary is deliberately conservative:
-
-- admin read and update overrides exist for content and character data
-- profile role assignment is not exposed through normal runtime flows
-- admin assignment and test-user setup are handled through explicit service-role operator scripts documented in `docs/11-admin-and-test-user-workflow.md`
-
-## Deferred Tables
-
-Planned for later iterations:
-
-- `content_permissions`
-- `campaigns`
-- `campaign_members`
-- `campaign_sessions`
-- `campaign_locations`
-- `campaign_npcs`
-- `campaign_items`
-- `monsters`
-- `campaign_monsters`
-- `session_participants`
+- campaign sharing and campaign roles
+- fine-grained content permissions
+- broader social/community visibility
+- full custom freeform ruleset workflows
