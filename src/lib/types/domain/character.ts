@@ -89,6 +89,10 @@ export type CharacterNoteItem = {
 	content: string;
 };
 
+export type CharacterContentProfileMetadata = {
+	reasonLines: string[];
+};
+
 export type CharacterTextSections = {
 	attacks?: string;
 	spells?: string;
@@ -104,4 +108,5 @@ export type CharacterCreateInput = CharacterIdentity &
 		featItems: CharacterFeatItem[];
 		inventoryItems: CharacterInventoryItem[];
 		noteItems: CharacterNoteItem[];
+		contentProfileMetadata?: CharacterContentProfileMetadata;
 	};

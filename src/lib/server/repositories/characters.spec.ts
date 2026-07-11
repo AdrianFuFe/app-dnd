@@ -345,6 +345,90 @@ describe('createCharacter', () => {
 		expect(deleteEqId).toHaveBeenCalledWith('id', 'char-1');
 		expect(deleteEqUserId).toHaveBeenCalledWith('user_id', 'user-1');
 	});
+
+	it('persists custom profile metadata as a reserved note row', async () => {
+		const charactersSingle = vi.fn().mockResolvedValue({
+			data: {
+				id: 'char-1',
+				name: 'Custom Draft'
+			},
+			error: null
+		});
+		const charactersSelect = vi.fn().mockReturnValue({ single: charactersSingle });
+		const charactersInsert = vi.fn().mockReturnValue({ select: charactersSelect });
+		const notesInsert = vi.fn().mockResolvedValue({ error: null });
+
+		const from = vi.fn((table: string) => {
+			if (table === 'characters') {
+				return { insert: charactersInsert };
+			}
+
+			if (table === 'character_stats') {
+				return { insert: vi.fn().mockResolvedValue({ error: null }) };
+			}
+
+			if (table === 'character_combat_stats') {
+				return { insert: vi.fn().mockResolvedValue({ error: null }) };
+			}
+
+			if (table === 'character_text_sections') {
+				return { insert: vi.fn().mockResolvedValue({ error: null }) };
+			}
+
+			if (
+				table === 'character_attacks' ||
+				table === 'character_spells' ||
+				table === 'character_feats' ||
+				table === 'character_inventory_items'
+			) {
+				return { insert: vi.fn().mockResolvedValue({ error: null }) };
+			}
+
+			if (table === 'character_notes') {
+				return { insert: notesInsert };
+			}
+
+			throw new Error(`Unexpected table ${table}`);
+		});
+
+		await createCharacter({ from } as never, 'user-1', {
+			name: 'Custom Draft',
+			rulesetCode: 'dnd-2014-srd',
+			contentMode: 'custom',
+			level: 1,
+			strength: 10,
+			dexterity: 10,
+			constitution: 10,
+			intelligence: 10,
+			wisdom: 10,
+			charisma: 10,
+			maxHp: 1,
+			currentHp: 1,
+			temporaryHp: 0,
+			armorClass: 10,
+			initiative: 0,
+			speed: 30,
+			attackItems: [],
+			spellItems: [],
+			featItems: [],
+			inventoryItems: [],
+			noteItems: [{ title: 'Goals', content: 'Protect the archive.' }],
+			contentProfileMetadata: {
+				reasonLines: ['Manual override: Armor Class']
+			}
+		});
+
+		expect(notesInsert).toHaveBeenCalledWith([
+			expect.objectContaining({
+				title: 'Goals',
+				content: 'Protect the archive.'
+			}),
+			expect.objectContaining({
+				title: 'System: Content Profile',
+				content: JSON.stringify({ reasonLines: ['Manual override: Armor Class'] })
+			})
+		]);
+	});
 });
 
 describe('getCharacterForUser', () => {
@@ -938,6 +1022,151 @@ describe('getCharacterForUser', () => {
 		const character = await getCharacterForUser({ from } as never, 'user-1', 'missing');
 
 		expect(character).toBeNull();
+	});
+
+	it('extracts persisted custom profile metadata without leaking it into visible notes', async () => {
+		const characterMaybeSingle = vi.fn().mockResolvedValue({
+			data: {
+				id: 'char-1',
+				name: 'Custom Draft',
+				species_id: null,
+				subspecies_id: null,
+				class_id: null,
+				subclass_id: null,
+				background_id: null,
+				race: null,
+				subrace: null,
+				class_name: null,
+				subclass: null,
+				level: 1,
+				background: null,
+				story: null,
+				updated_at: '2026-06-24T10:00:00.000Z'
+			},
+			error: null
+		});
+		const from = vi.fn((table: string) => {
+			if (table === 'characters') {
+				return {
+					select: vi.fn().mockReturnValue({
+						eq: vi.fn().mockReturnValue({
+							eq: vi.fn().mockReturnValue({ maybeSingle: characterMaybeSingle })
+						})
+					})
+				};
+			}
+
+			if (table === 'character_stats') {
+				return {
+					select: vi.fn().mockReturnValue({
+						eq: vi.fn().mockReturnValue({
+							maybeSingle: vi.fn().mockResolvedValue({
+								data: {
+									strength: 10,
+									dexterity: 10,
+									constitution: 10,
+									intelligence: 10,
+									wisdom: 10,
+									charisma: 10
+								},
+								error: null
+							})
+						})
+					})
+				};
+			}
+
+			if (table === 'character_combat_stats') {
+				return {
+					select: vi.fn().mockReturnValue({
+						eq: vi.fn().mockReturnValue({
+							maybeSingle: vi.fn().mockResolvedValue({
+								data: {
+									max_hp: 1,
+									current_hp: 1,
+									temporary_hp: 0,
+									armor_class: 10,
+									initiative: 0,
+									speed: 30,
+									hit_dice: null
+								},
+								error: null
+							})
+						})
+					})
+				};
+			}
+
+			if (table === 'character_text_sections') {
+				return {
+					select: vi.fn().mockReturnValue({
+						eq: vi.fn().mockReturnValue({
+							maybeSingle: vi.fn().mockResolvedValue({
+								data: {
+									attacks: null,
+									spells: null,
+									inventory: null,
+									notes: null
+								},
+								error: null
+							})
+						})
+					})
+				};
+			}
+
+			if (
+				table === 'character_attacks' ||
+				table === 'character_spells' ||
+				table === 'character_feats' ||
+				table === 'character_inventory_items'
+			) {
+				return {
+					select: vi.fn().mockReturnValue({
+						eq: vi.fn().mockResolvedValue({
+							data: [],
+							error: null
+						})
+					})
+				};
+			}
+
+			if (table === 'character_notes') {
+				return {
+					select: vi.fn().mockReturnValue({
+						eq: vi.fn().mockResolvedValue({
+							data: [
+								{
+									title: 'Goals',
+									content: 'Protect the archive.'
+								},
+								{
+									title: 'System: Content Profile',
+									content: JSON.stringify({
+										reasonLines: ['Manual override: Armor Class']
+									})
+								}
+							],
+							error: null
+						})
+					})
+				};
+			}
+
+			throw new Error(`Unexpected table ${table}`);
+		});
+
+		const character = await getCharacterForUser({ from } as never, 'user-1', 'char-1');
+
+		expect(character?.contentProfileMetadata).toEqual({
+			reasonLines: ['Manual override: Armor Class']
+		});
+		expect(character?.noteItems).toEqual([
+			{
+				title: 'Goals',
+				content: 'Protect the archive.'
+			}
+		]);
 	});
 });
 

@@ -142,14 +142,17 @@ export const actions: Actions = {
 			const character = await createCharacter(locals.supabase, locals.session.user.id, {
 				...guidedDraft.character,
 				...catalogSelection,
-				spellItems
+				spellItems,
+				contentProfileMetadata:
+					guidedDraft.preview.customizationReasonLines.length > 0
+						? { reasonLines: guidedDraft.preview.customizationReasonLines }
+						: undefined
 			});
 			throw redirect(
 				303,
 				buildCharacterDetailRedirect(character.id, {
 					created: character.name,
-					guided: '1',
-					profileMode: guidedDraft.character.contentMode
+					guided: '1'
 				})
 			);
 		} catch (error) {
@@ -245,6 +248,10 @@ export const actions: Actions = {
 				...parsed.data,
 				rulesetCode: contentProfileResult.profile.rulesetCode,
 				contentMode: contentProfileResult.profile.contentMode,
+				contentProfileMetadata:
+					contentProfileResult.reasonLines.length > 0
+						? { reasonLines: contentProfileResult.reasonLines }
+						: undefined,
 				speciesId: catalogSelection.speciesId,
 				race: catalogSelection.race,
 				subspeciesId: catalogSelection.subspeciesId,
@@ -263,9 +270,7 @@ export const actions: Actions = {
 			throw redirect(
 				303,
 				buildCharacterDetailRedirect(character.id, {
-					created: character.name,
-					profileMode: contentProfileResult.profile.contentMode,
-					profileReason: contentProfileResult.reasonLines
+					created: character.name
 				})
 			);
 		} catch (error) {
@@ -294,8 +299,6 @@ function buildCharacterDetailRedirect(
 	params: {
 		created?: string;
 		guided?: '1';
-		profileMode?: 'canon' | 'custom';
-		profileReason?: string[];
 	}
 ) {
 	const searchParams = new URLSearchParams();
@@ -306,14 +309,6 @@ function buildCharacterDetailRedirect(
 
 	if (params.guided) {
 		searchParams.set('guided', params.guided);
-	}
-
-	if (params.profileMode) {
-		searchParams.set('profileMode', params.profileMode);
-	}
-
-	for (const reason of params.profileReason ?? []) {
-		searchParams.append('profileReason', reason);
 	}
 
 	const query = searchParams.toString();

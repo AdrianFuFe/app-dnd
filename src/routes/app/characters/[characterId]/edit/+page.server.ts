@@ -116,7 +116,7 @@ export const actions: Actions = {
 			);
 			const contentProfileResult = deriveManualCharacterContentProfile(
 				{
-					...parsed.data,
+				...parsed.data,
 					rulesetCode: existingCharacter.rulesetCode,
 					contentMode: existingCharacter.contentMode,
 					attackItems,
@@ -140,6 +140,10 @@ export const actions: Actions = {
 					...parsed.data,
 					rulesetCode: contentProfileResult.profile.rulesetCode,
 					contentMode: contentProfileResult.profile.contentMode,
+					contentProfileMetadata:
+						contentProfileResult.reasonLines.length > 0
+							? { reasonLines: contentProfileResult.reasonLines }
+							: undefined,
 					speciesId: catalogSelection.speciesId,
 					race: catalogSelection.race,
 					subspeciesId: catalogSelection.subspeciesId,
@@ -159,9 +163,7 @@ export const actions: Actions = {
 			throw redirect(
 				303,
 				buildCharacterDetailRedirect(character.id, {
-					updated: character.name,
-					profileMode: contentProfileResult.profile.contentMode,
-					profileReason: contentProfileResult.reasonLines
+					updated: character.name
 				})
 			);
 		} catch (caught) {
@@ -195,22 +197,12 @@ function buildCharacterDetailRedirect(
 	characterId: string,
 	params: {
 		updated?: string;
-		profileMode?: 'canon' | 'custom';
-		profileReason?: string[];
 	}
 ) {
 	const searchParams = new URLSearchParams();
 
 	if (params.updated) {
 		searchParams.set('updated', params.updated);
-	}
-
-	if (params.profileMode) {
-		searchParams.set('profileMode', params.profileMode);
-	}
-
-	for (const reason of params.profileReason ?? []) {
-		searchParams.append('profileReason', reason);
 	}
 
 	const query = searchParams.toString();

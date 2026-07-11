@@ -11,6 +11,7 @@ import type { Database } from '$lib/types/database/supabase';
 import { normalizeContentMode, normalizeRulesetCode } from '$lib/types/content/content';
 import type {
 	CharacterAttackItem,
+	CharacterContentProfileMetadata,
 	CharacterCreateInput,
 	CharacterFeatItem,
 	CharacterInventoryItem,
@@ -47,6 +48,8 @@ export type CharacterDetail = CharacterCreateInput & {
 	id: string;
 	updatedAt: string;
 };
+
+const CONTENT_PROFILE_NOTE_TITLE = 'System: Content Profile';
 
 export async function listCharactersForUser(
 	supabase: SupabaseClient<Database>,
@@ -132,7 +135,7 @@ export async function createCharacter(
 		insertCharacterSpellItems(supabase, character.id, input.spellItems),
 		insertCharacterFeatItems(supabase, character.id, input.featItems),
 		insertCharacterInventoryItems(supabase, character.id, input.inventoryItems),
-		insertCharacterNoteItems(supabase, character.id, input.noteItems)
+		insertCharacterNoteItems(supabase, character.id, prepareCharacterNoteItems(input))
 	]);
 
 	const childError =
@@ -296,10 +299,13 @@ export async function getCharacterForUser(
 		name: item.name,
 		description: item.description ?? undefined
 	}));
+	const contentProfileMetadata = extractCharacterContentProfileMetadata(notesResult.data);
 
 	const noteItems =
 		notesResult.data.length > 0
-			? notesResult.data.map((item) => ({
+			? notesResult.data
+					.filter((item) => item.title !== CONTENT_PROFILE_NOTE_TITLE)
+					.map((item) => ({
 					title: item.title,
 					content: item.content
 				}))
@@ -340,6 +346,7 @@ export async function getCharacterForUser(
 		featItems,
 		inventoryItems,
 		noteItems,
+		contentProfileMetadata,
 		attacks: textResult.data.attacks ?? undefined,
 		spells: textResult.data.spells ?? undefined,
 		notes: textResult.data.notes ?? undefined,
@@ -405,7 +412,7 @@ export async function updateCharacter(
 		replaceCharacterSpellItems(supabase, characterId, input.spellItems),
 		replaceCharacterFeatItems(supabase, characterId, input.featItems),
 		replaceCharacterInventoryItems(supabase, characterId, input.inventoryItems),
-		replaceCharacterNoteItems(supabase, characterId, input.noteItems)
+		replaceCharacterNoteItems(supabase, characterId, prepareCharacterNoteItems(input))
 	]);
 
 	const childError =
@@ -515,6 +522,22 @@ function toCharacterTextSectionsFields(
 		inventory: toLegacyInventoryText(input.inventoryItems),
 		notes: toLegacyNoteText(input.noteItems, input.notes)
 	};
+}
+
+function prepareCharacterNoteItems(input: CharacterCreateInput): CharacterNoteItem[] {
+	const visibleItems = input.noteItems.filter((item) => item.title !== CONTENT_PROFILE_NOTE_TITLE);
+
+	if (!input.contentProfileMetadata || input.contentProfileMetadata.reasonLines.length === 0) {
+		return visibleItems;
+	}
+
+	return [
+		...visibleItems,
+		{
+			title: CONTENT_PROFILE_NOTE_TITLE,
+			content: JSON.stringify(input.contentProfileMetadata)
+		}
+	];
 }
 
 async function insertCharacterAttackItems(
@@ -978,6 +1001,28 @@ function splitLegacyAttackEntries(value: string): string[] {
 	}
 
 	return [value];
+}
+
+function extractCharacterContentProfileMetadata(
+	items: Array<Pick<CharacterNoteRow, 'title' | 'content'>>
+): CharacterContentProfileMetadata | undefined {
+	const metadataNote = items.find((item) => item.title === CONTENT_PROFILE_NOTE_TITLE);
+
+	if (!metadataNote) {
+		return undefined;
+	}
+
+	try {
+		const parsed = JSON.parse(metadataNote.content) as {
+			reasonLines?: unknown;
+		};
+		return Array.isArray(parsed.reasonLines) &&
+			parsed.reasonLines.every((line) => typeof line === 'string')
+			? { reasonLines: parsed.reasonLines }
+			: undefined;
+	} catch {
+		return undefined;
+	}
 }
 
 function mapAttackRow(
