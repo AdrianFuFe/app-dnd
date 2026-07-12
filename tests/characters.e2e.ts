@@ -5,13 +5,14 @@ test.beforeEach(async ({ request }) => {
 	expect(response.ok()).toBeTruthy();
 });
 
-test.fail('character create route saves a new draft and returns to the roster', async ({ page }) => {
+test('character create route saves a new draft and returns to detail', async ({ page }) => {
 	await page.goto('/app/characters/new');
 
 	await expect(page).toHaveURL('/app/characters/new');
 	await expect(
 		page.getByRole('heading', { name: 'Create a structured character draft.' })
 	).toBeVisible();
+	const manualForm = page.locator('form').last();
 
 	await fillCharacterForm(page, {
 		name: 'Brakka Emberforge',
@@ -44,14 +45,15 @@ test.fail('character create route saves a new draft and returns to the roster', 
 			}
 		]
 	});
+	await manualForm.getByRole('button', { name: 'Create character' }).click();
 
-	await page.getByRole('button', { name: 'Create character' }).click();
-
-	await expect(page).toHaveURL(/\/app\/characters\?created=Brakka\+Emberforge$/);
+	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\?created=Brakka\+Emberforge$/);
 	await expect(page.getByText('Brakka Emberforge was created successfully.')).toBeVisible();
 	await expect(page.getByRole('heading', { name: 'Brakka Emberforge' })).toBeVisible();
 	await expect(page.getByText('Humano', { exact: true })).toBeVisible();
 	await expect(page.getByText('Guerrero', { exact: true })).toBeVisible();
+	await expect(page.getByText('Warhammer', { exact: true })).toBeVisible();
+	await expect(page.getByText('Orders', { exact: true })).toBeVisible();
 });
 
 test('character edit route updates an existing draft and returns to detail', async ({ page }) => {
@@ -112,12 +114,13 @@ test('character edit route updates an existing draft and returns to detail', asy
 	await expect(page.getByText('Tracks ley lines.', { exact: true })).toBeVisible();
 });
 
-test.fail('manual custom draft persists content-profile reasons through detail and edit round trips', async ({
+test('manual custom draft persists content-profile reasons through detail and edit round trips', async ({
 	page
 }) => {
 	await page.goto('/app/characters/new');
 
 	await expect(page).toHaveURL('/app/characters/new');
+	const manualForm = page.locator('form').last();
 	await fillCharacterForm(page, {
 		name: 'Ilya Starling',
 		species: 'Humano',
@@ -153,18 +156,10 @@ test.fail('manual custom draft persists content-profile reasons through detail a
 		inventoryItems: [],
 		noteItems: []
 	});
-
-	await page.getByRole('button', { name: 'Create character' }).click();
-
-	await expect(page).toHaveURL(/\/app\/characters\?created=Ilya\+Starling$/);
-	await expect(page.getByText('Ilya Starling was created successfully.')).toBeVisible();
-	await page
-		.locator('article')
-		.filter({ has: page.getByRole('heading', { name: 'Ilya Starling' }) })
-		.getByRole('link', { name: 'View details' })
-		.click();
+	await manualForm.getByRole('button', { name: 'Create character' }).click();
 
 	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\?created=Ilya\+Starling$/);
+	await expect(page.getByText('Ilya Starling was created successfully.')).toBeVisible();
 	await expect(page.getByText('custom', { exact: true })).toBeVisible();
 	await expect(page.getByText('Custom path reasons')).toBeVisible();
 	await expect(page.getByText('Manual override: Attack Items', { exact: true })).toBeVisible();
@@ -177,7 +172,7 @@ test.fail('manual custom draft persists content-profile reasons through detail a
 	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\?updated=Ilya\+Starling$/);
 	await expect(page.getByText('Ilya Starling was updated successfully.')).toBeVisible();
 	await expect(page.getByText('Custom path reasons')).toBeVisible();
-	await expect(page.getByText('Existing custom draft retained', { exact: true })).toBeVisible();
+	await expect(page.getByText('Manual override: Attack Items', { exact: true })).toBeVisible();
 });
 
 test('character create route filters dependent subspecies and subclass options from catalog selections', async ({
@@ -185,10 +180,11 @@ test('character create route filters dependent subspecies and subclass options f
 }) => {
 	await page.goto('/app/characters/new');
 
-	const speciesSelect = page.locator('select[name="speciesId"]').nth(1);
-	const subspeciesSelect = page.locator('select[name="subspeciesId"]').nth(1);
-	const classSelect = page.locator('select[name="classId"]').nth(1);
-	const subclassSelect = page.locator('select[name="subclassId"]').nth(1);
+	const manualForm = page.locator('form').last();
+	const speciesSelect = manualForm.locator('select[name="speciesId"]');
+	const subspeciesSelect = manualForm.locator('select[name="subspeciesId"]');
+	const classSelect = manualForm.locator('select[name="classId"]');
+	const subclassSelect = manualForm.locator('select[name="subclassId"]');
 
 	await expect(getSelectOptions(subspeciesSelect)).resolves.toEqual(['Select a subspecies']);
 	await expect(getSelectOptions(subclassSelect)).resolves.toEqual(['Select a subclass']);
@@ -388,6 +384,7 @@ async function fillCharacterForm(
 		}>;
 	}> = {}
 ) {
+	const form = page.locator('form').last();
 	const shouldSyncNoteItems = 'noteItems' in overrides;
 	const values = {
 		name: 'Talia Stormstep',
@@ -439,45 +436,45 @@ async function fillCharacterForm(
 		...overrides
 	};
 
-	await page.locator('input[name="name"]').last().fill(values.name);
-	const speciesSelect = page.locator('select[name="speciesId"]').last();
-	const subspeciesSelect = page.locator('select[name="subspeciesId"]').last();
-	const classSelect = page.locator('select[name="classId"]').last();
-	const subclassSelect = page.locator('select[name="subclassId"]').last();
+	await form.locator('input[name="name"]').fill(values.name);
+	const speciesSelect = form.locator('select[name="speciesId"]');
+	const subspeciesSelect = form.locator('select[name="subspeciesId"]');
+	const classSelect = form.locator('select[name="classId"]');
+	const subclassSelect = form.locator('select[name="subclassId"]');
 
 	await speciesSelect.selectOption({ label: values.species });
 	await selectDependentOption(subspeciesSelect, values.subspecies);
 	await classSelect.selectOption({ label: values.className });
 	await selectDependentOption(subclassSelect, values.subclass);
-	await page.locator('input[name="level"]').last().fill(values.level);
-	await page.locator('select[name="backgroundId"]').last().selectOption({ label: values.background });
-	await page.locator('textarea[name="story"]').last().fill(values.story);
-	await page.locator('input[name="strength"]').last().fill(values.strength);
-	await page.locator('input[name="dexterity"]').last().fill(values.dexterity);
-	await page.locator('input[name="constitution"]').last().fill(values.constitution);
-	await page.locator('input[name="intelligence"]').last().fill(values.intelligence);
-	await page.locator('input[name="wisdom"]').last().fill(values.wisdom);
-	await page.locator('input[name="charisma"]').last().fill(values.charisma);
-	await page.locator('input[name="maxHp"]').last().fill(values.maxHp);
-	await page.locator('input[name="currentHp"]').last().fill(values.currentHp);
-	await page.locator('input[name="temporaryHp"]').last().fill(values.temporaryHp);
-	await page.locator('input[name="armorClass"]').last().fill(values.armorClass);
-	await page.locator('input[name="initiative"]').last().fill(values.initiative);
-	await page.locator('input[name="speed"]').last().fill(values.speed);
-	await page.locator('input[name="hitDice"]').last().fill(values.hitDice);
-	const attackSection = page
+	await form.locator('input[name="level"]').fill(values.level);
+	await form.locator('select[name="backgroundId"]').selectOption({ label: values.background });
+	await form.locator('textarea[name="story"]').fill(values.story);
+	await form.locator('input[name="strength"]').fill(values.strength);
+	await form.locator('input[name="dexterity"]').fill(values.dexterity);
+	await form.locator('input[name="constitution"]').fill(values.constitution);
+	await form.locator('input[name="intelligence"]').fill(values.intelligence);
+	await form.locator('input[name="wisdom"]').fill(values.wisdom);
+	await form.locator('input[name="charisma"]').fill(values.charisma);
+	await form.locator('input[name="maxHp"]').fill(values.maxHp);
+	await form.locator('input[name="currentHp"]').fill(values.currentHp);
+	await form.locator('input[name="temporaryHp"]').fill(values.temporaryHp);
+	await form.locator('input[name="armorClass"]').fill(values.armorClass);
+	await form.locator('input[name="initiative"]').fill(values.initiative);
+	await form.locator('input[name="speed"]').fill(values.speed);
+	await form.locator('input[name="hitDice"]').fill(values.hitDice);
+	const attackSection = form
 		.locator('section')
 		.filter({ has: page.getByRole('heading', { name: 'Attacks' }) });
-	const spellSection = page
+	const spellSection = form
 		.locator('section')
 		.filter({ has: page.getByRole('heading', { name: 'Spells' }) });
-	const inventorySection = page
+	const inventorySection = form
 		.locator('section')
 		.filter({ has: page.getByRole('heading', { name: 'Inventory' }) });
-	const featSection = page
+	const featSection = form
 		.locator('section')
 		.filter({ has: page.getByRole('heading', { name: 'Feats' }) });
-	const notesSection = page
+	const notesSection = form
 		.locator('section')
 		.filter({ has: page.getByRole('heading', { name: 'Notes' }) });
 

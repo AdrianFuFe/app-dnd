@@ -75,6 +75,7 @@
 		errors = {},
 		formError,
 		submitLabel = 'Create character',
+		action,
 		cancelHref = '/app/characters',
 		cancelLabel = 'Back to characters'
 	}: {
@@ -86,6 +87,7 @@
 		errors?: CharacterFieldErrors;
 		formError?: string;
 		submitLabel?: string;
+		action?: string;
 		cancelHref?: CharacterCancelHref;
 		cancelLabel?: string;
 	} = $props();
@@ -919,7 +921,7 @@
 	}
 </script>
 
-<form method="POST" class="space-y-8" onsubmit={syncStructuredFieldValues}>
+<form method="POST" action={action} class="space-y-8" onsubmit={syncStructuredFieldValues}>
 	{#if formError}
 		<p class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
 			{formError}

@@ -170,7 +170,7 @@ export const actions: Actions = {
 			});
 		}
 	},
-	default: async ({ locals, request }) => {
+	manual: async ({ locals, request }) => {
 		if (!locals.session) {
 			throw redirect(302, '/auth/login?redirectTo=/app/characters/new');
 		}

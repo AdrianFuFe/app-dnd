@@ -52,6 +52,7 @@
 	</section>
 
 	<CharacterCreateForm
+		action="?/manual"
 		catalog={data.catalog}
 		equipmentCatalog={data.equipmentCatalog}
 		featCatalog={data.featCatalog}
