@@ -1479,6 +1479,93 @@ describe('resolveCharacterSpellCatalogSelections', () => {
 		expect(spellItems[0]?.spellId).toBe('spell-1');
 	});
 
+	it('accepts subclass granted spells when the spell level matches the grant level', async () => {
+		const classesSingle = vi.fn().mockResolvedValue({
+			data: {
+				id: 'class-1',
+				slug: 'clerigo',
+				name: 'Clerigo',
+				mechanics: []
+			},
+			error: null
+		});
+		const classesEq = vi.fn().mockReturnValue({ single: classesSingle });
+		const classesSelect = vi.fn().mockReturnValue({ eq: classesEq });
+
+		const subclassesSingle = vi.fn().mockResolvedValue({
+			data: {
+				id: 'subclass-1',
+				class_slug: 'clerigo',
+				name: 'Life Domain',
+				mechanics: [],
+				granted_spells_by_level: [{ level: 3, spellSlugs: ['revivify'] }]
+			},
+			error: null
+		});
+		const subclassesEq = vi.fn().mockReturnValue({ single: subclassesSingle });
+		const subclassesSelect = vi.fn().mockReturnValue({ eq: subclassesEq });
+
+		const spellsIn = vi.fn().mockResolvedValue({
+			data: [
+				{
+					id: 'spell-1',
+					slug: 'revivify',
+					name: 'Revivify',
+					level: 3,
+					school: 'necromancy',
+					casting_time: '1 action',
+					range_text: 'Touch',
+					components: 'V, S, M',
+					duration: 'Instantaneous',
+					class_slugs: ['paladin'],
+					summary: 'Restore recent life.',
+					description: 'You touch a creature that has died within the last minute.',
+					concentration: false,
+					ritual: false
+				}
+			],
+			error: null
+		});
+		const spellsSelect = vi.fn().mockReturnValue({ in: spellsIn });
+
+		const from = vi.fn((table: string) => {
+			if (table === 'character_classes') {
+				return { select: classesSelect };
+			}
+
+			if (table === 'subclasses') {
+				return { select: subclassesSelect };
+			}
+
+			if (table === 'spells') {
+				return { select: spellsSelect };
+			}
+
+			throw new Error(`Unexpected table ${table}`);
+		});
+
+		await expect(
+			resolveCharacterSpellCatalogSelections({ from } as never, {
+				classId: 'class-1',
+				subclassId: 'subclass-1',
+				spellItems: [
+					{
+						spellId: 'spell-1',
+						name: 'Revivify',
+						level: 3,
+						isPrepared: true
+					}
+				]
+			})
+		).resolves.toEqual([
+			expect.objectContaining({
+				spellId: 'spell-1',
+				name: 'Revivify',
+				level: 3
+			})
+		]);
+	});
+
 	it('rejects selected subclasses that are not published shared content', async () => {
 		const classesSingle = vi.fn().mockResolvedValue({
 			data: {

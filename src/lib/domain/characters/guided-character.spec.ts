@@ -72,8 +72,14 @@ const catalog: GuidedCharacterCatalog = {
 			summary: 'Healing path.',
 			rulesetCode: 'dnd-2014-srd',
 			contentMode: 'canon',
-			mechanics: [{ type: 'proficiency', proficiencyType: 'armor', value: 'heavy-armor' }],
-			grantedSpellsByLevel: [{ level: 1, spellSlugs: ['bless', 'cure-wounds'] }]
+			mechanics: [
+				{ type: 'proficiency', proficiencyType: 'armor', value: 'heavy-armor' },
+				{ type: 'spell_grant', spellId: 'revivify' }
+			],
+			grantedSpellsByLevel: [
+				{ level: 1, spellSlugs: ['bless', 'cure-wounds'] },
+				{ level: 3, spellSlugs: ['revivify'] }
+			]
 		}
 	],
 	backgroundOptions: [
@@ -124,6 +130,22 @@ const catalog: GuidedCharacterCatalog = {
 			classSlugs: ['clerigo'],
 			summary: 'Heal a creature.',
 			description: 'A creature regains hit points.',
+			concentration: false,
+			ritual: false
+		},
+		{
+			id: 'spell-3',
+			slug: 'revivify',
+			name: 'Revivify',
+			level: 3,
+			school: 'necromancy',
+			castingTime: '1 action',
+			range: 'Touch',
+			components: 'V, S, M',
+			duration: 'Instantaneous',
+			classSlugs: ['paladin'],
+			summary: 'Restore recent life.',
+			description: 'You touch a creature that has died within the last minute.',
 			concentration: false,
 			ritual: false
 		}

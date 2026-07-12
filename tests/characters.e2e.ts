@@ -56,6 +56,61 @@ test('character create route saves a new draft and returns to detail', async ({ 
 	await expect(page.getByText('Orders', { exact: true })).toBeVisible();
 });
 
+test('guided character create route saves a canonical draft with handoff details', async ({
+	page
+}) => {
+	await page.goto('/app/characters/new');
+
+	await expect(page).toHaveURL('/app/characters/new');
+	const guidedForm = page
+		.locator('form')
+		.filter({ has: page.getByRole('button', { name: 'Save guided draft' }) });
+	await fillGuidedCharacterForm(guidedForm, {
+		name: 'Seren Dawnwatch',
+		story: 'A novice healer learning to lead with courage.',
+		species: 'Humano',
+		subspecies: '',
+		className: 'Clerigo',
+		subclass: 'Life Domain',
+		background: 'Acolyte',
+		strength: '12',
+		dexterity: '10',
+		constitution: '14',
+		intelligence: '11',
+		wisdom: '15',
+		charisma: '13',
+		languageChoiceGroups: [['Draconico'], ['Comun', 'Gigante']],
+		proficiencyChoiceGroups: [['History', 'Insight']],
+		equipmentChoiceGroups: [
+			['Mace'],
+			['Scale Mail'],
+			['Light Crossbow and 20 Bolts'],
+			["Priest's Pack"],
+			['Prayer Book']
+		]
+	});
+
+	await guidedForm.getByRole('button', { name: 'Save guided draft' }).click();
+
+	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\?created=Seren\+Dawnwatch&guided=1$/);
+	await expect(page.getByRole('heading', { name: 'Seren Dawnwatch' })).toBeVisible();
+	await expect(page.getByText('DnD 2014 SRD', { exact: true })).toBeVisible();
+	await expect(page.getByText('canon', { exact: true })).toBeVisible();
+	await expect(page.getByText('Clerigo', { exact: true })).toBeVisible();
+	await expect(page.getByText('Acolyte', { exact: true })).toBeVisible();
+	await expect(page.getByText('Bless', { exact: true })).toBeVisible();
+	await expect(page.getByText('Cure Wounds', { exact: true })).toBeVisible();
+	await expect(page.getByText('Revivify', { exact: true })).toHaveCount(0);
+	await expect(page.getByText('Beacon of Hope', { exact: true })).toHaveCount(0);
+	await expect(page.getByText('Death Ward', { exact: true })).toHaveCount(0);
+	await expect(page.getByText('Mass Cure Wounds', { exact: true })).toHaveCount(0);
+	await expect(page.getByText('Guided build grants', { exact: true })).toBeVisible();
+	await expect(page.getByText('Guided build choices', { exact: true })).toBeVisible();
+	await expect(page.getByText('Mace', { exact: true })).toBeVisible();
+	await expect(page.getByText('Light Crossbow and 20 Bolts', { exact: true })).toBeVisible();
+	await expect(page.getByText('Custom path reasons')).toHaveCount(0);
+});
+
 test('character edit route updates an existing draft and returns to detail', async ({ page }) => {
 	await page.goto('/app/characters/char-e2e-1/edit');
 
@@ -669,6 +724,75 @@ async function fillCharacterForm(
 			}
 		}
 	}
+}
+
+async function fillGuidedCharacterForm(
+	form: ReturnType<Page['locator']>,
+	values: {
+		name: string;
+		story: string;
+		species: string;
+		subspecies: string;
+		className: string;
+		subclass: string;
+		background: string;
+		strength: string;
+		dexterity: string;
+		constitution: string;
+		intelligence: string;
+		wisdom: string;
+		charisma: string;
+		languageChoiceGroups: string[][];
+		proficiencyChoiceGroups: string[][];
+		equipmentChoiceGroups: string[][];
+	}
+) {
+	await form.locator('input[name="name"]').fill(values.name);
+	await form.locator('textarea[name="story"]').fill(values.story);
+	await form.locator('select[name="speciesId"]').selectOption({ label: values.species });
+	await selectDependentOption(form.locator('select[name="subspeciesId"]'), values.subspecies);
+	await form.locator('select[name="classId"]').selectOption({ label: values.className });
+	await selectDependentOption(form.locator('select[name="subclassId"]'), values.subclass);
+	await form.locator('select[name="backgroundId"]').selectOption({ label: values.background });
+	await form.locator('input[name="strength"]').fill(values.strength);
+	await form.locator('input[name="dexterity"]').fill(values.dexterity);
+	await form.locator('input[name="constitution"]').fill(values.constitution);
+	await form.locator('input[name="intelligence"]').fill(values.intelligence);
+	await form.locator('input[name="wisdom"]').fill(values.wisdom);
+	await form.locator('input[name="charisma"]').fill(values.charisma);
+
+	await form.locator('input[name="languageChoices"]').evaluate(
+		(element, choiceEntries) => {
+			(element as HTMLInputElement).value = JSON.stringify(choiceEntries);
+		},
+		values.languageChoiceGroups.flatMap((group, index) =>
+			group.map((value) => ({ key: `language:${index}`, value: value.toLowerCase() }))
+		)
+	);
+
+	await form.locator('input[name="proficiencyChoices"]').evaluate(
+		(element, choiceEntries) => {
+			(element as HTMLInputElement).value = JSON.stringify(choiceEntries);
+		},
+		values.proficiencyChoiceGroups.flatMap((group, index) =>
+			group.map((value) => ({
+				key: `skill:${index}`,
+				value: value.toLowerCase().replaceAll(' ', '-')
+			}))
+		)
+	);
+
+	await form.locator('input[name="equipmentChoices"]').evaluate(
+		(element, choiceEntries) => {
+			(element as HTMLInputElement).value = JSON.stringify(choiceEntries);
+		},
+		values.equipmentChoiceGroups.flatMap((group, index) =>
+			group.map((value) => ({
+				key: `equipment:${index}`,
+				value: value.toLowerCase().replaceAll("'", '').replaceAll(' ', '-')
+			}))
+		)
+	);
 }
 
 async function selectDependentOption(select: ReturnType<Page['locator']>, label: string) {

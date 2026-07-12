@@ -409,16 +409,19 @@ export async function resolveCharacterSpellCatalogSelections(
 
 		const grantedSpellSlugs = new Set([
 			...(classOption?.grantedSpellSlugs ?? []),
-			...(selection.subclassId ? getE2ESubclassGrantedSpellSlugs(selection.subclassId) : []),
-			...(subclassOption?.grantedSpellsByLevel ?? []).flatMap((group) => group.spellSlugs)
+			...(selection.subclassId ? getE2ESubclassGrantedSpellSlugs(selection.subclassId) : [])
 		]);
+		const grantedSpellLevelKeys = summarizeGrantedSpellLevelKeys(
+			subclassOption?.grantedSpellsByLevel ?? []
+		);
 
 		return selection.spellItems.map((item) =>
 			normalizeCharacterSpellItem(
 				item,
 				item.spellId ? getE2ESpellCatalogEntry(item.spellId) : undefined,
 				classOption?.slug,
-				grantedSpellSlugs
+				grantedSpellSlugs,
+				grantedSpellLevelKeys
 			)
 		);
 	}
@@ -435,11 +438,11 @@ export async function resolveCharacterSpellCatalogSelections(
 
 	const grantedSpellSlugs = new Set([
 		...summarizeGrantedSpellSlugs(characterClass?.mechanics),
-		...summarizeGrantedSpellSlugs(subclass?.mechanics),
-		...summarizeGrantedSpellsByLevel(subclass?.granted_spells_by_level).flatMap(
-			(group) => group.spellSlugs
-		)
+		...summarizeGrantedSpellSlugs(subclass?.mechanics)
 	]);
+	const grantedSpellLevelKeys = summarizeGrantedSpellLevelKeys(
+		summarizeGrantedSpellsByLevel(subclass?.granted_spells_by_level)
+	);
 	const spellEntriesById = new Map(spellEntries.map((entry) => [entry.id, entry]));
 
 	return selection.spellItems.map((item) =>
@@ -447,7 +450,8 @@ export async function resolveCharacterSpellCatalogSelections(
 			item,
 			item.spellId ? spellEntriesById.get(item.spellId) : undefined,
 			characterClass?.slug,
-			grantedSpellSlugs
+			grantedSpellSlugs,
+			grantedSpellLevelKeys
 		)
 	);
 }
@@ -1359,7 +1363,8 @@ function normalizeCharacterSpellItem(
 	item: CharacterSpellItem,
 	spell: SpellCatalogEntry | undefined,
 	classSlug: string | undefined,
-	grantedSpellSlugs: ReadonlySet<string>
+	grantedSpellSlugs: ReadonlySet<string>,
+	grantedSpellLevelKeys: ReadonlySet<string>
 ): CharacterSpellItem {
 	if (!item.spellId) {
 		return item;
@@ -1373,7 +1378,8 @@ function normalizeCharacterSpellItem(
 		classSlug &&
 		spell.classSlugs.length > 0 &&
 		!spell.classSlugs.includes(classSlug) &&
-		!grantedSpellSlugs.has(spell.slug)
+		!grantedSpellSlugs.has(spell.slug) &&
+		!grantedSpellLevelKeys.has(createGrantedSpellLevelKey(spell.slug, spell.level))
 	) {
 		throw new Error('Please choose a valid spell for the selected class.');
 	}
@@ -1390,6 +1396,24 @@ function normalizeCharacterSpellItem(
 		duration: spell.duration ?? undefined,
 		description: item.description ?? spell.description ?? spell.summary ?? undefined
 	};
+}
+
+function createGrantedSpellLevelKey(spellSlug: string, level: number): string {
+	return `${spellSlug}:${level}`;
+}
+
+function summarizeGrantedSpellLevelKeys(
+	groups: Array<{ level: number; spellSlugs: string[] }>
+): Set<string> {
+	const grantedSpellLevelKeys = new Set<string>();
+
+	for (const group of groups) {
+		for (const spellSlug of group.spellSlugs) {
+			grantedSpellLevelKeys.add(createGrantedSpellLevelKey(spellSlug, group.level));
+		}
+	}
+
+	return grantedSpellLevelKeys;
 }
 
 function summarizeGrantedSpellSlugs(mechanics: unknown): string[] {

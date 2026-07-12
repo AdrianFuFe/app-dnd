@@ -153,6 +153,7 @@ export type GuidedCharacterDraft = {
 };
 
 export type GuidedCharacterFormValues = Record<keyof CharacterGuidedInput, string>;
+const GUIDED_CHARACTER_LEVEL = 1;
 
 export function deriveGuidedCharacterDraft(
 	catalog: GuidedCharacterCatalog,
@@ -514,18 +515,18 @@ function deriveGrantedSpellItems(
 
 	for (const mechanic of characterClass.mechanics) {
 		if (mechanic.type === 'spell_grant') {
-			spellIds.add(mechanic.spellId);
+			addGrantedSpellIfAllowed(spellIds, mechanic.spellId, spellCatalog, GUIDED_CHARACTER_LEVEL);
 		}
 	}
 
 	for (const mechanic of subclass?.mechanics ?? []) {
 		if (mechanic.type === 'spell_grant') {
-			spellIds.add(mechanic.spellId);
+			addGrantedSpellIfAllowed(spellIds, mechanic.spellId, spellCatalog, GUIDED_CHARACTER_LEVEL);
 		}
 	}
 
 	for (const group of subclass?.grantedSpellsByLevel ?? []) {
-		if (group.level <= 1) {
+		if (group.level <= GUIDED_CHARACTER_LEVEL) {
 			for (const spellSlug of group.spellSlugs) {
 				spellIds.add(spellSlug);
 			}
@@ -550,6 +551,19 @@ function deriveGrantedSpellItems(
 			description: spell.description ?? spell.summary ?? undefined,
 			isPrepared: true
 		}));
+}
+
+function addGrantedSpellIfAllowed(
+	spellIds: Set<string>,
+	spellSlug: string,
+	spellCatalog: SpellCatalogEntry[],
+	maxSpellLevel: number
+) {
+	const spell = spellCatalog.find((entry) => entry.slug === spellSlug);
+
+	if (spell && spell.level <= maxSpellLevel) {
+		spellIds.add(spellSlug);
+	}
 }
 
 function resolveChoiceSelections(
