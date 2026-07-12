@@ -1,0 +1,230 @@
+import { describe, expect, it } from 'vitest';
+import { actions as createActions } from './new/+page.server';
+import { actions as editActions } from './[characterId]/edit/+page.server';
+import { load as characterDetailLoad } from './[characterId]/+page.server';
+import { load as characterEditLoad } from './[characterId]/edit/+page.server';
+import { listGuidedCharacterCatalog } from '$lib/server/repositories/catalog';
+import {
+	createE2EMockSupabaseClient,
+	getE2EMockSession,
+	resetE2EMockState
+} from '$lib/server/e2e/mock-app';
+
+describe('guided character edit flow with E2E mock', () => {
+	it('loads guided-created drafts into the edit form with prefilled identity values', async () => {
+		resetE2EMockState();
+
+		const supabase = createE2EMockSupabaseClient();
+		const session = getE2EMockSession();
+		const catalog = await listGuidedCharacterCatalog(supabase);
+
+		let redirectLocation = '';
+
+		try {
+			await createActions.guided?.({
+				locals: { session, supabase },
+				request: createGuidedRequest(catalog)
+			} as never);
+		} catch (redirect) {
+			expect(redirect).toMatchObject({ status: 303 });
+			redirectLocation = (redirect as { location: string }).location;
+		}
+
+		const redirectedUrl = new URL(`http://localhost${redirectLocation}`);
+		const characterId = redirectedUrl.pathname.split('/').at(-1) ?? '';
+
+		await expect(
+			characterEditLoad({
+				locals: { session, supabase },
+				params: { characterId },
+				url: new URL(`http://localhost/app/characters/${characterId}/edit?guided=1`)
+			} as never)
+		).resolves.toMatchObject({
+			characterName: 'Seren Dawnwatch',
+			guidedHandoff: true,
+			values: expect.objectContaining({
+				name: 'Seren Dawnwatch',
+				speciesId: expect.any(String),
+				classId: expect.any(String),
+				subclassId: expect.any(String),
+				backgroundId: expect.any(String),
+				level: '1',
+				story: 'A novice healer learning to lead with courage.'
+			})
+		});
+	});
+
+	it('marks a guided draft as custom with divergence reasons after a manual edit', async () => {
+		resetE2EMockState();
+
+		const supabase = createE2EMockSupabaseClient();
+		const session = getE2EMockSession();
+		const catalog = await listGuidedCharacterCatalog(supabase);
+		const request = createGuidedRequest(catalog);
+
+		let redirectLocation = '';
+
+		try {
+			await createActions.guided?.({
+				locals: { session, supabase },
+				request
+			} as never);
+		} catch (redirect) {
+			expect(redirect).toMatchObject({ status: 303 });
+			redirectLocation = (redirect as { location: string }).location;
+		}
+
+		const redirectedUrl = new URL(`http://localhost${redirectLocation}`);
+		const characterId = redirectedUrl.pathname.split('/').at(-1) ?? '';
+		const loadedDetail = await characterDetailLoad({
+			locals: { session, supabase },
+			params: { characterId },
+			url: redirectedUrl
+		} as never);
+
+		if (!loadedDetail || !('character' in loadedDetail)) {
+			throw new Error('Expected the guided character detail page to load.');
+		}
+
+		const detail = loadedDetail;
+
+		let editRedirectLocation = '';
+
+		try {
+			await editActions.default?.({
+				locals: { session, supabase },
+				params: { characterId },
+				request: createGuidedEditRequest(detail.character),
+				url: new URL(`http://localhost/app/characters/${characterId}/edit?guided=1`)
+			} as never);
+		} catch (redirect) {
+			expect(redirect).toMatchObject({ status: 303 });
+			editRedirectLocation = (redirect as { location: string }).location;
+		}
+
+		expect(editRedirectLocation).toBeTruthy();
+
+		const updatedUrl = new URL(`http://localhost${editRedirectLocation}`);
+
+		await expect(
+			characterDetailLoad({
+				locals: { session, supabase },
+				params: { characterId },
+				url: updatedUrl
+			} as never)
+		).resolves.toMatchObject({
+			updatedName: 'Seren Dawnwatch',
+			character: expect.objectContaining({
+				contentMode: 'custom',
+				contentProfileMetadata: {
+					reasonLines: [
+						'Guided baseline diverged after manual edits',
+						'Manual override: Armor Class'
+					]
+				}
+			})
+		});
+	});
+});
+
+function createGuidedRequest(
+	catalog: Awaited<ReturnType<typeof listGuidedCharacterCatalog>>,
+	overrides: Partial<Record<string, string>> = {}
+) {
+	const speciesId = catalog.speciesOptions.find((entry) => entry.name === 'Humano')?.id;
+	const classId = catalog.classOptions.find((entry) => entry.name === 'Clerigo')?.id;
+	const subclassId = catalog.subclassOptions.find((entry) => entry.name === 'Life Domain')?.id;
+	const backgroundId = catalog.backgroundOptions.find((entry) => entry.name === 'Acolyte')?.id;
+
+	return new Request('http://localhost/app/characters/new?/guided', {
+		method: 'POST',
+		body: new URLSearchParams({
+			name: 'Seren Dawnwatch',
+			story: 'A novice healer learning to lead with courage.',
+			speciesId: speciesId ?? '',
+			subspeciesId: '',
+			classId: classId ?? '',
+			subclassId: subclassId ?? '',
+			backgroundId: backgroundId ?? '',
+			strength: '12',
+			dexterity: '10',
+			constitution: '14',
+			intelligence: '11',
+			wisdom: '15',
+			charisma: '13',
+			overrideMaxHp: '',
+			overrideCurrentHp: '',
+			overrideTemporaryHp: '',
+			overrideArmorClass: '',
+			overrideInitiative: '',
+			overrideSpeed: '',
+			languageChoices: JSON.stringify([
+				{ key: 'language:0', value: 'draconico' },
+				{ key: 'language:1', value: 'comun' },
+				{ key: 'language:1', value: 'gigante' }
+			]),
+			proficiencyChoices: JSON.stringify([
+				{ key: 'skill:0', value: 'history' },
+				{ key: 'skill:0', value: 'insight' }
+			]),
+			equipmentChoices: JSON.stringify([
+				{ key: 'equipment:0', value: 'mace' },
+				{ key: 'equipment:1', value: 'scale-mail' },
+				{ key: 'equipment:2', value: 'light-crossbow-and-20-bolts' },
+				{ key: 'equipment:3', value: 'priests-pack' },
+				{ key: 'equipment:4', value: 'prayer-book' }
+			]),
+			...overrides
+		})
+	});
+}
+
+function createGuidedEditRequest(character: {
+	name: string;
+	speciesId?: string;
+	subspeciesId?: string;
+	classId?: string;
+	subclassId?: string;
+	backgroundId?: string;
+	story?: string;
+	attackItems: unknown[];
+	spellItems: unknown[];
+	featItems: unknown[];
+	inventoryItems: unknown[];
+	noteItems: unknown[];
+}) {
+	return new Request('http://localhost/app/characters/char-e2e-2/edit', {
+		method: 'POST',
+		body: new URLSearchParams({
+			name: character.name,
+			speciesId: character.speciesId ?? '',
+			subspeciesId: character.subspeciesId ?? '',
+			classId: character.classId ?? '',
+			subclassId: character.subclassId ?? '',
+			level: '1',
+			backgroundId: character.backgroundId ?? '',
+			story: character.story ?? '',
+			strength: '13',
+			dexterity: '11',
+			constitution: '15',
+			intelligence: '12',
+			wisdom: '16',
+			charisma: '14',
+			maxHp: '10',
+			currentHp: '10',
+			temporaryHp: '0',
+			armorClass: '11',
+			initiative: '0',
+			speed: '30',
+			hitDice: '1d8',
+			attackItems: JSON.stringify(character.attackItems),
+			spellItems: JSON.stringify(character.spellItems),
+			featItems: JSON.stringify(character.featItems),
+			inventoryItems: JSON.stringify(character.inventoryItems),
+			noteItems: JSON.stringify(character.noteItems),
+			attacks: '',
+			spells: '',
+			notes: ''
+		})
+	});
+}

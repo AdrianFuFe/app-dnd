@@ -135,7 +135,42 @@
 	let notesField: HTMLInputElement | null = null;
 
 	$effect(() => {
-		formValues = { ...values };
+		formValues = {
+			name: values.name,
+			speciesId: values.speciesId,
+			subspeciesId: values.subspeciesId,
+			race: values.race,
+			subrace: values.subrace,
+			classId: values.classId,
+			subclassId: values.subclassId,
+			className: values.className,
+			subclass: values.subclass,
+			backgroundId: values.backgroundId,
+			level: values.level,
+			background: values.background,
+			story: values.story,
+			strength: values.strength,
+			dexterity: values.dexterity,
+			constitution: values.constitution,
+			intelligence: values.intelligence,
+			wisdom: values.wisdom,
+			charisma: values.charisma,
+			maxHp: values.maxHp,
+			currentHp: values.currentHp,
+			temporaryHp: values.temporaryHp,
+			armorClass: values.armorClass,
+			initiative: values.initiative,
+			speed: values.speed,
+			hitDice: values.hitDice,
+			attackItems: values.attackItems,
+			spellItems: values.spellItems,
+			featItems: values.featItems,
+			inventoryItems: values.inventoryItems,
+			noteItems: values.noteItems,
+			attacks: values.attacks,
+			spells: values.spells,
+			notes: values.notes
+		};
 		attackItems = parseAttackItems(values.attackItems, values.attacks);
 		spellItems = parseSpellItems(values.spellItems, values.spells);
 		featItems = parseFeatItems(values.featItems);

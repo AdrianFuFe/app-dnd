@@ -163,4 +163,57 @@ describe('deriveManualCharacterContentProfile', () => {
 		expect(result.profile.contentMode).toBe('custom');
 		expect(result.reasonLines).toEqual(['Existing custom draft retained']);
 	});
+
+	it('prepends a guided divergence reason when a guided-origin draft becomes custom', () => {
+		const result = deriveManualCharacterContentProfile(
+			{
+				...baseInput,
+				attackItems: [{ name: 'Custom Strike' }]
+			},
+			{
+				guidedCatalog,
+				spellCatalog,
+				featCatalog,
+				existingCharacter: {
+					contentMode: 'canon',
+					maxHp: 8,
+					currentHp: 8,
+					temporaryHp: 0,
+					armorClass: 10,
+					initiative: 0,
+					speed: 30,
+					hitDice: '1d8',
+					guidedOrigin: true
+				}
+			}
+		);
+
+		expect(result.profile.contentMode).toBe('custom');
+		expect(result.reasonLines).toEqual([
+			'Guided baseline diverged after manual edits',
+			'Manual override: Attack Items'
+		]);
+	});
+
+	it('retains guided divergence messaging when a guided-origin custom draft has no new visible reasons', () => {
+		const result = deriveManualCharacterContentProfile(baseInput, {
+			guidedCatalog,
+			spellCatalog,
+			featCatalog,
+			existingCharacter: {
+				contentMode: 'custom',
+				maxHp: 8,
+				currentHp: 8,
+				temporaryHp: 0,
+				armorClass: 10,
+				initiative: 0,
+				speed: 30,
+				hitDice: '1d8',
+				guidedOrigin: true
+			}
+		});
+
+		expect(result.profile.contentMode).toBe('custom');
+		expect(result.reasonLines).toEqual(['Guided baseline diverged on an earlier manual edit']);
+	});
 });

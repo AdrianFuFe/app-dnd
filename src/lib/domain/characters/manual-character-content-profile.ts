@@ -28,7 +28,9 @@ type ExistingCharacterProfile = Pick<
 	| 'initiative'
 	| 'speed'
 	| 'hitDice'
->;
+> & {
+	guidedOrigin?: boolean;
+};
 
 export type ManualCharacterContentProfileResult = {
 	profile: CharacterContentProfile;
@@ -63,6 +65,10 @@ export function deriveManualCharacterContentProfile(
 		derivedProfile.contentMode === 'canon' &&
 		context.existingCharacter?.contentMode === 'custom'
 	) {
+		const retainedReasonLine = context.existingCharacter.guidedOrigin
+			? 'Guided baseline diverged on an earlier manual edit'
+			: 'Existing custom draft retained';
+
 		return {
 			profile: {
 				...derivedProfile,
@@ -74,13 +80,22 @@ export function deriveManualCharacterContentProfile(
 					}
 				]
 			},
-			reasonLines: ['Existing custom draft retained']
+			reasonLines: [retainedReasonLine]
+		};
+	}
+
+	const reasonLines = summarizeCharacterCustomizationReasons(derivedProfile.customizationReasons);
+
+	if (derivedProfile.contentMode === 'custom' && context.existingCharacter?.guidedOrigin) {
+		return {
+			profile: derivedProfile,
+			reasonLines: ['Guided baseline diverged after manual edits', ...reasonLines]
 		};
 	}
 
 	return {
 		profile: derivedProfile,
-		reasonLines: summarizeCharacterCustomizationReasons(derivedProfile.customizationReasons)
+		reasonLines
 	};
 }
 

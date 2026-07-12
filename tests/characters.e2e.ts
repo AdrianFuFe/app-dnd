@@ -114,6 +114,107 @@ test('guided character create route saves a canonical draft with handoff details
 	await expect(page.getByText('Guided-to-custom handoff', { exact: true })).toBeVisible();
 });
 
+test('guided character edit can intentionally diverge into a custom draft', async ({ page }) => {
+	await page.goto('/app/characters/new');
+
+	const guidedForm = page
+		.locator('form')
+		.filter({ has: page.getByRole('button', { name: 'Save guided draft' }) });
+	await fillGuidedCharacterForm(guidedForm, {
+		name: 'Seren Dawnwatch',
+		story: 'A novice healer learning to lead with courage.',
+		species: 'Humano',
+		subspecies: '',
+		className: 'Clerigo',
+		subclass: 'Life Domain',
+		background: 'Acolyte',
+		strength: '12',
+		dexterity: '10',
+		constitution: '14',
+		intelligence: '11',
+		wisdom: '15',
+		charisma: '13',
+		languageChoiceGroups: [['Draconico'], ['Comun', 'Gigante']],
+		proficiencyChoiceGroups: [['History', 'Insight']],
+		equipmentChoiceGroups: [
+			['Mace'],
+			['Scale Mail'],
+			['Light Crossbow and 20 Bolts'],
+			["Priest's Pack"],
+			['Prayer Book']
+		]
+	});
+
+	await guidedForm.getByRole('button', { name: 'Save guided draft' }).click();
+	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\?created=Seren\+Dawnwatch&guided=1$/);
+
+	await page.getByRole('link', { name: 'Edit character' }).click();
+	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\/edit\?guided=1$/);
+	await fillCharacterForm(page, {
+		name: 'Seren Dawnwatch',
+		story: 'A novice healer learning to lead with courage.',
+		species: 'Humano',
+		subspecies: '',
+		className: 'Clerigo',
+		subclass: 'Life Domain',
+		background: 'Acolyte',
+		strength: '13',
+		dexterity: '11',
+		constitution: '15',
+		intelligence: '12',
+		wisdom: '16',
+		charisma: '14',
+		maxHp: '10',
+		currentHp: '10',
+		temporaryHp: '0',
+		armorClass: '11',
+		initiative: '0',
+		speed: '30',
+		hitDice: '1d8',
+		attackItems: [
+			{
+				catalogWeaponName: 'Mace',
+				attackBonus: '+3'
+			},
+			{
+				catalogWeaponName: 'Light Crossbow and 20 Bolts',
+				attackBonus: '+2'
+			}
+		],
+		spellItems: [
+			{
+				catalogSpellName: 'Bless',
+				level: '1',
+				isPrepared: true
+			},
+			{
+				catalogSpellName: 'Cure Wounds',
+				level: '1',
+				isPrepared: true
+			}
+		],
+		featItems: [],
+		inventoryItems: []
+	});
+
+	await page.getByRole('button', { name: 'Save changes' }).click();
+
+	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\?updated=Seren\+Dawnwatch$/);
+	await expect(page.getByText('custom', { exact: true })).toBeVisible();
+	await expect(
+		page
+			.locator('article')
+			.filter({ has: page.getByRole('heading', { name: 'Combat Snapshot' }) })
+			.getByText('11', { exact: true })
+	).toBeVisible();
+	await expect(page.getByText('Guided build grants', { exact: true })).toBeVisible();
+	await expect(page.getByText('Guided build choices', { exact: true })).toBeVisible();
+	await expect(page.getByRole('link', { name: 'Edit character' })).toHaveAttribute(
+		'href',
+		/\/app\/characters\/[^/]+\/edit\?guided=1$/
+	);
+});
+
 test('guided character create route keeps the user on the form when required guided choices are missing', async ({
 	page
 }) => {

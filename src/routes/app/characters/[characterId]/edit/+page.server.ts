@@ -130,7 +130,10 @@ export const actions: Actions = {
 					guidedCatalog,
 					spellCatalog: expandedContentCatalog.spells,
 					featCatalog: expandedContentCatalog.feats,
-					existingCharacter
+					existingCharacter: {
+						...existingCharacter,
+						guidedOrigin: isGuidedCharacterOrigin(existingCharacter.noteItems)
+					}
 				}
 			);
 

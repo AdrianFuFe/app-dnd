@@ -154,6 +154,7 @@
 				</a>
 				<a
 					class="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-700"
+					data-sveltekit-reload
 					href={editCharacterHref}
 				>
 					Edit character
@@ -195,6 +196,7 @@
 				<div class="mt-4 flex flex-wrap gap-3">
 					<a
 						class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-amber-950 transition hover:bg-amber-400"
+						data-sveltekit-reload
 						href={editCharacterHref}
 					>
 						Continue In Full Editor
@@ -213,8 +215,13 @@
 			<div class="mt-4 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-4">
 				<p class="text-sm font-semibold text-violet-950">Custom path reasons</p>
 				<p class="mt-2 max-w-2xl text-sm leading-6 text-violet-900">
-					This save is currently tracked as custom for its ruleset because of the changes
-					below.
+					{#if guidedOriginNotes}
+						This guided draft moved onto a custom path for its ruleset because of the
+						changes below.
+					{:else}
+						This save is currently tracked as custom for its ruleset because of the
+						changes below.
+					{/if}
 				</p>
 				<ul class="mt-3 space-y-2 text-sm text-violet-900">
 					{#each data.character.contentProfileMetadata.reasonLines as line}

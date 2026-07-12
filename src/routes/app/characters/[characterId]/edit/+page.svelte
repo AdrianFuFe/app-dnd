@@ -3,6 +3,10 @@
 	import type { PageData, ActionData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+
+	function hasManualFormState(): boolean {
+		return Boolean(form?.formError) || Object.keys(form?.fieldErrors ?? {}).length > 0;
+	}
 </script>
 
 <svelte:head>
@@ -38,7 +42,7 @@
 		equipmentCatalog={data.equipmentCatalog}
 		featCatalog={data.featCatalog}
 		spellCatalog={data.spellCatalog}
-		values={form?.values ?? data.values}
+		values={hasManualFormState() ? (form?.values ?? data.values) : data.values}
 		errors={form?.fieldErrors ?? {}}
 		formError={form?.formError}
 		submitLabel="Save changes"
