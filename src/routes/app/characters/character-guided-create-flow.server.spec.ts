@@ -15,50 +15,7 @@ describe('guided character create flow with E2E mock', () => {
 		const supabase = createE2EMockSupabaseClient();
 		const session = getE2EMockSession();
 		const catalog = await listGuidedCharacterCatalog(supabase);
-		const speciesId = catalog.speciesOptions.find((entry) => entry.name === 'Humano')?.id;
-		const classId = catalog.classOptions.find((entry) => entry.name === 'Clerigo')?.id;
-		const subclassId = catalog.subclassOptions.find((entry) => entry.name === 'Life Domain')?.id;
-		const backgroundId = catalog.backgroundOptions.find((entry) => entry.name === 'Acolyte')?.id;
-		const request = new Request('http://localhost/app/characters/new?/guided', {
-			method: 'POST',
-			body: new URLSearchParams({
-				name: 'Seren Dawnwatch',
-				story: 'A novice healer learning to lead with courage.',
-				speciesId: speciesId ?? '',
-				subspeciesId: '',
-				classId: classId ?? '',
-				subclassId: subclassId ?? '',
-				backgroundId: backgroundId ?? '',
-				strength: '12',
-				dexterity: '10',
-				constitution: '14',
-				intelligence: '11',
-				wisdom: '15',
-				charisma: '13',
-				overrideMaxHp: '',
-				overrideCurrentHp: '',
-				overrideTemporaryHp: '',
-				overrideArmorClass: '',
-				overrideInitiative: '',
-				overrideSpeed: '',
-				languageChoices: JSON.stringify([
-					{ key: 'language:0', value: 'draconico' },
-					{ key: 'language:1', value: 'comun' },
-					{ key: 'language:1', value: 'gigante' }
-				]),
-				proficiencyChoices: JSON.stringify([
-					{ key: 'skill:0', value: 'history' },
-					{ key: 'skill:0', value: 'insight' }
-				]),
-				equipmentChoices: JSON.stringify([
-					{ key: 'equipment:0', value: 'mace' },
-					{ key: 'equipment:1', value: 'scale-mail' },
-					{ key: 'equipment:2', value: 'light-crossbow-and-20-bolts' },
-					{ key: 'equipment:3', value: 'priests-pack' },
-					{ key: 'equipment:4', value: 'prayer-book' }
-				])
-			})
-		});
+		const request = createGuidedRequest(catalog);
 
 		let redirectLocation = '';
 		let actionResult: unknown;
@@ -96,4 +53,174 @@ describe('guided character create flow with E2E mock', () => {
 			})
 		});
 	});
+
+	it('returns field errors when guided choice JSON is malformed', async () => {
+		resetE2EMockState();
+
+		const supabase = createE2EMockSupabaseClient();
+		const session = getE2EMockSession();
+		const catalog = await listGuidedCharacterCatalog(supabase);
+		const result = await createActions.guided?.({
+			locals: { session, supabase },
+			request: createGuidedRequest(catalog, {
+				languageChoices: '{not-json}'
+			})
+		} as never);
+
+		expect(result).toMatchObject({
+			status: 400,
+			data: {
+				guidedFormError: 'Please correct the highlighted guided fields.',
+				guidedFieldErrors: {
+					languageChoices: expect.any(Array)
+				},
+				guidedValues: expect.objectContaining({
+					name: 'Seren Dawnwatch',
+					languageChoices: '{not-json}'
+				})
+			}
+		});
+	});
+
+	it('returns a guided form error when submitted choices do not match the current catalog', async () => {
+		resetE2EMockState();
+
+		const supabase = createE2EMockSupabaseClient();
+		const session = getE2EMockSession();
+		const catalog = await listGuidedCharacterCatalog(supabase);
+		const result = await createActions.guided?.({
+			locals: { session, supabase },
+			request: createGuidedRequest(catalog, {
+				equipmentChoices: JSON.stringify([
+					{ key: 'equipment:0', value: 'mace' },
+					{ key: 'equipment:1', value: 'scale-mail' },
+					{ key: 'equipment:2', value: 'light-crossbow-and-20-bolts' },
+					{ key: 'equipment:3', value: 'warhammer' },
+					{ key: 'equipment:4', value: 'prayer-book' }
+				])
+			})
+		} as never);
+
+		expect(result).toMatchObject({
+			status: 400,
+			data: {
+				guidedFormError: 'Please choose only valid options for each equipment choice.',
+				guidedFieldErrors: {},
+				guidedValues: expect.objectContaining({
+					name: 'Seren Dawnwatch'
+				})
+			}
+		});
+	});
+
+	it('returns a guided form error when a submitted guided choice contains duplicates', async () => {
+		resetE2EMockState();
+
+		const supabase = createE2EMockSupabaseClient();
+		const session = getE2EMockSession();
+		const catalog = await listGuidedCharacterCatalog(supabase);
+		const result = await createActions.guided?.({
+			locals: { session, supabase },
+			request: createGuidedRequest(catalog, {
+				languageChoices: JSON.stringify([
+					{ key: 'language:0', value: 'draconico' },
+					{ key: 'language:1', value: 'comun' },
+					{ key: 'language:1', value: 'comun' }
+				])
+			})
+		} as never);
+
+		expect(result).toMatchObject({
+			status: 400,
+			data: {
+				guidedFormError: 'Please avoid duplicate picks in each language choice.',
+				guidedFieldErrors: {},
+				guidedValues: expect.objectContaining({
+					name: 'Seren Dawnwatch'
+				})
+			}
+		});
+	});
+
+	it('returns a guided form error when a submitted guided choice exceeds the allowed count', async () => {
+		resetE2EMockState();
+
+		const supabase = createE2EMockSupabaseClient();
+		const session = getE2EMockSession();
+		const catalog = await listGuidedCharacterCatalog(supabase);
+		const result = await createActions.guided?.({
+			locals: { session, supabase },
+			request: createGuidedRequest(catalog, {
+				languageChoices: JSON.stringify([
+					{ key: 'language:0', value: 'draconico' },
+					{ key: 'language:0', value: 'gigante' },
+					{ key: 'language:1', value: 'comun' },
+					{ key: 'language:1', value: 'gigante' }
+				])
+			})
+		} as never);
+
+		expect(result).toMatchObject({
+			status: 400,
+			data: {
+				guidedFormError: 'Please keep each language choice within the allowed number of picks.',
+				guidedFieldErrors: {},
+				guidedValues: expect.objectContaining({
+					name: 'Seren Dawnwatch'
+				})
+			}
+		});
+	});
 });
+
+function createGuidedRequest(
+	catalog: Awaited<ReturnType<typeof listGuidedCharacterCatalog>>,
+	overrides: Partial<Record<string, string>> = {}
+) {
+	const speciesId = catalog.speciesOptions.find((entry) => entry.name === 'Humano')?.id;
+	const classId = catalog.classOptions.find((entry) => entry.name === 'Clerigo')?.id;
+	const subclassId = catalog.subclassOptions.find((entry) => entry.name === 'Life Domain')?.id;
+	const backgroundId = catalog.backgroundOptions.find((entry) => entry.name === 'Acolyte')?.id;
+
+	return new Request('http://localhost/app/characters/new?/guided', {
+		method: 'POST',
+		body: new URLSearchParams({
+			name: 'Seren Dawnwatch',
+			story: 'A novice healer learning to lead with courage.',
+			speciesId: speciesId ?? '',
+			subspeciesId: '',
+			classId: classId ?? '',
+			subclassId: subclassId ?? '',
+			backgroundId: backgroundId ?? '',
+			strength: '12',
+			dexterity: '10',
+			constitution: '14',
+			intelligence: '11',
+			wisdom: '15',
+			charisma: '13',
+			overrideMaxHp: '',
+			overrideCurrentHp: '',
+			overrideTemporaryHp: '',
+			overrideArmorClass: '',
+			overrideInitiative: '',
+			overrideSpeed: '',
+			languageChoices: JSON.stringify([
+				{ key: 'language:0', value: 'draconico' },
+				{ key: 'language:1', value: 'comun' },
+				{ key: 'language:1', value: 'gigante' }
+			]),
+			proficiencyChoices: JSON.stringify([
+				{ key: 'skill:0', value: 'history' },
+				{ key: 'skill:0', value: 'insight' }
+			]),
+			equipmentChoices: JSON.stringify([
+				{ key: 'equipment:0', value: 'mace' },
+				{ key: 'equipment:1', value: 'scale-mail' },
+				{ key: 'equipment:2', value: 'light-crossbow-and-20-bolts' },
+				{ key: 'equipment:3', value: 'priests-pack' },
+				{ key: 'equipment:4', value: 'prayer-book' }
+			]),
+			...overrides
+		})
+	});
+}

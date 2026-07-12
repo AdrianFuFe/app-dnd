@@ -40,6 +40,8 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 	return {
 		characterId: character.id,
 		characterName: character.name,
+		guidedHandoff:
+			url.searchParams.get('guided') === '1' || isGuidedCharacterOrigin(character.noteItems),
 		values: createCharacterFormValuesFromInput(character),
 		catalog,
 		featCatalog: expandedContentCatalog.feats,
@@ -192,6 +194,12 @@ export const actions: Actions = {
 		}
 	}
 };
+
+function isGuidedCharacterOrigin(noteItems: Array<{ title: string }>): boolean {
+	return noteItems.some(
+		(note) => note.title === 'Guided build grants' || note.title === 'Guided build choices'
+	);
+}
 
 function buildCharacterDetailRedirect(
 	characterId: string,

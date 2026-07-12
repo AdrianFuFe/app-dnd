@@ -81,29 +81,35 @@
 		return afterNavigate(syncSearchParams);
 	});
 
-	function effectiveCreatedName(): string | null {
-		return (
-			data.createdName ??
+	const createdName = $derived(
+		data.createdName ??
 			page.url.searchParams.get('created') ??
 			clientSearchParams.get('created')
-		);
-	}
+	);
 
-	function hasGuidedHandoff(): boolean {
-		return (
+	const guidedOriginNotes = $derived(
+		data.character.noteItems.some(
+			(note) => note.title === 'Guided build grants' || note.title === 'Guided build choices'
+		)
+	);
+
+	const guidedHandoffVisible = $derived(
+		guidedOriginNotes ||
 			data.guidedHandoff ||
 			page.url.searchParams.get('guided') === '1' ||
 			clientSearchParams.get('guided') === '1'
-		);
-	}
+	);
 
-	function effectiveUpdatedName(): string | null {
-		return (
-			data.updatedName ??
+	const updatedName = $derived(
+		data.updatedName ??
 			page.url.searchParams.get('updated') ??
 			clientSearchParams.get('updated')
-		);
-	}
+	);
+
+	const editCharacterHref = $derived.by(() => {
+		const basePath = resolve(`/app/characters/${data.character.id}/edit`);
+		return guidedHandoffVisible ? `${basePath}?guided=1` : basePath;
+	});
 </script>
 
 <svelte:head>
@@ -148,31 +154,34 @@
 				</a>
 				<a
 					class="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-700"
-					href={resolve(`/app/characters/${data.character.id}/edit`)}
+					href={editCharacterHref}
 				>
 					Edit character
 				</a>
 			</div>
 		</div>
 
-		{#if effectiveUpdatedName()}
+		{#if updatedName}
 			<p
 				class="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800"
 			>
-				{effectiveUpdatedName()} was updated successfully.
+				{updatedName} was updated successfully.
 			</p>
 		{/if}
 
-		{#if effectiveCreatedName()}
+		{#if createdName}
 			<p
 				class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
 			>
-				{effectiveCreatedName()} was created successfully.
+				{createdName} was created successfully.
 			</p>
 		{/if}
 
-		{#if hasGuidedHandoff()}
-			<div class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
+		{#if guidedHandoffVisible}
+			<div
+				class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4"
+				data-testid="guided-handoff-banner"
+			>
 				<p class="text-sm font-semibold text-amber-950">Guided build saved</p>
 				<p class="mt-2 max-w-2xl text-sm leading-6 text-amber-900">
 					This draft was created through the guided path. You can keep it on the canonical
@@ -186,7 +195,7 @@
 				<div class="mt-4 flex flex-wrap gap-3">
 					<a
 						class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-amber-950 transition hover:bg-amber-400"
-						href={resolve(`/app/characters/${data.character.id}/edit`)}
+						href={editCharacterHref}
 					>
 						Continue In Full Editor
 					</a>

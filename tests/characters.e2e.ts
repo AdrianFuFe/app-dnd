@@ -109,6 +109,265 @@ test('guided character create route saves a canonical draft with handoff details
 	await expect(page.getByText('Mace', { exact: true })).toBeVisible();
 	await expect(page.getByText('Light Crossbow and 20 Bolts', { exact: true })).toBeVisible();
 	await expect(page.getByText('Custom path reasons')).toHaveCount(0);
+	await page.getByRole('link', { name: 'Edit character' }).click();
+	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\/edit\?guided=1$/);
+	await expect(page.getByText('Guided-to-custom handoff', { exact: true })).toBeVisible();
+});
+
+test('guided character create route keeps the user on the form when required guided choices are missing', async ({
+	page
+}) => {
+	await page.goto('/app/characters/new');
+
+	await expect(page).toHaveURL('/app/characters/new');
+	const guidedForm = page
+		.locator('form')
+		.filter({ has: page.getByRole('button', { name: 'Save guided draft' }) });
+	await fillGuidedCharacterForm(guidedForm, {
+		name: 'Seren Dawnwatch',
+		story: 'A novice healer learning to lead with courage.',
+		species: 'Humano',
+		subspecies: '',
+		className: 'Clerigo',
+		subclass: 'Life Domain',
+		background: 'Acolyte',
+		strength: '12',
+		dexterity: '10',
+		constitution: '14',
+		intelligence: '11',
+		wisdom: '15',
+		charisma: '13',
+		languageChoiceGroups: [['Draconico'], []],
+		proficiencyChoiceGroups: [['History', 'Insight']],
+		equipmentChoiceGroups: [
+			['Mace'],
+			['Scale Mail'],
+			['Light Crossbow and 20 Bolts'],
+			["Priest's Pack"],
+			['Prayer Book']
+		]
+	});
+
+	await guidedForm.getByRole('button', { name: 'Save guided draft' }).click();
+
+	await expect(page).toHaveURL(/\/app\/characters\/new\?\/guided$/);
+	await expect(
+		guidedForm.getByText('Please complete every required language choice.', { exact: true })
+	).toBeVisible();
+	await expect(guidedForm.getByRole('heading', { name: 'Guided choices' })).toBeVisible();
+	await expect(
+		guidedForm.locator('[data-testid="guided-language-choice-language:0"]')
+	).toContainText('1/1 chosen');
+	await expect(
+		guidedForm.locator('[data-testid="guided-language-choice-language:1"]')
+	).toContainText('0/2 chosen');
+	await expect(guidedForm.locator('input[name="name"]')).toHaveValue('Seren Dawnwatch');
+});
+
+test('guided character create route shows a guided error when the submitted choice payload is invalid', async ({
+	page
+}) => {
+	await page.goto('/app/characters/new');
+
+	await expect(page).toHaveURL('/app/characters/new');
+	const guidedForm = page
+		.locator('form')
+		.filter({ has: page.getByRole('button', { name: 'Save guided draft' }) });
+	await fillGuidedCharacterForm(guidedForm, {
+		name: 'Seren Dawnwatch',
+		story: 'A novice healer learning to lead with courage.',
+		species: 'Humano',
+		subspecies: '',
+		className: 'Clerigo',
+		subclass: 'Life Domain',
+		background: 'Acolyte',
+		strength: '12',
+		dexterity: '10',
+		constitution: '14',
+		intelligence: '11',
+		wisdom: '15',
+		charisma: '13',
+		languageChoiceGroups: [['Draconico'], ['Comun', 'Gigante']],
+		proficiencyChoiceGroups: [['History', 'Insight']],
+		equipmentChoiceGroups: [
+			['Mace'],
+			['Scale Mail'],
+			['Light Crossbow and 20 Bolts'],
+			["Priest's Pack"],
+			['Prayer Book']
+		]
+	});
+
+	await guidedForm.locator('input[name="equipmentChoices"]').evaluate((element) => {
+		(element as HTMLInputElement).value = JSON.stringify([
+			{ key: 'equipment:0', value: 'mace' },
+			{ key: 'equipment:1', value: 'scale-mail' },
+			{ key: 'equipment:2', value: 'light-crossbow-and-20-bolts' },
+			{ key: 'equipment:3', value: 'warhammer' },
+			{ key: 'equipment:4', value: 'prayer-book' }
+		]);
+	});
+
+	await guidedForm.getByRole('button', { name: 'Save guided draft' }).click();
+
+	await expect(page).toHaveURL(/\/app\/characters\/new\?\/guided$/);
+	await expect(
+		guidedForm.getByText('Please choose only valid options for each equipment choice.', {
+			exact: true
+		})
+	).toBeVisible();
+	await expect(guidedForm.locator('input[name="name"]')).toHaveValue('Seren Dawnwatch');
+	await expect(
+		guidedForm.locator('[data-testid="guided-equipment-choice-equipment:0"]')
+	).toContainText('1/1 chosen');
+	await expect(
+		guidedForm.locator('[data-testid="guided-equipment-choice-equipment:3"]')
+	).toContainText('0/1 chosen');
+	await expect(
+		guidedForm.locator('[data-testid="guided-invalid-choice-equipment:3"]')
+	).toContainText('Remove Warhammer');
+
+	await guidedForm
+		.locator('[data-testid="guided-equipment-choice-equipment:3"]')
+		.getByRole('button', { name: "Priest's Pack", exact: true })
+		.click();
+	await guidedForm.getByRole('button', { name: 'Save guided draft' }).click();
+
+	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\?created=Seren\+Dawnwatch&guided=1$/);
+	await expect(page.getByRole('heading', { name: 'Seren Dawnwatch' })).toBeVisible();
+});
+
+test('guided character create route recovers from an invalid submitted language choice payload', async ({
+	page
+}) => {
+	await page.goto('/app/characters/new');
+
+	await expect(page).toHaveURL('/app/characters/new');
+	const guidedForm = page
+		.locator('form')
+		.filter({ has: page.getByRole('button', { name: 'Save guided draft' }) });
+	await fillGuidedCharacterForm(guidedForm, {
+		name: 'Seren Dawnwatch',
+		story: 'A novice healer learning to lead with courage.',
+		species: 'Humano',
+		subspecies: '',
+		className: 'Clerigo',
+		subclass: 'Life Domain',
+		background: 'Acolyte',
+		strength: '12',
+		dexterity: '10',
+		constitution: '14',
+		intelligence: '11',
+		wisdom: '15',
+		charisma: '13',
+		languageChoiceGroups: [['Draconico'], ['Comun', 'Gigante']],
+		proficiencyChoiceGroups: [['History', 'Insight']],
+		equipmentChoiceGroups: [
+			['Mace'],
+			['Scale Mail'],
+			['Light Crossbow and 20 Bolts'],
+			["Priest's Pack"],
+			['Prayer Book']
+		]
+	});
+
+	await guidedForm.locator('input[name="languageChoices"]').evaluate((element) => {
+		(element as HTMLInputElement).value = JSON.stringify([
+			{ key: 'language:0', value: 'draconico' },
+			{ key: 'language:1', value: 'comun' },
+			{ key: 'language:1', value: 'abyssal' }
+		]);
+	});
+
+	await guidedForm.getByRole('button', { name: 'Save guided draft' }).click();
+
+	await expect(page).toHaveURL(/\/app\/characters\/new\?\/guided$/);
+	await expect(
+		guidedForm.getByText('Please choose only valid options for each language choice.', {
+			exact: true
+		})
+	).toBeVisible();
+	await expect(
+		guidedForm.locator('[data-testid="guided-language-choice-language:1"]')
+	).toContainText('1/2 chosen');
+	await expect(
+		guidedForm.locator('[data-testid="guided-invalid-choice-language:1"]')
+	).toContainText('Remove Abyssal');
+
+	await guidedForm
+		.locator('[data-testid="guided-language-choice-language:1"]')
+		.getByRole('button', { name: 'Gigante', exact: true })
+		.click();
+	await guidedForm.getByRole('button', { name: 'Save guided draft' }).click();
+
+	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\?created=Seren\+Dawnwatch&guided=1$/);
+	await expect(page.getByRole('heading', { name: 'Seren Dawnwatch' })).toBeVisible();
+});
+
+test('guided character create route recovers from an invalid submitted proficiency choice payload', async ({
+	page
+}) => {
+	await page.goto('/app/characters/new');
+
+	await expect(page).toHaveURL('/app/characters/new');
+	const guidedForm = page
+		.locator('form')
+		.filter({ has: page.getByRole('button', { name: 'Save guided draft' }) });
+	await fillGuidedCharacterForm(guidedForm, {
+		name: 'Seren Dawnwatch',
+		story: 'A novice healer learning to lead with courage.',
+		species: 'Humano',
+		subspecies: '',
+		className: 'Clerigo',
+		subclass: 'Life Domain',
+		background: 'Acolyte',
+		strength: '12',
+		dexterity: '10',
+		constitution: '14',
+		intelligence: '11',
+		wisdom: '15',
+		charisma: '13',
+		languageChoiceGroups: [['Draconico'], ['Comun', 'Gigante']],
+		proficiencyChoiceGroups: [['History', 'Insight']],
+		equipmentChoiceGroups: [
+			['Mace'],
+			['Scale Mail'],
+			['Light Crossbow and 20 Bolts'],
+			["Priest's Pack"],
+			['Prayer Book']
+		]
+	});
+
+	await guidedForm.locator('input[name="proficiencyChoices"]').evaluate((element) => {
+		(element as HTMLInputElement).value = JSON.stringify([
+			{ key: 'skill:0', value: 'history' },
+			{ key: 'skill:0', value: 'athletics' }
+		]);
+	});
+
+	await guidedForm.getByRole('button', { name: 'Save guided draft' }).click();
+
+	await expect(page).toHaveURL(/\/app\/characters\/new\?\/guided$/);
+	await expect(
+		guidedForm.getByText('Please choose only valid options for each skill proficiency choice.', {
+			exact: true
+		})
+	).toBeVisible();
+	await expect(guidedForm.locator('[data-testid="guided-skill-choice-skill:0"]')).toContainText(
+		'1/2 chosen'
+	);
+	await expect(guidedForm.locator('[data-testid="guided-invalid-choice-skill:0"]')).toContainText(
+		'Remove Athletics'
+	);
+
+	await guidedForm
+		.locator('[data-testid="guided-skill-choice-skill:0"]')
+		.getByRole('button', { name: 'Insight', exact: true })
+		.click();
+	await guidedForm.getByRole('button', { name: 'Save guided draft' }).click();
+
+	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\?created=Seren\+Dawnwatch&guided=1$/);
+	await expect(page.getByRole('heading', { name: 'Seren Dawnwatch' })).toBeVisible();
 });
 
 test('character edit route updates an existing draft and returns to detail', async ({ page }) => {
@@ -761,38 +1020,86 @@ async function fillGuidedCharacterForm(
 	await form.locator('input[name="wisdom"]').fill(values.wisdom);
 	await form.locator('input[name="charisma"]').fill(values.charisma);
 
-	await form.locator('input[name="languageChoices"]').evaluate(
-		(element, choiceEntries) => {
-			(element as HTMLInputElement).value = JSON.stringify(choiceEntries);
-		},
-		values.languageChoiceGroups.flatMap((group, index) =>
-			group.map((value) => ({ key: `language:${index}`, value: value.toLowerCase() }))
-		)
-	);
+	await fillGuidedChoiceGroupButtons(form, 'language', values.languageChoiceGroups);
+	await fillGuidedChoiceGroupButtons(form, 'skill', values.proficiencyChoiceGroups);
+	await fillGuidedChoiceGroupButtons(form, 'equipment', values.equipmentChoiceGroups);
+}
 
-	await form.locator('input[name="proficiencyChoices"]').evaluate(
-		(element, choiceEntries) => {
-			(element as HTMLInputElement).value = JSON.stringify(choiceEntries);
-		},
-		values.proficiencyChoiceGroups.flatMap((group, index) =>
-			group.map((value) => ({
-				key: `skill:${index}`,
-				value: value.toLowerCase().replaceAll(' ', '-')
-			}))
-		)
-	);
+async function fillGuidedChoiceGroupButtons(
+	form: ReturnType<Page['locator']>,
+	groupType: 'language' | 'skill' | 'equipment',
+	choiceGroups: string[][]
+) {
+	if (choiceGroups.length === 0) {
+		return;
+	}
 
-	await form.locator('input[name="equipmentChoices"]').evaluate(
-		(element, choiceEntries) => {
-			(element as HTMLInputElement).value = JSON.stringify(choiceEntries);
-		},
-		values.equipmentChoiceGroups.flatMap((group, index) =>
-			group.map((value) => ({
-				key: `equipment:${index}`,
-				value: value.toLowerCase().replaceAll("'", '').replaceAll(' ', '-')
-			}))
-		)
-	);
+	const guidedChoicesSection = form.locator('[data-testid="guided-choices-section"]');
+	await expect(guidedChoicesSection).toBeVisible();
+
+	for (let groupIndex = 0; groupIndex < choiceGroups.length; groupIndex += 1) {
+		const choiceCard = guidedChoicesSection.locator(
+			`[data-testid="${buildGuidedChoiceCardTestId(groupType, groupIndex)}"]`
+		);
+
+		await expect(choiceCard).toBeVisible();
+
+		for (const optionName of choiceGroups[groupIndex] ?? []) {
+			await choiceCard
+				.locator(
+					`[data-testid="${buildGuidedChoiceOptionTestId(groupType, groupIndex, optionName)}"]`
+				)
+				.click();
+		}
+	}
+}
+
+function buildGuidedChoiceCardTestId(
+	groupType: 'language' | 'skill' | 'equipment',
+	groupIndex: number
+) {
+	if (groupType === 'language') {
+		return `guided-language-choice-language:${groupIndex}`;
+	}
+
+	if (groupType === 'skill') {
+		return `guided-skill-choice-skill:${groupIndex}`;
+	}
+
+	return `guided-equipment-choice-equipment:${groupIndex}`;
+}
+
+function buildGuidedChoiceOptionTestId(
+	groupType: 'language' | 'skill' | 'equipment',
+	groupIndex: number,
+	optionName: string
+) {
+	return `guided-choice-option-${buildGuidedChoiceKey(groupType, groupIndex)}-${toGuidedOptionSlug(optionName)}`;
+}
+
+function buildGuidedChoiceKey(
+	groupType: 'language' | 'skill' | 'equipment',
+	groupIndex: number
+) {
+	if (groupType === 'language') {
+		return `language:${groupIndex}`;
+	}
+
+	if (groupType === 'skill') {
+		return `skill:${groupIndex}`;
+	}
+
+	return `equipment:${groupIndex}`;
+}
+
+function toGuidedOptionSlug(optionName: string) {
+	return optionName
+		.toLowerCase()
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]/g, '')
+		.replace(/['’]/g, '')
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-+|-+$/g, '');
 }
 
 async function selectDependentOption(select: ReturnType<Page['locator']>, label: string) {

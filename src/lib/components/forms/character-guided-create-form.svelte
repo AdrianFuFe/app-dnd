@@ -3,17 +3,19 @@
 		createDefaultGuidedCharacterInput,
 		createGuidedCharacterFormValues,
 		deriveGuidedCharacterDraft,
+		getGuidedChoiceInvalidSelectedValues,
+		getGuidedChoiceSelectedValues,
+		getGuidedChoiceValidSelectedValues,
+		humanizeGuidedChoiceValue,
 		inspectGuidedCharacterChoices,
+		sanitizeGuidedChoiceEntries,
 		type GuidedCharacterCatalog,
-		type GuidedCharacterFormValues
+		type GuidedCharacterFormValues,
+		type GuidedChoiceEntry
 	} from '$lib/domain/characters/guided-character';
 
 	type GuidedFieldName = keyof GuidedCharacterFormValues;
 	type GuidedFieldErrors = Partial<Record<GuidedFieldName, string[]>>;
-	type ChoiceEntry = {
-		key: string;
-		value: string;
-	};
 
 	let {
 		catalog,
@@ -46,9 +48,9 @@
 	] as const;
 
 	let formValues = $state(createGuidedCharacterFormValues(createDefaultGuidedCharacterInput()));
-	let languageChoices = $state<ChoiceEntry[]>([]);
-	let proficiencyChoices = $state<ChoiceEntry[]>([]);
-	let equipmentChoices = $state<ChoiceEntry[]>([]);
+	let languageChoices = $state<GuidedChoiceEntry[]>([]);
+	let proficiencyChoices = $state<GuidedChoiceEntry[]>([]);
+	let equipmentChoices = $state<GuidedChoiceEntry[]>([]);
 
 	$effect(() => {
 		formValues = { ...values };
@@ -57,7 +59,7 @@
 		equipmentChoices = parseChoiceEntries(values.equipmentChoices);
 	});
 
-	function parseChoiceEntries(value: string): ChoiceEntry[] {
+	function parseChoiceEntries(value: string): GuidedChoiceEntry[] {
 		if (!value.trim()) {
 			return [];
 		}
@@ -79,7 +81,7 @@
 		}
 	}
 
-	function choiceEntriesFieldValue(items: ChoiceEntry[]): string {
+	function choiceEntriesFieldValue(items: GuidedChoiceEntry[]): string {
 		return JSON.stringify(items);
 	}
 
@@ -228,15 +230,14 @@
 
 	const choiceResolution = $derived(deriveChoiceResolution());
 
-	function selectedValues(items: ChoiceEntry[], key: string): string[] {
-		return items.filter((entry) => entry.key === key).map((entry) => entry.value);
+	function choiceOptionSlugs(options: Array<{ slug: string }>): string[] {
+		return options.map((option) => option.slug);
 	}
 
-	function toggleChoice(
+	function removeChoiceValue(
 		group: 'language' | 'proficiency' | 'equipment',
 		key: string,
-		value: string,
-		maxCount: number
+		value: string
 	) {
 		const source =
 			group === 'language'
@@ -244,9 +245,36 @@
 				: group === 'proficiency'
 					? proficiencyChoices
 					: equipmentChoices;
-		const selected = selectedValues(source, key);
+		const nextItems = source.filter((entry) => !(entry.key === key && entry.value === value));
+
+		if (group === 'language') {
+			languageChoices = nextItems;
+		} else if (group === 'proficiency') {
+			proficiencyChoices = nextItems;
+		} else {
+			equipmentChoices = nextItems;
+		}
+	}
+
+	function toggleChoice(
+		group: 'language' | 'proficiency' | 'equipment',
+		key: string,
+		value: string,
+		maxCount: number,
+		allowedValues: string[]
+	) {
+		const source =
+			group === 'language'
+				? languageChoices
+				: group === 'proficiency'
+					? proficiencyChoices
+					: equipmentChoices;
+		const sanitizedSource = sanitizeGuidedChoiceEntries(source, key, allowedValues);
+		const selected = getGuidedChoiceSelectedValues(sanitizedSource, key);
 		const isSelected = selected.includes(value);
-		const nextBase = source.filter((entry) => !(entry.key === key && entry.value === value));
+		const nextBase = sanitizedSource.filter(
+			(entry) => !(entry.key === key && entry.value === value)
+		);
 
 		if (isSelected) {
 			if (group === 'language') {
@@ -286,7 +314,27 @@
 				: group === 'proficiency'
 					? proficiencyChoices
 					: equipmentChoices;
-		return selectedValues(source, key).includes(value);
+		return getGuidedChoiceSelectedValues(source, key).includes(value);
+	}
+
+	function guidedChoiceCardTestId(
+		group: 'language' | 'proficiency' | 'equipment',
+		key: string,
+		proficiencyType?: string
+	): string {
+		if (group === 'language') {
+			return `guided-language-choice-${key}`;
+		}
+
+		if (group === 'proficiency') {
+			return `guided-${proficiencyType ?? 'proficiency'}-choice-${key}`;
+		}
+
+		return `guided-equipment-choice-${key}`;
+	}
+
+	function guidedChoiceOptionTestId(key: string, value: string): string {
+		return `guided-choice-option-${key}-${value}`;
 	}
 </script>
 
@@ -540,7 +588,10 @@
 	</section>
 
 	{#if choiceResolution && (choiceResolution.languageChoices.length || choiceResolution.proficiencyChoices.length || choiceResolution.equipmentChoices.length)}
-		<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+		<section
+			class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm"
+			data-testid="guided-choices-section"
+		>
 			<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Step 5</p>
 			<h3 class="mt-2 text-xl font-semibold text-stone-900">Guided choices</h3>
 			<p class="mt-2 text-sm text-stone-600">
@@ -550,79 +601,174 @@
 
 			<div class="mt-5 space-y-5">
 				{#each choiceResolution.languageChoices as choice (choice.key)}
-					<div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+					<div
+						class="rounded-2xl border border-stone-200 bg-stone-50 p-4"
+						data-testid={guidedChoiceCardTestId('language', choice.key)}
+					>
 						<div class="flex items-center justify-between gap-3">
 							<p class="text-sm font-semibold text-stone-900">
 								Language choice
 							</p>
 							<p class="text-xs uppercase tracking-[0.15em] text-stone-500">
-								{selectedValues(languageChoices, choice.key).length}/{choice.count} chosen
+								{getGuidedChoiceValidSelectedValues(languageChoices, choice.key, choiceOptionSlugs(choice.options))
+									.length}/{choice.count} chosen
 							</p>
 						</div>
 						<div class="mt-3 flex flex-wrap gap-2">
 							{#each choice.options as option (option.slug)}
 								<button
 									type="button"
+									data-testid={guidedChoiceOptionTestId(choice.key, option.slug)}
 									class="rounded-full border px-3 py-1 text-sm transition {isChoiceSelected('language', choice.key, option.slug)
 										? 'border-emerald-300 bg-emerald-100 text-emerald-900'
 										: 'border-stone-300 bg-white text-stone-700 hover:border-stone-400'}"
-									onclick={() => toggleChoice('language', choice.key, option.slug, choice.count)}
+									onclick={() =>
+										toggleChoice(
+											'language',
+											choice.key,
+											option.slug,
+											choice.count,
+											choiceOptionSlugs(choice.options)
+										)}
 								>
 									{option.name}
 								</button>
 							{/each}
 						</div>
+						{#if getGuidedChoiceInvalidSelectedValues(languageChoices, choice.key, choiceOptionSlugs(choice.options)).length > 0}
+							<div
+								class="mt-3 rounded-2xl border border-amber-300 bg-amber-100/70 px-3 py-3 text-sm text-amber-950"
+								data-testid={`guided-invalid-choice-${choice.key}`}
+							>
+								<p class="font-medium">Some submitted picks are no longer valid for this choice.</p>
+								<div class="mt-2 flex flex-wrap gap-2">
+									{#each getGuidedChoiceInvalidSelectedValues(languageChoices, choice.key, choiceOptionSlugs(choice.options)) as invalidValue (invalidValue)}
+										<button
+											type="button"
+											class="rounded-full border border-amber-400 bg-white px-3 py-1 text-xs font-medium text-amber-900 transition hover:border-amber-500"
+											data-testid={`guided-invalid-choice-clear-${choice.key}-${invalidValue}`}
+											onclick={() => removeChoiceValue('language', choice.key, invalidValue)}
+										>
+											Remove {humanizeGuidedChoiceValue(invalidValue)}
+										</button>
+									{/each}
+								</div>
+							</div>
+						{/if}
 					</div>
 				{/each}
 
 				{#each choiceResolution.proficiencyChoices as choice (choice.key)}
-					<div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+					<div
+						class="rounded-2xl border border-stone-200 bg-stone-50 p-4"
+						data-testid={guidedChoiceCardTestId('proficiency', choice.key, choice.proficiencyType)}
+					>
 						<div class="flex items-center justify-between gap-3">
 							<p class="text-sm font-semibold text-stone-900">
 								{choice.proficiencyType === 'skill' ? 'Skill choice' : 'Tool choice'}
 							</p>
 							<p class="text-xs uppercase tracking-[0.15em] text-stone-500">
-								{selectedValues(proficiencyChoices, choice.key).length}/{choice.count} chosen
+								{getGuidedChoiceValidSelectedValues(proficiencyChoices, choice.key, choiceOptionSlugs(choice.options))
+									.length}/{choice.count} chosen
 							</p>
 						</div>
 						<div class="mt-3 flex flex-wrap gap-2">
 							{#each choice.options as option (option.slug)}
 								<button
 									type="button"
+									data-testid={guidedChoiceOptionTestId(choice.key, option.slug)}
 									class="rounded-full border px-3 py-1 text-sm transition {isChoiceSelected('proficiency', choice.key, option.slug)
 										? 'border-emerald-300 bg-emerald-100 text-emerald-900'
 										: 'border-stone-300 bg-white text-stone-700 hover:border-stone-400'}"
 									onclick={() =>
-										toggleChoice('proficiency', choice.key, option.slug, choice.count)}
+										toggleChoice(
+											'proficiency',
+											choice.key,
+											option.slug,
+											choice.count,
+											choiceOptionSlugs(choice.options)
+										)}
 								>
 									{option.name}
 								</button>
 							{/each}
 						</div>
+						{#if getGuidedChoiceInvalidSelectedValues(proficiencyChoices, choice.key, choiceOptionSlugs(choice.options)).length > 0}
+							<div
+								class="mt-3 rounded-2xl border border-amber-300 bg-amber-100/70 px-3 py-3 text-sm text-amber-950"
+								data-testid={`guided-invalid-choice-${choice.key}`}
+							>
+								<p class="font-medium">Some submitted picks are no longer valid for this choice.</p>
+								<div class="mt-2 flex flex-wrap gap-2">
+									{#each getGuidedChoiceInvalidSelectedValues(proficiencyChoices, choice.key, choiceOptionSlugs(choice.options)) as invalidValue (invalidValue)}
+										<button
+											type="button"
+											class="rounded-full border border-amber-400 bg-white px-3 py-1 text-xs font-medium text-amber-900 transition hover:border-amber-500"
+											data-testid={`guided-invalid-choice-clear-${choice.key}-${invalidValue}`}
+											onclick={() => removeChoiceValue('proficiency', choice.key, invalidValue)}
+										>
+											Remove {humanizeGuidedChoiceValue(invalidValue)}
+										</button>
+									{/each}
+								</div>
+							</div>
+						{/if}
 					</div>
 				{/each}
 
 				{#each choiceResolution.equipmentChoices as choice (choice.key)}
-					<div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+					<div
+						class="rounded-2xl border border-stone-200 bg-stone-50 p-4"
+						data-testid={guidedChoiceCardTestId('equipment', choice.key)}
+					>
 						<div class="flex items-center justify-between gap-3">
 							<p class="text-sm font-semibold text-stone-900">Equipment package</p>
 							<p class="text-xs uppercase tracking-[0.15em] text-stone-500">
-								{selectedValues(equipmentChoices, choice.key).length}/{choice.count} chosen
+								{getGuidedChoiceValidSelectedValues(equipmentChoices, choice.key, choiceOptionSlugs(choice.options))
+									.length}/{choice.count} chosen
 							</p>
 						</div>
 						<div class="mt-3 flex flex-wrap gap-2">
 							{#each choice.options as option (option.slug)}
 								<button
 									type="button"
+									data-testid={guidedChoiceOptionTestId(choice.key, option.slug)}
 									class="rounded-full border px-3 py-1 text-sm transition {isChoiceSelected('equipment', choice.key, option.slug)
 										? 'border-emerald-300 bg-emerald-100 text-emerald-900'
 										: 'border-stone-300 bg-white text-stone-700 hover:border-stone-400'}"
-									onclick={() => toggleChoice('equipment', choice.key, option.slug, choice.count)}
+									onclick={() =>
+										toggleChoice(
+											'equipment',
+											choice.key,
+											option.slug,
+											choice.count,
+											choiceOptionSlugs(choice.options)
+										)}
 								>
 									{option.name}
 								</button>
 							{/each}
 						</div>
+						{#if getGuidedChoiceInvalidSelectedValues(equipmentChoices, choice.key, choiceOptionSlugs(choice.options)).length > 0}
+							<div
+								class="mt-3 rounded-2xl border border-amber-300 bg-amber-100/70 px-3 py-3 text-sm text-amber-950"
+								data-testid={`guided-invalid-choice-${choice.key}`}
+							>
+								<p class="font-medium">Some submitted picks are no longer valid for this choice.</p>
+								<div class="mt-2 flex flex-wrap gap-2">
+									{#each getGuidedChoiceInvalidSelectedValues(equipmentChoices, choice.key, choiceOptionSlugs(choice.options)) as invalidValue (invalidValue)}
+										<button
+											type="button"
+											class="rounded-full border border-amber-400 bg-white px-3 py-1 text-xs font-medium text-amber-900 transition hover:border-amber-500"
+											data-testid={`guided-invalid-choice-clear-${choice.key}-${invalidValue}`}
+											onclick={() => removeChoiceValue('equipment', choice.key, invalidValue)}
+										>
+											Remove {humanizeGuidedChoiceValue(invalidValue)}
+										</button>
+									{/each}
+								</div>
+							</div>
+						{/if}
 					</div>
 				{/each}
 			</div>

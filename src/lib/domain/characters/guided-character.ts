@@ -152,6 +152,11 @@ export type GuidedCharacterDraft = {
 	preview: GuidedCharacterPreview;
 };
 
+export type GuidedChoiceEntry = {
+	key: string;
+	value: string;
+};
+
 export type GuidedCharacterFormValues = Record<keyof CharacterGuidedInput, string>;
 const GUIDED_CHARACTER_LEVEL = 1;
 
@@ -368,6 +373,41 @@ export function createGuidedCharacterFormValues(
 		proficiencyChoices: toStructuredFormString(source.proficiencyChoices),
 		equipmentChoices: toStructuredFormString(source.equipmentChoices)
 	};
+}
+
+export function getGuidedChoiceSelectedValues(
+	items: GuidedChoiceEntry[],
+	key: string
+): string[] {
+	return items.filter((entry) => entry.key === key).map((entry) => entry.value);
+}
+
+export function getGuidedChoiceValidSelectedValues(
+	items: GuidedChoiceEntry[],
+	key: string,
+	allowedValues: string[]
+): string[] {
+	return getGuidedChoiceSelectedValues(items, key).filter((value) => allowedValues.includes(value));
+}
+
+export function getGuidedChoiceInvalidSelectedValues(
+	items: GuidedChoiceEntry[],
+	key: string,
+	allowedValues: string[]
+): string[] {
+	return getGuidedChoiceSelectedValues(items, key).filter((value) => !allowedValues.includes(value));
+}
+
+export function sanitizeGuidedChoiceEntries(
+	items: GuidedChoiceEntry[],
+	key: string,
+	allowedValues: string[]
+): GuidedChoiceEntry[] {
+	return items.filter((entry) => entry.key !== key || allowedValues.includes(entry.value));
+}
+
+export function humanizeGuidedChoiceValue(value: string): string {
+	return humanizeToken(value);
 }
 
 function findRequiredOption<T extends { id: string }>(

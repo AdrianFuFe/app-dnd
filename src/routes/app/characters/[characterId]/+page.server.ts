@@ -25,7 +25,8 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 		character,
 		equipmentCatalog: expandedContentCatalog.equipment,
 		createdName: url.searchParams.get('created'),
-		guidedHandoff: url.searchParams.get('guided') === '1',
+		guidedHandoff:
+			url.searchParams.get('guided') === '1' || isGuidedCharacterOrigin(character.noteItems),
 		updatedName: url.searchParams.get('updated')
 	};
 };
@@ -92,3 +93,9 @@ export const actions: Actions = {
 		}
 	}
 };
+
+function isGuidedCharacterOrigin(noteItems: Array<{ title: string }>): boolean {
+	return noteItems.some(
+		(note) => note.title === 'Guided build grants' || note.title === 'Guided build choices'
+	);
+}

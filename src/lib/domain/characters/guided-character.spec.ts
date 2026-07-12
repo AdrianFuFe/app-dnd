@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
 	createDefaultGuidedCharacterInput,
 	deriveGuidedCharacterDraft,
+	getGuidedChoiceInvalidSelectedValues,
+	getGuidedChoiceSelectedValues,
+	getGuidedChoiceValidSelectedValues,
+	humanizeGuidedChoiceValue,
+	sanitizeGuidedChoiceEntries,
 	type GuidedCharacterCatalog
 } from './guided-character';
 
@@ -380,6 +385,59 @@ describe('deriveGuidedCharacterDraft', () => {
 		).toThrow('Please complete every required language choice.');
 	});
 
+	it('rejects duplicate guided picks inside the same choice group', () => {
+		expect(() =>
+			deriveGuidedCharacterDraft(catalog, {
+				...createDefaultGuidedCharacterInput(),
+				speciesId: 'species-1',
+				subspeciesId: 'subspecies-1',
+				classId: 'class-1',
+				subclassId: 'subclass-1',
+				backgroundId: 'background-1',
+				languageChoices: [
+					{ key: 'language:0', value: 'draconico' },
+					{ key: 'language:1', value: 'comun' },
+					{ key: 'language:1', value: 'comun' }
+				],
+				proficiencyChoices: [
+					{ key: 'skill:0', value: 'history' },
+					{ key: 'skill:0', value: 'insight' }
+				],
+				equipmentChoices: [
+					{ key: 'equipment:0', value: 'mace' },
+					{ key: 'equipment:1', value: 'prayer-book' }
+				]
+			})
+		).toThrow('Please avoid duplicate picks in each language choice.');
+	});
+
+	it('rejects guided picks that exceed the allowed number of choices', () => {
+		expect(() =>
+			deriveGuidedCharacterDraft(catalog, {
+				...createDefaultGuidedCharacterInput(),
+				speciesId: 'species-1',
+				subspeciesId: 'subspecies-1',
+				classId: 'class-1',
+				subclassId: 'subclass-1',
+				backgroundId: 'background-1',
+				languageChoices: [
+					{ key: 'language:0', value: 'draconico' },
+					{ key: 'language:0', value: 'gigante' },
+					{ key: 'language:1', value: 'comun' },
+					{ key: 'language:1', value: 'gigante' }
+				],
+				proficiencyChoices: [
+					{ key: 'skill:0', value: 'history' },
+					{ key: 'skill:0', value: 'insight' }
+				],
+				equipmentChoices: [
+					{ key: 'equipment:0', value: 'mace' },
+					{ key: 'equipment:1', value: 'prayer-book' }
+				]
+			})
+		).toThrow('Please keep each language choice within the allowed number of picks.');
+	});
+
 	it('rejects dependent selections that do not match', () => {
 		expect(() =>
 			deriveGuidedCharacterDraft(catalog, {
@@ -513,5 +571,54 @@ describe('deriveGuidedCharacterDraft', () => {
 			'Manual override: Initiative',
 			'Manual override: Speed'
 		]);
+	});
+});
+
+describe('guided choice recovery helpers', () => {
+	it('splits selected values into valid and invalid entries for a choice group', () => {
+		const items = [
+			{ key: 'equipment:3', value: 'priests-pack' },
+			{ key: 'equipment:3', value: 'warhammer' },
+			{ key: 'equipment:4', value: 'prayer-book' }
+		];
+
+		expect(getGuidedChoiceSelectedValues(items, 'equipment:3')).toEqual([
+			'priests-pack',
+			'warhammer'
+		]);
+		expect(
+			getGuidedChoiceValidSelectedValues(items, 'equipment:3', [
+				'priests-pack',
+				'explorers-pack'
+			])
+		).toEqual(['priests-pack']);
+		expect(
+			getGuidedChoiceInvalidSelectedValues(items, 'equipment:3', [
+				'priests-pack',
+				'explorers-pack'
+			])
+		).toEqual(['warhammer']);
+	});
+
+	it('sanitizes stale invalid values for one choice group without touching others', () => {
+		const items = [
+			{ key: 'equipment:3', value: 'warhammer' },
+			{ key: 'equipment:3', value: 'priests-pack' },
+			{ key: 'equipment:4', value: 'prayer-book' }
+		];
+
+		expect(
+			sanitizeGuidedChoiceEntries(items, 'equipment:3', ['priests-pack', 'explorers-pack'])
+		).toEqual([
+			{ key: 'equipment:3', value: 'priests-pack' },
+			{ key: 'equipment:4', value: 'prayer-book' }
+		]);
+	});
+
+	it('humanizes invalid guided choice values for recovery actions', () => {
+		expect(humanizeGuidedChoiceValue('warhammer')).toBe('Warhammer');
+		expect(humanizeGuidedChoiceValue('light-crossbow-and-20-bolts')).toBe(
+			'Light Crossbow And 20 Bolts'
+		);
 	});
 });
