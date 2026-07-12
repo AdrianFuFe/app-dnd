@@ -1,5 +1,9 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
+	import { afterNavigate } from '$app/navigation';
+	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
+	import { onMount } from 'svelte';
 	import { calculateAbilityModifier } from '$lib/domain/ability-modifier';
 	import type { ActionData, PageData } from './$types';
 
@@ -7,6 +11,7 @@
 	let deleteConfirmed = $state(false);
 	let deleteConfirmationName = $state('');
 	let deletePromptError = $state<string | null>(null);
+	let clientSearchParams = $state(new URLSearchParams(browser ? window.location.search : ''));
 
 	const abilityFields = [
 		{ key: 'strength', label: 'STR' },
@@ -66,6 +71,39 @@
 		event.preventDefault();
 		deletePromptError = 'Confirm the delete checkbox and type the exact character name.';
 	}
+
+	onMount(() => {
+		const syncSearchParams = () => {
+			clientSearchParams = new URLSearchParams(window.location.search);
+		};
+
+		syncSearchParams();
+		return afterNavigate(syncSearchParams);
+	});
+
+	function effectiveCreatedName(): string | null {
+		return (
+			data.createdName ??
+			page.url.searchParams.get('created') ??
+			clientSearchParams.get('created')
+		);
+	}
+
+	function hasGuidedHandoff(): boolean {
+		return (
+			data.guidedHandoff ||
+			page.url.searchParams.get('guided') === '1' ||
+			clientSearchParams.get('guided') === '1'
+		);
+	}
+
+	function effectiveUpdatedName(): string | null {
+		return (
+			data.updatedName ??
+			page.url.searchParams.get('updated') ??
+			clientSearchParams.get('updated')
+		);
+	}
 </script>
 
 <svelte:head>
@@ -117,23 +155,23 @@
 			</div>
 		</div>
 
-		{#if data.updatedName}
+		{#if effectiveUpdatedName()}
 			<p
 				class="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800"
 			>
-				{data.updatedName} was updated successfully.
+				{effectiveUpdatedName()} was updated successfully.
 			</p>
 		{/if}
 
-		{#if data.createdName}
+		{#if effectiveCreatedName()}
 			<p
 				class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
 			>
-				{data.createdName} was created successfully.
+				{effectiveCreatedName()} was created successfully.
 			</p>
 		{/if}
 
-		{#if data.guidedHandoff}
+		{#if hasGuidedHandoff()}
 			<div class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
 				<p class="text-sm font-semibold text-amber-950">Guided build saved</p>
 				<p class="mt-2 max-w-2xl text-sm leading-6 text-amber-900">
