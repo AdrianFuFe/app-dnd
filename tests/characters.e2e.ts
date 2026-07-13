@@ -116,6 +116,20 @@ test('guided character create route saves a canonical draft with handoff details
 	await expect(page.locator('[data-testid="guided-current-edit-state"]')).toContainText(
 		'still aligned with the canonical guided baseline'
 	);
+	await expect(
+		page
+			.locator('section')
+			.filter({ has: page.getByRole('heading', { name: 'Attacks' }) })
+			.getByText('Likely guided baseline')
+			.first()
+	).toBeVisible();
+	await expect(
+		page
+			.locator('section')
+			.filter({ has: page.getByRole('heading', { name: 'Spells' }) })
+			.getByText('Likely guided baseline')
+			.first()
+	).toBeVisible();
 	await expect(page.locator('[data-testid="guided-origin-summary"]')).toContainText(
 		'Guided origin snapshot'
 	);

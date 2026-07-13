@@ -216,6 +216,22 @@
 		return errors[field]?.[0];
 	}
 
+	function hasGuidedOriginNotes(): boolean {
+		return noteItems.some(
+			(item) => item.title === 'Guided build grants' || item.title === 'Guided build choices'
+		);
+	}
+
+	function guidedRowOriginLabel(
+		isCatalogLinked: boolean
+	): 'Likely guided baseline' | 'Manual addition' | null {
+		if (!hasGuidedOriginNotes()) {
+			return null;
+		}
+
+		return isCatalogLinked ? 'Likely guided baseline' : 'Manual addition';
+	}
+
 	function selectedSpecies(speciesId: string) {
 		return catalog.speciesOptions.find((option) => option.id === speciesId);
 	}
@@ -1390,7 +1406,16 @@
 				{#each attackItems as item, index (index)}
 					<div class="rounded-2xl border border-stone-200 bg-stone-50 p-4" data-note-row>
 						<div class="flex items-center justify-between gap-3">
-							<p class="text-sm font-semibold text-stone-900">Attack {index + 1}</p>
+							<div class="flex flex-wrap items-center gap-2">
+								<p class="text-sm font-semibold text-stone-900">Attack {index + 1}</p>
+								{#if guidedRowOriginLabel(Boolean(selectedAttackEquipmentCatalogId(item)))}
+									<span
+										class="rounded-full border border-sky-300 bg-white px-2 py-1 text-[11px] font-medium uppercase tracking-[0.15em] text-sky-900"
+									>
+										{guidedRowOriginLabel(Boolean(selectedAttackEquipmentCatalogId(item)))}
+									</span>
+								{/if}
+							</div>
 							<button
 								class="text-sm font-medium text-rose-700 transition hover:text-rose-900"
 								type="button"
@@ -1631,7 +1656,16 @@
 				{#each spellItems as item, index (index)}
 					<div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
 						<div class="flex items-center justify-between gap-3">
-							<p class="text-sm font-semibold text-stone-900">Spell {index + 1}</p>
+							<div class="flex flex-wrap items-center gap-2">
+								<p class="text-sm font-semibold text-stone-900">Spell {index + 1}</p>
+								{#if guidedRowOriginLabel(Boolean(selectedSpellCatalogId(item)))}
+									<span
+										class="rounded-full border border-sky-300 bg-white px-2 py-1 text-[11px] font-medium uppercase tracking-[0.15em] text-sky-900"
+									>
+										{guidedRowOriginLabel(Boolean(selectedSpellCatalogId(item)))}
+									</span>
+								{/if}
+							</div>
 							<button
 								class="text-sm font-medium text-rose-700 transition hover:text-rose-900"
 								type="button"
@@ -1982,7 +2016,16 @@
 				{#each inventoryItems as item, index (index)}
 					<div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
 						<div class="flex items-center justify-between gap-3">
-							<p class="text-sm font-semibold text-stone-900">Item {index + 1}</p>
+							<div class="flex flex-wrap items-center gap-2">
+								<p class="text-sm font-semibold text-stone-900">Item {index + 1}</p>
+								{#if guidedRowOriginLabel(Boolean(selectedInventoryEquipmentCatalogId(item)))}
+									<span
+										class="rounded-full border border-sky-300 bg-white px-2 py-1 text-[11px] font-medium uppercase tracking-[0.15em] text-sky-900"
+									>
+										{guidedRowOriginLabel(Boolean(selectedInventoryEquipmentCatalogId(item)))}
+									</span>
+								{/if}
+							</div>
 							<button
 								class="text-sm font-medium text-rose-700 transition hover:text-rose-900"
 								type="button"
