@@ -20,13 +20,6 @@ const optionalUuidSchema = z.preprocess((value) => {
 }, z.string().trim().uuid().optional());
 
 const baseAbilityScoreSchema = z.coerce.number().int().min(1).max(20);
-const optionalGuidedCombatOverrideSchema = z.preprocess((value) => {
-	if (value === '' || value === null || value === undefined) {
-		return undefined;
-	}
-
-	return value;
-}, z.coerce.number().int().min(0).optional());
 
 const guidedChoiceEntrySchema = z.object({
 	key: requiredTextSchema,
@@ -69,18 +62,6 @@ export const characterGuidedInputSchema = z.object({
 	intelligence: baseAbilityScoreSchema,
 	wisdom: baseAbilityScoreSchema,
 	charisma: baseAbilityScoreSchema,
-	overrideMaxHp: optionalGuidedCombatOverrideSchema,
-	overrideCurrentHp: optionalGuidedCombatOverrideSchema,
-	overrideTemporaryHp: optionalGuidedCombatOverrideSchema,
-	overrideArmorClass: optionalGuidedCombatOverrideSchema,
-	overrideInitiative: z.preprocess((value) => {
-		if (value === '' || value === null || value === undefined) {
-			return undefined;
-		}
-
-		return value;
-	}, z.coerce.number().int().min(-20).max(20).optional()),
-	overrideSpeed: optionalGuidedCombatOverrideSchema,
 	languageChoices: guidedChoiceEntriesSchema.default([]),
 	proficiencyChoices: guidedChoiceEntriesSchema.default([]),
 	equipmentChoices: guidedChoiceEntriesSchema.default([])

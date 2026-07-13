@@ -159,20 +159,6 @@
 				intelligence: Number(formValues.intelligence || '0'),
 				wisdom: Number(formValues.wisdom || '0'),
 				charisma: Number(formValues.charisma || '0'),
-				overrideMaxHp: formValues.overrideMaxHp ? Number(formValues.overrideMaxHp) : undefined,
-				overrideCurrentHp: formValues.overrideCurrentHp
-					? Number(formValues.overrideCurrentHp)
-					: undefined,
-				overrideTemporaryHp: formValues.overrideTemporaryHp
-					? Number(formValues.overrideTemporaryHp)
-					: undefined,
-				overrideArmorClass: formValues.overrideArmorClass
-					? Number(formValues.overrideArmorClass)
-					: undefined,
-				overrideInitiative: formValues.overrideInitiative
-					? Number(formValues.overrideInitiative)
-					: undefined,
-				overrideSpeed: formValues.overrideSpeed ? Number(formValues.overrideSpeed) : undefined,
 				languageChoices,
 				proficiencyChoices,
 				equipmentChoices
@@ -204,20 +190,6 @@
 				intelligence: Number(formValues.intelligence || '10'),
 				wisdom: Number(formValues.wisdom || '10'),
 				charisma: Number(formValues.charisma || '10'),
-				overrideMaxHp: formValues.overrideMaxHp ? Number(formValues.overrideMaxHp) : undefined,
-				overrideCurrentHp: formValues.overrideCurrentHp
-					? Number(formValues.overrideCurrentHp)
-					: undefined,
-				overrideTemporaryHp: formValues.overrideTemporaryHp
-					? Number(formValues.overrideTemporaryHp)
-					: undefined,
-				overrideArmorClass: formValues.overrideArmorClass
-					? Number(formValues.overrideArmorClass)
-					: undefined,
-				overrideInitiative: formValues.overrideInitiative
-					? Number(formValues.overrideInitiative)
-					: undefined,
-				overrideSpeed: formValues.overrideSpeed ? Number(formValues.overrideSpeed) : undefined,
 				languageChoices,
 				proficiencyChoices,
 				equipmentChoices

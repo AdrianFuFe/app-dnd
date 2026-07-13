@@ -518,7 +518,7 @@ describe('deriveGuidedCharacterDraft', () => {
 		]);
 	});
 
-	it('applies manual combat overrides and marks the guided draft as custom', () => {
+	it('keeps the guided draft canonical when no linked content is custom', () => {
 		const draft = deriveGuidedCharacterDraft(catalog, {
 			...createDefaultGuidedCharacterInput(),
 			speciesId: 'species-1',
@@ -528,12 +528,6 @@ describe('deriveGuidedCharacterDraft', () => {
 			backgroundId: 'background-1',
 			constitution: 14,
 			dexterity: 12,
-			overrideMaxHp: 12,
-			overrideCurrentHp: 20,
-			overrideTemporaryHp: 3,
-			overrideArmorClass: 15,
-			overrideInitiative: 4,
-			overrideSpeed: 35,
 			languageChoices: [
 				{ key: 'language:0', value: 'draconico' },
 				{ key: 'language:1', value: 'comun' },
@@ -549,13 +543,13 @@ describe('deriveGuidedCharacterDraft', () => {
 			]
 		});
 
-		expect(draft.character.contentMode).toBe('custom');
-		expect(draft.character.maxHp).toBe(12);
-		expect(draft.character.currentHp).toBe(12);
-		expect(draft.character.temporaryHp).toBe(3);
-		expect(draft.character.armorClass).toBe(15);
-		expect(draft.character.initiative).toBe(4);
-		expect(draft.character.speed).toBe(35);
+		expect(draft.character.contentMode).toBe('canon');
+		expect(draft.character.maxHp).toBe(10);
+		expect(draft.character.currentHp).toBe(10);
+		expect(draft.character.temporaryHp).toBe(0);
+		expect(draft.character.armorClass).toBe(12);
+		expect(draft.character.initiative).toBe(2);
+		expect(draft.character.speed).toBe(30);
 		expect(draft.preview.derivedCombatStats).toEqual({
 			maxHp: 10,
 			currentHp: 10,
@@ -564,14 +558,7 @@ describe('deriveGuidedCharacterDraft', () => {
 			initiative: 2,
 			speed: 30
 		});
-		expect(draft.preview.customizationReasonLines).toEqual([
-			'Manual override: Max Hp',
-			'Manual override: Current Hp',
-			'Manual override: Temporary Hp',
-			'Manual override: Armor Class',
-			'Manual override: Initiative',
-			'Manual override: Speed'
-		]);
+		expect(draft.preview.customizationReasonLines).toEqual([]);
 	});
 });
 

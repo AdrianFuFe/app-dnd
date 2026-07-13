@@ -152,12 +152,6 @@ function createGuidedRequest(
 			intelligence: '11',
 			wisdom: '15',
 			charisma: '13',
-			overrideMaxHp: '',
-			overrideCurrentHp: '',
-			overrideTemporaryHp: '',
-			overrideArmorClass: '',
-			overrideInitiative: '',
-			overrideSpeed: '',
 			languageChoices: JSON.stringify([
 				{ key: 'language:0', value: 'draconico' },
 				{ key: 'language:1', value: 'comun' },
