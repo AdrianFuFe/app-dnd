@@ -58,6 +58,40 @@
 		return value === 'dnd-2014-srd' ? 'DnD 2014 SRD' : value;
 	}
 
+	function splitGuidedNoteLines(value: string | undefined): string[] {
+		if (!value) {
+			return [];
+		}
+
+		return value
+			.split('\n')
+			.map((line) => line.trim())
+			.filter((line) => line.length > 0);
+	}
+
+	function deriveGuidedDetailSummary() {
+		const grantsNote = data.character.noteItems.find((note) => note.title === 'Guided build grants');
+		const choicesNote = data.character.noteItems.find((note) => note.title === 'Guided build choices');
+		const lineageParts = [data.character.race, data.character.subrace].filter(Boolean);
+		const classParts = [data.character.className, data.character.subclass].filter(Boolean);
+
+		if (!grantsNote && !choicesNote) {
+			return data.guidedOriginSummary ?? null;
+		}
+
+		return {
+			lineageSummary: lineageParts.join(' / '),
+			classSummary: classParts.join(' / '),
+			backgroundSummary: data.character.background ?? '',
+			statusSummary:
+				data.character.contentMode === 'canon'
+					? 'Still on the canonical guided path.'
+					: 'This draft has diverged from the canonical guided path.',
+			grantLines: splitGuidedNoteLines(grantsNote?.content),
+			choiceLines: splitGuidedNoteLines(choicesNote?.content)
+		};
+	}
+
 	function isDeleteReady(): boolean {
 		return deleteConfirmed && deleteConfirmationName.trim() === data.character.name;
 	}
@@ -105,6 +139,8 @@
 			page.url.searchParams.get('updated') ??
 			clientSearchParams.get('updated')
 	);
+
+	const guidedDetailSummary = $derived(deriveGuidedDetailSummary());
 
 	const editCharacterHref = $derived.by(() => {
 		const basePath = resolve(`/app/characters/${data.character.id}/edit`);
@@ -205,6 +241,72 @@
 					>
 						Back To Gallery
 					</a>
+				</div>
+			</div>
+
+		{/if}
+
+		{#if guidedDetailSummary}
+			<div
+				class="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4"
+				data-testid="guided-detail-summary"
+			>
+				<div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+					<div>
+						<p class="text-sm font-semibold text-sky-950">Guided path snapshot</p>
+						<p class="mt-2 max-w-2xl text-sm leading-6 text-sky-900">
+							{guidedDetailSummary.statusSummary}
+						</p>
+					</div>
+					<div class="flex flex-wrap gap-2">
+						<span
+							class="rounded-full border border-sky-300 bg-white px-3 py-1 text-xs font-medium uppercase tracking-[0.15em] text-sky-900"
+						>
+							{guidedDetailSummary.lineageSummary || 'No lineage path'}
+						</span>
+						<span
+							class="rounded-full border border-sky-300 bg-white px-3 py-1 text-xs font-medium uppercase tracking-[0.15em] text-sky-900"
+						>
+							{guidedDetailSummary.classSummary || 'No class path'}
+						</span>
+						<span
+							class="rounded-full border border-sky-300 bg-white px-3 py-1 text-xs font-medium uppercase tracking-[0.15em] text-sky-900"
+						>
+							{guidedDetailSummary.backgroundSummary || 'No background'}
+						</span>
+					</div>
+				</div>
+
+				<div class="mt-4 grid gap-4 xl:grid-cols-2">
+					<div class="rounded-2xl border border-sky-200 bg-white px-4 py-4">
+						<p class="text-sm font-semibold text-sky-950">Auto-applied by the guided flow</p>
+						{#if guidedDetailSummary.grantLines.length === 0}
+							<p class="mt-2 text-sm leading-6 text-sky-900">
+								No guided grants were preserved on this draft.
+							</p>
+						{:else}
+							<ul class="mt-3 space-y-2 text-sm text-sky-900">
+								{#each guidedDetailSummary.grantLines as line}
+									<li>{line}</li>
+								{/each}
+							</ul>
+						{/if}
+					</div>
+
+					<div class="rounded-2xl border border-sky-200 bg-white px-4 py-4">
+						<p class="text-sm font-semibold text-sky-950">Chosen in the guided flow</p>
+						{#if guidedDetailSummary.choiceLines.length === 0}
+							<p class="mt-2 text-sm leading-6 text-sky-900">
+								No guided choices were preserved on this draft.
+							</p>
+						{:else}
+							<ul class="mt-3 space-y-2 text-sm text-sky-900">
+								{#each guidedDetailSummary.choiceLines as line}
+									<li>{line}</li>
+								{/each}
+							</ul>
+						{/if}
+					</div>
 				</div>
 			</div>
 		{/if}

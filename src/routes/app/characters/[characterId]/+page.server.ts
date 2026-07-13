@@ -27,6 +27,7 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 		createdName: url.searchParams.get('created'),
 		guidedHandoff:
 			url.searchParams.get('guided') === '1' || isGuidedCharacterOrigin(character.noteItems),
+		guidedOriginSummary: summarizeGuidedCharacterOrigin(character),
 		updatedName: url.searchParams.get('updated')
 	};
 };
@@ -98,4 +99,46 @@ function isGuidedCharacterOrigin(noteItems: Array<{ title: string }>): boolean {
 	return noteItems.some(
 		(note) => note.title === 'Guided build grants' || note.title === 'Guided build choices'
 	);
+}
+
+function summarizeGuidedCharacterOrigin(character: {
+	race?: string;
+	subrace?: string;
+	className?: string;
+	subclass?: string;
+	background?: string;
+	contentMode: string;
+	noteItems: Array<{ title: string; content: string }>;
+}) {
+	if (!isGuidedCharacterOrigin(character.noteItems)) {
+		return null;
+	}
+
+	const grantsNote = character.noteItems.find((note) => note.title === 'Guided build grants');
+	const choicesNote = character.noteItems.find((note) => note.title === 'Guided build choices');
+	const lineageParts = [character.race, character.subrace].filter(Boolean);
+	const classParts = [character.className, character.subclass].filter(Boolean);
+
+	return {
+		lineageSummary: lineageParts.join(' / '),
+		classSummary: classParts.join(' / '),
+		backgroundSummary: character.background ?? '',
+		statusSummary:
+			character.contentMode === 'canon'
+				? 'Still on the canonical guided path.'
+				: 'This draft has diverged from the canonical guided path.',
+		grantLines: splitGuidedNoteLines(grantsNote?.content),
+		choiceLines: splitGuidedNoteLines(choicesNote?.content)
+	};
+}
+
+function splitGuidedNoteLines(value: string | undefined): string[] {
+	if (!value) {
+		return [];
+	}
+
+	return value
+		.split('\n')
+		.map((line) => line.trim())
+		.filter((line) => line.length > 0);
 }
