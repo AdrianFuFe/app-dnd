@@ -453,18 +453,19 @@ test('guided character create route shows a canonical derived snapshot and fulle
 	await expect(derivedSnapshotSection.getByText('Current HP', { exact: true })).toBeVisible();
 	await expect(derivedSnapshotSection.getByText('Hit Dice', { exact: true })).toBeVisible();
 	await expect(
-		guidedForm.getByText('Granted proficiencies, languages, and spells', { exact: true })
+		guidedForm.locator('[data-testid="guided-derived-snapshot-step"]').getByText(
+			'Granted proficiencies and languages',
+			{ exact: true }
+		)
 	).toBeVisible();
 	await expect(
-		guidedForm.getByText('Derived equipment and attacks', { exact: true })
+		guidedForm.locator('[data-testid="guided-derived-snapshot-step"]').getByText(
+			'Derived equipment',
+			{ exact: true }
+		)
 	).toBeVisible();
 	await expect(
-		guidedForm.locator('[data-testid="guided-review-step"]').getByText('Granted spell: Bless', {
-			exact: true
-		})
-	).toBeVisible();
-	await expect(
-		guidedForm.locator('[data-testid="guided-review-step"]').getByText('Equipment: 1x Mace', {
+		guidedForm.locator('[data-testid="guided-review-step"]').getByText('Save summary', {
 			exact: true
 		})
 	).toBeVisible();
@@ -473,6 +474,12 @@ test('guided character create route shows a canonical derived snapshot and fulle
 	);
 	await expect(guidedForm.locator('[data-testid="guided-review-step"]')).toContainText(
 		'Final ability scores'
+	);
+	await expect(guidedForm.locator('[data-testid="guided-review-step"]')).toContainText(
+		'Granted spells'
+	);
+	await expect(guidedForm.locator('[data-testid="guided-review-step"]')).toContainText(
+		'Inventory items'
 	);
 });
 

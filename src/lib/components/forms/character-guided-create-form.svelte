@@ -1426,44 +1426,39 @@
 					</div>
 				</div>
 
-				<div class="mt-5 grid gap-5 xl:grid-cols-2">
-					<div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-						<p class="text-sm font-semibold text-stone-900">
-							Granted proficiencies, languages, and spells
-						</p>
-						{#if preview.preview.grantedFeatureLines.length === 0 && preview.preview.grantedSpellItems.length === 0}
-							<p class="mt-3 text-sm text-stone-600">No automatic grants resolved yet.</p>
-						{:else}
-							<ul class="mt-3 space-y-2 text-sm text-stone-700">
-								{#each preview.preview.grantedFeatureLines as line}
-									<li>{line}</li>
-								{/each}
-								{#each preview.preview.grantedSpellItems as spell}
-									<li>Granted spell: {spell.name}</li>
-								{/each}
-							</ul>
-						{/if}
+				<div class="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+					<p class="text-sm font-semibold text-emerald-950">Save summary</p>
+					<div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+						<div class="rounded-2xl border border-emerald-200 bg-white px-4 py-3">
+							<p class="text-xs uppercase tracking-[0.15em] text-emerald-700">Granted spells</p>
+							<p class="mt-2 text-sm font-semibold text-emerald-950">
+								{preview.preview.grantedSpellItems.length}
+							</p>
+						</div>
+						<div class="rounded-2xl border border-emerald-200 bg-white px-4 py-3">
+							<p class="text-xs uppercase tracking-[0.15em] text-emerald-700">Inventory items</p>
+							<p class="mt-2 text-sm font-semibold text-emerald-950">
+								{preview.preview.derivedInventoryItems.length}
+							</p>
+						</div>
+						<div class="rounded-2xl border border-emerald-200 bg-white px-4 py-3">
+							<p class="text-xs uppercase tracking-[0.15em] text-emerald-700">Derived attacks</p>
+							<p class="mt-2 text-sm font-semibold text-emerald-950">
+								{preview.preview.derivedAttackItems.length}
+							</p>
+						</div>
+						<div class="rounded-2xl border border-emerald-200 bg-white px-4 py-3">
+							<p class="text-xs uppercase tracking-[0.15em] text-emerald-700">Pending picks</p>
+							<p class="mt-2 text-sm font-semibold text-emerald-950">
+								{preview.preview.pendingChoiceLines.length}
+							</p>
+						</div>
 					</div>
 
-					<div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-						<p class="text-sm font-semibold text-stone-900">
-							Derived equipment and attacks
-						</p>
-						{#if preview.preview.derivedInventoryItems.length === 0 && preview.preview.derivedAttackItems.length === 0}
-							<p class="mt-3 text-sm text-stone-600">
-								No derived equipment or attacks resolved yet.
-							</p>
-						{:else}
-							<ul class="mt-3 space-y-2 text-sm text-stone-700">
-								{#each preview.preview.derivedInventoryItems as item}
-									<li>Equipment: {item.quantity}x {item.name}</li>
-								{/each}
-								{#each preview.preview.derivedAttackItems as attack}
-									<li>Attack: {attack.name}</li>
-								{/each}
-							</ul>
-						{/if}
-					</div>
+					<p class="mt-4 text-sm text-emerald-900">
+						The full granted details and derived equipment remain visible in the derived
+						snapshot above. This final step is focused on confirming the saved outcome.
+					</p>
 				</div>
 			{/if}
 
