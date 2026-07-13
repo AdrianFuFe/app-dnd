@@ -43,6 +43,7 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 		guidedHandoff:
 			url.searchParams.get('guided') === '1' || isGuidedCharacterOrigin(character.noteItems),
 		guidedOriginSummary: summarizeGuidedCharacterOrigin(character),
+		currentEditState: summarizeCurrentEditState(character),
 		values: createCharacterFormValuesFromInput(character),
 		catalog,
 		featCatalog: expandedContentCatalog.feats,
@@ -248,6 +249,24 @@ function splitGuidedNoteLines(value: string | undefined): string[] {
 		.split('\n')
 		.map((line) => line.trim())
 		.filter((line) => line.length > 0);
+}
+
+function summarizeCurrentEditState(character: {
+	contentMode: string;
+	contentProfileMetadata?: {
+		reasonLines?: string[];
+	};
+}) {
+	const reasonLines = character.contentProfileMetadata?.reasonLines ?? [];
+
+	return {
+		contentMode: character.contentMode,
+		statusSummary:
+			character.contentMode === 'canon'
+				? 'This draft is still aligned with the canonical guided baseline.'
+				: 'This draft currently lives on a custom path for the same ruleset.',
+		reasonLines
+	};
 }
 
 function buildCharacterDetailRedirect(

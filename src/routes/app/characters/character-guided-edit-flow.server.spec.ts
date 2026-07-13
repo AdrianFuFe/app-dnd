@@ -42,6 +42,11 @@ describe('guided character edit flow with E2E mock', () => {
 		).resolves.toMatchObject({
 			characterName: 'Seren Dawnwatch',
 			guidedHandoff: true,
+			currentEditState: {
+				contentMode: 'canon',
+				statusSummary: 'This draft is still aligned with the canonical guided baseline.',
+				reasonLines: []
+			},
 			guidedOriginSummary: {
 				lineageSummary: 'Humano',
 				classSummary: 'Clerigo / Life Domain',
@@ -137,6 +142,23 @@ describe('guided character edit flow with E2E mock', () => {
 					]
 				}
 			})
+		});
+
+		await expect(
+			characterEditLoad({
+				locals: { session, supabase },
+				params: { characterId },
+				url: new URL(`http://localhost/app/characters/${characterId}/edit?guided=1`)
+			} as never)
+		).resolves.toMatchObject({
+			currentEditState: {
+				contentMode: 'custom',
+				statusSummary: 'This draft currently lives on a custom path for the same ruleset.',
+				reasonLines: [
+					'Guided baseline diverged after manual edits',
+					'Manual override: Armor Class'
+				]
+			}
 		});
 	});
 });

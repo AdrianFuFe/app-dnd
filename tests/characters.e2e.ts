@@ -112,6 +112,10 @@ test('guided character create route saves a canonical draft with handoff details
 	await page.getByRole('link', { name: 'Edit character' }).click();
 	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\/edit\?guided=1$/);
 	await expect(page.getByText('Guided-to-custom handoff', { exact: true })).toBeVisible();
+	await expect(page.locator('[data-testid="guided-current-edit-state"]')).toContainText('canon');
+	await expect(page.locator('[data-testid="guided-current-edit-state"]')).toContainText(
+		'still aligned with the canonical guided baseline'
+	);
 	await expect(page.locator('[data-testid="guided-origin-summary"]')).toContainText(
 		'Guided origin snapshot'
 	);
@@ -224,6 +228,15 @@ test('guided character edit can intentionally diverge into a custom draft', asyn
 	await expect(page.getByRole('link', { name: 'Edit character' })).toHaveAttribute(
 		'href',
 		/\/app\/characters\/[^/]+\/edit\?guided=1$/
+	);
+	await page.getByRole('link', { name: 'Edit character' }).click();
+	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\/edit\?guided=1$/);
+	await expect(page.locator('[data-testid="guided-current-edit-state"]')).toContainText('custom');
+	await expect(page.locator('[data-testid="guided-current-edit-state"]')).toContainText(
+		'Guided baseline diverged after manual edits'
+	);
+	await expect(page.locator('[data-testid="guided-current-edit-state"]')).toContainText(
+		'Manual override: Armor Class'
 	);
 });
 

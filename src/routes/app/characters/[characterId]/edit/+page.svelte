@@ -35,6 +35,32 @@
 				</p>
 			</div>
 
+			<div
+				class="mt-4 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-4"
+				data-testid="guided-current-edit-state"
+			>
+				<div class="flex flex-wrap items-center gap-3">
+					<p class="text-sm font-semibold text-violet-950">Current edit state</p>
+					<span
+						class="rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-[0.15em] {data.currentEditState.contentMode === 'canon'
+							? 'border-emerald-300 bg-emerald-100 text-emerald-900'
+							: 'border-violet-300 bg-white text-violet-900'}"
+					>
+						{data.currentEditState.contentMode}
+					</span>
+				</div>
+				<p class="mt-2 max-w-3xl text-sm leading-6 text-violet-900">
+					{data.currentEditState.statusSummary}
+				</p>
+				{#if data.currentEditState.reasonLines.length > 0}
+					<ul class="mt-3 space-y-2 text-sm text-violet-900">
+						{#each data.currentEditState.reasonLines as line}
+							<li>{line}</li>
+						{/each}
+					</ul>
+				{/if}
+			</div>
+
 			{#if data.guidedOriginSummary}
 				<div
 					class="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4"
