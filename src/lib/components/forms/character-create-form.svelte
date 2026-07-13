@@ -65,6 +65,45 @@
 		entries: SpellCatalogEntry[];
 	};
 
+	function createEditableFormValues(values: CharacterCreateFormValues) {
+		return {
+			name: values.name,
+			speciesId: values.speciesId,
+			subspeciesId: values.subspeciesId,
+			race: values.race,
+			subrace: values.subrace,
+			classId: values.classId,
+			subclassId: values.subclassId,
+			className: values.className,
+			subclass: values.subclass,
+			backgroundId: values.backgroundId,
+			level: values.level,
+			background: values.background,
+			story: values.story,
+			strength: values.strength,
+			dexterity: values.dexterity,
+			constitution: values.constitution,
+			intelligence: values.intelligence,
+			wisdom: values.wisdom,
+			charisma: values.charisma,
+			maxHp: values.maxHp,
+			currentHp: values.currentHp,
+			temporaryHp: values.temporaryHp,
+			armorClass: values.armorClass,
+			initiative: values.initiative,
+			speed: values.speed,
+			hitDice: values.hitDice,
+			attackItems: values.attackItems,
+			spellItems: values.spellItems,
+			featItems: values.featItems,
+			inventoryItems: values.inventoryItems,
+			noteItems: values.noteItems,
+			attacks: values.attacks,
+			spells: values.spells,
+			notes: values.notes
+		};
+	}
+
 	let {
 		catalog,
 		equipmentCatalog,
@@ -147,11 +186,11 @@
 		initiative: '',
 		speed: '',
 		hitDice: '',
-		attackItems: '[]',
-		spellItems: '[]',
-		featItems: '[]',
-		inventoryItems: '[]',
-		noteItems: '[]',
+		attackItems: '',
+		spellItems: '',
+		featItems: '',
+		inventoryItems: '',
+		noteItems: '',
 		attacks: '',
 		spells: '',
 		notes: ''
@@ -169,42 +208,7 @@
 	let notesField: HTMLInputElement | null = null;
 
 	$effect(() => {
-		formValues = {
-			name: values.name,
-			speciesId: values.speciesId,
-			subspeciesId: values.subspeciesId,
-			race: values.race,
-			subrace: values.subrace,
-			classId: values.classId,
-			subclassId: values.subclassId,
-			className: values.className,
-			subclass: values.subclass,
-			backgroundId: values.backgroundId,
-			level: values.level,
-			background: values.background,
-			story: values.story,
-			strength: values.strength,
-			dexterity: values.dexterity,
-			constitution: values.constitution,
-			intelligence: values.intelligence,
-			wisdom: values.wisdom,
-			charisma: values.charisma,
-			maxHp: values.maxHp,
-			currentHp: values.currentHp,
-			temporaryHp: values.temporaryHp,
-			armorClass: values.armorClass,
-			initiative: values.initiative,
-			speed: values.speed,
-			hitDice: values.hitDice,
-			attackItems: values.attackItems,
-			spellItems: values.spellItems,
-			featItems: values.featItems,
-			inventoryItems: values.inventoryItems,
-			noteItems: values.noteItems,
-			attacks: values.attacks,
-			spells: values.spells,
-			notes: values.notes
-		};
+		formValues = createEditableFormValues(values);
 		attackItems = parseAttackItems(values.attackItems, values.attacks);
 		spellItems = parseSpellItems(values.spellItems, values.spells);
 		featItems = parseFeatItems(values.featItems);
@@ -217,9 +221,71 @@
 	}
 
 	function hasGuidedOriginNotes(): boolean {
-		return noteItems.some(
+		return guidedOriginNoteItems().some(
 			(item) => item.title === 'Guided build grants' || item.title === 'Guided build choices'
 		);
+	}
+
+	function guidedBaselineEquipmentNames(): Set<string> {
+		const names = new Set<string>();
+
+		for (const item of guidedOriginNoteItems()) {
+			for (const rawLine of item.content.split('\n')) {
+				const line = rawLine.trim();
+
+				if (line.startsWith('Chosen equipment: ')) {
+					for (const part of line.slice('Chosen equipment: '.length).split(',')) {
+						const normalized = normalizeGuidedRowName(part);
+						if (normalized) {
+							names.add(normalized);
+						}
+					}
+				}
+
+				if (line.startsWith('Starting equipment: ')) {
+					const content = line.slice('Starting equipment: '.length).trim();
+
+					if (content.startsWith('Choose 1: ')) {
+						for (const part of content.slice('Choose 1: '.length).split(',')) {
+							const normalized = normalizeGuidedRowName(part);
+							if (normalized) {
+								names.add(normalized);
+							}
+						}
+						continue;
+					}
+
+					const withoutQuantity = content.replace(/^\d+x\s+/i, '').trim();
+					const normalized = normalizeGuidedRowName(withoutQuantity);
+					if (normalized) {
+						names.add(normalized);
+					}
+				}
+			}
+		}
+
+		return names;
+	}
+
+	function guidedOriginNoteItems(): NoteFormItem[] {
+		return parseNoteItems(values.noteItems, values.notes);
+	}
+
+	function guidedInventoryFallbackItems(): InventoryFormItem[] {
+		return parseInventoryItems(values.inventoryItems);
+	}
+
+	function normalizeGuidedRowName(value: string): string {
+		return value.trim().toLowerCase();
+	}
+
+	function inventoryItemLooksGuidedBaseline(item: InventoryFormItem): boolean {
+		if (selectedInventoryEquipmentCatalogId(item)) {
+			return true;
+		}
+
+		const normalizedName = normalizeGuidedRowName(item.name);
+		return normalizedName.length > 0 && guidedBaselineEquipmentNames().has(normalizedName);
 	}
 
 	function guidedRowOriginLabel(
@@ -2005,12 +2071,45 @@
 		{/if}
 
 		{#if inventoryItems.length === 0}
-			<p
-				class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600"
-			>
-				No inventory items yet. Add the gear your character actually carries instead of
-				hiding it in a text blob.
-			</p>
+			{#if hasGuidedOriginNotes() && guidedInventoryFallbackItems().length > 0}
+				<div class="mt-6 space-y-4">
+					<p
+						class="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm text-sky-900"
+					>
+						This guided draft already has baseline gear. Add manual rows only when you want
+						to start customizing what the character actually carries from here.
+					</p>
+
+					<div class="space-y-4">
+						{#each guidedInventoryFallbackItems() as item, index (`${item.name}-${index}`)}
+							<div class="rounded-2xl border border-sky-200 bg-sky-50/60 p-4">
+								<div class="flex flex-wrap items-center gap-2">
+									<p class="text-sm font-semibold text-stone-900">Baseline item {index + 1}</p>
+									<span
+										class="rounded-full border border-sky-300 bg-white px-2 py-1 text-[11px] font-medium uppercase tracking-[0.15em] text-sky-900"
+									>
+										Likely guided baseline
+									</span>
+								</div>
+								<p class="mt-3 text-sm font-medium text-stone-900">{item.name}</p>
+								<p class="mt-1 text-sm text-stone-600">
+									Qty {item.quantity || '1'}{item.isEquipped ? ' · Equipped' : ''}
+								</p>
+								{#if item.description}
+									<p class="mt-2 text-sm leading-6 text-stone-600">{item.description}</p>
+								{/if}
+							</div>
+						{/each}
+					</div>
+				</div>
+			{:else}
+				<p
+					class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600"
+				>
+					No inventory items yet. Add the gear your character actually carries instead of
+					hiding it in a text blob.
+				</p>
+			{/if}
 		{:else}
 			<div class="mt-6 space-y-4">
 				{#each inventoryItems as item, index (index)}
@@ -2018,11 +2117,11 @@
 						<div class="flex items-center justify-between gap-3">
 							<div class="flex flex-wrap items-center gap-2">
 								<p class="text-sm font-semibold text-stone-900">Item {index + 1}</p>
-								{#if guidedRowOriginLabel(Boolean(selectedInventoryEquipmentCatalogId(item)))}
+								{#if guidedRowOriginLabel(inventoryItemLooksGuidedBaseline(item))}
 									<span
 										class="rounded-full border border-sky-300 bg-white px-2 py-1 text-[11px] font-medium uppercase tracking-[0.15em] text-sky-900"
 									>
-										{guidedRowOriginLabel(Boolean(selectedInventoryEquipmentCatalogId(item)))}
+										{guidedRowOriginLabel(inventoryItemLooksGuidedBaseline(item))}
 									</span>
 								{/if}
 							</div>

@@ -130,6 +130,13 @@ test('guided character create route saves a canonical draft with handoff details
 			.getByText('Likely guided baseline')
 			.first()
 	).toBeVisible();
+	await expect(
+		page
+			.locator('section')
+			.filter({ has: page.getByRole('heading', { name: 'Inventory' }) })
+			.getByText('Likely guided baseline')
+			.first()
+	).toBeVisible();
 	await expect(page.locator('[data-testid="guided-origin-summary"]')).toContainText(
 		'Guided origin snapshot'
 	);
