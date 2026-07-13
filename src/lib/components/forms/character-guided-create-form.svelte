@@ -508,6 +508,54 @@
 
 		return lines;
 	}
+
+	function selectedGuidedMechanics(): GameMechanic[] {
+		return [
+			...(selectedSpecies()?.mechanics ?? []),
+			...(availableSubspeciesOptions().find((option) => option.id === formValues.subspeciesId)?.mechanics ??
+				[]),
+			...(selectedClass()?.mechanics ?? []),
+			...(availableSubclassOptions().find((option) => option.id === formValues.subclassId)?.mechanics ?? []),
+			...(selectedBackground()?.mechanics ?? [])
+		];
+	}
+
+	function summarizeAutoGrantedChoiceStepLines(): string[] {
+		const lines: string[] = [];
+
+		for (const mechanic of selectedGuidedMechanics()) {
+			if (
+				mechanic.type !== 'language' &&
+				mechanic.type !== 'proficiency' &&
+				mechanic.type !== 'spell_grant'
+			) {
+				continue;
+			}
+
+			const line = summarizeMechanicLine(mechanic);
+
+			if (line && !lines.includes(line)) {
+				lines.push(line);
+			}
+		}
+
+		for (const entry of [
+			...(selectedClass()?.startingEquipment ?? []),
+			...(selectedBackground()?.startingEquipment ?? [])
+		]) {
+			if (entry.type !== 'item') {
+				continue;
+			}
+
+			const line = `Starting equipment: ${summarizeEquipmentEntry(entry)}`;
+
+			if (!lines.includes(line)) {
+				lines.push(line);
+			}
+		}
+
+		return lines;
+	}
 </script>
 
 <form method="POST" action="?/guided" class="space-y-6">
@@ -836,9 +884,23 @@
 			<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Step 6</p>
 			<h3 class="mt-2 text-xl font-semibold text-stone-900">Guided choices</h3>
 			<p class="mt-2 text-sm text-stone-600">
-				Complete the required language and proficiency picks that this lineage, class path,
-				and background generate.
+				Fixed grants from your selected lineage, class path, and background are already
+				applied. Only the required picks in this step still need your input.
 			</p>
+
+			{#if summarizeAutoGrantedChoiceStepLines().length > 0}
+				<div
+					class="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4"
+					data-testid="guided-auto-grants-summary"
+				>
+					<p class="text-sm font-semibold text-emerald-950">Already applied automatically</p>
+					<ul class="mt-3 space-y-2 text-sm text-emerald-950">
+						{#each summarizeAutoGrantedChoiceStepLines() as line}
+							<li>{line}</li>
+						{/each}
+					</ul>
+				</div>
+			{/if}
 
 			<div class="mt-5 space-y-5">
 				{#each choiceResolution.languageChoices as choice (choice.key)}
@@ -848,7 +910,7 @@
 					>
 						<div class="flex items-center justify-between gap-3">
 							<p class="text-sm font-semibold text-stone-900">
-								Language choice
+								Required language choice
 							</p>
 							<p class="text-xs uppercase tracking-[0.15em] text-stone-500">
 								{getGuidedChoiceValidSelectedValues(languageChoices, choice.key, choiceOptionSlugs(choice.options))
@@ -906,7 +968,9 @@
 					>
 						<div class="flex items-center justify-between gap-3">
 							<p class="text-sm font-semibold text-stone-900">
-								{choice.proficiencyType === 'skill' ? 'Skill choice' : 'Tool choice'}
+								{choice.proficiencyType === 'skill'
+									? 'Required skill choice'
+									: 'Required tool choice'}
 							</p>
 							<p class="text-xs uppercase tracking-[0.15em] text-stone-500">
 								{getGuidedChoiceValidSelectedValues(proficiencyChoices, choice.key, choiceOptionSlugs(choice.options))
@@ -963,7 +1027,9 @@
 						data-testid={guidedChoiceCardTestId('equipment', choice.key)}
 					>
 						<div class="flex items-center justify-between gap-3">
-							<p class="text-sm font-semibold text-stone-900">Equipment package</p>
+							<p class="text-sm font-semibold text-stone-900">
+								Required equipment package
+							</p>
 							<p class="text-xs uppercase tracking-[0.15em] text-stone-500">
 								{getGuidedChoiceValidSelectedValues(equipmentChoices, choice.key, choiceOptionSlugs(choice.options))
 									.length}/{choice.count} chosen

@@ -344,6 +344,56 @@ test('guided character create route shows granted-by-choice guidance for species
 	);
 });
 
+test('guided character create route separates automatic grants from required guided picks', async ({
+	page
+}) => {
+	await page.goto('/app/characters/new');
+
+	const guidedForm = page
+		.locator('form')
+		.filter({ has: page.getByRole('button', { name: 'Save guided draft' }) });
+	await fillGuidedCharacterForm(guidedForm, {
+		name: 'Seren Dawnwatch',
+		story: 'A novice healer learning to lead with courage.',
+		species: 'Humano',
+		subspecies: '',
+		className: 'Clerigo',
+		subclass: 'Life Domain',
+		background: 'Acolyte',
+		strength: '12',
+		dexterity: '10',
+		constitution: '14',
+		intelligence: '11',
+		wisdom: '15',
+		charisma: '13',
+		languageChoiceGroups: [['Draconico'], []],
+		proficiencyChoiceGroups: [['History', 'Insight']],
+		equipmentChoiceGroups: [[], [], [], [], []]
+	});
+
+	await expect(guidedForm.locator('[data-testid="guided-auto-grants-summary"]')).toContainText(
+		'Already applied automatically'
+	);
+	await expect(guidedForm.locator('[data-testid="guided-auto-grants-summary"]')).toContainText(
+		'Language: Comun'
+	);
+	await expect(guidedForm.locator('[data-testid="guided-auto-grants-summary"]')).toContainText(
+		'Saving Throw proficiency: Wisdom'
+	);
+	await expect(guidedForm.locator('[data-testid="guided-auto-grants-summary"]')).toContainText(
+		'Starting equipment: 1x Shield'
+	);
+	await expect(
+		guidedForm.locator('[data-testid="guided-language-choice-language:0"]')
+	).toContainText('Required language choice');
+	await expect(guidedForm.locator('[data-testid="guided-skill-choice-skill:0"]')).toContainText(
+		'Required skill choice'
+	);
+	await expect(
+		guidedForm.locator('[data-testid="guided-equipment-choice-equipment:0"]')
+	).toContainText('Required equipment package');
+});
+
 test('guided character create route keeps custom combat overrides out of the guided flow', async ({
 	page
 }) => {
