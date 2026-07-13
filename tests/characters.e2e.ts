@@ -215,7 +215,7 @@ test('guided character edit can intentionally diverge into a custom draft', asyn
 	);
 });
 
-test('guided character create route keeps the user on the form when required guided choices are missing', async ({
+test('guided character create route keeps save disabled until required guided choices are complete', async ({
 	page
 }) => {
 	await page.goto('/app/characters/new');
@@ -249,12 +249,8 @@ test('guided character create route keeps the user on the form when required gui
 		]
 	});
 
-	await guidedForm.getByRole('button', { name: 'Save guided draft' }).click();
-
-	await expect(page).toHaveURL(/\/app\/characters\/new\?\/guided$/);
-	await expect(
-		guidedForm.getByText('Please complete every required language choice.', { exact: true })
-	).toBeVisible();
+	const saveButton = guidedForm.getByRole('button', { name: 'Save guided draft' });
+	await expect(saveButton).toBeDisabled();
 	await expect(guidedForm.getByRole('heading', { name: 'Guided choices' })).toBeVisible();
 	await expect(
 		guidedForm.locator('[data-testid="guided-language-choice-language:0"]')
@@ -262,7 +258,21 @@ test('guided character create route keeps the user on the form when required gui
 	await expect(
 		guidedForm.locator('[data-testid="guided-language-choice-language:1"]')
 	).toContainText('0/2 chosen');
+	await expect(
+		guidedForm.getByText('Finish the remaining guided choices before saving.', { exact: true })
+	).toBeVisible();
 	await expect(guidedForm.locator('input[name="name"]')).toHaveValue('Seren Dawnwatch');
+
+	await guidedForm
+		.locator('[data-testid="guided-language-choice-language:1"]')
+		.getByRole('button', { name: 'Comun', exact: true })
+		.click();
+	await guidedForm
+		.locator('[data-testid="guided-language-choice-language:1"]')
+		.getByRole('button', { name: 'Gigante', exact: true })
+		.click();
+
+	await expect(saveButton).toBeEnabled();
 });
 
 test('guided character create route shows a guided error when the submitted choice payload is invalid', async ({

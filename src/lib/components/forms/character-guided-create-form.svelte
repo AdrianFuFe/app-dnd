@@ -111,6 +111,10 @@
 			: [];
 	}
 
+	function selectedBackground() {
+		return catalog.backgroundOptions.find((option) => option.id === formValues.backgroundId);
+	}
+
 	function handleSpeciesChange(event: Event) {
 		const nextSpeciesId = (event.currentTarget as HTMLSelectElement).value;
 		formValues =
@@ -229,6 +233,47 @@
 	}
 
 	const choiceResolution = $derived(deriveChoiceResolution());
+
+	function pendingChoiceReviewLines() {
+		if (!choiceResolution) {
+			return [];
+		}
+
+		const lines: string[] = [];
+
+		for (const choice of choiceResolution.languageChoices) {
+			const remaining = choice.count - choice.selected.length;
+
+			if (remaining > 0) {
+				lines.push(
+					`Choose ${remaining} more ${remaining === 1 ? 'language' : 'languages'} for ${choice.key}.`
+				);
+			}
+		}
+
+		for (const choice of choiceResolution.proficiencyChoices) {
+			const remaining = choice.count - choice.selected.length;
+
+			if (remaining > 0) {
+				lines.push(
+					`Choose ${remaining} more ${choice.proficiencyType} ${remaining === 1 ? 'proficiency' : 'proficiencies'} for ${choice.key}.`
+				);
+			}
+		}
+
+		for (const choice of choiceResolution.equipmentChoices) {
+			const remaining = choice.count - choice.selected.length;
+
+			if (remaining > 0) {
+				lines.push(`Choose ${remaining} more equipment package for ${choice.key}.`);
+			}
+		}
+
+		return lines;
+	}
+
+	const reviewPendingLines = $derived(pendingChoiceReviewLines());
+	const canSaveGuidedDraft = $derived(Boolean(preview) && reviewPendingLines.length === 0);
 
 	function choiceOptionSlugs(options: Array<{ slug: string }>): string[] {
 		return options.map((option) => option.slug);
@@ -948,12 +993,81 @@
 		{/if}
 	</section>
 
-	<div class="flex flex-wrap gap-3">
-		<button
-			class="rounded-lg bg-emerald-500 px-5 py-3 text-sm font-medium text-emerald-950 transition hover:bg-emerald-400"
-			type="submit"
-		>
-			Save guided draft
-		</button>
-	</div>
+	<section
+		class="rounded-3xl border border-emerald-200 bg-white p-6 shadow-sm"
+		data-testid="guided-review-step"
+	>
+		<p class="text-sm font-medium uppercase tracking-[0.2em] text-emerald-700">Step 7</p>
+		<h3 class="mt-2 text-xl font-semibold text-stone-900">Review and save</h3>
+
+		{#if preview || reviewPendingLines.length > 0}
+			<div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+				<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+					<p class="text-xs font-medium uppercase tracking-[0.15em] text-stone-500">Name</p>
+					<p class="mt-2 text-sm font-semibold text-stone-900">
+						{formValues.name.trim() || 'Choose a name'}
+					</p>
+				</div>
+				<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+					<p class="text-xs font-medium uppercase tracking-[0.15em] text-stone-500">
+						Lineage
+					</p>
+					<p class="mt-2 text-sm font-semibold text-stone-900">
+						{selectedSpecies()?.name ?? 'Choose species'}
+						{#if formValues.subspeciesId}
+							{` / ${availableSubspeciesOptions().find((option) => option.id === formValues.subspeciesId)?.name ?? ''}`}
+						{/if}
+					</p>
+				</div>
+				<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+					<p class="text-xs font-medium uppercase tracking-[0.15em] text-stone-500">Class path</p>
+					<p class="mt-2 text-sm font-semibold text-stone-900">
+						{selectedClass()?.name ?? 'Choose class'}
+						{#if formValues.subclassId}
+							{` / ${availableSubclassOptions().find((option) => option.id === formValues.subclassId)?.name ?? ''}`}
+						{/if}
+					</p>
+				</div>
+				<div class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+					<p class="text-xs font-medium uppercase tracking-[0.15em] text-stone-500">
+						Background
+					</p>
+					<p class="mt-2 text-sm font-semibold text-stone-900">
+						{selectedBackground()?.name ?? 'Choose background'}
+					</p>
+				</div>
+			</div>
+
+			{#if reviewPendingLines.length > 0}
+				<div class="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
+					<p class="text-sm font-semibold text-amber-950">
+						Finish the remaining guided choices before saving.
+					</p>
+					<ul class="mt-3 space-y-2 text-sm text-amber-900">
+						{#each reviewPendingLines as line}
+							<li>{line}</li>
+						{/each}
+					</ul>
+				</div>
+			{:else}
+				<p class="mt-5 text-sm text-stone-600">
+					This guided draft is ready to save through the canonical level-1 path.
+				</p>
+			{/if}
+		{:else}
+			<p class="mt-4 text-sm text-stone-600">
+				Complete the earlier steps to unlock the final guided review.
+			</p>
+		{/if}
+
+		<div class="mt-5 flex flex-wrap gap-3">
+			<button
+				class="rounded-lg bg-emerald-500 px-5 py-3 text-sm font-medium text-emerald-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-200 disabled:text-emerald-800"
+				type="submit"
+				disabled={!canSaveGuidedDraft}
+			>
+				Save guided draft
+			</button>
+		</div>
+	</section>
 </form>
