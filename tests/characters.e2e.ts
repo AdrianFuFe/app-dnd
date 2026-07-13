@@ -297,6 +297,23 @@ test('guided character create route only exposes subclasses that start at level 
 	]);
 });
 
+test('guided character create route keeps custom combat overrides out of the guided flow', async ({
+	page
+}) => {
+	await page.goto('/app/characters/new');
+
+	const guidedForm = page
+		.locator('form')
+		.filter({ has: page.getByRole('button', { name: 'Save guided draft' }) });
+
+	await expect(
+		guidedForm.getByRole('heading', { name: 'Optional combat overrides' })
+	).toHaveCount(0);
+	await expect(guidedForm.locator('input[name="overrideMaxHp"]')).toHaveCount(0);
+	await expect(guidedForm.locator('input[name="overrideArmorClass"]')).toHaveCount(0);
+	await expect(guidedForm.locator('[data-testid="guided-review-step"]')).toContainText('Step 6');
+});
+
 test('guided character create route shows a guided error when the submitted choice payload is invalid', async ({
 	page
 }) => {

@@ -38,15 +38,6 @@
 		{ name: 'charisma', label: 'Charisma' }
 	] as const;
 
-	const combatOverrideFields = [
-		{ name: 'overrideMaxHp', label: 'Max HP', min: 0 },
-		{ name: 'overrideCurrentHp', label: 'Current HP', min: 0 },
-		{ name: 'overrideTemporaryHp', label: 'Temporary HP', min: 0 },
-		{ name: 'overrideArmorClass', label: 'Armor Class', min: 0 },
-		{ name: 'overrideInitiative', label: 'Initiative', min: -20 },
-		{ name: 'overrideSpeed', label: 'Speed', min: 0 }
-	] as const;
-
 	let formValues = $state(createGuidedCharacterFormValues(createDefaultGuidedCharacterInput()));
 	let languageChoices = $state<GuidedChoiceEntry[]>([]);
 	let proficiencyChoices = $state<GuidedChoiceEntry[]>([]);
@@ -602,44 +593,12 @@
 		</div>
 	</section>
 
-	<section class="rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
-		<p class="text-sm font-medium uppercase tracking-[0.2em] text-amber-700">Step 4</p>
-		<h3 class="mt-2 text-xl font-semibold text-amber-950">Optional combat overrides</h3>
-		<p class="mt-2 text-sm text-amber-900">
-			Leave these blank to stay on the canonical guided path. Any real override here will
-			mark the draft as custom for this ruleset.
-		</p>
-
-		<div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-			{#each combatOverrideFields as field (field.name)}
-				<label class="block">
-					<span class="mb-1 block text-sm font-medium text-amber-950">{field.label}</span>
-					<input
-						class="block w-full rounded-lg border-amber-300 bg-white"
-						name={field.name}
-						type="number"
-						min={field.min}
-						value={formValues[field.name]}
-						oninput={(event) =>
-							(formValues = {
-								...formValues,
-								[field.name]: (event.currentTarget as HTMLInputElement).value
-							})}
-					/>
-					{#if firstError(field.name)}
-						<p class="mt-1 text-sm text-red-700">{firstError(field.name)}</p>
-					{/if}
-				</label>
-			{/each}
-		</div>
-	</section>
-
 	{#if choiceResolution && (choiceResolution.languageChoices.length || choiceResolution.proficiencyChoices.length || choiceResolution.equipmentChoices.length)}
 		<section
 			class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm"
 			data-testid="guided-choices-section"
 		>
-			<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Step 5</p>
+			<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Step 4</p>
 			<h3 class="mt-2 text-xl font-semibold text-stone-900">Guided choices</h3>
 			<p class="mt-2 text-sm text-stone-600">
 				Complete the required language and proficiency picks that this lineage, class path,
@@ -831,7 +790,7 @@
 	{/if}
 
 	<section class="rounded-3xl border border-stone-200 bg-stone-950 p-6 text-stone-50 shadow-sm">
-		<p class="text-sm font-medium uppercase tracking-[0.2em] text-emerald-300">Step 6</p>
+		<p class="text-sm font-medium uppercase tracking-[0.2em] text-emerald-300">Step 5</p>
 		<h3 class="mt-2 text-xl font-semibold">Derived preview</h3>
 
 		{#if preview}
@@ -999,7 +958,7 @@
 		class="rounded-3xl border border-emerald-200 bg-white p-6 shadow-sm"
 		data-testid="guided-review-step"
 	>
-		<p class="text-sm font-medium uppercase tracking-[0.2em] text-emerald-700">Step 7</p>
+		<p class="text-sm font-medium uppercase tracking-[0.2em] text-emerald-700">Step 6</p>
 		<h3 class="mt-2 text-xl font-semibold text-stone-900">Review and save</h3>
 
 		{#if preview || reviewPendingLines.length > 0}
