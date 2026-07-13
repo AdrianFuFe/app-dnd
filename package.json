@@ -16,6 +16,7 @@
 		"test": "pnpm test:unit run && pnpm test:e2e",
 		"test:e2e": "pnpm build && playwright test",
 		"validate:content": "node --experimental-strip-types scripts/validate-content.ts",
+		"report:srd-coverage": "node --experimental-strip-types scripts/report-srd-coverage.ts",
 		"generate:content-seed-sql": "node --experimental-strip-types scripts/generate-content-seed-sql.ts",
 		"create:test-user": "node --experimental-strip-types scripts/create-test-user.ts",
 		"manage:user-role": "node --experimental-strip-types scripts/manage-user-role.ts"

@@ -53,6 +53,68 @@
 				{ "type": "language", "mode": "fixed", "language": "comun" },
 				{ "type": "choose_language", "count": 1 }
 			]
+		},
+		{
+			"slug": "enano",
+			"name": "Enano",
+			"summary": "Especie resistente y disciplinada, asociada con fortaleza, tradicion y sentidos agudos bajo tierra.",
+			"description": "Entrada canonica ampliada para reforzar la cobertura del creador guiado con una especie robusta del SRD.",
+			"size": "medium",
+			"baseSpeed": 25,
+			"languages": [
+				{ "type": "fixed", "language": "comun" },
+				{ "type": "fixed", "language": "dwarfico" }
+			],
+			"subspeciesSlugs": ["hill-dwarf", "mountain-dwarf"],
+			"visibility": "public",
+			"mechanics": [
+				{ "type": "ability_bonus", "ability": "constitution", "value": 2 },
+				{ "type": "speed", "value": 25 },
+				{ "type": "darkvision", "range": 60 },
+				{ "type": "language", "mode": "fixed", "language": "comun" },
+				{ "type": "language", "mode": "fixed", "language": "dwarfico" },
+				{ "type": "resistance", "damageType": "poison" },
+				{
+					"type": "note",
+					"text": "You have advantage on saving throws against poison."
+				},
+				{
+					"type": "note",
+					"text": "Whenever you make an Intelligence (History) check related to the origin of stonework, you are considered proficient in the History skill and add double your proficiency bonus."
+				}
+			]
+		},
+		{
+			"slug": "mediano",
+			"name": "Mediano",
+			"summary": "Especie pequena y resolutiva, marcada por su suerte, agilidad y valentia inesperada.",
+			"description": "Entrada canonica ampliada para incorporar una especie pequena del SRD con rasgos sociales y defensivos distintivos.",
+			"size": "small",
+			"baseSpeed": 25,
+			"languages": [
+				{ "type": "fixed", "language": "comun" },
+				{ "type": "fixed", "language": "halfling" }
+			],
+			"subspeciesSlugs": ["lightfoot-halfling", "stout-halfling"],
+			"visibility": "public",
+			"mechanics": [
+				{ "type": "ability_bonus", "ability": "dexterity", "value": 2 },
+				{ "type": "speed", "value": 25 },
+				{ "type": "language", "mode": "fixed", "language": "comun" },
+				{ "type": "language", "mode": "fixed", "language": "halfling" },
+				{
+					"type": "note",
+					"text": "When you roll a 1 on the d20 for an attack roll, ability check, or saving throw, you can reroll the die and must use the new roll."
+				},
+				{
+					"type": "note",
+					"text": "You have advantage on saving throws against being frightened."
+				},
+				{
+					"type": "note",
+					"text": "You can move through the space of any creature that is of a size larger than yours."
+				}
+			]
 		}
 	]
 }

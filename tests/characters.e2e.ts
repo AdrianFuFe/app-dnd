@@ -252,7 +252,7 @@ test('guided character edit can intentionally diverge into a custom draft', asyn
 
 	await page.getByRole('button', { name: 'Save changes' }).click();
 
-	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\?updated=Seren\+Dawnwatch&guided=1$/);
+	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\?updated=Seren\+Dawnwatch&guided=1(#notes)?$/);
 	await expect(page.getByText('custom', { exact: true })).toBeVisible();
 	await expect(
 		page
@@ -389,6 +389,81 @@ test('guided character edit can adopt baseline notes into editable rows', async 
 	);
 	await expect(
 		notesSection.getByText('Likely guided baseline', { exact: true }).first()
+	).toBeVisible();
+});
+
+test('guided baseline rows persist to detail after adopting inventory and notes', async ({
+	page
+}) => {
+	await page.goto('/app/characters/new');
+
+	const guidedForm = page
+		.locator('form')
+		.filter({ has: page.getByRole('button', { name: 'Save guided draft' }) });
+	await fillGuidedCharacterForm(guidedForm, {
+		name: 'Seren Dawnwatch',
+		story: 'A novice healer learning to lead with courage.',
+		species: 'Humano',
+		subspecies: '',
+		className: 'Clerigo',
+		subclass: 'Life Domain',
+		background: 'Acolyte',
+		strength: '12',
+		dexterity: '10',
+		constitution: '14',
+		intelligence: '11',
+		wisdom: '15',
+		charisma: '13',
+		languageChoiceGroups: [['Draconico'], ['Comun', 'Gigante']],
+		proficiencyChoiceGroups: [['History', 'Insight']],
+		equipmentChoiceGroups: [
+			['Mace'],
+			['Scale Mail'],
+			['Light Crossbow and 20 Bolts'],
+			["Priest's Pack"],
+			['Prayer Book']
+		]
+	});
+
+	await guidedForm.getByRole('button', { name: 'Save guided draft' }).click();
+	await page.getByRole('link', { name: 'Edit character' }).click();
+	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\/edit\?guided=1$/);
+
+	const inventorySection = page
+		.locator('section')
+		.filter({ has: page.getByRole('heading', { name: 'Inventory' }) });
+	const notesSection = page
+		.locator('section')
+		.filter({ has: page.getByRole('heading', { name: 'Notes' }) });
+
+	await inventorySection
+		.getByRole('link', { name: 'Adopt baseline gear as editable rows' })
+		.click();
+	await expect(page).toHaveURL(/adoptInventory=1#inventory$/);
+	await notesSection.getByRole('link', { name: 'Adopt baseline notes as editable rows' }).click();
+	await expect(page).toHaveURL(/adoptInventory=1&adoptNotes=1#notes$/);
+
+	await page.getByRole('button', { name: 'Save changes' }).click();
+
+	await expect(
+		page
+	).toHaveURL(/\/app\/characters\/[^/]+\?updated=Seren\+Dawnwatch&guided=1(?:#notes)?$/);
+	await expect(page.getByText('canon', { exact: true })).toBeVisible();
+	await expect(page.getByRole('link', { name: 'Edit character' })).toHaveAttribute(
+		'href',
+		/\/app\/characters\/[^/]+\/edit\?guided=1$/
+	);
+	const detailNotesSection = page
+		.locator('div')
+		.filter({ has: page.getByText('Notes', { exact: true }) })
+		.last();
+
+	await expect(page.getByText('Inventory rows', { exact: true })).toBeVisible();
+	await expect(page.getByText('12', { exact: true }).first()).toBeVisible();
+	await expect(page.getByText('Guided build grants', { exact: true })).toBeVisible();
+	await expect(page.getByText('Language: Comun')).toBeVisible();
+	await expect(
+		detailNotesSection.getByText('Guided baseline', { exact: true }).first()
 	).toBeVisible();
 });
 

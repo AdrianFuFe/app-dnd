@@ -81,9 +81,31 @@ export const actions: Actions = {
 			});
 		}
 
-		const formData = Object.fromEntries(await request.formData());
-		const parsed = characterCreateInputSchema.safeParse(formData);
-		const values = createCharacterFormValues(formData);
+		const rawFormData = Object.fromEntries(await request.formData());
+
+		const existingCharacter = await getCharacterForUser(
+			locals.supabase,
+			locals.session.user.id,
+			params.characterId
+		);
+
+		if (!existingCharacter) {
+			return fail(400, {
+				formError: 'That character could not be found.',
+				fieldErrors: {},
+				values: createCharacterFormValues(rawFormData)
+			});
+		}
+
+		const guidedOrigin = isGuidedCharacterOrigin(existingCharacter.noteItems);
+		const normalizedFormData = normalizeGuidedAdoptionFormData(rawFormData, {
+			existingCharacter,
+			guidedOrigin,
+			adoptInventory: url.searchParams.get('adoptInventory') === '1',
+			adoptNotes: url.searchParams.get('adoptNotes') === '1'
+		});
+		const parsed = characterCreateInputSchema.safeParse(normalizedFormData);
+		const values = createCharacterFormValues(normalizedFormData);
 
 		if (!parsed.success) {
 			return fail(400, {
@@ -94,19 +116,10 @@ export const actions: Actions = {
 		}
 
 		try {
-			const [guidedCatalog, expandedContentCatalog, existingCharacter] = await Promise.all([
+			const [guidedCatalog, expandedContentCatalog] = await Promise.all([
 				listGuidedCharacterCatalog(locals.supabase),
-				listExpandedContentCatalog(locals.supabase),
-				getCharacterForUser(locals.supabase, locals.session.user.id, params.characterId)
+				listExpandedContentCatalog(locals.supabase)
 			]);
-
-			if (!existingCharacter) {
-				throw new Error(
-					`Character ${params.characterId} was not found for user ${locals.session.user.id}`
-				);
-			}
-
-			const guidedOrigin = isGuidedCharacterOrigin(existingCharacter.noteItems);
 
 			const catalogSelection = await resolveCharacterCreationCatalogSelections(
 				locals.supabase,
@@ -217,6 +230,93 @@ export const actions: Actions = {
 		}
 	}
 };
+
+function normalizeGuidedAdoptionFormData(
+	formData: Record<string, FormDataEntryValue>,
+	params: {
+		existingCharacter: Parameters<typeof createCharacterFormValuesFromInput>[0];
+		guidedOrigin: boolean;
+		adoptInventory: boolean;
+		adoptNotes: boolean;
+	}
+) {
+	if (!params.guidedOrigin || (!params.adoptInventory && !params.adoptNotes)) {
+		return formData;
+	}
+
+	const baselineValues = createCharacterFormValuesFromInput(params.existingCharacter);
+	const normalized = { ...formData };
+	const restorableFields: Array<keyof typeof baselineValues> = [
+		'name',
+		'speciesId',
+		'subspeciesId',
+		'classId',
+		'subclassId',
+		'backgroundId',
+		'story',
+		'level',
+		'strength',
+		'dexterity',
+		'constitution',
+		'intelligence',
+		'wisdom',
+		'charisma',
+		'maxHp',
+		'currentHp',
+		'temporaryHp',
+		'armorClass',
+		'initiative',
+		'speed',
+		'hitDice'
+	];
+	const restorableStructuredFields: Array<keyof typeof baselineValues> = [
+		'attackItems',
+		'spellItems',
+		'featItems',
+		'inventoryItems',
+		'noteItems',
+		'attacks',
+		'spells',
+		'notes'
+	];
+
+	for (const fieldName of restorableFields) {
+		const submittedValue = normalized[fieldName];
+		const baselineValue = baselineValues[fieldName];
+
+		if (
+			(typeof submittedValue !== 'string' || submittedValue.trim().length === 0) &&
+			baselineValue.trim().length > 0
+		) {
+			normalized[fieldName] = baselineValue;
+		}
+	}
+
+	for (const fieldName of restorableStructuredFields) {
+		const submittedValue = normalized[fieldName];
+		const baselineValue = baselineValues[fieldName];
+
+		if (typeof submittedValue !== 'string') {
+			continue;
+		}
+
+		const submittedTrimmed = submittedValue.trim();
+		const baselineTrimmed = baselineValue.trim();
+
+		if (baselineTrimmed.length === 0) {
+			continue;
+		}
+
+		if (
+			submittedTrimmed.length === 0 ||
+			(submittedTrimmed === '[]' && baselineTrimmed !== '[]')
+		) {
+			normalized[fieldName] = baselineValue;
+		}
+	}
+
+	return normalized;
+}
 
 function isGuidedCharacterOrigin(noteItems: Array<{ title: string }>): boolean {
 	return noteItems.some(

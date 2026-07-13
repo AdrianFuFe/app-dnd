@@ -35,6 +35,15 @@
 			"value": "1 sp"
 		},
 		{
+			"slug": "burglars-pack",
+			"name": "Burglar's Pack",
+			"category": "pack",
+			"summary": "A pack suited to infiltration, climbing, and illicit entry.",
+			"value": "16 gp",
+			"weight": 46,
+			"isEquippable": true
+		},
+		{
 			"slug": "cards",
 			"name": "Playing Cards",
 			"category": "gaming-set",
@@ -60,6 +69,38 @@
 			"isEquippable": true
 		},
 		{
+			"slug": "crowbar",
+			"name": "Crowbar",
+			"category": "adventuring-gear",
+			"summary": "A solid iron lever useful for forcing open stuck objects.",
+			"value": "2 gp",
+			"weight": 5,
+			"isEquippable": true
+		},
+		{
+			"slug": "dagger",
+			"name": "Dagger",
+			"category": "weapon",
+			"summary": "A light finesse blade that can be thrown.",
+			"value": "2 gp",
+			"weight": 1,
+			"damage": "1d4",
+			"damageType": "piercing",
+			"range": "20/60 ft.",
+			"properties": ["finesse", "light", "thrown"],
+			"isWeapon": true,
+			"isEquippable": true
+		},
+		{
+			"slug": "dark-common-clothes",
+			"name": "Dark Common Clothes",
+			"category": "clothing",
+			"summary": "Dark, practical common clothes suited to staying unnoticed.",
+			"value": "5 sp",
+			"weight": 3,
+			"isEquippable": true
+		},
+		{
 			"slug": "dungeoneers-pack",
 			"name": "Dungeoneer's Pack",
 			"category": "pack",
@@ -75,6 +116,29 @@
 			"summary": "A travel pack for overland adventuring.",
 			"value": "10 gp",
 			"weight": 59,
+			"isEquippable": true
+		},
+		{
+			"slug": "fine-clothes",
+			"name": "Fine Clothes",
+			"category": "clothing",
+			"summary": "Well-made clothing suited to courtly or upper-class life.",
+			"value": "15 gp",
+			"weight": 6,
+			"isEquippable": true
+		},
+		{
+			"slug": "four-javelins",
+			"name": "Four Javelins",
+			"category": "bundle",
+			"summary": "A small bundle of four throwing spears.",
+			"value": "2 gp",
+			"weight": 8,
+			"damage": "1d6",
+			"damageType": "piercing",
+			"range": "30/120 ft.",
+			"properties": ["thrown", "versatile (1d8)"],
+			"isWeapon": true,
 			"isEquippable": true
 		},
 		{
@@ -139,6 +203,13 @@
 			"isEquippable": true
 		},
 		{
+			"slug": "parchment-scroll",
+			"name": "Parchment Scroll",
+			"category": "document",
+			"summary": "A sealed or rolled parchment document.",
+			"value": "1 sp"
+		},
+		{
 			"slug": "mace",
 			"name": "Mace",
 			"category": "weapon",
@@ -156,6 +227,14 @@
 			"name": "Martial Weapon and Shield",
 			"category": "bundle",
 			"summary": "Reference bundle for a martial weapon paired with a shield.",
+			"isWeapon": true,
+			"isEquippable": true
+		},
+		{
+			"slug": "martial-melee-weapon",
+			"name": "Martial Melee Weapon",
+			"category": "choice-bundle",
+			"summary": "Reference choice for any martial melee weapon.",
 			"isWeapon": true,
 			"isEquippable": true
 		},
@@ -196,6 +275,20 @@
 			"damageType": "bludgeoning",
 			"range": "Melee",
 			"properties": ["versatile (1d8)"],
+			"isWeapon": true,
+			"isEquippable": true
+		},
+		{
+			"slug": "rapier",
+			"name": "Rapier",
+			"category": "weapon",
+			"summary": "A finesse martial melee weapon favored by duelists.",
+			"value": "25 gp",
+			"weight": 2,
+			"damage": "1d8",
+			"damageType": "piercing",
+			"range": "Melee",
+			"properties": ["finesse"],
 			"isWeapon": true,
 			"isEquippable": true
 		},
@@ -245,10 +338,55 @@
 			"isEquippable": true
 		},
 		{
+			"slug": "shortbow-and-20-arrows",
+			"name": "Shortbow and 20 Arrows",
+			"category": "bundle",
+			"summary": "A shortbow paired with a basic supply of arrows.",
+			"value": "26 gp",
+			"weight": 3,
+			"damage": "1d6",
+			"damageType": "piercing",
+			"range": "80/320 ft.",
+			"properties": ["ammunition", "two-handed"],
+			"isWeapon": true,
+			"isEquippable": true
+		},
+		{
+			"slug": "shortsword",
+			"name": "Shortsword",
+			"category": "weapon",
+			"summary": "A light finesse blade suited to quick strikes.",
+			"value": "10 gp",
+			"weight": 2,
+			"damage": "1d6",
+			"damageType": "piercing",
+			"range": "Melee",
+			"properties": ["finesse", "light"],
+			"isWeapon": true,
+			"isEquippable": true
+		},
+		{
+			"slug": "signet-ring",
+			"name": "Signet Ring",
+			"category": "jewelry",
+			"summary": "A ring bearing a family or official seal.",
+			"value": "5 gp",
+			"isEquippable": true
+		},
+		{
 			"slug": "sticks-of-incense",
 			"name": "Sticks of Incense",
 			"category": "consumable",
 			"summary": "A bundle of incense used in prayer and ritual."
+		},
+		{
+			"slug": "thieves-tools",
+			"name": "Thieves' Tools",
+			"category": "tool",
+			"summary": "A compact set of picks, files, and other tools for locks and traps.",
+			"value": "25 gp",
+			"weight": 1,
+			"isEquippable": true
 		},
 		{
 			"slug": "travelers-clothes",

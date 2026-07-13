@@ -58,6 +58,59 @@
 					"text": "Soldiers loyal to your former military organization still recognize your authority and influence."
 				}
 			]
+		},
+		{
+			"slug": "criminal",
+			"name": "Criminal",
+			"summary": "Trasfondo urbano y clandestino que aporta engaño, sigilo y contactos dentro del hampa.",
+			"description": "Entrada canonica ampliada para cubrir uno de los trasfondos mas utiles del SRD en combinacion con personajes orientados a sigilo.",
+			"skillProficiencies": ["deception", "stealth"],
+			"toolProficiencies": ["thieves-tools", "gaming-set"],
+			"languages": [],
+			"equipment": [
+				{ "type": "item", "id": "crowbar" },
+				{ "type": "item", "id": "dark-common-clothes" },
+				{ "type": "item", "id": "belt-pouch", "note": "Contains 15 gp." }
+			],
+			"featureName": "Criminal Contact",
+			"visibility": "public",
+			"mechanics": [
+				{ "type": "proficiency", "proficiencyType": "skill", "value": "deception" },
+				{ "type": "proficiency", "proficiencyType": "skill", "value": "stealth" },
+				{ "type": "proficiency", "proficiencyType": "tool", "value": "thieves-tools" },
+				{ "type": "proficiency", "proficiencyType": "tool", "value": "gaming-set" },
+				{
+					"type": "note",
+					"text": "You have a reliable and trustworthy contact who acts as your liaison to a network of other criminals."
+				}
+			]
+		},
+		{
+			"slug": "noble",
+			"name": "Noble",
+			"summary": "Trasfondo social de alta cuna que aporta educacion, influencia y reconocimiento cortesano.",
+			"description": "Entrada canonica ampliada para cubrir un trasfondo de interaccion social fuerte dentro del SRD.",
+			"skillProficiencies": ["history", "persuasion"],
+			"toolProficiencies": ["gaming-set"],
+			"languages": [{ "type": "choice", "count": 1, "scope": "any" }],
+			"equipment": [
+				{ "type": "item", "id": "fine-clothes" },
+				{ "type": "item", "id": "signet-ring" },
+				{ "type": "item", "id": "parchment-scroll" },
+				{ "type": "item", "id": "belt-pouch", "note": "Contains 25 gp." }
+			],
+			"featureName": "Position of Privilege",
+			"visibility": "public",
+			"mechanics": [
+				{ "type": "proficiency", "proficiencyType": "skill", "value": "history" },
+				{ "type": "proficiency", "proficiencyType": "skill", "value": "persuasion" },
+				{ "type": "proficiency", "proficiencyType": "tool", "value": "gaming-set" },
+				{ "type": "choose_language", "count": 1 },
+				{
+					"type": "note",
+					"text": "People are inclined to think the best of you, and common folk make every effort to accommodate you and avoid your displeasure."
+				}
+			]
 		}
 	]
 }

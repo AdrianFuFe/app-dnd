@@ -35,6 +35,65 @@
 					"text": "You can attempt to hide even when you are only lightly obscured by foliage, heavy rain, falling snow, mist, and other natural phenomena."
 				}
 			]
+		},
+		{
+			"slug": "hill-dwarf",
+			"name": "Hill Dwarf",
+			"summary": "Subespecie enana perseverante, sabia y especialmente resistente a la fatiga.",
+			"description": "Entrada canonica ampliada para reforzar la rama de enanos con una opcion orientada a aguante y tradicion.",
+			"speciesSlug": "enano",
+			"visibility": "public",
+			"mechanics": [
+				{ "type": "ability_bonus", "ability": "wisdom", "value": 1 },
+				{
+					"type": "note",
+					"text": "Your hit point maximum increases by 1, and it increases by 1 every time you gain a level."
+				}
+			]
+		},
+		{
+			"slug": "mountain-dwarf",
+			"name": "Mountain Dwarf",
+			"summary": "Subespecie enana de complexon poderosa, entrenada para la guerra y el uso de armaduras.",
+			"description": "Entrada canonica ampliada para reforzar la cobertura marcial del creador guiado con una variante enana robusta.",
+			"speciesSlug": "enano",
+			"visibility": "public",
+			"mechanics": [
+				{ "type": "ability_bonus", "ability": "strength", "value": 2 },
+				{ "type": "proficiency", "proficiencyType": "armor", "value": "light-armor" },
+				{ "type": "proficiency", "proficiencyType": "armor", "value": "medium-armor" }
+			]
+		},
+		{
+			"slug": "lightfoot-halfling",
+			"name": "Lightfoot Halfling",
+			"summary": "Subespecie mediana afable y discreta, con talento natural para pasar desapercibida.",
+			"description": "Entrada canonica ampliada para cubrir una variante social y sigilosa de los medianos.",
+			"speciesSlug": "mediano",
+			"visibility": "public",
+			"mechanics": [
+				{ "type": "ability_bonus", "ability": "charisma", "value": 1 },
+				{
+					"type": "note",
+					"text": "You can attempt to hide even when you are obscured only by a creature that is at least one size larger than you."
+				}
+			]
+		},
+		{
+			"slug": "stout-halfling",
+			"name": "Stout Halfling",
+			"summary": "Subespecie mediana resistente y sobria, notable por su aguante frente a toxinas.",
+			"description": "Entrada canonica ampliada para cubrir una variante mediana defensiva con resistencia adicional.",
+			"speciesSlug": "mediano",
+			"visibility": "public",
+			"mechanics": [
+				{ "type": "ability_bonus", "ability": "constitution", "value": 1 },
+				{ "type": "resistance", "damageType": "poison" },
+				{
+					"type": "note",
+					"text": "You have advantage on saving throws against poison."
+				}
+			]
 		}
 	]
 }

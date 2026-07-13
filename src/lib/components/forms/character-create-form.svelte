@@ -246,8 +246,50 @@
 		return guidedNoteFallbackItems().map((item) => ({ ...item }));
 	}
 
+	function restoreBlankGuidedBaselineFields() {
+		if (!guidedOrigin) {
+			return;
+		}
+
+		const baselineValues = createEditableFormValues(values);
+		const baselineFieldNames: Array<keyof typeof formValues> = [
+			'name',
+			'speciesId',
+			'subspeciesId',
+			'classId',
+			'subclassId',
+			'backgroundId',
+			'story',
+			'level',
+			'strength',
+			'dexterity',
+			'constitution',
+			'intelligence',
+			'wisdom',
+			'charisma',
+			'maxHp',
+			'currentHp',
+			'temporaryHp',
+			'armorClass',
+			'initiative',
+			'speed',
+			'hitDice'
+		];
+
+		for (const fieldName of baselineFieldNames) {
+			if (formValues[fieldName].trim().length === 0 && baselineValues[fieldName].trim().length > 0) {
+				formValues[fieldName] = baselineValues[fieldName];
+			}
+		}
+	}
+
 	$effect(() => {
-		const nextSignature = JSON.stringify(values);
+		const nextSignature = JSON.stringify({
+			values,
+			guidedOrigin,
+			guidedInventoryAdopted,
+			guidedNoteAdopted
+		});
 
 		if (nextSignature === hydratedValuesSignature) {
 			return;
@@ -266,6 +308,14 @@
 			: parseNoteItems(values.noteItems, values.notes);
 		inventoryPreviewDismissed = guidedInventoryAdopted;
 		notePreviewDismissed = guidedNoteAdopted;
+	});
+
+	$effect(() => {
+		if (!guidedOrigin || (!guidedInventoryAdopted && !guidedNoteAdopted)) {
+			return;
+		}
+
+		restoreBlankGuidedBaselineFields();
 	});
 
 	function firstError(field: keyof CharacterCreateFormValues): string | undefined {
@@ -1183,9 +1233,14 @@
 			formValues.backgroundId
 		].filter((value) => value.trim().length > 0).length;
 	}
+
+	function prepareSubmit() {
+		restoreBlankGuidedBaselineFields();
+		syncStructuredFieldValues();
+	}
 </script>
 
-<form method="POST" action={action} class="space-y-8" onsubmit={syncStructuredFieldValues}>
+<form method="POST" action={action} class="space-y-8" onsubmit={prepareSubmit}>
 	{#if formError}
 		<p class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
 			{formError}
@@ -2207,6 +2262,7 @@
 							<a
 								class="rounded-lg border border-sky-300 bg-white px-4 py-2 text-sm font-medium text-sky-900 transition hover:border-sky-400"
 								data-testid="adopt-guided-inventory-baseline"
+								data-sveltekit-reload
 								href={guidedInventoryAdoptHref}
 							>
 								Adopt baseline gear as editable rows
@@ -2442,6 +2498,7 @@
 								<a
 									class="rounded-lg border border-sky-300 bg-white px-4 py-2 text-sm font-medium text-sky-900 transition hover:border-sky-400"
 									data-testid="adopt-guided-note-baseline"
+									data-sveltekit-reload
 									href={guidedNoteAdoptHref}
 								>
 									Adopt baseline notes as editable rows

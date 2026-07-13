@@ -188,6 +188,163 @@
 				{ "type": "feature", "featureId": "arcane-recovery" },
 				{ "type": "feature", "featureId": "arcane-tradition" }
 			]
+		},
+		{
+			"slug": "picaro",
+			"name": "Picaro",
+			"summary": "Clase agil y oportunista, experta en sigilo, precision y habilidades utilitarias.",
+			"description": "Entrada canonica ampliada para cubrir una clase de nivel 1 muy relevante para el creador guiado y con elecciones claras de equipo y habilidades.",
+			"hitDie": 8,
+			"primaryAbilities": ["dexterity"],
+			"savingThrowProficiencies": ["dexterity", "intelligence"],
+			"armorProficiencies": ["light-armor"],
+			"weaponProficiencies": [
+				"simple-weapons",
+				"hand-crossbow",
+				"longsword",
+				"rapier",
+				"shortsword"
+			],
+			"toolProficiencies": ["thieves-tools"],
+			"skillChoices": {
+				"count": 4,
+				"options": [
+					"acrobatics",
+					"athletics",
+					"deception",
+					"insight",
+					"intimidation",
+					"investigation",
+					"perception",
+					"performance",
+					"persuasion",
+					"sleight-of-hand",
+					"stealth"
+				]
+			},
+			"startingEquipment": [
+				{ "type": "choice", "options": ["rapier", "shortsword"] },
+				{ "type": "choice", "options": ["shortbow-and-20-arrows", "shortsword"] },
+				{
+					"type": "choice",
+					"options": ["burglars-pack", "dungeoneers-pack", "explorers-pack"]
+				},
+				{ "type": "item", "id": "leather-armor" },
+				{ "type": "item", "id": "dagger", "quantity": 2 },
+				{ "type": "item", "id": "thieves-tools" }
+			],
+			"spellcastingAbility": null,
+			"visibility": "public",
+			"progression": [
+				{ "level": 1, "features": ["expertise", "sneak-attack", "thieves-cant"] },
+				{ "level": 2, "features": ["cunning-action"] },
+				{ "level": 3, "features": ["roguish-archetype"] }
+			],
+			"mechanics": [
+				{ "type": "proficiency", "proficiencyType": "armor", "value": "light-armor" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "simple-weapons" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "hand-crossbow" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "longsword" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "rapier" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "shortsword" },
+				{ "type": "proficiency", "proficiencyType": "tool", "value": "thieves-tools" },
+				{ "type": "proficiency", "proficiencyType": "saving_throw", "value": "dexterity" },
+				{
+					"type": "proficiency",
+					"proficiencyType": "saving_throw",
+					"value": "intelligence"
+				},
+				{
+					"type": "choose_proficiency",
+					"proficiencyType": "skill",
+					"count": 4,
+					"options": [
+						"acrobatics",
+						"athletics",
+						"deception",
+						"insight",
+						"intimidation",
+						"investigation",
+						"perception",
+						"performance",
+						"persuasion",
+						"sleight-of-hand",
+						"stealth"
+					]
+				},
+				{ "type": "feature", "featureId": "expertise" },
+				{ "type": "feature", "featureId": "sneak-attack" },
+				{ "type": "feature", "featureId": "thieves-cant" },
+				{ "type": "feature", "featureId": "cunning-action" },
+				{ "type": "feature", "featureId": "roguish-archetype" }
+			]
+		},
+		{
+			"slug": "barbaro",
+			"name": "Barbaro",
+			"summary": "Clase marcial feroz basada en resistencia fisica, furia y asaltos contundentes.",
+			"description": "Entrada canonica ampliada para cubrir una clase base del SRD centrada en supervivencia y combate directo sin dependencia de conjuros.",
+			"hitDie": 12,
+			"primaryAbilities": ["strength", "constitution"],
+			"savingThrowProficiencies": ["strength", "constitution"],
+			"armorProficiencies": ["light-armor", "medium-armor", "shields"],
+			"weaponProficiencies": ["simple-weapons", "martial-weapons"],
+			"toolProficiencies": [],
+			"skillChoices": {
+				"count": 2,
+				"options": [
+					"animal-handling",
+					"athletics",
+					"intimidation",
+					"nature",
+					"perception",
+					"survival"
+				]
+			},
+			"startingEquipment": [
+				{ "type": "choice", "options": ["greataxe", "martial-melee-weapon"] },
+				{ "type": "choice", "options": ["two-handaxes", "any-simple-weapon"] },
+				{ "type": "item", "id": "explorers-pack" },
+				{ "type": "item", "id": "four-javelins" }
+			],
+			"spellcastingAbility": null,
+			"visibility": "public",
+			"progression": [
+				{ "level": 1, "features": ["rage", "unarmored-defense"] },
+				{ "level": 2, "features": ["reckless-attack", "danger-sense"] },
+				{ "level": 3, "features": ["primal-path"] }
+			],
+			"mechanics": [
+				{ "type": "proficiency", "proficiencyType": "armor", "value": "light-armor" },
+				{ "type": "proficiency", "proficiencyType": "armor", "value": "medium-armor" },
+				{ "type": "proficiency", "proficiencyType": "armor", "value": "shields" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "simple-weapons" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "martial-weapons" },
+				{ "type": "proficiency", "proficiencyType": "saving_throw", "value": "strength" },
+				{
+					"type": "proficiency",
+					"proficiencyType": "saving_throw",
+					"value": "constitution"
+				},
+				{
+					"type": "choose_proficiency",
+					"proficiencyType": "skill",
+					"count": 2,
+					"options": [
+						"animal-handling",
+						"athletics",
+						"intimidation",
+						"nature",
+						"perception",
+						"survival"
+					]
+				},
+				{ "type": "feature", "featureId": "rage" },
+				{ "type": "feature", "featureId": "unarmored-defense" },
+				{ "type": "feature", "featureId": "reckless-attack" },
+				{ "type": "feature", "featureId": "danger-sense" },
+				{ "type": "feature", "featureId": "primal-path" }
+			]
 		}
 	]
 }
