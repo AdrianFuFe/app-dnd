@@ -90,6 +90,8 @@ export const actions: Actions = {
 				);
 			}
 
+			const guidedOrigin = isGuidedCharacterOrigin(existingCharacter.noteItems);
+
 			const catalogSelection = await resolveCharacterCreationCatalogSelections(
 				locals.supabase,
 				{
@@ -133,7 +135,7 @@ export const actions: Actions = {
 					featCatalog: expandedContentCatalog.feats,
 					existingCharacter: {
 						...existingCharacter,
-						guidedOrigin: isGuidedCharacterOrigin(existingCharacter.noteItems)
+						guidedOrigin
 					}
 				}
 			);
@@ -169,7 +171,8 @@ export const actions: Actions = {
 			throw redirect(
 				303,
 				buildCharacterDetailRedirect(character.id, {
-					updated: character.name
+					updated: character.name,
+					guided: guidedOrigin ? '1' : undefined
 				})
 			);
 		} catch (caught) {
@@ -251,12 +254,17 @@ function buildCharacterDetailRedirect(
 	characterId: string,
 	params: {
 		updated?: string;
+		guided?: '1';
 	}
 ) {
 	const searchParams = new URLSearchParams();
 
 	if (params.updated) {
 		searchParams.set('updated', params.updated);
+	}
+
+	if (params.guided) {
+		searchParams.set('guided', params.guided);
 	}
 
 	const query = searchParams.toString();

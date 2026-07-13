@@ -146,6 +146,24 @@
 		const basePath = resolve(`/app/characters/${data.character.id}/edit`);
 		return guidedHandoffVisible ? `${basePath}?guided=1` : basePath;
 	});
+
+	const guidedBannerHeading = $derived(
+		guidedOriginNotes && data.character.contentMode === 'custom'
+			? 'Guided build diverged'
+			: 'Guided build saved'
+	);
+
+	const guidedBannerBody = $derived(
+		guidedOriginNotes && data.character.contentMode === 'custom'
+			? 'This draft started in the guided creator and now includes manual changes beyond the canonical guided baseline.'
+			: 'This draft was created through the guided path. You can keep it on the canonical track as-is, or continue in the full editor when you want to tune attacks, spells, inventory, or other fields beyond the guided baseline.'
+	);
+
+	const guidedBannerFooter = $derived(
+		guidedOriginNotes && data.character.contentMode === 'custom'
+			? 'The guided origin is still preserved below so you can compare the original path with the current custom draft.'
+			: 'Further manual changes may move the character from canon to custom for the same ruleset.'
+	);
 </script>
 
 <svelte:head>
@@ -218,22 +236,21 @@
 				class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4"
 				data-testid="guided-handoff-banner"
 			>
-				<p class="text-sm font-semibold text-amber-950">Guided build saved</p>
+				<p class="text-sm font-semibold text-amber-950">{guidedBannerHeading}</p>
 				<p class="mt-2 max-w-2xl text-sm leading-6 text-amber-900">
-					This draft was created through the guided path. You can keep it on the canonical
-					track as-is, or continue in the full editor when you want to tune attacks,
-					spells, inventory, or other fields beyond the guided baseline.
+					{guidedBannerBody}
 				</p>
 				<p class="mt-2 text-sm leading-6 text-amber-900">
-					Further manual changes may move the character from <strong>canon</strong> to
-					<strong>custom</strong> for the same ruleset.
+					{guidedBannerFooter}
 				</p>
 				<div class="mt-4 flex flex-wrap gap-3">
 					<a
 						class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-amber-950 transition hover:bg-amber-400"
 						href={editCharacterHref}
 					>
-						Continue In Full Editor
+						{data.character.contentMode === 'custom'
+							? 'Continue Refining Custom Draft'
+							: 'Continue In Full Editor'}
 					</a>
 					<a
 						class="rounded-lg border border-amber-300 px-4 py-2 text-sm font-medium text-amber-950 transition hover:border-amber-400"

@@ -211,7 +211,7 @@ test('guided character edit can intentionally diverge into a custom draft', asyn
 
 	await page.getByRole('button', { name: 'Save changes' }).click();
 
-	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\?updated=Seren\+Dawnwatch$/);
+	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\?updated=Seren\+Dawnwatch&guided=1$/);
 	await expect(page.getByText('custom', { exact: true })).toBeVisible();
 	await expect(
 		page
