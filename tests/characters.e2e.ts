@@ -10,7 +10,7 @@ test('character create route saves a new draft and returns to detail', async ({ 
 
 	await expect(page).toHaveURL('/app/characters/new');
 	await expect(
-		page.getByRole('heading', { name: 'Create a structured character draft.' })
+		page.getByRole('heading', { name: 'Start with the guided creator.' })
 	).toBeVisible();
 	const manualForm = page.locator('form').last();
 
@@ -295,6 +295,22 @@ test('guided character create route only exposes subclasses that start at level 
 		'Life Domain',
 		'Knowledge Domain'
 	]);
+});
+
+test('character create route presents the guided creator as primary and manual builder as fallback', async ({
+	page
+}) => {
+	await page.goto('/app/characters/new');
+
+	await expect(page.getByRole('heading', { name: 'Start with the guided creator.' })).toBeVisible();
+	await expect(
+		page.getByRole('heading', { name: 'Character Creation V1 Guided' })
+	).toBeVisible();
+	await expect(
+		page.getByRole('heading', { name: 'Manual structured draft builder' })
+	).toBeVisible();
+	await expect(page.getByText('Recommended', { exact: true })).toBeVisible();
+	await expect(page.getByText('Advanced fallback', { exact: true })).toBeVisible();
 });
 
 test('guided character create route separates species class and background into distinct stages', async ({
