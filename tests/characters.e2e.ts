@@ -297,6 +297,21 @@ test('guided character create route only exposes subclasses that start at level 
 	]);
 });
 
+test('guided character create route separates species class and background into distinct stages', async ({
+	page
+}) => {
+	await page.goto('/app/characters/new');
+
+	const guidedForm = page
+		.locator('form')
+		.filter({ has: page.getByRole('button', { name: 'Save guided draft' }) });
+
+	await expect(guidedForm.getByRole('heading', { name: 'Species' })).toBeVisible();
+	await expect(guidedForm.getByRole('heading', { name: 'Class' })).toBeVisible();
+	await expect(guidedForm.getByRole('heading', { name: 'Background' })).toBeVisible();
+	await expect(guidedForm.getByText('Step 5', { exact: true })).toBeVisible();
+});
+
 test('guided character create route keeps custom combat overrides out of the guided flow', async ({
 	page
 }) => {
@@ -311,7 +326,7 @@ test('guided character create route keeps custom combat overrides out of the gui
 	).toHaveCount(0);
 	await expect(guidedForm.locator('input[name="overrideMaxHp"]')).toHaveCount(0);
 	await expect(guidedForm.locator('input[name="overrideArmorClass"]')).toHaveCount(0);
-	await expect(guidedForm.locator('[data-testid="guided-review-step"]')).toContainText('Step 6');
+	await expect(guidedForm.locator('[data-testid="guided-review-step"]')).toContainText('Step 8');
 });
 
 test('guided character create route shows a canonical derived snapshot and fuller final review', async ({

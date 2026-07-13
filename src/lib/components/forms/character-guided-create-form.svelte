@@ -451,7 +451,11 @@
 
 	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
 		<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Step 2</p>
-		<h3 class="mt-2 text-xl font-semibold text-stone-900">Lineage and path</h3>
+		<h3 class="mt-2 text-xl font-semibold text-stone-900">Species</h3>
+		<p class="mt-2 text-sm text-stone-600">
+			Choose the lineage path first so the guided builder can resolve dependent subspecies,
+			language grants, and ancestry bonuses.
+		</p>
 
 		<div class="mt-5 grid gap-4 lg:grid-cols-2">
 			<label class="block">
@@ -495,7 +499,18 @@
 					<p class="mt-1 text-sm text-red-700">{firstError('subspeciesId')}</p>
 				{/if}
 			</label>
+		</div>
+	</section>
 
+	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+		<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Step 3</p>
+		<h3 class="mt-2 text-xl font-semibold text-stone-900">Class</h3>
+		<p class="mt-2 text-sm text-stone-600">
+			Choose the class path next. Eligible level-1 subclasses appear automatically when the
+			current catalog grants one at this stage.
+		</p>
+
+		<div class="mt-5 grid gap-4 lg:grid-cols-2">
 			<label class="block">
 				<span class="mb-1 block text-sm font-medium text-stone-700">Class</span>
 				<select
@@ -537,7 +552,18 @@
 					<p class="mt-1 text-sm text-red-700">{firstError('subclassId')}</p>
 				{/if}
 			</label>
+		</div>
+	</section>
 
+	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+		<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Step 4</p>
+		<h3 class="mt-2 text-xl font-semibold text-stone-900">Background</h3>
+		<p class="mt-2 text-sm text-stone-600">
+			Finish the core origin selections with the background that grants the remaining trained
+			skills, languages, tools, and starting context.
+		</p>
+
+		<div class="mt-5 grid gap-4 lg:grid-cols-2">
 			<label class="block lg:col-span-2">
 				<span class="mb-1 block text-sm font-medium text-stone-700">Background</span>
 				<select
@@ -565,7 +591,7 @@
 	</section>
 
 	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
-		<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Step 3</p>
+		<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Step 5</p>
 		<h3 class="mt-2 text-xl font-semibold text-stone-900">Base ability scores</h3>
 		<p class="mt-2 text-sm text-stone-600">
 			Enter the base scores first. Guided ancestry bonuses are applied automatically in the
@@ -602,7 +628,7 @@
 			class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm"
 			data-testid="guided-choices-section"
 		>
-			<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Step 4</p>
+			<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Step 6</p>
 			<h3 class="mt-2 text-xl font-semibold text-stone-900">Guided choices</h3>
 			<p class="mt-2 text-sm text-stone-600">
 				Complete the required language and proficiency picks that this lineage, class path,
@@ -797,7 +823,7 @@
 		class="rounded-3xl border border-stone-200 bg-stone-950 p-6 text-stone-50 shadow-sm"
 		data-testid="guided-derived-snapshot-step"
 	>
-		<p class="text-sm font-medium uppercase tracking-[0.2em] text-emerald-300">Step 5</p>
+		<p class="text-sm font-medium uppercase tracking-[0.2em] text-emerald-300">Step 7</p>
 		<h3 class="mt-2 text-xl font-semibold">Derived snapshot</h3>
 		<p class="mt-2 max-w-3xl text-sm text-stone-300">
 			Review the canonical level-1 baseline that the guided rules path generates from your
@@ -1009,7 +1035,7 @@
 		class="rounded-3xl border border-emerald-200 bg-white p-6 shadow-sm"
 		data-testid="guided-review-step"
 	>
-		<p class="text-sm font-medium uppercase tracking-[0.2em] text-emerald-700">Step 6</p>
+		<p class="text-sm font-medium uppercase tracking-[0.2em] text-emerald-700">Step 8</p>
 		<h3 class="mt-2 text-xl font-semibold text-stone-900">Review and save</h3>
 
 		{#if preview || reviewPendingLines.length > 0}
