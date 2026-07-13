@@ -312,6 +312,38 @@ test('guided character create route separates species class and background into 
 	await expect(guidedForm.getByText('Step 5', { exact: true })).toBeVisible();
 });
 
+test('guided character create route shows granted-by-choice guidance for species class and background', async ({
+	page
+}) => {
+	await page.goto('/app/characters/new');
+
+	const guidedForm = page
+		.locator('form')
+		.filter({ has: page.getByRole('button', { name: 'Save guided draft' }) });
+
+	await guidedForm.locator('select[name="speciesId"]').selectOption({ label: 'Humano' });
+	await expect(guidedForm.locator('[data-testid="guided-species-grants"]')).toContainText(
+		'Granted by this choice'
+	);
+
+	await guidedForm.locator('select[name="classId"]').selectOption({ label: 'Clerigo' });
+	await guidedForm.locator('select[name="subclassId"]').selectOption({ label: 'Life Domain' });
+	await expect(guidedForm.locator('[data-testid="guided-class-grants"]')).toContainText(
+		'Hit die: d8'
+	);
+	await expect(guidedForm.locator('[data-testid="guided-class-grants"]')).toContainText(
+		'Granted spell: Bless'
+	);
+
+	await guidedForm.locator('select[name="backgroundId"]').selectOption({ label: 'Acolyte' });
+	await expect(guidedForm.locator('[data-testid="guided-background-grants"]')).toContainText(
+		'Granted by this choice'
+	);
+	await expect(guidedForm.locator('[data-testid="guided-background-grants"]')).toContainText(
+		'Starting equipment: Choose 1: Prayer Book, Prayer Wheel'
+	);
+});
+
 test('guided character create route keeps custom combat overrides out of the guided flow', async ({
 	page
 }) => {
@@ -376,8 +408,16 @@ test('guided character create route shows a canonical derived snapshot and fulle
 	await expect(
 		guidedForm.getByText('Derived equipment and attacks', { exact: true })
 	).toBeVisible();
-	await expect(guidedForm.getByText('Granted spell: Bless', { exact: true })).toBeVisible();
-	await expect(guidedForm.getByText('Equipment: 1x Mace', { exact: true })).toBeVisible();
+	await expect(
+		guidedForm.locator('[data-testid="guided-review-step"]').getByText('Granted spell: Bless', {
+			exact: true
+		})
+	).toBeVisible();
+	await expect(
+		guidedForm.locator('[data-testid="guided-review-step"]').getByText('Equipment: 1x Mace', {
+			exact: true
+		})
+	).toBeVisible();
 	await expect(guidedForm.locator('[data-testid="guided-review-step"]')).toContainText(
 		'Derived combat baseline'
 	);

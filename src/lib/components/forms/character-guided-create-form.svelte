@@ -11,8 +11,10 @@
 		sanitizeGuidedChoiceEntries,
 		type GuidedCharacterCatalog,
 		type GuidedCharacterFormValues,
-		type GuidedChoiceEntry
+		type GuidedChoiceEntry,
+		type GuidedEquipmentEntry
 	} from '$lib/domain/characters/guided-character';
+	import type { GameMechanic } from '$lib/types/domain/game-mechanics';
 
 	type GuidedFieldName = keyof GuidedCharacterFormValues;
 	type GuidedFieldErrors = Partial<Record<GuidedFieldName, string[]>>;
@@ -378,6 +380,134 @@
 	function guidedProficiencyBonus(level: number): number {
 		return Math.floor((level - 1) / 4) + 2;
 	}
+
+	function summarizeEquipmentEntry(entry: GuidedEquipmentEntry): string {
+		if (entry.type === 'item') {
+			const equipment = catalog.equipmentCatalog.find((item) => item.slug === entry.id);
+			const name = equipment?.name ?? humanizeGuidedChoiceValue(entry.id);
+			return `${entry.quantity ?? 1}x ${name}`;
+		}
+
+		const optionNames = entry.options.map(
+			(slug) =>
+				catalog.equipmentCatalog.find((item) => item.slug === slug)?.name ??
+				humanizeGuidedChoiceValue(slug)
+		);
+		return `Choose 1: ${optionNames.join(', ')}`;
+	}
+
+	function summarizeMechanicLine(mechanic: GameMechanic): string | null {
+		if (mechanic.type === 'ability_bonus') {
+			return `${humanizeGuidedChoiceValue(mechanic.ability)} +${mechanic.value}`;
+		}
+
+		if (mechanic.type === 'choose_ability_bonus') {
+			const allowed = mechanic.allowed?.map((ability) => humanizeGuidedChoiceValue(ability)).join(', ');
+			return allowed
+				? `Choose ${mechanic.count} ability score ${mechanic.count === 1 ? 'bonus' : 'bonuses'} (+${mechanic.value}) from ${allowed}`
+				: `Choose ${mechanic.count} ability score ${mechanic.count === 1 ? 'bonus' : 'bonuses'} (+${mechanic.value})`;
+		}
+
+		if (mechanic.type === 'speed') {
+			return `Speed ${mechanic.value}`;
+		}
+
+		if (mechanic.type === 'darkvision') {
+			return `Darkvision ${mechanic.range} ft.`;
+		}
+
+		if (mechanic.type === 'language') {
+			return `Language: ${humanizeGuidedChoiceValue(mechanic.language)}`;
+		}
+
+		if (mechanic.type === 'choose_language') {
+			return `Choose ${mechanic.count} ${mechanic.count === 1 ? 'language' : 'languages'}`;
+		}
+
+		if (mechanic.type === 'proficiency') {
+			return `${humanizeGuidedChoiceValue(mechanic.proficiencyType)} proficiency: ${humanizeGuidedChoiceValue(mechanic.value)}`;
+		}
+
+		if (mechanic.type === 'choose_proficiency') {
+			const optionNames = mechanic.options.map((option) => humanizeGuidedChoiceValue(option)).join(', ');
+			return `Choose ${mechanic.count} ${humanizeGuidedChoiceValue(mechanic.proficiencyType)} ${mechanic.count === 1 ? 'proficiency' : 'proficiencies'}: ${optionNames}`;
+		}
+
+		if (mechanic.type === 'resistance') {
+			return `Resistance: ${humanizeGuidedChoiceValue(mechanic.damageType)}`;
+		}
+
+		if (mechanic.type === 'spell_grant') {
+			const spell = catalog.spellCatalog.find((entry) => entry.slug === mechanic.spellId);
+			return `Granted spell: ${spell?.name ?? humanizeGuidedChoiceValue(mechanic.spellId)}`;
+		}
+
+		if (mechanic.type === 'spellcasting') {
+			return `Spellcasting ability: ${humanizeGuidedChoiceValue(mechanic.ability)}`;
+		}
+
+		if (mechanic.type === 'resource') {
+			return `${mechanic.name} (${mechanic.maxFormula}, resets on ${humanizeGuidedChoiceValue(mechanic.resetOn)})`;
+		}
+
+		if (mechanic.type === 'feature') {
+			return `Feature: ${humanizeGuidedChoiceValue(mechanic.featureId)}`;
+		}
+
+		if (mechanic.type === 'note') {
+			return mechanic.text;
+		}
+
+		return null;
+	}
+
+	function summarizeOptionGrantLines(
+		option:
+			| {
+					summary: string | null;
+					mechanics: GameMechanic[];
+					baseSpeed?: number | null;
+					hitDie?: number;
+					startingEquipment?: GuidedEquipmentEntry[];
+			  }
+			| undefined
+	): string[] {
+		if (!option) {
+			return [];
+		}
+
+		const lines: string[] = [];
+
+		if (option.summary?.trim()) {
+			lines.push(option.summary.trim());
+		}
+
+		if (typeof option.baseSpeed === 'number') {
+			lines.push(`Base speed: ${option.baseSpeed}`);
+		}
+
+		if (typeof option.hitDie === 'number') {
+			lines.push(`Hit die: d${option.hitDie}`);
+		}
+
+		for (const mechanic of option.mechanics) {
+			const line = summarizeMechanicLine(mechanic);
+
+			if (line && !lines.includes(line)) {
+				lines.push(line);
+			}
+		}
+
+		for (const entry of option.startingEquipment ?? []) {
+			const line = `Starting equipment: ${summarizeEquipmentEntry(entry)}`;
+
+			if (!lines.includes(line)) {
+				lines.push(line);
+			}
+		}
+
+		return lines;
+	}
 </script>
 
 <form method="POST" action="?/guided" class="space-y-6">
@@ -447,6 +577,35 @@
 				>
 			</label>
 		</div>
+
+		{#if selectedSpecies() || formValues.subspeciesId}
+			<div
+				class="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4"
+				data-testid="guided-species-grants"
+			>
+				<p class="text-sm font-semibold text-emerald-950">Granted by this choice</p>
+				{#if selectedSpecies()}
+					<p class="mt-3 text-xs font-medium uppercase tracking-[0.15em] text-emerald-800">
+						{selectedSpecies()?.name}
+					</p>
+					<ul class="mt-2 space-y-2 text-sm text-emerald-950">
+						{#each summarizeOptionGrantLines(selectedSpecies()) as line}
+							<li>{line}</li>
+						{/each}
+					</ul>
+				{/if}
+				{#if formValues.subspeciesId}
+					<p class="mt-4 text-xs font-medium uppercase tracking-[0.15em] text-emerald-800">
+						{availableSubspeciesOptions().find((option) => option.id === formValues.subspeciesId)?.name}
+					</p>
+					<ul class="mt-2 space-y-2 text-sm text-emerald-950">
+						{#each summarizeOptionGrantLines(availableSubspeciesOptions().find((option) => option.id === formValues.subspeciesId)) as line}
+							<li>{line}</li>
+						{/each}
+					</ul>
+				{/if}
+			</div>
+		{/if}
 	</section>
 
 	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
@@ -500,6 +659,35 @@
 				{/if}
 			</label>
 		</div>
+
+		{#if selectedClass() || formValues.subclassId}
+			<div
+				class="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4"
+				data-testid="guided-class-grants"
+			>
+				<p class="text-sm font-semibold text-emerald-950">Granted by this choice</p>
+				{#if selectedClass()}
+					<p class="mt-3 text-xs font-medium uppercase tracking-[0.15em] text-emerald-800">
+						{selectedClass()?.name}
+					</p>
+					<ul class="mt-2 space-y-2 text-sm text-emerald-950">
+						{#each summarizeOptionGrantLines(selectedClass()) as line}
+							<li>{line}</li>
+						{/each}
+					</ul>
+				{/if}
+				{#if formValues.subclassId}
+					<p class="mt-4 text-xs font-medium uppercase tracking-[0.15em] text-emerald-800">
+						{availableSubclassOptions().find((option) => option.id === formValues.subclassId)?.name}
+					</p>
+					<ul class="mt-2 space-y-2 text-sm text-emerald-950">
+						{#each summarizeOptionGrantLines(availableSubclassOptions().find((option) => option.id === formValues.subclassId)) as line}
+							<li>{line}</li>
+						{/each}
+					</ul>
+				{/if}
+			</div>
+		{/if}
 	</section>
 
 	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
@@ -553,6 +741,23 @@
 				{/if}
 			</label>
 		</div>
+
+		{#if selectedBackground()}
+			<div
+				class="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4"
+				data-testid="guided-background-grants"
+			>
+				<p class="text-sm font-semibold text-emerald-950">Granted by this choice</p>
+				<p class="mt-3 text-xs font-medium uppercase tracking-[0.15em] text-emerald-800">
+					{selectedBackground()?.name}
+				</p>
+				<ul class="mt-2 space-y-2 text-sm text-emerald-950">
+					{#each summarizeOptionGrantLines(selectedBackground()) as line}
+						<li>{line}</li>
+					{/each}
+				</ul>
+			</div>
+		{/if}
 	</section>
 
 	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
