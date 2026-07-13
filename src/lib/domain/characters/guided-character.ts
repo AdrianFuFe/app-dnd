@@ -56,6 +56,7 @@ export type GuidedCharacterGrantedSpellLevelGroup = {
 
 export type GuidedCharacterSubclassOption = GuidedCharacterOptionBase & {
 	classSlug: string;
+	startsAtLevel: number | null;
 	grantedSpellsByLevel: GuidedCharacterGrantedSpellLevelGroup[];
 };
 

@@ -107,7 +107,9 @@
 	function availableSubclassOptions() {
 		const classSlug = selectedClass()?.slug;
 		return classSlug
-			? catalog.subclassOptions.filter((option) => option.classSlug === classSlug)
+			? catalog.subclassOptions.filter(
+					(option) => option.classSlug === classSlug && option.startsAtLevel === 1
+				)
 			: [];
 	}
 

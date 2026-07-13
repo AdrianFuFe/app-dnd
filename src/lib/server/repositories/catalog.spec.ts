@@ -72,6 +72,7 @@ describe('listCharacterCreationCatalog', () => {
 					class_slug: 'clerigo',
 					name: 'Life Domain',
 					summary: 'Healing focused.',
+					features: [{ level: 1, featureId: 'disciple-of-life', name: 'Disciple of Life' }],
 					mechanics: [
 						{ type: 'proficiency', proficiencyType: 'armor', value: 'heavy-armor' }
 					]
@@ -170,6 +171,7 @@ describe('listCharacterCreationCatalog', () => {
 						proficiencyGrants: [{ proficiencyType: 'armor', value: 'heavy-armor' }],
 						proficiencyChoices: []
 					},
+					startsAtLevel: 1,
 					grantedSpellsByLevel: []
 				}
 			],
@@ -787,6 +789,7 @@ describe('listExpandedContentCatalog', () => {
 						proficiencyGrants: [{ proficiencyType: 'armor', value: 'heavy-armor' }],
 						proficiencyChoices: []
 					},
+					startsAtLevel: 1,
 					grantedSpellsByLevel: [{ level: 1, spellSlugs: ['bless', 'cure-wounds'] }]
 				}
 			],
@@ -1182,6 +1185,7 @@ describe('listExpandedContentCatalog', () => {
 					editorial_status: 'published',
 					visibility: 'shared',
 					summary: 'Visible subclass.',
+					features: [{ level: 1, featureId: 'disciple-of-life', name: 'Disciple of Life' }],
 					mechanics: [],
 					granted_spells_by_level: []
 				},

@@ -77,6 +77,7 @@ const catalog: GuidedCharacterCatalog = {
 			summary: 'Healing path.',
 			rulesetCode: 'dnd-2014-srd',
 			contentMode: 'canon',
+			startsAtLevel: 1,
 			mechanics: [
 				{ type: 'proficiency', proficiencyType: 'armor', value: 'heavy-armor' },
 				{ type: 'spell_grant', spellId: 'revivify' }
@@ -298,8 +299,8 @@ describe('deriveGuidedCharacterDraft', () => {
 			equipmentChoices: [
 				{ key: 'equipment:0', value: 'mace' },
 				{ key: 'equipment:1', value: 'prayer-book' }
-			]
-		};
+	]
+};
 
 		const draft = deriveGuidedCharacterDraft(catalog, input);
 

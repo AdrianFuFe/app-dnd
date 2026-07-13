@@ -104,6 +104,7 @@ type SubclassRow = {
 	editorial_status?: Database['public']['Tables']['subclasses']['Row']['editorial_status'];
 	visibility?: Database['public']['Tables']['subclasses']['Row']['visibility'];
 	summary: string | null;
+	features?: Database['public']['Tables']['subclasses']['Row']['features'];
 	mechanics: Database['public']['Tables']['subclasses']['Row']['mechanics'];
 	granted_spells_by_level?: Database['public']['Tables']['subclasses']['Row']['granted_spells_by_level'];
 	is_system_content?: Database['public']['Tables']['subclasses']['Row']['is_system_content'];
@@ -689,7 +690,7 @@ async function listSubclassOptions(
 	const { data, error } = await supabase
 		.from('subclasses')
 		.select(
-			'id, slug, class_slug, name, ruleset_code, content_mode, editorial_status, visibility, summary, mechanics, granted_spells_by_level, is_system_content'
+			'id, slug, class_slug, name, ruleset_code, content_mode, editorial_status, visibility, summary, features, mechanics, granted_spells_by_level, is_system_content'
 		)
 		.order('name', { ascending: true });
 
@@ -706,7 +707,7 @@ async function listGuidedSubclassOptions(
 	const { data, error } = await supabase
 		.from('subclasses')
 		.select(
-			'id, slug, class_slug, name, ruleset_code, content_mode, editorial_status, visibility, summary, mechanics, granted_spells_by_level, is_system_content'
+			'id, slug, class_slug, name, ruleset_code, content_mode, editorial_status, visibility, summary, features, mechanics, granted_spells_by_level, is_system_content'
 		)
 		.order('name', { ascending: true });
 
@@ -722,6 +723,10 @@ async function listGuidedSubclassOptions(
 		summary: subclass.summary,
 		rulesetCode: normalizeRulesetCode(subclass.ruleset_code ?? 'dnd-2014-srd'),
 		contentMode: normalizeContentMode(subclass.content_mode ?? 'canon'),
+		startsAtLevel: summarizeSubclassStartsAtLevel(
+			subclass.features,
+			subclass.granted_spells_by_level
+		),
 		mechanics: normalizeGameMechanics(subclass.mechanics),
 		grantedSpellsByLevel: summarizeGrantedSpellsByLevel(subclass.granted_spells_by_level)
 	}));
@@ -1022,7 +1027,14 @@ function mapCharacterClassOption(
 function mapSubclassOption(
 	subclass: Pick<
 		SubclassRow,
-		'id' | 'slug' | 'class_slug' | 'name' | 'summary' | 'mechanics' | 'granted_spells_by_level'
+		| 'id'
+		| 'slug'
+		| 'class_slug'
+		| 'name'
+		| 'summary'
+		| 'features'
+		| 'mechanics'
+		| 'granted_spells_by_level'
 	>
 ): CharacterSubclassOption {
 	return {
@@ -1032,6 +1044,10 @@ function mapSubclassOption(
 		name: subclass.name,
 		summary: subclass.summary,
 		mechanicSummary: summarizeCatalogMechanics(subclass.mechanics),
+		startsAtLevel: summarizeSubclassStartsAtLevel(
+			subclass.features,
+			subclass.granted_spells_by_level
+		),
 		grantedSpellsByLevel: summarizeGrantedSpellsByLevel(subclass.granted_spells_by_level)
 	};
 }
@@ -1465,6 +1481,37 @@ function summarizeGrantedSpellsByLevel(value: unknown): CharacterGrantedSpellLev
 
 		return [{ level, spellSlugs }];
 	});
+}
+
+function summarizeSubclassStartsAtLevel(
+	features: unknown,
+	grantedSpellsByLevel: unknown
+): number | null {
+	const featureLevels = Array.isArray(features)
+		? features.flatMap((feature) => {
+				if (
+					typeof feature === 'object' &&
+					feature !== null &&
+					'level' in feature &&
+					typeof feature.level === 'number' &&
+					Number.isInteger(feature.level)
+				) {
+					return [feature.level];
+				}
+
+				return [];
+			})
+		: [];
+	const grantedSpellLevels = summarizeGrantedSpellsByLevel(grantedSpellsByLevel).map(
+		(group) => group.level
+	);
+	const levels = [...featureLevels, ...grantedSpellLevels];
+
+	if (levels.length === 0) {
+		return null;
+	}
+
+	return Math.min(...levels);
 }
 
 function normalizeCharacterFeatItem(

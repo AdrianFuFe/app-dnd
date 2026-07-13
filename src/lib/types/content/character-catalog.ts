@@ -40,6 +40,7 @@ export type CharacterSubclassOption = {
 	name: string;
 	summary: string | null;
 	mechanicSummary: ContentMechanicSummary;
+	startsAtLevel: number | null;
 	grantedSpellsByLevel: CharacterGrantedSpellLevelGroup[];
 };
 

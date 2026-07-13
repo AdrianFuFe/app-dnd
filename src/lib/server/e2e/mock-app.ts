@@ -180,6 +180,13 @@ type SubclassSourceItem = {
 	summary?: string | null;
 	mechanics?: unknown[];
 	grantedSpellsByLevel?: GrantedSpellLevelSourceItem[];
+	features?: Array<{
+		level: number;
+		featureId: string;
+		name: string;
+		summary?: string | null;
+		mechanics?: unknown[];
+	}>;
 };
 
 type BackgroundSourceItem = {
@@ -296,6 +303,12 @@ const e2eCatalog: CharacterCreationCatalog = {
 		name: item.name,
 		summary: item.summary ?? null,
 		mechanicSummary: summarizeCatalogMechanics(item.mechanics ?? []),
+		startsAtLevel:
+			item.features && item.features.length > 0
+				? Math.min(...item.features.map((feature) => feature.level))
+				: (item.grantedSpellsByLevel ?? []).length > 0
+					? Math.min(...(item.grantedSpellsByLevel ?? []).map((group) => group.level))
+					: null,
 		grantedSpellsByLevel: (item.grantedSpellsByLevel ?? []).map((group) => ({
 			level: group.level,
 			spellSlugs: [...group.spellSlugs]
@@ -655,6 +668,12 @@ export function listE2EGuidedCharacterCatalog(): GuidedCharacterCatalog {
 			summary: item.summary ?? null,
 			rulesetCode: 'dnd-2014-srd',
 			contentMode: 'canon',
+			startsAtLevel:
+				item.features && item.features.length > 0
+					? Math.min(...item.features.map((feature) => feature.level))
+					: (item.grantedSpellsByLevel ?? []).length > 0
+						? Math.min(...(item.grantedSpellsByLevel ?? []).map((group) => group.level))
+						: null,
 			mechanics: (item.mechanics ?? []) as never,
 			grantedSpellsByLevel: (item.grantedSpellsByLevel ?? []).map((group) => ({
 				level: group.level,

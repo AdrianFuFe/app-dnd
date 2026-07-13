@@ -275,6 +275,28 @@ test('guided character create route keeps save disabled until required guided ch
 	await expect(saveButton).toBeEnabled();
 });
 
+test('guided character create route only exposes subclasses that start at level 1', async ({
+	page
+}) => {
+	await page.goto('/app/characters/new');
+
+	const guidedForm = page
+		.locator('form')
+		.filter({ has: page.getByRole('button', { name: 'Save guided draft' }) });
+	const classSelect = guidedForm.locator('select[name="classId"]');
+	const subclassSelect = guidedForm.locator('select[name="subclassId"]');
+
+	await classSelect.selectOption({ label: 'Mago' });
+	await expect(getSelectOptions(subclassSelect)).resolves.toEqual(['No subclass at this step']);
+
+	await classSelect.selectOption({ label: 'Clerigo' });
+	await expect(getSelectOptions(subclassSelect)).resolves.toEqual([
+		'No subclass at this step',
+		'Life Domain',
+		'Knowledge Domain'
+	]);
+});
+
 test('guided character create route shows a guided error when the submitted choice payload is invalid', async ({
 	page
 }) => {
