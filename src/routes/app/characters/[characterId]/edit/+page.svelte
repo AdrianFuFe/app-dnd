@@ -34,6 +34,77 @@
 					baseline while keeping the same ruleset.
 				</p>
 			</div>
+
+			{#if data.guidedOriginSummary}
+				<div
+					class="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4"
+					data-testid="guided-origin-summary"
+				>
+					<p class="text-sm font-semibold text-sky-950">Guided origin snapshot</p>
+					<p class="mt-2 max-w-3xl text-sm leading-6 text-sky-900">
+						{data.guidedOriginSummary.statusSummary}
+					</p>
+
+					<div class="mt-4 grid gap-3 md:grid-cols-3">
+						<div class="rounded-2xl border border-sky-200 bg-white px-4 py-3">
+							<p class="text-xs font-medium uppercase tracking-[0.15em] text-sky-700">
+								Lineage path
+							</p>
+							<p class="mt-2 text-sm font-semibold text-sky-950">
+								{data.guidedOriginSummary.lineageSummary || 'Not recorded'}
+							</p>
+						</div>
+						<div class="rounded-2xl border border-sky-200 bg-white px-4 py-3">
+							<p class="text-xs font-medium uppercase tracking-[0.15em] text-sky-700">
+								Class path
+							</p>
+							<p class="mt-2 text-sm font-semibold text-sky-950">
+								{data.guidedOriginSummary.classSummary || 'Not recorded'}
+							</p>
+						</div>
+						<div class="rounded-2xl border border-sky-200 bg-white px-4 py-3">
+							<p class="text-xs font-medium uppercase tracking-[0.15em] text-sky-700">
+								Background
+							</p>
+							<p class="mt-2 text-sm font-semibold text-sky-950">
+								{data.guidedOriginSummary.backgroundSummary || 'Not recorded'}
+							</p>
+						</div>
+					</div>
+
+					<div class="mt-4 grid gap-4 xl:grid-cols-2">
+						<div class="rounded-2xl border border-sky-200 bg-white px-4 py-4">
+							<p class="text-sm font-semibold text-sky-950">Auto-applied during guided creation</p>
+							{#if data.guidedOriginSummary.grantLines.length === 0}
+								<p class="mt-2 text-sm leading-6 text-sky-900">
+									No preserved guided grants were found on this draft.
+								</p>
+							{:else}
+								<ul class="mt-3 space-y-2 text-sm text-sky-900">
+									{#each data.guidedOriginSummary.grantLines as line}
+										<li>{line}</li>
+									{/each}
+								</ul>
+							{/if}
+						</div>
+
+						<div class="rounded-2xl border border-sky-200 bg-white px-4 py-4">
+							<p class="text-sm font-semibold text-sky-950">Chosen during guided creation</p>
+							{#if data.guidedOriginSummary.choiceLines.length === 0}
+								<p class="mt-2 text-sm leading-6 text-sky-900">
+									No preserved guided choices were found on this draft.
+								</p>
+							{:else}
+								<ul class="mt-3 space-y-2 text-sm text-sky-900">
+									{#each data.guidedOriginSummary.choiceLines as line}
+										<li>{line}</li>
+									{/each}
+								</ul>
+							{/if}
+						</div>
+					</div>
+				</div>
+			{/if}
 		{/if}
 	</section>
 

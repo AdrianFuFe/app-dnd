@@ -42,6 +42,20 @@ describe('guided character edit flow with E2E mock', () => {
 		).resolves.toMatchObject({
 			characterName: 'Seren Dawnwatch',
 			guidedHandoff: true,
+			guidedOriginSummary: {
+				lineageSummary: 'Humano',
+				classSummary: 'Clerigo / Life Domain',
+				backgroundSummary: 'Acolyte',
+				statusSummary: 'Still on the canonical guided path.',
+				grantLines: expect.arrayContaining([
+					'Language: Comun',
+					'Saving Throw proficiency: Wisdom'
+				]),
+				choiceLines: expect.arrayContaining([
+					'Chosen equipment: Mace',
+					'Chosen Skill proficiencies: History, Insight'
+				])
+			},
 			values: expect.objectContaining({
 				name: 'Seren Dawnwatch',
 				speciesId: expect.any(String),

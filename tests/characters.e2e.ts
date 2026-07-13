@@ -112,6 +112,18 @@ test('guided character create route saves a canonical draft with handoff details
 	await page.getByRole('link', { name: 'Edit character' }).click();
 	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\/edit\?guided=1$/);
 	await expect(page.getByText('Guided-to-custom handoff', { exact: true })).toBeVisible();
+	await expect(page.locator('[data-testid="guided-origin-summary"]')).toContainText(
+		'Guided origin snapshot'
+	);
+	await expect(page.locator('[data-testid="guided-origin-summary"]')).toContainText(
+		'Clerigo / Life Domain'
+	);
+	await expect(page.locator('[data-testid="guided-origin-summary"]')).toContainText(
+		'Still on the canonical guided path.'
+	);
+	await expect(page.locator('[data-testid="guided-origin-summary"]')).toContainText(
+		'Chosen equipment: Mace'
+	);
 });
 
 test('guided character edit can intentionally diverge into a custom draft', async ({ page }) => {
