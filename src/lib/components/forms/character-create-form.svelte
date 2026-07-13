@@ -275,6 +275,10 @@
 		return parseInventoryItems(values.inventoryItems);
 	}
 
+	function guidedInventoryFallbackEquippedCount(): number {
+		return guidedInventoryFallbackItems().filter((item) => item.isEquipped).length;
+	}
+
 	function normalizeGuidedRowName(value: string): string {
 		return value.trim().toLowerCase();
 	}
@@ -2073,12 +2077,23 @@
 		{#if inventoryItems.length === 0}
 			{#if hasGuidedOriginNotes() && guidedInventoryFallbackItems().length > 0}
 				<div class="mt-6 space-y-4">
-					<p
-						class="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm text-sky-900"
-					>
-						This guided draft already has baseline gear. Add manual rows only when you want
-						to start customizing what the character actually carries from here.
-					</p>
+					<div class="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4">
+						<p class="text-sm text-sky-900">
+							This guided draft already has baseline gear. Add manual rows only when you
+							want to start customizing what the character actually carries from here.
+						</p>
+						<div
+							class="mt-3 flex flex-wrap gap-3"
+							data-testid="guided-inventory-baseline-summary"
+						>
+							<p class="rounded-full border border-sky-300 bg-white px-3 py-1 text-sm font-medium text-sky-900">
+								{guidedInventoryFallbackItems().length} baseline items
+							</p>
+							<p class="rounded-full border border-sky-300 bg-white px-3 py-1 text-sm font-medium text-sky-900">
+								{guidedInventoryFallbackEquippedCount()} equipped by default
+							</p>
+						</div>
+					</div>
 
 					<div class="space-y-4">
 						{#each guidedInventoryFallbackItems() as item, index (`${item.name}-${index}`)}
