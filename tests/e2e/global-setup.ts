@@ -20,6 +20,8 @@ export default async function globalSetup() {
 		);
 	}
 
+	await buildPreviewAssets();
+
 	const serverProcess = spawn(
 		process.execPath,
 		[VITE_BIN_PATH, 'preview', '--host', 'localhost', '--strictPort'],
@@ -41,6 +43,13 @@ export default async function globalSetup() {
 	serverProcess.unref();
 	await writeFile(PID_PATH, JSON.stringify({ pid: serverProcess.pid }), 'utf8');
 	await waitForServer(SERVER_URL, 120_000);
+}
+
+async function buildPreviewAssets() {
+	await execFileAsync(process.execPath, [VITE_BIN_PATH, 'build'], {
+		cwd: process.cwd(),
+		env: process.env
+	});
 }
 
 async function waitForServer(url: string, timeoutMs: number) {
