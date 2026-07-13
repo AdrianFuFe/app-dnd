@@ -2,7 +2,6 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import {
-		createCharacterFormValues,
 		type CharacterCreateFormValues
 	} from '$lib/domain/characters/character-form';
 	import {
@@ -121,7 +120,42 @@
 		{ id: 'notes', label: 'Notes', detail: 'Named note sections' }
 	] as const;
 
-	let formValues = $state(createCharacterFormValues());
+	let formValues = $state({
+		name: '',
+		speciesId: '',
+		subspeciesId: '',
+		race: '',
+		subrace: '',
+		classId: '',
+		subclassId: '',
+		className: '',
+		subclass: '',
+		backgroundId: '',
+		level: '',
+		background: '',
+		story: '',
+		strength: '',
+		dexterity: '',
+		constitution: '',
+		intelligence: '',
+		wisdom: '',
+		charisma: '',
+		maxHp: '',
+		currentHp: '',
+		temporaryHp: '',
+		armorClass: '',
+		initiative: '',
+		speed: '',
+		hitDice: '',
+		attackItems: '[]',
+		spellItems: '[]',
+		featItems: '[]',
+		inventoryItems: '[]',
+		noteItems: '[]',
+		attacks: '',
+		spells: '',
+		notes: ''
+	});
 	let attackItems = $state<AttackFormItem[]>([]);
 	let spellItems = $state<SpellFormItem[]>([]);
 	let featItems = $state<FeatFormItem[]>([]);

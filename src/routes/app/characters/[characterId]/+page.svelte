@@ -154,7 +154,6 @@
 				</a>
 				<a
 					class="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-700"
-					data-sveltekit-reload
 					href={editCharacterHref}
 				>
 					Edit character
@@ -196,7 +195,6 @@
 				<div class="mt-4 flex flex-wrap gap-3">
 					<a
 						class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-amber-950 transition hover:bg-amber-400"
-						data-sveltekit-reload
 						href={editCharacterHref}
 					>
 						Continue In Full Editor
