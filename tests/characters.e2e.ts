@@ -360,6 +360,34 @@ test('guided character create route shows granted-by-choice guidance for species
 	);
 });
 
+test('guided character create route keeps helper panels attached to their matching steps', async ({
+	page
+}) => {
+	await page.goto('/app/characters/new');
+
+	const guidedForm = page
+		.locator('form')
+		.filter({ has: page.getByRole('button', { name: 'Save guided draft' }) });
+
+	await guidedForm.locator('select[name="speciesId"]').selectOption({ label: 'Humano' });
+	await expect(guidedForm.locator('[data-testid="guided-identity-step"]')).not.toContainText(
+		'Granted by this choice'
+	);
+	await expect(guidedForm.locator('[data-testid="guided-species-step"]')).toContainText(
+		'Granted by this choice'
+	);
+
+	await guidedForm.locator('select[name="classId"]').selectOption({ label: 'Clerigo' });
+	await expect(guidedForm.locator('[data-testid="guided-class-step"]')).toContainText(
+		'Granted by this choice'
+	);
+
+	await guidedForm.locator('select[name="backgroundId"]').selectOption({ label: 'Acolyte' });
+	await expect(guidedForm.locator('[data-testid="guided-background-step"]')).toContainText(
+		'Granted by this choice'
+	);
+});
+
 test('guided character create route separates automatic grants from required guided picks', async ({
 	page
 }) => {

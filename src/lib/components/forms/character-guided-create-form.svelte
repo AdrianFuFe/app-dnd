@@ -589,7 +589,10 @@
 		{/if}
 	</section>
 
-	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+	<section
+		class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm"
+		data-testid="guided-identity-step"
+	>
 		<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Step 1</p>
 		<h3 class="mt-2 text-xl font-semibold text-stone-900">Identity</h3>
 
@@ -626,37 +629,12 @@
 			</label>
 		</div>
 
-		{#if selectedSpecies() || formValues.subspeciesId}
-			<div
-				class="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4"
-				data-testid="guided-species-grants"
-			>
-				<p class="text-sm font-semibold text-emerald-950">Granted by this choice</p>
-				{#if selectedSpecies()}
-					<p class="mt-3 text-xs font-medium uppercase tracking-[0.15em] text-emerald-800">
-						{selectedSpecies()?.name}
-					</p>
-					<ul class="mt-2 space-y-2 text-sm text-emerald-950">
-						{#each summarizeOptionGrantLines(selectedSpecies()) as line}
-							<li>{line}</li>
-						{/each}
-					</ul>
-				{/if}
-				{#if formValues.subspeciesId}
-					<p class="mt-4 text-xs font-medium uppercase tracking-[0.15em] text-emerald-800">
-						{availableSubspeciesOptions().find((option) => option.id === formValues.subspeciesId)?.name}
-					</p>
-					<ul class="mt-2 space-y-2 text-sm text-emerald-950">
-						{#each summarizeOptionGrantLines(availableSubspeciesOptions().find((option) => option.id === formValues.subspeciesId)) as line}
-							<li>{line}</li>
-						{/each}
-					</ul>
-				{/if}
-			</div>
-		{/if}
 	</section>
 
-	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+	<section
+		class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm"
+		data-testid="guided-species-step"
+	>
 		<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Step 2</p>
 		<h3 class="mt-2 text-xl font-semibold text-stone-900">Species</h3>
 		<p class="mt-2 text-sm text-stone-600">
@@ -708,37 +686,41 @@
 			</label>
 		</div>
 
-		{#if selectedClass() || formValues.subclassId}
+		{#if selectedSpecies() || formValues.subspeciesId}
 			<div
 				class="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4"
-				data-testid="guided-class-grants"
+				data-testid="guided-species-grants"
 			>
 				<p class="text-sm font-semibold text-emerald-950">Granted by this choice</p>
-				{#if selectedClass()}
+				{#if selectedSpecies()}
 					<p class="mt-3 text-xs font-medium uppercase tracking-[0.15em] text-emerald-800">
-						{selectedClass()?.name}
+						{selectedSpecies()?.name}
 					</p>
 					<ul class="mt-2 space-y-2 text-sm text-emerald-950">
-						{#each summarizeOptionGrantLines(selectedClass()) as line}
+						{#each summarizeOptionGrantLines(selectedSpecies()) as line}
 							<li>{line}</li>
 						{/each}
 					</ul>
 				{/if}
-				{#if formValues.subclassId}
+				{#if formValues.subspeciesId}
 					<p class="mt-4 text-xs font-medium uppercase tracking-[0.15em] text-emerald-800">
-						{availableSubclassOptions().find((option) => option.id === formValues.subclassId)?.name}
+						{availableSubspeciesOptions().find((option) => option.id === formValues.subspeciesId)?.name}
 					</p>
 					<ul class="mt-2 space-y-2 text-sm text-emerald-950">
-						{#each summarizeOptionGrantLines(availableSubclassOptions().find((option) => option.id === formValues.subclassId)) as line}
+						{#each summarizeOptionGrantLines(availableSubspeciesOptions().find((option) => option.id === formValues.subspeciesId)) as line}
 							<li>{line}</li>
 						{/each}
 					</ul>
 				{/if}
 			</div>
 		{/if}
+
 	</section>
 
-	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+	<section
+		class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm"
+		data-testid="guided-class-step"
+	>
 		<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Step 3</p>
 		<h3 class="mt-2 text-xl font-semibold text-stone-900">Class</h3>
 		<p class="mt-2 text-sm text-stone-600">
@@ -790,25 +772,41 @@
 			</label>
 		</div>
 
-		{#if selectedBackground()}
+		{#if selectedClass() || formValues.subclassId}
 			<div
 				class="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4"
-				data-testid="guided-background-grants"
+				data-testid="guided-class-grants"
 			>
 				<p class="text-sm font-semibold text-emerald-950">Granted by this choice</p>
-				<p class="mt-3 text-xs font-medium uppercase tracking-[0.15em] text-emerald-800">
-					{selectedBackground()?.name}
-				</p>
-				<ul class="mt-2 space-y-2 text-sm text-emerald-950">
-					{#each summarizeOptionGrantLines(selectedBackground()) as line}
-						<li>{line}</li>
-					{/each}
-				</ul>
+				{#if selectedClass()}
+					<p class="mt-3 text-xs font-medium uppercase tracking-[0.15em] text-emerald-800">
+						{selectedClass()?.name}
+					</p>
+					<ul class="mt-2 space-y-2 text-sm text-emerald-950">
+						{#each summarizeOptionGrantLines(selectedClass()) as line}
+							<li>{line}</li>
+						{/each}
+					</ul>
+				{/if}
+				{#if formValues.subclassId}
+					<p class="mt-4 text-xs font-medium uppercase tracking-[0.15em] text-emerald-800">
+						{availableSubclassOptions().find((option) => option.id === formValues.subclassId)?.name}
+					</p>
+					<ul class="mt-2 space-y-2 text-sm text-emerald-950">
+						{#each summarizeOptionGrantLines(availableSubclassOptions().find((option) => option.id === formValues.subclassId)) as line}
+							<li>{line}</li>
+						{/each}
+					</ul>
+				{/if}
 			</div>
 		{/if}
+
 	</section>
 
-	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+	<section
+		class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm"
+		data-testid="guided-background-step"
+	>
 		<p class="text-sm font-medium uppercase tracking-[0.2em] text-stone-500">Step 4</p>
 		<h3 class="mt-2 text-xl font-semibold text-stone-900">Background</h3>
 		<p class="mt-2 text-sm text-stone-600">
@@ -841,6 +839,23 @@
 				{/if}
 			</label>
 		</div>
+
+		{#if selectedBackground()}
+			<div
+				class="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4"
+				data-testid="guided-background-grants"
+			>
+				<p class="text-sm font-semibold text-emerald-950">Granted by this choice</p>
+				<p class="mt-3 text-xs font-medium uppercase tracking-[0.15em] text-emerald-800">
+					{selectedBackground()?.name}
+				</p>
+				<ul class="mt-2 space-y-2 text-sm text-emerald-950">
+					{#each summarizeOptionGrantLines(selectedBackground()) as line}
+						<li>{line}</li>
+					{/each}
+				</ul>
+			</div>
+		{/if}
 	</section>
 
 	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
