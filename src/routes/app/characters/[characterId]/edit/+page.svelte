@@ -139,6 +139,13 @@
 		equipmentCatalog={data.equipmentCatalog}
 		featCatalog={data.featCatalog}
 		spellCatalog={data.spellCatalog}
+		guidedOrigin={data.guidedHandoff}
+		guidedInventoryAdopted={data.guidedInventoryAdopted}
+		guidedInventoryAdoptHref={data.guidedInventoryAdoptHref}
+		guidedNoteAdopted={data.guidedNoteAdopted}
+		guidedNoteAdoptHref={data.guidedNoteAdoptHref}
+		guidedInventoryPreviewItems={data.guidedInventoryPreviewItems}
+		guidedNotePreviewItems={data.guidedNotePreviewItems}
 		values={hasManualFormState() ? (form?.values ?? data.values) : data.values}
 		errors={form?.fieldErrors ?? {}}
 		formError={form?.formError}

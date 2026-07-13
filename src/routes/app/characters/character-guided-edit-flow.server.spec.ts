@@ -161,6 +161,43 @@ describe('guided character edit flow with E2E mock', () => {
 			}
 		});
 	});
+
+	it('preserves existing guided adoption flags when building the other adopt href', async () => {
+		resetE2EMockState();
+
+		const supabase = createE2EMockSupabaseClient();
+		const session = getE2EMockSession();
+		const catalog = await listGuidedCharacterCatalog(supabase);
+
+		let redirectLocation = '';
+
+		try {
+			await createActions.guided?.({
+				locals: { session, supabase },
+				request: createGuidedRequest(catalog)
+			} as never);
+		} catch (redirect) {
+			expect(redirect).toMatchObject({ status: 303 });
+			redirectLocation = (redirect as { location: string }).location;
+		}
+
+		const redirectedUrl = new URL(`http://localhost${redirectLocation}`);
+		const characterId = redirectedUrl.pathname.split('/').at(-1) ?? '';
+
+		await expect(
+			characterEditLoad({
+				locals: { session, supabase },
+				params: { characterId },
+				url: new URL(
+					`http://localhost/app/characters/${characterId}/edit?guided=1&adoptInventory=1`
+				)
+			} as never)
+		).resolves.toMatchObject({
+			guidedInventoryAdopted: true,
+			guidedNoteAdopted: false,
+			guidedNoteAdoptHref: `/app/characters/${characterId}/edit?guided=1&adoptInventory=1&adoptNotes=1#notes`
+		});
+	});
 });
 
 function createGuidedRequest(

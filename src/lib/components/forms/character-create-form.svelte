@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { untrack } from 'svelte';
 	import {
 		type CharacterCreateFormValues
 	} from '$lib/domain/characters/character-form';
@@ -17,6 +18,7 @@
 		FeatCatalogEntry,
 		SpellCatalogEntry
 	} from '$lib/types/content/expanded-content-catalog';
+	import type { CharacterInventoryItem, CharacterNoteItem } from '$lib/types/domain/character';
 
 	type CharacterFieldErrors = Partial<Record<keyof CharacterCreateFormValues, string[]>>;
 	type CharacterCancelHref = '/app/characters' | `/app/characters/${string}`;
@@ -64,6 +66,15 @@
 		title: string;
 		entries: SpellCatalogEntry[];
 	};
+	type GuidedInventoryPreviewFormItem = {
+		equipmentId: string;
+		name: string;
+		quantity: string;
+		description: string;
+		weight: string;
+		value: string;
+		isEquipped: boolean;
+	};
 
 	function createEditableFormValues(values: CharacterCreateFormValues) {
 		return {
@@ -109,6 +120,13 @@
 		equipmentCatalog,
 		featCatalog,
 		spellCatalog,
+		guidedOrigin = false,
+		guidedInventoryAdopted = false,
+		guidedInventoryAdoptHref = null,
+		guidedNoteAdopted = false,
+		guidedNoteAdoptHref = null,
+		guidedInventoryPreviewItems = [],
+		guidedNotePreviewItems = [],
 		values,
 		errors = {},
 		formError,
@@ -121,6 +139,13 @@
 		equipmentCatalog: EquipmentCatalogEntry[];
 		featCatalog: FeatCatalogEntry[];
 		spellCatalog: SpellCatalogEntry[];
+		guidedOrigin?: boolean;
+		guidedInventoryAdopted?: boolean;
+		guidedInventoryAdoptHref?: string | null;
+		guidedNoteAdopted?: boolean;
+		guidedNoteAdoptHref?: string | null;
+		guidedInventoryPreviewItems?: CharacterInventoryItem[];
+		guidedNotePreviewItems?: CharacterNoteItem[];
 		values: CharacterCreateFormValues;
 		errors?: CharacterFieldErrors;
 		formError?: string;
@@ -129,6 +154,44 @@
 		cancelHref?: CharacterCancelHref;
 		cancelLabel?: string;
 	} = $props();
+
+	const initialGuidedInventoryAdopted = untrack(() => guidedInventoryAdopted);
+	const initialGuidedOrigin = untrack(() => guidedOrigin);
+	const initialGuidedInventoryPreviewItemsSource = untrack(() => guidedInventoryPreviewItems);
+	const initialGuidedInventoryPreviewItems: GuidedInventoryPreviewFormItem[] =
+		initialGuidedInventoryAdopted
+			? initialGuidedInventoryPreviewItemsSource.map((item) => ({
+					equipmentId: item.equipmentId ?? '',
+					name: item.name,
+					quantity: String(item.quantity),
+					description: item.description ?? '',
+					weight: item.weight !== undefined ? String(item.weight) : '',
+					value: item.value ?? '',
+					isEquipped: item.isEquipped
+				}))
+			: [];
+	const initialGuidedNoteAdopted = untrack(() => guidedNoteAdopted);
+	const initialGuidedNotePreviewItemsSource = untrack(() => guidedNotePreviewItems);
+	const initialGuidedNotePreviewItems: NoteFormItem[] = initialGuidedNoteAdopted
+		? initialGuidedNotePreviewItemsSource.map((item) => ({
+				title: item.title,
+				content: item.content
+			}))
+		: [];
+	const initialFormValues = untrack(() => createEditableFormValues(values));
+	const initialAttackItems = untrack(() => parseAttackItems(values.attackItems, values.attacks));
+	const initialSpellItems = untrack(() => parseSpellItems(values.spellItems, values.spells));
+	const initialFeatItems = untrack(() => parseFeatItems(values.featItems));
+	const initialInventoryItems = initialGuidedInventoryAdopted
+		? initialGuidedInventoryPreviewItems
+		: initialGuidedOrigin
+			? []
+			: untrack(() => parseInventoryItems(values.inventoryItems));
+	const initialNoteItems = initialGuidedNoteAdopted
+		? initialGuidedNotePreviewItems
+		: initialGuidedOrigin
+			? []
+			: untrack(() => parseNoteItems(values.noteItems, values.notes));
 
 	const abilityFields = [
 		{ name: 'strength', label: 'Strength' },
@@ -159,47 +222,15 @@
 		{ id: 'notes', label: 'Notes', detail: 'Named note sections' }
 	] as const;
 
-	let formValues = $state({
-		name: '',
-		speciesId: '',
-		subspeciesId: '',
-		race: '',
-		subrace: '',
-		classId: '',
-		subclassId: '',
-		className: '',
-		subclass: '',
-		backgroundId: '',
-		level: '',
-		background: '',
-		story: '',
-		strength: '',
-		dexterity: '',
-		constitution: '',
-		intelligence: '',
-		wisdom: '',
-		charisma: '',
-		maxHp: '',
-		currentHp: '',
-		temporaryHp: '',
-		armorClass: '',
-		initiative: '',
-		speed: '',
-		hitDice: '',
-		attackItems: '',
-		spellItems: '',
-		featItems: '',
-		inventoryItems: '',
-		noteItems: '',
-		attacks: '',
-		spells: '',
-		notes: ''
-	});
-	let attackItems = $state<AttackFormItem[]>([]);
-	let spellItems = $state<SpellFormItem[]>([]);
-	let featItems = $state<FeatFormItem[]>([]);
-	let inventoryItems = $state<InventoryFormItem[]>([]);
-	let noteItems = $state<NoteFormItem[]>([]);
+	let formValues = $state(initialFormValues);
+	let attackItems = $state<AttackFormItem[]>(initialAttackItems);
+	let spellItems = $state<SpellFormItem[]>(initialSpellItems);
+	let featItems = $state<FeatFormItem[]>(initialFeatItems);
+	let inventoryItems = $state<InventoryFormItem[]>(initialInventoryItems);
+	let noteItems = $state<NoteFormItem[]>(initialNoteItems);
+	let inventoryPreviewDismissed = $state(initialGuidedInventoryAdopted);
+	let notePreviewDismissed = $state(initialGuidedNoteAdopted);
+	let hydratedValuesSignature = $state('');
 	let attackItemsField: HTMLInputElement | null = null;
 	let spellItemsField: HTMLInputElement | null = null;
 	let featItemsField: HTMLInputElement | null = null;
@@ -207,13 +238,34 @@
 	let noteItemsField: HTMLInputElement | null = null;
 	let notesField: HTMLInputElement | null = null;
 
+	function createInventoryPreviewFormItems(): InventoryFormItem[] {
+		return guidedInventoryFallbackItems().map((item) => ({ ...item }));
+	}
+
+	function createNotePreviewFormItems(): NoteFormItem[] {
+		return guidedNoteFallbackItems().map((item) => ({ ...item }));
+	}
+
 	$effect(() => {
+		const nextSignature = JSON.stringify(values);
+
+		if (nextSignature === hydratedValuesSignature) {
+			return;
+		}
+
+		hydratedValuesSignature = nextSignature;
 		formValues = createEditableFormValues(values);
 		attackItems = parseAttackItems(values.attackItems, values.attacks);
 		spellItems = parseSpellItems(values.spellItems, values.spells);
 		featItems = parseFeatItems(values.featItems);
-		inventoryItems = parseInventoryItems(values.inventoryItems);
-		noteItems = parseNoteItems(values.noteItems, values.notes);
+		inventoryItems = guidedInventoryAdopted
+			? createInventoryPreviewFormItems()
+			: parseInventoryItems(values.inventoryItems);
+		noteItems = guidedNoteAdopted
+			? createNotePreviewFormItems()
+			: parseNoteItems(values.noteItems, values.notes);
+		inventoryPreviewDismissed = guidedInventoryAdopted;
+		notePreviewDismissed = guidedNoteAdopted;
 	});
 
 	function firstError(field: keyof CharacterCreateFormValues): string | undefined {
@@ -221,6 +273,10 @@
 	}
 
 	function hasGuidedOriginNotes(): boolean {
+		if (guidedOrigin) {
+			return true;
+		}
+
 		return guidedOriginNoteItems().some(
 			(item) => item.title === 'Guided build grants' || item.title === 'Guided build choices'
 		);
@@ -272,11 +328,52 @@
 	}
 
 	function guidedInventoryFallbackItems(): InventoryFormItem[] {
+		if (guidedInventoryPreviewItems.length > 0) {
+			return guidedInventoryPreviewItems.map((item) => ({
+				equipmentId: item.equipmentId ?? '',
+				name: item.name,
+				quantity: String(item.quantity),
+				description: item.description ?? '',
+				weight: item.weight !== undefined ? String(item.weight) : '',
+				value: item.value ?? '',
+				isEquipped: item.isEquipped
+			}));
+		}
+
 		return parseInventoryItems(values.inventoryItems);
+	}
+
+	function guidedNoteFallbackItems(): NoteFormItem[] {
+		if (guidedNotePreviewItems.length > 0) {
+			return guidedNotePreviewItems.map((item) => ({
+				title: item.title,
+				content: item.content
+			}));
+		}
+
+		return guidedOriginNoteItems();
 	}
 
 	function guidedInventoryFallbackEquippedCount(): number {
 		return guidedInventoryFallbackItems().filter((item) => item.isEquipped).length;
+	}
+
+	function shouldShowGuidedInventoryPreview(): boolean {
+		return (
+			!inventoryPreviewDismissed &&
+			guidedOrigin &&
+			guidedInventoryFallbackItems().length > 0 &&
+			inventoryItems.length === 0
+		);
+	}
+
+	function shouldShowGuidedNotePreview(): boolean {
+		return (
+			!notePreviewDismissed &&
+			guidedOrigin &&
+			guidedNoteFallbackItems().length > 0 &&
+			noteItems.length === 0
+		);
 	}
 
 	function normalizeGuidedRowName(value: string): string {
@@ -290,6 +387,14 @@
 
 		const normalizedName = normalizeGuidedRowName(item.name);
 		return normalizedName.length > 0 && guidedBaselineEquipmentNames().has(normalizedName);
+	}
+
+	function noteItemLooksGuidedBaseline(item: NoteFormItem): boolean {
+		return guidedNoteFallbackItems().some(
+			(baselineItem) =>
+				baselineItem.title.trim() === item.title.trim() &&
+				baselineItem.content.trim() === item.content.trim()
+		);
 	}
 
 	function guidedRowOriginLabel(
@@ -568,6 +673,8 @@
 	}
 
 	function addInventoryItem() {
+		inventoryPreviewDismissed = true;
+
 		inventoryItems = [
 			...inventoryItems,
 			{
@@ -743,6 +850,8 @@
 	}
 
 	function addNoteItem() {
+		notePreviewDismissed = true;
+
 		noteItems = [
 			...noteItems,
 			{
@@ -1188,7 +1297,7 @@
 				<select
 					class="block w-full rounded-lg border-stone-300"
 					name="speciesId"
-					bind:value={formValues.speciesId}
+					value={formValues.speciesId}
 					onchange={handleSpeciesChange}
 				>
 					<option value="">Select a species</option>
@@ -1215,7 +1324,7 @@
 				<select
 					class="block w-full rounded-lg border-stone-300"
 					name="subspeciesId"
-					bind:value={formValues.subspeciesId}
+					value={formValues.subspeciesId}
 					onchange={(event) => {
 						formValues = {
 							...formValues,
@@ -1251,7 +1360,7 @@
 				<select
 					class="block w-full rounded-lg border-stone-300"
 					name="classId"
-					bind:value={formValues.classId}
+					value={formValues.classId}
 					onchange={handleClassChange}
 				>
 					<option value="">Select a class</option>
@@ -1278,7 +1387,7 @@
 				<select
 					class="block w-full rounded-lg border-stone-300"
 					name="subclassId"
-					bind:value={formValues.subclassId}
+					value={formValues.subclassId}
 					onchange={(event) => {
 						formValues = {
 							...formValues,
@@ -1330,9 +1439,12 @@
 				<select
 					class="block w-full rounded-lg border-stone-300"
 					name="backgroundId"
-					bind:value={formValues.backgroundId}
+					value={formValues.backgroundId}
 					onchange={(event) => {
-						formValues.backgroundId = (event.currentTarget as HTMLSelectElement).value;
+						formValues = {
+							...formValues,
+							backgroundId: (event.currentTarget as HTMLSelectElement).value
+						};
 					}}
 				>
 					<option value="">Select a background</option>
@@ -2074,57 +2186,64 @@
 			<p class="mt-4 text-sm text-red-700">{firstError('inventoryItems')}</p>
 		{/if}
 
-		{#if inventoryItems.length === 0}
-			{#if hasGuidedOriginNotes() && guidedInventoryFallbackItems().length > 0}
-				<div class="mt-6 space-y-4">
-					<div class="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4">
-						<p class="text-sm text-sky-900">
-							This guided draft already has baseline gear. Add manual rows only when you
-							want to start customizing what the character actually carries from here.
+		{#if shouldShowGuidedInventoryPreview()}
+			<div class="mt-6 space-y-4">
+				<div class="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4">
+					<p class="text-sm text-sky-900">
+						This guided draft already has baseline gear. Add manual rows only when you
+						want to start customizing what the character actually carries from here.
+					</p>
+					<div
+						class="mt-3 flex flex-wrap gap-3"
+						data-testid="guided-inventory-baseline-summary"
+					>
+						<p class="rounded-full border border-sky-300 bg-white px-3 py-1 text-sm font-medium text-sky-900">
+							{guidedInventoryFallbackItems().length} baseline items
 						</p>
-						<div
-							class="mt-3 flex flex-wrap gap-3"
-							data-testid="guided-inventory-baseline-summary"
-						>
-							<p class="rounded-full border border-sky-300 bg-white px-3 py-1 text-sm font-medium text-sky-900">
-								{guidedInventoryFallbackItems().length} baseline items
-							</p>
-							<p class="rounded-full border border-sky-300 bg-white px-3 py-1 text-sm font-medium text-sky-900">
-								{guidedInventoryFallbackEquippedCount()} equipped by default
-							</p>
-						</div>
-					</div>
-
-					<div class="space-y-4">
-						{#each guidedInventoryFallbackItems() as item, index (`${item.name}-${index}`)}
-							<div class="rounded-2xl border border-sky-200 bg-sky-50/60 p-4">
-								<div class="flex flex-wrap items-center gap-2">
-									<p class="text-sm font-semibold text-stone-900">Baseline item {index + 1}</p>
-									<span
-										class="rounded-full border border-sky-300 bg-white px-2 py-1 text-[11px] font-medium uppercase tracking-[0.15em] text-sky-900"
-									>
-										Likely guided baseline
-									</span>
-								</div>
-								<p class="mt-3 text-sm font-medium text-stone-900">{item.name}</p>
-								<p class="mt-1 text-sm text-stone-600">
-									Qty {item.quantity || '1'}{item.isEquipped ? ' · Equipped' : ''}
-								</p>
-								{#if item.description}
-									<p class="mt-2 text-sm leading-6 text-stone-600">{item.description}</p>
-								{/if}
-							</div>
-						{/each}
+						<p class="rounded-full border border-sky-300 bg-white px-3 py-1 text-sm font-medium text-sky-900">
+							{guidedInventoryFallbackEquippedCount()} equipped by default
+						</p>
+						{#if guidedInventoryAdoptHref}
+							<a
+								class="rounded-lg border border-sky-300 bg-white px-4 py-2 text-sm font-medium text-sky-900 transition hover:border-sky-400"
+								data-testid="adopt-guided-inventory-baseline"
+								href={guidedInventoryAdoptHref}
+							>
+								Adopt baseline gear as editable rows
+							</a>
+						{/if}
 					</div>
 				</div>
-			{:else}
-				<p
-					class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600"
-				>
-					No inventory items yet. Add the gear your character actually carries instead of
-					hiding it in a text blob.
-				</p>
-			{/if}
+
+				<div class="space-y-4">
+					{#each guidedInventoryFallbackItems() as item, index (`${item.name}-${index}`)}
+						<div class="rounded-2xl border border-sky-200 bg-sky-50/60 p-4">
+							<div class="flex flex-wrap items-center gap-2">
+								<p class="text-sm font-semibold text-stone-900">Baseline item {index + 1}</p>
+								<span
+									class="rounded-full border border-sky-300 bg-white px-2 py-1 text-[11px] font-medium uppercase tracking-[0.15em] text-sky-900"
+								>
+									Likely guided baseline
+								</span>
+							</div>
+							<p class="mt-3 text-sm font-medium text-stone-900">{item.name}</p>
+							<p class="mt-1 text-sm text-stone-600">
+								Qty {item.quantity || '1'}{item.isEquipped ? ' · Equipped' : ''}
+							</p>
+							{#if item.description}
+								<p class="mt-2 text-sm leading-6 text-stone-600">{item.description}</p>
+							{/if}
+						</div>
+					{/each}
+				</div>
+			</div>
+		{:else if inventoryItems.length === 0}
+			<p
+				class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600"
+			>
+				No inventory items yet. Add the gear your character actually carries instead of
+				hiding it in a text blob.
+			</p>
 		{:else}
 			<div class="mt-6 space-y-4">
 				{#each inventoryItems as item, index (index)}
@@ -2305,7 +2424,52 @@
 			<p class="mt-4 text-sm text-red-700">{firstError('noteItems')}</p>
 		{/if}
 
-		{#if noteItems.length === 0}
+		{#if shouldShowGuidedNotePreview()}
+				<div class="mt-6 space-y-4">
+					<div class="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4">
+						<p class="text-sm text-sky-900">
+							This guided draft also carries baseline note sections. Keep them visible here
+							as reference while you decide what should become manual note rows later.
+						</p>
+						<div
+							class="mt-3 flex flex-wrap gap-3"
+							data-testid="guided-note-baseline-summary"
+						>
+							<p class="rounded-full border border-sky-300 bg-white px-3 py-1 text-sm font-medium text-sky-900">
+								{guidedNoteFallbackItems().length} baseline note sections
+							</p>
+							{#if guidedNoteAdoptHref}
+								<a
+									class="rounded-lg border border-sky-300 bg-white px-4 py-2 text-sm font-medium text-sky-900 transition hover:border-sky-400"
+									data-testid="adopt-guided-note-baseline"
+									href={guidedNoteAdoptHref}
+								>
+									Adopt baseline notes as editable rows
+								</a>
+							{/if}
+						</div>
+					</div>
+
+					<div class="space-y-4">
+						{#each guidedNoteFallbackItems() as item, index (`${item.title}-${index}`)}
+							<div class="rounded-2xl border border-sky-200 bg-sky-50/60 p-4">
+								<div class="flex flex-wrap items-center gap-2">
+									<p class="text-sm font-semibold text-stone-900">
+										Baseline note section {index + 1}
+									</p>
+									<span
+										class="rounded-full border border-sky-300 bg-white px-2 py-1 text-[11px] font-medium uppercase tracking-[0.15em] text-sky-900"
+									>
+										Likely guided baseline
+									</span>
+								</div>
+								<p class="mt-3 text-sm font-medium text-stone-900">{item.title}</p>
+								<p class="mt-2 text-sm leading-6 text-stone-600">{item.content}</p>
+							</div>
+						{/each}
+					</div>
+				</div>
+		{:else if noteItems.length === 0}
 			<p
 				class="mt-6 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600"
 			>
@@ -2316,9 +2480,18 @@
 				{#each noteItems as item, index (index)}
 					<div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
 						<div class="flex items-center justify-between gap-3">
-							<p class="text-sm font-semibold text-stone-900">
-								Note section {index + 1}
-							</p>
+							<div class="flex flex-wrap items-center gap-2">
+								<p class="text-sm font-semibold text-stone-900">
+									Note section {index + 1}
+								</p>
+								{#if guidedRowOriginLabel(noteItemLooksGuidedBaseline(item))}
+									<span
+										class="rounded-full border border-sky-300 bg-white px-2 py-1 text-[11px] font-medium uppercase tracking-[0.15em] text-sky-900"
+									>
+										{guidedRowOriginLabel(noteItemLooksGuidedBaseline(item))}
+									</span>
+								{/if}
+							</div>
 							<button
 								class="text-sm font-medium text-rose-700 transition hover:text-rose-900"
 								type="button"

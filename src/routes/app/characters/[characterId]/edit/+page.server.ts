@@ -37,11 +37,26 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 		throw error(404, 'Character not found.');
 	}
 
+	const guidedInventoryAdopted = url.searchParams.get('adoptInventory') === '1';
+	const guidedNoteAdopted = url.searchParams.get('adoptNotes') === '1';
+
 	return {
 		characterId: character.id,
 		characterName: character.name,
 		guidedHandoff:
 			url.searchParams.get('guided') === '1' || isGuidedCharacterOrigin(character.noteItems),
+		guidedInventoryAdopted,
+		guidedInventoryAdoptHref: `${buildGuidedEditHref(character.id, {
+			adoptInventory: true,
+			adoptNotes: guidedNoteAdopted
+		})}#inventory`,
+		guidedNoteAdopted,
+		guidedNoteAdoptHref: `${buildGuidedEditHref(character.id, {
+			adoptInventory: guidedInventoryAdopted,
+			adoptNotes: true
+		})}#notes`,
+		guidedInventoryPreviewItems: character.inventoryItems,
+		guidedNotePreviewItems: character.noteItems,
 		guidedOriginSummary: summarizeGuidedCharacterOrigin(character),
 		currentEditState: summarizeCurrentEditState(character),
 		values: createCharacterFormValuesFromInput(character),
@@ -290,4 +305,26 @@ function buildCharacterDetailRedirect(
 	return query.length > 0
 		? `/app/characters/${characterId}?${query}`
 		: `/app/characters/${characterId}`;
+}
+
+function buildGuidedEditHref(
+	characterId: string,
+	params: {
+		adoptInventory?: boolean;
+		adoptNotes?: boolean;
+	}
+) {
+	const searchParams = new URLSearchParams({
+		guided: '1'
+	});
+
+	if (params.adoptInventory) {
+		searchParams.set('adoptInventory', '1');
+	}
+
+	if (params.adoptNotes) {
+		searchParams.set('adoptNotes', '1');
+	}
+
+	return `/app/characters/${characterId}/edit?${searchParams.toString()}`;
 }

@@ -69,6 +69,68 @@
 			.filter((line) => line.length > 0);
 	}
 
+	function normalizeGuidedRowName(value: string): string {
+		return value.trim().toLowerCase();
+	}
+
+	function guidedBaselineEquipmentNames(): Set<string> {
+		const names = new Set<string>();
+
+		for (const item of data.character.noteItems) {
+			for (const rawLine of item.content.split('\n')) {
+				const line = rawLine.trim();
+
+				if (line.startsWith('Chosen equipment: ')) {
+					for (const part of line.slice('Chosen equipment: '.length).split(',')) {
+						const normalized = normalizeGuidedRowName(part);
+						if (normalized) {
+							names.add(normalized);
+						}
+					}
+				}
+
+				if (line.startsWith('Starting equipment: ')) {
+					const content = line.slice('Starting equipment: '.length).trim();
+
+					if (content.startsWith('Choose 1: ')) {
+						for (const part of content.slice('Choose 1: '.length).split(',')) {
+							const normalized = normalizeGuidedRowName(part);
+							if (normalized) {
+								names.add(normalized);
+							}
+						}
+						continue;
+					}
+
+					const withoutQuantity = content.replace(/^\d+x\s+/i, '').trim();
+					const normalized = normalizeGuidedRowName(withoutQuantity);
+					if (normalized) {
+						names.add(normalized);
+					}
+				}
+			}
+		}
+
+		return names;
+	}
+
+	function inventoryItemLooksGuidedBaseline(item: PageData['character']['inventoryItems'][number]): boolean {
+		if (item.equipmentId) {
+			const normalizedName = normalizeGuidedRowName(item.name);
+			return normalizedName.length > 0 && guidedBaselineEquipmentNames().has(normalizedName);
+		}
+
+		const normalizedName = normalizeGuidedRowName(item.name);
+		return normalizedName.length > 0 && guidedBaselineEquipmentNames().has(normalizedName);
+	}
+
+	function noteItemLooksGuidedBaseline(note: PageData['character']['noteItems'][number]): boolean {
+		return (
+			note.title === 'Guided build grants' ||
+			note.title === 'Guided build choices'
+		);
+	}
+
 	function deriveGuidedDetailSummary() {
 		const grantsNote = data.character.noteItems.find((note) => note.title === 'Guided build grants');
 		const choicesNote = data.character.noteItems.find((note) => note.title === 'Guided build choices');
@@ -489,6 +551,13 @@
 									<p class="text-base font-semibold text-stone-900">
 										{item.quantity > 1 ? `${item.quantity} x ` : ''}{item.name}
 									</p>
+									{#if inventoryItemLooksGuidedBaseline(item)}
+										<span
+											class="rounded-full border border-sky-300 bg-white px-2 py-1 text-xs font-medium uppercase tracking-[0.16em] text-sky-800"
+										>
+											Guided baseline
+										</span>
+									{/if}
 									{#if item.equipmentId}
 										<span
 											class="rounded-full bg-sky-100 px-2 py-1 text-xs font-medium uppercase tracking-[0.16em] text-sky-800"
@@ -688,9 +757,18 @@
 									<div
 										class="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4"
 									>
-										<p class="text-base font-semibold text-stone-900">
-											{note.title}
-										</p>
+										<div class="flex flex-wrap items-center gap-2">
+											<p class="text-base font-semibold text-stone-900">
+												{note.title}
+											</p>
+											{#if noteItemLooksGuidedBaseline(note)}
+												<span
+													class="rounded-full border border-sky-300 bg-white px-2 py-1 text-xs font-medium uppercase tracking-[0.16em] text-sky-800"
+												>
+													Guided baseline
+												</span>
+											{/if}
+										</div>
 										<p
 											class="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700"
 										>

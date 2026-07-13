@@ -143,6 +143,16 @@ test('guided character create route saves a canonical draft with handoff details
 	await expect(page.locator('[data-testid="guided-inventory-baseline-summary"]')).toContainText(
 		'10 equipped by default'
 	);
+	await expect(page.locator('[data-testid="guided-note-baseline-summary"]')).toContainText(
+		'2 baseline note sections'
+	);
+	await expect(
+		page
+			.locator('section')
+			.filter({ has: page.getByRole('heading', { name: 'Notes' }) })
+			.getByText('Likely guided baseline')
+			.first()
+	).toBeVisible();
 	await expect(page.locator('[data-testid="guided-origin-summary"]')).toContainText(
 		'Guided origin snapshot'
 	);
@@ -265,6 +275,121 @@ test('guided character edit can intentionally diverge into a custom draft', asyn
 	await expect(page.locator('[data-testid="guided-current-edit-state"]')).toContainText(
 		'Manual override: Armor Class'
 	);
+});
+
+test('guided character edit can adopt baseline inventory into editable rows', async ({ page }) => {
+	await page.goto('/app/characters/new');
+
+	const guidedForm = page
+		.locator('form')
+		.filter({ has: page.getByRole('button', { name: 'Save guided draft' }) });
+	await fillGuidedCharacterForm(guidedForm, {
+		name: 'Seren Dawnwatch',
+		story: 'A novice healer learning to lead with courage.',
+		species: 'Humano',
+		subspecies: '',
+		className: 'Clerigo',
+		subclass: 'Life Domain',
+		background: 'Acolyte',
+		strength: '12',
+		dexterity: '10',
+		constitution: '14',
+		intelligence: '11',
+		wisdom: '15',
+		charisma: '13',
+		languageChoiceGroups: [['Draconico'], ['Comun', 'Gigante']],
+		proficiencyChoiceGroups: [['History', 'Insight']],
+		equipmentChoiceGroups: [
+			['Mace'],
+			['Scale Mail'],
+			['Light Crossbow and 20 Bolts'],
+			["Priest's Pack"],
+			['Prayer Book']
+		]
+	});
+
+	await guidedForm.getByRole('button', { name: 'Save guided draft' }).click();
+	await page.getByRole('link', { name: 'Edit character' }).click();
+	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\/edit\?guided=1$/);
+
+	const inventorySection = page
+		.locator('section')
+		.filter({ has: page.getByRole('heading', { name: 'Inventory' }) });
+
+	await expect(
+		inventorySection.getByRole('link', { name: 'Adopt baseline gear as editable rows' })
+	).toBeVisible();
+	await inventorySection
+		.getByRole('link', { name: 'Adopt baseline gear as editable rows' })
+		.click();
+	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\/edit\?guided=1&adoptInventory=1#inventory$/);
+
+	await expect(
+		inventorySection.getByRole('link', { name: 'Adopt baseline gear as editable rows' })
+	).toHaveCount(0);
+	await expect(inventorySection.getByLabel('Item name').first()).toHaveValue('Mace');
+	await expect(
+		inventorySection.getByText('Likely guided baseline', { exact: true }).first()
+	).toBeVisible();
+});
+
+test('guided character edit can adopt baseline notes into editable rows', async ({ page }) => {
+	await page.goto('/app/characters/new');
+
+	const guidedForm = page
+		.locator('form')
+		.filter({ has: page.getByRole('button', { name: 'Save guided draft' }) });
+	await fillGuidedCharacterForm(guidedForm, {
+		name: 'Seren Dawnwatch',
+		story: 'A novice healer learning to lead with courage.',
+		species: 'Humano',
+		subspecies: '',
+		className: 'Clerigo',
+		subclass: 'Life Domain',
+		background: 'Acolyte',
+		strength: '12',
+		dexterity: '10',
+		constitution: '14',
+		intelligence: '11',
+		wisdom: '15',
+		charisma: '13',
+		languageChoiceGroups: [['Draconico'], ['Comun', 'Gigante']],
+		proficiencyChoiceGroups: [['History', 'Insight']],
+		equipmentChoiceGroups: [
+			['Mace'],
+			['Scale Mail'],
+			['Light Crossbow and 20 Bolts'],
+			["Priest's Pack"],
+			['Prayer Book']
+		]
+	});
+
+	await guidedForm.getByRole('button', { name: 'Save guided draft' }).click();
+	await page.getByRole('link', { name: 'Edit character' }).click();
+	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\/edit\?guided=1$/);
+
+	const notesSection = page
+		.locator('section')
+		.filter({ has: page.getByRole('heading', { name: 'Notes' }) });
+
+	await expect(
+		notesSection.getByRole('link', { name: 'Adopt baseline notes as editable rows' })
+	).toBeVisible();
+	await notesSection.getByRole('link', { name: 'Adopt baseline notes as editable rows' }).click();
+	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\/edit\?guided=1&adoptNotes=1#notes$/);
+
+	await expect(
+		notesSection.getByRole('link', { name: 'Adopt baseline notes as editable rows' })
+	).toHaveCount(0);
+	await expect(notesSection.getByLabel('Section title').first()).toHaveValue(
+		'Guided build grants'
+	);
+	await expect(notesSection.getByLabel('Details').first()).toHaveValue(
+		/Language: Comun/
+	);
+	await expect(
+		notesSection.getByText('Likely guided baseline', { exact: true }).first()
+	).toBeVisible();
 });
 
 test('guided character create route keeps save disabled until required guided choices are complete', async ({
