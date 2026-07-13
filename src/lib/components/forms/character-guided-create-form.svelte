@@ -374,6 +374,10 @@
 	function guidedChoiceOptionTestId(key: string, value: string): string {
 		return `guided-choice-option-${key}-${value}`;
 	}
+
+	function guidedProficiencyBonus(level: number): number {
+		return Math.floor((level - 1) / 4) + 2;
+	}
 </script>
 
 <form method="POST" action="?/guided" class="space-y-6">
@@ -789,13 +793,43 @@
 		</section>
 	{/if}
 
-	<section class="rounded-3xl border border-stone-200 bg-stone-950 p-6 text-stone-50 shadow-sm">
+	<section
+		class="rounded-3xl border border-stone-200 bg-stone-950 p-6 text-stone-50 shadow-sm"
+		data-testid="guided-derived-snapshot-step"
+	>
 		<p class="text-sm font-medium uppercase tracking-[0.2em] text-emerald-300">Step 5</p>
-		<h3 class="mt-2 text-xl font-semibold">Derived preview</h3>
+		<h3 class="mt-2 text-xl font-semibold">Derived snapshot</h3>
+		<p class="mt-2 max-w-3xl text-sm text-stone-300">
+			Review the canonical level-1 baseline that the guided rules path generates from your
+			current selections.
+		</p>
 
 		{#if preview}
 			<div class="mt-5 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
 				<div class="space-y-5">
+					<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+						<div class="rounded-2xl border border-stone-800 bg-stone-900/70 p-4">
+							<p class="text-xs uppercase tracking-[0.15em] text-stone-400">Level</p>
+							<p class="mt-2 text-2xl font-semibold">{preview.character.level}</p>
+						</div>
+						<div class="rounded-2xl border border-stone-800 bg-stone-900/70 p-4">
+							<p class="text-xs uppercase tracking-[0.15em] text-stone-400">
+								Proficiency Bonus
+							</p>
+							<p class="mt-2 text-2xl font-semibold">
+								+{guidedProficiencyBonus(preview.character.level)}
+							</p>
+						</div>
+						<div class="rounded-2xl border border-stone-800 bg-stone-900/70 p-4">
+							<p class="text-xs uppercase tracking-[0.15em] text-stone-400">Hit Dice</p>
+							<p class="mt-2 text-2xl font-semibold">{preview.preview.hitDice}</p>
+						</div>
+						<div class="rounded-2xl border border-stone-800 bg-stone-900/70 p-4">
+							<p class="text-xs uppercase tracking-[0.15em] text-stone-400">Ruleset</p>
+							<p class="mt-2 text-lg font-semibold">{preview.preview.rulesetCode}</p>
+						</div>
+					</div>
+
 					<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
 						{#each abilityFields as field (field.name)}
 							<div class="rounded-2xl border border-stone-800 bg-stone-900/70 p-4">
@@ -809,11 +843,15 @@
 
 					<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
 						<div class="rounded-2xl border border-stone-800 bg-stone-900/70 p-4">
-							<p class="text-xs uppercase tracking-[0.15em] text-stone-400">HP</p>
+							<p class="text-xs uppercase tracking-[0.15em] text-stone-400">Max HP</p>
 							<p class="mt-2 text-2xl font-semibold">{preview.preview.maxHp}</p>
 						</div>
 						<div class="rounded-2xl border border-stone-800 bg-stone-900/70 p-4">
-							<p class="text-xs uppercase tracking-[0.15em] text-stone-400">AC</p>
+							<p class="text-xs uppercase tracking-[0.15em] text-stone-400">Current HP</p>
+							<p class="mt-2 text-2xl font-semibold">{preview.preview.currentHp}</p>
+						</div>
+						<div class="rounded-2xl border border-stone-800 bg-stone-900/70 p-4">
+							<p class="text-xs uppercase tracking-[0.15em] text-stone-400">Armor Class</p>
 							<p class="mt-2 text-2xl font-semibold">{preview.preview.armorClass}</p>
 						</div>
 						<div class="rounded-2xl border border-stone-800 bg-stone-900/70 p-4">
@@ -831,11 +869,8 @@
 
 				<div class="space-y-4">
 					<div class="rounded-2xl border border-stone-800 bg-stone-900/70 p-4">
-						<p class="text-sm font-semibold text-stone-100">Content profile</p>
+						<p class="text-sm font-semibold text-stone-100">Guided path status</p>
 						<div class="mt-3 flex flex-wrap gap-2">
-							<span class="rounded-full border border-sky-400/40 bg-sky-300/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.15em] text-sky-100">
-								Ruleset {preview.preview.rulesetCode}
-							</span>
 							<span
 								class="rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-[0.15em] {preview.preview.contentMode === 'canon'
 									? 'border-emerald-400/40 bg-emerald-300/10 text-emerald-100'
@@ -846,7 +881,8 @@
 						</div>
 						{#if preview.preview.customizationReasonLines.length === 0}
 							<p class="mt-3 text-sm text-stone-400">
-								This guided draft is still following the canonical path.
+								This guided draft is still following the canonical path for
+								`dnd-2014-srd`.
 							</p>
 						{:else}
 							<ul class="mt-3 space-y-2 text-sm text-stone-300">
@@ -858,7 +894,22 @@
 					</div>
 
 					<div class="rounded-2xl border border-stone-800 bg-stone-900/70 p-4">
-						<p class="text-sm font-semibold text-stone-100">Auto-applied bonuses</p>
+						<p class="text-sm font-semibold text-stone-100">Granted proficiencies and languages</p>
+						{#if preview.preview.grantedFeatureLines.length === 0}
+							<p class="mt-2 text-sm text-stone-400">
+								No automatic proficiencies or language grants resolved yet.
+							</p>
+						{:else}
+							<ul class="mt-3 space-y-2 text-sm text-stone-300">
+								{#each preview.preview.grantedFeatureLines as line}
+									<li>{line}</li>
+								{/each}
+							</ul>
+						{/if}
+					</div>
+
+					<div class="rounded-2xl border border-stone-800 bg-stone-900/70 p-4">
+						<p class="text-sm font-semibold text-stone-100">Ability bonuses applied</p>
 						{#if preview.preview.abilityBonuses.length === 0}
 							<p class="mt-2 text-sm text-stone-400">No direct ability bonuses resolved yet.</p>
 						{:else}
@@ -884,7 +935,7 @@
 					</div>
 
 					<div class="rounded-2xl border border-stone-800 bg-stone-900/70 p-4">
-						<p class="text-sm font-semibold text-stone-100">Derived inventory</p>
+						<p class="text-sm font-semibold text-stone-100">Derived equipment</p>
 						{#if preview.preview.derivedInventoryItems.length === 0}
 							<p class="mt-2 text-sm text-stone-400">No inventory resolved yet.</p>
 						{:else}
@@ -998,6 +1049,126 @@
 					</p>
 				</div>
 			</div>
+
+			{#if preview}
+				<div class="mt-5 grid gap-5 xl:grid-cols-[1fr_1fr]">
+					<div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+						<p class="text-sm font-semibold text-stone-900">Final ability scores</p>
+						<div class="mt-3 grid gap-3 sm:grid-cols-2">
+							{#each abilityFields as field (field.name)}
+								<div class="rounded-2xl border border-stone-200 bg-white px-4 py-3">
+									<p class="text-xs uppercase tracking-[0.15em] text-stone-500">
+										{field.label}
+									</p>
+									<p class="mt-2 text-lg font-semibold text-stone-900">
+										{preview.character[field.name]}
+									</p>
+								</div>
+							{/each}
+						</div>
+					</div>
+
+					<div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+						<p class="text-sm font-semibold text-stone-900">Derived combat baseline</p>
+						<div class="mt-3 grid gap-3 sm:grid-cols-2">
+							<div class="rounded-2xl border border-stone-200 bg-white px-4 py-3">
+								<p class="text-xs uppercase tracking-[0.15em] text-stone-500">Level</p>
+								<p class="mt-2 text-lg font-semibold text-stone-900">
+									{preview.character.level}
+								</p>
+							</div>
+							<div class="rounded-2xl border border-stone-200 bg-white px-4 py-3">
+								<p class="text-xs uppercase tracking-[0.15em] text-stone-500">
+									Proficiency Bonus
+								</p>
+								<p class="mt-2 text-lg font-semibold text-stone-900">
+									+{guidedProficiencyBonus(preview.character.level)}
+								</p>
+							</div>
+							<div class="rounded-2xl border border-stone-200 bg-white px-4 py-3">
+								<p class="text-xs uppercase tracking-[0.15em] text-stone-500">Max HP</p>
+								<p class="mt-2 text-lg font-semibold text-stone-900">
+									{preview.preview.maxHp}
+								</p>
+							</div>
+							<div class="rounded-2xl border border-stone-200 bg-white px-4 py-3">
+								<p class="text-xs uppercase tracking-[0.15em] text-stone-500">Current HP</p>
+								<p class="mt-2 text-lg font-semibold text-stone-900">
+									{preview.preview.currentHp}
+								</p>
+							</div>
+							<div class="rounded-2xl border border-stone-200 bg-white px-4 py-3">
+								<p class="text-xs uppercase tracking-[0.15em] text-stone-500">
+									Armor Class
+								</p>
+								<p class="mt-2 text-lg font-semibold text-stone-900">
+									{preview.preview.armorClass}
+								</p>
+							</div>
+							<div class="rounded-2xl border border-stone-200 bg-white px-4 py-3">
+								<p class="text-xs uppercase tracking-[0.15em] text-stone-500">
+									Initiative
+								</p>
+								<p class="mt-2 text-lg font-semibold text-stone-900">
+									{preview.preview.initiative >= 0 ? '+' : ''}{preview.preview.initiative}
+								</p>
+							</div>
+							<div class="rounded-2xl border border-stone-200 bg-white px-4 py-3">
+								<p class="text-xs uppercase tracking-[0.15em] text-stone-500">Speed</p>
+								<p class="mt-2 text-lg font-semibold text-stone-900">
+									{preview.preview.speed}
+								</p>
+							</div>
+							<div class="rounded-2xl border border-stone-200 bg-white px-4 py-3">
+								<p class="text-xs uppercase tracking-[0.15em] text-stone-500">Hit Dice</p>
+								<p class="mt-2 text-lg font-semibold text-stone-900">
+									{preview.preview.hitDice}
+								</p>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="mt-5 grid gap-5 xl:grid-cols-2">
+					<div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+						<p class="text-sm font-semibold text-stone-900">
+							Granted proficiencies, languages, and spells
+						</p>
+						{#if preview.preview.grantedFeatureLines.length === 0 && preview.preview.grantedSpellItems.length === 0}
+							<p class="mt-3 text-sm text-stone-600">No automatic grants resolved yet.</p>
+						{:else}
+							<ul class="mt-3 space-y-2 text-sm text-stone-700">
+								{#each preview.preview.grantedFeatureLines as line}
+									<li>{line}</li>
+								{/each}
+								{#each preview.preview.grantedSpellItems as spell}
+									<li>Granted spell: {spell.name}</li>
+								{/each}
+							</ul>
+						{/if}
+					</div>
+
+					<div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+						<p class="text-sm font-semibold text-stone-900">
+							Derived equipment and attacks
+						</p>
+						{#if preview.preview.derivedInventoryItems.length === 0 && preview.preview.derivedAttackItems.length === 0}
+							<p class="mt-3 text-sm text-stone-600">
+								No derived equipment or attacks resolved yet.
+							</p>
+						{:else}
+							<ul class="mt-3 space-y-2 text-sm text-stone-700">
+								{#each preview.preview.derivedInventoryItems as item}
+									<li>Equipment: {item.quantity}x {item.name}</li>
+								{/each}
+								{#each preview.preview.derivedAttackItems as attack}
+									<li>Attack: {attack.name}</li>
+								{/each}
+							</ul>
+						{/if}
+					</div>
+				</div>
+			{/if}
 
 			{#if reviewPendingLines.length > 0}
 				<div class="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">

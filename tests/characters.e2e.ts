@@ -314,6 +314,63 @@ test('guided character create route keeps custom combat overrides out of the gui
 	await expect(guidedForm.locator('[data-testid="guided-review-step"]')).toContainText('Step 6');
 });
 
+test('guided character create route shows a canonical derived snapshot and fuller final review', async ({
+	page
+}) => {
+	await page.goto('/app/characters/new');
+
+	const guidedForm = page
+		.locator('form')
+		.filter({ has: page.getByRole('button', { name: 'Save guided draft' }) });
+	await fillGuidedCharacterForm(guidedForm, {
+		name: 'Seren Dawnwatch',
+		story: 'A novice healer learning to lead with courage.',
+		species: 'Humano',
+		subspecies: '',
+		className: 'Clerigo',
+		subclass: 'Life Domain',
+		background: 'Acolyte',
+		strength: '12',
+		dexterity: '10',
+		constitution: '14',
+		intelligence: '11',
+		wisdom: '15',
+		charisma: '13',
+		languageChoiceGroups: [['Draconico'], ['Comun', 'Gigante']],
+		proficiencyChoiceGroups: [['History', 'Insight']],
+		equipmentChoiceGroups: [
+			['Mace'],
+			['Scale Mail'],
+			['Light Crossbow and 20 Bolts'],
+			["Priest's Pack"],
+			['Prayer Book']
+		]
+	});
+
+	const derivedSnapshotSection = guidedForm.locator(
+		'[data-testid="guided-derived-snapshot-step"]'
+	);
+
+	await expect(guidedForm.getByRole('heading', { name: 'Derived snapshot' })).toBeVisible();
+	await expect(derivedSnapshotSection.getByText('Proficiency Bonus', { exact: true })).toBeVisible();
+	await expect(derivedSnapshotSection.getByText('Current HP', { exact: true })).toBeVisible();
+	await expect(derivedSnapshotSection.getByText('Hit Dice', { exact: true })).toBeVisible();
+	await expect(
+		guidedForm.getByText('Granted proficiencies, languages, and spells', { exact: true })
+	).toBeVisible();
+	await expect(
+		guidedForm.getByText('Derived equipment and attacks', { exact: true })
+	).toBeVisible();
+	await expect(guidedForm.getByText('Granted spell: Bless', { exact: true })).toBeVisible();
+	await expect(guidedForm.getByText('Equipment: 1x Mace', { exact: true })).toBeVisible();
+	await expect(guidedForm.locator('[data-testid="guided-review-step"]')).toContainText(
+		'Derived combat baseline'
+	);
+	await expect(guidedForm.locator('[data-testid="guided-review-step"]')).toContainText(
+		'Final ability scores'
+	);
+});
+
 test('guided character create route shows a guided error when the submitted choice payload is invalid', async ({
 	page
 }) => {
