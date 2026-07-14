@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const knownLanguageSlugs = [
 	'comun',
 	'draconico',
+	'druidico',
 	'dwarfico',
 	'elfico',
 	'gigante',
@@ -85,6 +86,7 @@ export const knownIndividualWeaponProficiencySlugs = [
 	'mace',
 	'quarterstaff',
 	'rapier',
+	'scimitar',
 	'shortbow',
 	'shortsword',
 	'sickle',
@@ -105,6 +107,7 @@ export const knownSavingThrowProficiencySlugs = [
 export const knownToolProficiencySlugs = [
 	'artisan-tools',
 	'gaming-set',
+	'herbalism-kit',
 	'musical-instrument',
 	'smith-tools',
 	'thieves-tools',

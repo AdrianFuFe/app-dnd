@@ -345,6 +345,205 @@
 				{ "type": "feature", "featureId": "danger-sense" },
 				{ "type": "feature", "featureId": "primal-path" }
 			]
+		},
+		{
+			"slug": "monje",
+			"name": "Monje",
+			"summary": "Clase disciplinada y veloz que combina tecnica marcial, movilidad y control del cuerpo.",
+			"description": "Entrada canonica ampliada para cubrir una clase base del SRD con progresion temprana clara y sin dependencia fuerte de conjuros.",
+			"hitDie": 8,
+			"primaryAbilities": ["dexterity", "wisdom"],
+			"savingThrowProficiencies": ["strength", "dexterity"],
+			"armorProficiencies": [],
+			"weaponProficiencies": ["simple-weapons", "shortsword"],
+			"toolProficiencies": [],
+			"skillChoices": {
+				"count": 2,
+				"options": ["acrobatics", "athletics", "history", "insight", "religion", "stealth"]
+			},
+			"startingEquipment": [
+				{ "type": "choice", "options": ["shortsword", "any-simple-weapon"] },
+				{ "type": "choice", "options": ["dungeoneers-pack", "explorers-pack"] },
+				{ "type": "item", "id": "ten-darts" }
+			],
+			"spellcastingAbility": null,
+			"visibility": "public",
+			"progression": [
+				{ "level": 1, "features": ["unarmored-defense", "martial-arts"] },
+				{ "level": 2, "features": ["ki", "unarmored-movement"] },
+				{ "level": 3, "features": ["monastic-tradition", "deflect-missiles"] }
+			],
+			"mechanics": [
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "simple-weapons" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "shortsword" },
+				{ "type": "proficiency", "proficiencyType": "saving_throw", "value": "strength" },
+				{ "type": "proficiency", "proficiencyType": "saving_throw", "value": "dexterity" },
+				{
+					"type": "choose_proficiency",
+					"proficiencyType": "skill",
+					"count": 2,
+					"options": ["acrobatics", "athletics", "history", "insight", "religion", "stealth"]
+				},
+				{ "type": "feature", "featureId": "unarmored-defense" },
+				{ "type": "feature", "featureId": "martial-arts" },
+				{ "type": "feature", "featureId": "ki" },
+				{ "type": "feature", "featureId": "unarmored-movement" },
+				{ "type": "feature", "featureId": "monastic-tradition" },
+				{ "type": "feature", "featureId": "deflect-missiles" }
+			]
+		},
+		{
+			"slug": "bardo",
+			"name": "Bardo",
+			"summary": "Clase carismatica y versatil que mezcla inspiracion, conocimiento y magia de apoyo.",
+			"description": "Entrada canonica ampliada para abrir una rama lanzadora del SRD apoyada en el catalogo de conjuros ya disponible.",
+			"hitDie": 8,
+			"primaryAbilities": ["charisma"],
+			"savingThrowProficiencies": ["dexterity", "charisma"],
+			"armorProficiencies": ["light-armor"],
+			"weaponProficiencies": ["simple-weapons", "hand-crossbow", "longsword", "rapier", "shortsword"],
+			"toolProficiencies": ["musical-instrument"],
+			"skillChoices": {
+				"count": 3,
+				"options": [
+					"acrobatics",
+					"animal-handling",
+					"arcana",
+					"athletics",
+					"deception",
+					"history",
+					"insight",
+					"intimidation",
+					"investigation",
+					"medicine",
+					"nature",
+					"perception",
+					"performance",
+					"persuasion",
+					"religion",
+					"sleight-of-hand",
+					"stealth",
+					"survival"
+				]
+			},
+			"startingEquipment": [
+				{ "type": "choice", "options": ["rapier", "shortsword", "any-simple-weapon"] },
+				{ "type": "choice", "options": ["diplomats-pack", "entertainers-pack"] },
+				{ "type": "choice", "options": ["lute", "musical-instrument"] },
+				{ "type": "item", "id": "leather-armor" },
+				{ "type": "item", "id": "dagger" }
+			],
+			"spellcastingAbility": "charisma",
+			"visibility": "public",
+			"progression": [
+				{ "level": 1, "features": ["spellcasting", "bardic-inspiration"] },
+				{ "level": 2, "features": ["jack-of-all-trades", "song-of-rest"] },
+				{ "level": 3, "features": ["bard-college", "expertise"] }
+			],
+			"mechanics": [
+				{ "type": "proficiency", "proficiencyType": "armor", "value": "light-armor" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "simple-weapons" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "hand-crossbow" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "longsword" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "rapier" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "shortsword" },
+				{ "type": "proficiency", "proficiencyType": "tool", "value": "musical-instrument" },
+				{ "type": "proficiency", "proficiencyType": "saving_throw", "value": "dexterity" },
+				{ "type": "proficiency", "proficiencyType": "saving_throw", "value": "charisma" },
+				{
+					"type": "choose_proficiency",
+					"proficiencyType": "skill",
+					"count": 3,
+					"options": [
+						"acrobatics",
+						"animal-handling",
+						"arcana",
+						"athletics",
+						"deception",
+						"history",
+						"insight",
+						"intimidation",
+						"investigation",
+						"medicine",
+						"nature",
+						"perception",
+						"performance",
+						"persuasion",
+						"religion",
+						"sleight-of-hand",
+						"stealth",
+						"survival"
+					]
+				},
+				{ "type": "spellcasting", "ability": "charisma" },
+				{ "type": "feature", "featureId": "spellcasting" },
+				{ "type": "feature", "featureId": "bardic-inspiration" },
+				{ "type": "feature", "featureId": "jack-of-all-trades" },
+				{ "type": "feature", "featureId": "song-of-rest" },
+				{ "type": "feature", "featureId": "bard-college" },
+				{ "type": "feature", "featureId": "expertise" }
+			]
+		},
+		{
+			"slug": "druida",
+			"name": "Druida",
+			"summary": "Clase sabia y versatil que canaliza la magia de la naturaleza, la curacion y la transformacion.",
+			"description": "Entrada canonica ampliada para abrir una rama naturalista del SRD con identidad magica propia y progresion clara desde nivel 1.",
+			"hitDie": 8,
+			"primaryAbilities": ["wisdom"],
+			"savingThrowProficiencies": ["intelligence", "wisdom"],
+			"armorProficiencies": ["light-armor", "medium-armor", "shields"],
+			"weaponProficiencies": ["club", "dagger", "dart", "javelin", "mace", "quarterstaff", "scimitar", "sickle", "sling", "spear"],
+			"toolProficiencies": ["herbalism-kit"],
+			"skillChoices": {
+				"count": 2,
+				"options": ["arcana", "animal-handling", "insight", "medicine", "nature", "perception", "religion", "survival"]
+			},
+			"startingEquipment": [
+				{ "type": "choice", "options": ["shield", "any-simple-weapon"] },
+				{ "type": "choice", "options": ["scimitar", "any-simple-weapon"] },
+				{ "type": "item", "id": "leather-armor" },
+				{ "type": "item", "id": "explorers-pack" },
+				{ "type": "item", "id": "druidic-focus" }
+			],
+			"spellcastingAbility": "wisdom",
+			"visibility": "public",
+			"progression": [
+				{ "level": 1, "features": ["druidic", "spellcasting"] },
+				{ "level": 2, "features": ["wild-shape", "druid-circle"] },
+				{ "level": 3, "features": ["circle-spells"] }
+			],
+			"mechanics": [
+				{ "type": "proficiency", "proficiencyType": "armor", "value": "light-armor" },
+				{ "type": "proficiency", "proficiencyType": "armor", "value": "medium-armor" },
+				{ "type": "proficiency", "proficiencyType": "armor", "value": "shields" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "club" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "dagger" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "dart" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "javelin" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "mace" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "quarterstaff" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "scimitar" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "sickle" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "sling" },
+				{ "type": "proficiency", "proficiencyType": "weapon", "value": "spear" },
+				{ "type": "proficiency", "proficiencyType": "tool", "value": "herbalism-kit" },
+				{ "type": "proficiency", "proficiencyType": "saving_throw", "value": "intelligence" },
+				{ "type": "proficiency", "proficiencyType": "saving_throw", "value": "wisdom" },
+				{
+					"type": "choose_proficiency",
+					"proficiencyType": "skill",
+					"count": 2,
+					"options": ["arcana", "animal-handling", "insight", "medicine", "nature", "perception", "religion", "survival"]
+				},
+				{ "type": "language", "mode": "fixed", "language": "druidico" },
+				{ "type": "spellcasting", "ability": "wisdom" },
+				{ "type": "feature", "featureId": "druidic" },
+				{ "type": "feature", "featureId": "spellcasting" },
+				{ "type": "feature", "featureId": "wild-shape" },
+				{ "type": "feature", "featureId": "druid-circle" },
+				{ "type": "feature", "featureId": "circle-spells" }
+			]
 		}
 	]
 }

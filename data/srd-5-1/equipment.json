@@ -51,6 +51,24 @@
 			"value": "5 sp"
 		},
 		{
+			"slug": "druidic-focus",
+			"name": "Druidic Focus",
+			"category": "focus",
+			"summary": "A natural focus such as a sprig of mistletoe, a wand of yew, or a polished totem.",
+			"value": "1 gp",
+			"weight": 1,
+			"isEquippable": true
+		},
+		{
+			"slug": "diplomats-pack",
+			"name": "Diplomat's Pack",
+			"category": "pack",
+			"summary": "A refined travel pack suited to negotiation, correspondence, and courtly travel.",
+			"value": "39 gp",
+			"weight": 36,
+			"isEquippable": true
+		},
+		{
 			"slug": "chain-mail",
 			"name": "Chain Mail",
 			"category": "armor",
@@ -119,6 +137,15 @@
 			"isEquippable": true
 		},
 		{
+			"slug": "entertainers-pack",
+			"name": "Entertainer's Pack",
+			"category": "pack",
+			"summary": "A performer's pack stocked for travel, costume needs, and public appearances.",
+			"value": "40 gp",
+			"weight": 38,
+			"isEquippable": true
+		},
+		{
 			"slug": "fine-clothes",
 			"name": "Fine Clothes",
 			"category": "clothing",
@@ -171,6 +198,15 @@
 			"summary": "A military insignia marking prior service."
 		},
 		{
+			"slug": "herbalism-kit",
+			"name": "Herbalism Kit",
+			"category": "tool",
+			"summary": "A practical collection of pouches, clippers, and bottles for gathering and preparing herbs.",
+			"value": "5 gp",
+			"weight": 3,
+			"isEquippable": true
+		},
+		{
 			"slug": "lantern",
 			"name": "Lantern",
 			"category": "adventuring-gear",
@@ -220,6 +256,14 @@
 			"damageType": "bludgeoning",
 			"range": "Melee",
 			"isWeapon": true,
+			"isEquippable": true
+		},
+		{
+			"slug": "musical-instrument",
+			"name": "Musical Instrument",
+			"category": "tool",
+			"summary": "A generic musical instrument reference for bardic kit choices.",
+			"value": "5 gp",
 			"isEquippable": true
 		},
 		{
@@ -279,6 +323,15 @@
 			"isEquippable": true
 		},
 		{
+			"slug": "lute",
+			"name": "Lute",
+			"category": "tool",
+			"summary": "A classic string instrument often associated with traveling minstrels and bards.",
+			"value": "35 gp",
+			"weight": 2,
+			"isEquippable": true
+		},
+		{
 			"slug": "rapier",
 			"name": "Rapier",
 			"category": "weapon",
@@ -289,6 +342,20 @@
 			"damageType": "piercing",
 			"range": "Melee",
 			"properties": ["finesse"],
+			"isWeapon": true,
+			"isEquippable": true
+		},
+		{
+			"slug": "scimitar",
+			"name": "Scimitar",
+			"category": "weapon",
+			"summary": "A curved martial blade suited to swift, flowing attacks.",
+			"value": "25 gp",
+			"weight": 3,
+			"damage": "1d6",
+			"damageType": "slashing",
+			"range": "Melee",
+			"properties": ["finesse", "light"],
 			"isWeapon": true,
 			"isEquippable": true
 		},
@@ -395,6 +462,20 @@
 			"summary": "Durable clothes for long roads.",
 			"value": "2 gp",
 			"weight": 4,
+			"isEquippable": true
+		},
+		{
+			"slug": "ten-darts",
+			"name": "Ten Darts",
+			"category": "bundle",
+			"summary": "A set of ten small thrown weapons favored for quick ranged strikes.",
+			"value": "5 sp",
+			"weight": 2,
+			"damage": "1d4",
+			"damageType": "piercing",
+			"range": "20/60 ft.",
+			"properties": ["finesse", "thrown"],
+			"isWeapon": true,
 			"isEquippable": true
 		},
 		{

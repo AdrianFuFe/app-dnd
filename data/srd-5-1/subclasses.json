@@ -374,6 +374,215 @@
 					]
 				}
 			]
+		},
+		{
+			"slug": "way-of-the-open-hand",
+			"name": "Way of the Open Hand",
+			"summary": "Tradicion monastica centrada en dominio corporal, tecnicas precisas y control del campo cuerpo a cuerpo.",
+			"description": "Entrada canonica ampliada para cubrir una subclase clasica del monje en el SRD sin depender de catalogo adicional de conjuros.",
+			"classSlug": "monje",
+			"visibility": "public",
+			"grantedSpellsByLevel": [],
+			"mechanics": [
+				{ "type": "feature", "featureId": "open-hand-technique" },
+				{ "type": "feature", "featureId": "wholeness-of-body" },
+				{ "type": "feature", "featureId": "tranquility" },
+				{ "type": "feature", "featureId": "quivering-palm" }
+			],
+			"features": [
+				{
+					"level": 3,
+					"featureId": "open-hand-technique",
+					"name": "Open Hand Technique",
+					"summary": "Tus rafagas de golpes pueden derribar, apartar o inutilizar reacciones enemigas.",
+					"mechanics": [
+						{
+							"type": "note",
+							"text": "Whenever you hit a creature with one of the attacks granted by Flurry of Blows, you can impose one of three effects: knock it prone, push it up to 15 feet away, or prevent it from taking reactions until the end of your next turn."
+						}
+					]
+				},
+				{
+					"level": 6,
+					"featureId": "wholeness-of-body",
+					"name": "Wholeness of Body",
+					"summary": "Canalizas energia interior para restaurar tu propia vitalidad.",
+					"mechanics": [
+						{
+							"type": "note",
+							"text": "As an action, you regain hit points equal to three times your monk level; you must finish a long rest before using this feature again."
+						}
+					]
+				},
+				{
+					"level": 11,
+					"featureId": "tranquility",
+					"name": "Tranquility",
+					"summary": "Tu serenidad te envuelve en una proteccion sobrenatural al comenzar el dia.",
+					"mechanics": [
+						{
+							"type": "note",
+							"text": "At the end of a long rest, you gain the effect of a Sanctuary spell that lasts until your next long rest, until you attack, or until you force a creature to make a saving throw."
+						}
+					]
+				},
+				{
+					"level": 17,
+					"featureId": "quivering-palm",
+					"name": "Quivering Palm",
+					"summary": "Implantas vibraciones letales que puedes detonar despues con una simple decision.",
+					"mechanics": [
+						{
+							"type": "note",
+							"text": "After striking a creature, you can spend ki to set up lethal vibrations that can later force the creature to drop to 0 hit points or take massive necrotic damage on a failed Constitution saving throw."
+						}
+					]
+				}
+			]
+		},
+		{
+			"slug": "college-of-lore",
+			"name": "College of Lore",
+			"summary": "Colegio bardico orientado a conocimiento, agudeza verbal y dominio de historias y secretos.",
+			"description": "Entrada canonica ampliada para cubrir una subclase bardica clasica del SRD con fuerte identidad no dependiente de grants automaticos de conjuros.",
+			"classSlug": "bardo",
+			"visibility": "public",
+			"grantedSpellsByLevel": [],
+			"mechanics": [
+				{ "type": "choose_proficiency", "proficiencyType": "skill", "count": 3, "options": ["acrobatics", "animal-handling", "arcana", "athletics", "deception", "history", "insight", "intimidation", "investigation", "medicine", "nature", "perception", "performance", "persuasion", "religion", "sleight-of-hand", "stealth", "survival"] },
+				{ "type": "feature", "featureId": "bonus-proficiencies" },
+				{ "type": "feature", "featureId": "cutting-words" },
+				{ "type": "feature", "featureId": "additional-magical-secrets" },
+				{ "type": "feature", "featureId": "peerless-skill" }
+			],
+			"features": [
+				{
+					"level": 3,
+					"featureId": "bonus-proficiencies",
+					"name": "Bonus Proficiencies",
+					"summary": "Amplias tu repertorio con nuevas competencias tomadas de cualquier disciplina.",
+					"mechanics": [
+						{
+							"type": "note",
+							"text": "You gain proficiency with any three skills of your choice."
+						}
+					]
+				},
+				{
+					"level": 3,
+					"featureId": "cutting-words",
+					"name": "Cutting Words",
+					"summary": "Tus pullas y observaciones mordaces pueden debilitar la precision o el aplomo de un enemigo.",
+					"mechanics": [
+						{
+							"type": "note",
+							"text": "When a creature you can see within 60 feet makes an attack roll, ability check, or damage roll, you can use your reaction to expend a Bardic Inspiration die and subtract the result."
+						}
+					]
+				},
+				{
+					"level": 6,
+					"featureId": "additional-magical-secrets",
+					"name": "Additional Magical Secrets",
+					"summary": "Accedes antes que otros bardos a conjuros ajenos a tu lista habitual.",
+					"mechanics": [
+						{
+							"type": "note",
+							"text": "You learn two spells of your choice from any class, counting them as bard spells for you."
+						}
+					]
+				},
+				{
+					"level": 14,
+					"featureId": "peerless-skill",
+					"name": "Peerless Skill",
+					"summary": "Tu inspiracion puede perfeccionar incluso tus propias hazanas con maestria sobresaliente.",
+					"mechanics": [
+						{
+							"type": "note",
+							"text": "When you make an ability check, you can expend one use of Bardic Inspiration to add the Bardic Inspiration die to your roll."
+						}
+					]
+				}
+			]
+		},
+		{
+			"slug": "circle-of-the-land",
+			"name": "Circle of the Land",
+			"summary": "Circulo druídico orientado a la profundidad espiritual, la recuperación mágica y la sintonía con biomas concretos.",
+			"description": "Entrada canonica ampliada para cubrir una subclase druídica clásica del SRD con soporte inicial de conjuros de círculo.",
+			"classSlug": "druida",
+			"visibility": "public",
+			"grantedSpellsByLevel": [
+				{ "level": 3, "spellSlugs": ["invisibility", "spider-climb"] },
+				{ "level": 5, "spellSlugs": ["call-lightning", "sleet-storm"] },
+				{ "level": 7, "spellSlugs": ["divination", "freedom-of-movement"] },
+				{ "level": 9, "spellSlugs": ["dream", "insect-plague"] }
+			],
+			"mechanics": [
+				{ "type": "spell_grant", "spellId": "invisibility" },
+				{ "type": "spell_grant", "spellId": "spider-climb" },
+				{ "type": "spell_grant", "spellId": "call-lightning" },
+				{ "type": "spell_grant", "spellId": "sleet-storm" },
+				{ "type": "spell_grant", "spellId": "divination" },
+				{ "type": "spell_grant", "spellId": "freedom-of-movement" },
+				{ "type": "spell_grant", "spellId": "dream" },
+				{ "type": "spell_grant", "spellId": "insect-plague" },
+				{ "type": "feature", "featureId": "bonus-cantrip" },
+				{ "type": "feature", "featureId": "natural-recovery" },
+				{ "type": "feature", "featureId": "natures-ward" },
+				{ "type": "feature", "featureId": "natures-sanctuary" }
+			],
+			"features": [
+				{
+					"level": 2,
+					"featureId": "bonus-cantrip",
+					"name": "Bonus Cantrip",
+					"summary": "Tu vínculo con la tierra te concede un truco druídico adicional.",
+					"mechanics": [
+						{
+							"type": "note",
+							"text": "You learn one additional druid cantrip of your choice."
+						}
+					]
+				},
+				{
+					"level": 2,
+					"featureId": "natural-recovery",
+					"name": "Natural Recovery",
+					"summary": "Recuperas parte de tu poder mágico durante una pausa breve en la naturaleza.",
+					"mechanics": [
+						{
+							"type": "note",
+							"text": "During a short rest, you can recover expended spell slots with a combined level equal to or less than half your druid level, rounded up."
+						}
+					]
+				},
+				{
+					"level": 10,
+					"featureId": "natures-ward",
+					"name": "Nature's Ward",
+					"summary": "La naturaleza te protege frente a encantamientos y criaturas feéricas o elementales.",
+					"mechanics": [
+						{
+							"type": "note",
+							"text": "You can't be charmed or frightened by elementals or fey, and you are immune to poison and disease."
+						}
+					]
+				},
+				{
+					"level": 14,
+					"featureId": "natures-sanctuary",
+					"name": "Nature's Sanctuary",
+					"summary": "Las bestias y seres vegetales sienten tu autoridad natural y dudan antes de atacarte.",
+					"mechanics": [
+						{
+							"type": "note",
+							"text": "Beasts and plants must make a Wisdom saving throw before choosing you as a target for an attack or harmful spell."
+						}
+					]
+				}
+			]
 		}
 	]
 }
