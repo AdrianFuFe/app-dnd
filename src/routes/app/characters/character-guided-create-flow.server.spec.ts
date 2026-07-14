@@ -68,6 +68,62 @@ describe('guided character create flow with E2E mock', () => {
 		});
 	});
 
+	it('creates a guided wizard draft with guided spell choices and loads the detail handoff', async () => {
+		resetE2EMockState();
+
+		const supabase = createE2EMockSupabaseClient();
+		const session = getE2EMockSession();
+		const catalog = await listGuidedCharacterCatalog(supabase);
+		const request = createWizardGuidedRequest(catalog);
+
+		let redirectLocation = '';
+		let actionResult: unknown;
+
+		try {
+			actionResult = await createActions.guided?.({
+				locals: { session, supabase },
+				request
+			} as never);
+		} catch (redirect) {
+			expect(redirect).toMatchObject({ status: 303 });
+			redirectLocation = (redirect as { location: string }).location;
+		}
+
+		expect(redirectLocation || actionResult).toBeTruthy();
+		expect(redirectLocation).toBeTruthy();
+
+		const redirectedUrl = new URL(`http://localhost${redirectLocation}`);
+		const characterId = redirectedUrl.pathname.split('/').at(-1);
+
+		await expect(
+			characterDetailLoad({
+				locals: { session, supabase },
+				params: { characterId },
+				url: redirectedUrl
+			} as never)
+		).resolves.toMatchObject({
+			createdName: 'Aeris Vale',
+			guidedHandoff: true,
+			guidedOriginSummary: {
+				lineageSummary: 'Elfo / High Elf',
+				classSummary: 'Mago',
+				backgroundSummary: 'Acolyte',
+				statusSummary: 'Still on the canonical guided path.',
+				choiceLines: expect.arrayContaining([
+					'Chosen spells: Light',
+					'Chosen spells: Mage Hand, Minor Illusion, Prestidigitation',
+					'Chosen spells: Charm Person, Comprehend Languages, Detect Magic, Identify, Magic Missile, Shield'
+				])
+			},
+			character: expect.objectContaining({
+				name: 'Aeris Vale',
+				contentMode: 'canon',
+				className: 'Mago',
+				subrace: 'High Elf'
+			})
+		});
+	});
+
 	it('returns field errors when guided choice JSON is malformed', async () => {
 		resetE2EMockState();
 
@@ -122,6 +178,42 @@ describe('guided character create flow with E2E mock', () => {
 				guidedFieldErrors: {},
 				guidedValues: expect.objectContaining({
 					name: 'Seren Dawnwatch'
+				})
+			}
+		});
+	});
+
+	it('returns a guided form error when submitted spell choices do not match the current catalog', async () => {
+		resetE2EMockState();
+
+		const supabase = createE2EMockSupabaseClient();
+		const session = getE2EMockSession();
+		const catalog = await listGuidedCharacterCatalog(supabase);
+		const result = await createActions.guided?.({
+			locals: { session, supabase },
+			request: createWizardGuidedRequest(catalog, {
+				spellChoices: JSON.stringify([
+					{ key: 'spell:0', value: 'bless' },
+					{ key: 'spell:1', value: 'mage-hand' },
+					{ key: 'spell:1', value: 'minor-illusion' },
+					{ key: 'spell:1', value: 'prestidigitation' },
+					{ key: 'spell:2', value: 'charm-person' },
+					{ key: 'spell:2', value: 'comprehend-languages' },
+					{ key: 'spell:2', value: 'detect-magic' },
+					{ key: 'spell:2', value: 'identify' },
+					{ key: 'spell:2', value: 'magic-missile' },
+					{ key: 'spell:2', value: 'shield' }
+				])
+			})
+		} as never);
+
+		expect(result).toMatchObject({
+			status: 400,
+			data: {
+				guidedFormError: 'Please choose only valid options for each spell choice.',
+				guidedFieldErrors: {},
+				guidedValues: expect.objectContaining({
+					name: 'Aeris Vale'
 				})
 			}
 		});
@@ -248,6 +340,8 @@ function createGuidedRequest(
 			intelligence: '11',
 			wisdom: '15',
 			charisma: '13',
+			abilityChoices: JSON.stringify([]),
+			spellChoices: JSON.stringify([]),
 			languageChoices: JSON.stringify([
 				{ key: 'language:0', value: 'draconico' },
 				{ key: 'language:1', value: 'comun' },
@@ -263,6 +357,63 @@ function createGuidedRequest(
 				{ key: 'equipment:2', value: 'light-crossbow-and-20-bolts' },
 				{ key: 'equipment:3', value: 'priests-pack' },
 				{ key: 'equipment:4', value: 'prayer-book' }
+			]),
+			...overrides
+		})
+	});
+}
+
+function createWizardGuidedRequest(
+	catalog: Awaited<ReturnType<typeof listGuidedCharacterCatalog>>,
+	overrides: Partial<Record<string, string>> = {}
+) {
+	const speciesId = catalog.speciesOptions.find((entry) => entry.slug === 'elfo')?.id;
+	const subspeciesId = catalog.subspeciesOptions.find((entry) => entry.slug === 'high-elf')?.id;
+	const classId = catalog.classOptions.find((entry) => entry.slug === 'mago')?.id;
+	const backgroundId = catalog.backgroundOptions.find((entry) => entry.slug === 'acolyte')?.id;
+
+	return new Request('http://localhost/app/characters/new?/guided', {
+		method: 'POST',
+		body: new URLSearchParams({
+			name: 'Aeris Vale',
+			story: 'An apprentice archivist chasing fragments of ancient arcana.',
+			speciesId: speciesId ?? '',
+			subspeciesId: subspeciesId ?? '',
+			classId: classId ?? '',
+			subclassId: '',
+			backgroundId: backgroundId ?? '',
+			strength: '8',
+			dexterity: '14',
+			constitution: '13',
+			intelligence: '15',
+			wisdom: '12',
+			charisma: '10',
+			abilityChoices: JSON.stringify([]),
+			spellChoices: JSON.stringify([
+				{ key: 'spell:0', value: 'light' },
+				{ key: 'spell:1', value: 'mage-hand' },
+				{ key: 'spell:1', value: 'minor-illusion' },
+				{ key: 'spell:1', value: 'prestidigitation' },
+				{ key: 'spell:2', value: 'charm-person' },
+				{ key: 'spell:2', value: 'comprehend-languages' },
+				{ key: 'spell:2', value: 'detect-magic' },
+				{ key: 'spell:2', value: 'identify' },
+				{ key: 'spell:2', value: 'magic-missile' },
+				{ key: 'spell:2', value: 'shield' }
+			]),
+			languageChoices: JSON.stringify([
+				{ key: 'language:0', value: 'draconico' },
+				{ key: 'language:1', value: 'comun' },
+				{ key: 'language:1', value: 'gigante' }
+			]),
+			proficiencyChoices: JSON.stringify([
+				{ key: 'skill:0', value: 'arcana' },
+				{ key: 'skill:0', value: 'investigation' }
+			]),
+			equipmentChoices: JSON.stringify([
+				{ key: 'equipment:0', value: 'quarterstaff' },
+				{ key: 'equipment:1', value: 'explorers-pack' },
+				{ key: 'equipment:2', value: 'prayer-book' }
 			]),
 			...overrides
 		})

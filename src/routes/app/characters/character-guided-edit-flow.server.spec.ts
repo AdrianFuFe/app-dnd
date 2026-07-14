@@ -73,6 +73,65 @@ describe('guided character edit flow with E2E mock', () => {
 		});
 	});
 
+	it('loads a guided wizard draft into edit with derived spell items preserved', async () => {
+		resetE2EMockState();
+
+		const supabase = createE2EMockSupabaseClient();
+		const session = getE2EMockSession();
+		const catalog = await listGuidedCharacterCatalog(supabase);
+
+		let redirectLocation = '';
+
+		try {
+			await createActions.guided?.({
+				locals: { session, supabase },
+				request: createWizardGuidedRequest(catalog)
+			} as never);
+		} catch (redirect) {
+			expect(redirect).toMatchObject({ status: 303 });
+			redirectLocation = (redirect as { location: string }).location;
+		}
+
+		const redirectedUrl = new URL(`http://localhost${redirectLocation}`);
+		const characterId = redirectedUrl.pathname.split('/').at(-1) ?? '';
+
+		await expect(
+			characterEditLoad({
+				locals: { session, supabase },
+				params: { characterId },
+				url: new URL(`http://localhost/app/characters/${characterId}/edit?guided=1`)
+			} as never)
+		).resolves.toMatchObject({
+			characterName: 'Aeris Vale',
+			guidedHandoff: true,
+			currentEditState: {
+				contentMode: 'canon',
+				statusSummary: 'This draft is still aligned with the canonical guided baseline.',
+				reasonLines: []
+			},
+			guidedOriginSummary: {
+				lineageSummary: 'Elfo / High Elf',
+				classSummary: 'Mago',
+				backgroundSummary: 'Acolyte',
+				statusSummary: 'Still on the canonical guided path.',
+				choiceLines: expect.arrayContaining([
+					'Chosen spells: Light',
+					'Chosen spells: Mage Hand, Minor Illusion, Prestidigitation',
+					'Chosen spells: Charm Person, Comprehend Languages, Detect Magic, Identify, Magic Missile, Shield'
+				])
+			},
+			values: expect.objectContaining({
+				name: 'Aeris Vale',
+				speciesId: expect.any(String),
+				subspeciesId: expect.any(String),
+				classId: expect.any(String),
+				backgroundId: expect.any(String),
+				level: '1',
+				story: 'An apprentice archivist chasing fragments of ancient arcana.'
+			})
+		});
+	});
+
 	it('marks a guided draft as custom with divergence reasons after a manual edit', async () => {
 		resetE2EMockState();
 
@@ -329,6 +388,75 @@ describe('guided character edit flow with E2E mock', () => {
 		});
 	});
 
+	it('keeps a guided wizard draft canonical when saved unchanged after edit handoff', async () => {
+		resetE2EMockState();
+
+		const supabase = createE2EMockSupabaseClient();
+		const session = getE2EMockSession();
+		const catalog = await listGuidedCharacterCatalog(supabase);
+
+		let redirectLocation = '';
+
+		try {
+			await createActions.guided?.({
+				locals: { session, supabase },
+				request: createWizardGuidedRequest(catalog)
+			} as never);
+		} catch (redirect) {
+			expect(redirect).toMatchObject({ status: 303 });
+			redirectLocation = (redirect as { location: string }).location;
+		}
+
+		const redirectedUrl = new URL(`http://localhost${redirectLocation}`);
+		const characterId = redirectedUrl.pathname.split('/').at(-1) ?? '';
+		const loadedDetail = await characterDetailLoad({
+			locals: { session, supabase },
+			params: { characterId },
+			url: redirectedUrl
+		} as never);
+
+		if (!loadedDetail || !('character' in loadedDetail)) {
+			throw new Error('Expected the guided wizard detail page to load.');
+		}
+
+		const detail = loadedDetail;
+		let editRedirectLocation = '';
+
+		try {
+			await editActions.default?.({
+				locals: { session, supabase },
+				params: { characterId },
+				request: createGuidedCanonicalEditRequest(detail.character),
+				url: new URL(`http://localhost/app/characters/${characterId}/edit?guided=1`)
+			} as never);
+		} catch (redirect) {
+			expect(redirect).toMatchObject({ status: 303 });
+			editRedirectLocation = (redirect as { location: string }).location;
+		}
+
+		expect(editRedirectLocation).toBe(
+			`/app/characters/${characterId}?updated=Aeris+Vale&guided=1`
+		);
+
+		await expect(
+			characterDetailLoad({
+				locals: { session, supabase },
+				params: { characterId },
+				url: new URL(`http://localhost${editRedirectLocation}`)
+			} as never)
+		).resolves.toMatchObject({
+			updatedName: 'Aeris Vale',
+			character: expect.objectContaining({
+				contentMode: 'canon',
+				spellItems: expect.arrayContaining([
+					expect.objectContaining({ name: 'Light', isPrepared: false }),
+					expect.objectContaining({ name: 'Magic Missile', isPrepared: false }),
+					expect.objectContaining({ name: 'Shield', isPrepared: false })
+				])
+			})
+		});
+	});
+
 	it('restores blank guided baseline fields on save when both adoption flags are active', async () => {
 		resetE2EMockState();
 
@@ -398,6 +526,8 @@ function createGuidedRequest(
 			intelligence: '11',
 			wisdom: '15',
 			charisma: '13',
+			abilityChoices: JSON.stringify([]),
+			spellChoices: JSON.stringify([]),
 			languageChoices: JSON.stringify([
 				{ key: 'language:0', value: 'draconico' },
 				{ key: 'language:1', value: 'comun' },
@@ -413,6 +543,63 @@ function createGuidedRequest(
 				{ key: 'equipment:2', value: 'light-crossbow-and-20-bolts' },
 				{ key: 'equipment:3', value: 'priests-pack' },
 				{ key: 'equipment:4', value: 'prayer-book' }
+			]),
+			...overrides
+		})
+	});
+}
+
+function createWizardGuidedRequest(
+	catalog: Awaited<ReturnType<typeof listGuidedCharacterCatalog>>,
+	overrides: Partial<Record<string, string>> = {}
+) {
+	const speciesId = catalog.speciesOptions.find((entry) => entry.slug === 'elfo')?.id;
+	const subspeciesId = catalog.subspeciesOptions.find((entry) => entry.slug === 'high-elf')?.id;
+	const classId = catalog.classOptions.find((entry) => entry.slug === 'mago')?.id;
+	const backgroundId = catalog.backgroundOptions.find((entry) => entry.slug === 'acolyte')?.id;
+
+	return new Request('http://localhost/app/characters/new?/guided', {
+		method: 'POST',
+		body: new URLSearchParams({
+			name: 'Aeris Vale',
+			story: 'An apprentice archivist chasing fragments of ancient arcana.',
+			speciesId: speciesId ?? '',
+			subspeciesId: subspeciesId ?? '',
+			classId: classId ?? '',
+			subclassId: '',
+			backgroundId: backgroundId ?? '',
+			strength: '8',
+			dexterity: '14',
+			constitution: '13',
+			intelligence: '15',
+			wisdom: '12',
+			charisma: '10',
+			abilityChoices: JSON.stringify([]),
+			spellChoices: JSON.stringify([
+				{ key: 'spell:0', value: 'light' },
+				{ key: 'spell:1', value: 'mage-hand' },
+				{ key: 'spell:1', value: 'minor-illusion' },
+				{ key: 'spell:1', value: 'prestidigitation' },
+				{ key: 'spell:2', value: 'charm-person' },
+				{ key: 'spell:2', value: 'comprehend-languages' },
+				{ key: 'spell:2', value: 'detect-magic' },
+				{ key: 'spell:2', value: 'identify' },
+				{ key: 'spell:2', value: 'magic-missile' },
+				{ key: 'spell:2', value: 'shield' }
+			]),
+			languageChoices: JSON.stringify([
+				{ key: 'language:0', value: 'draconico' },
+				{ key: 'language:1', value: 'comun' },
+				{ key: 'language:1', value: 'gigante' }
+			]),
+			proficiencyChoices: JSON.stringify([
+				{ key: 'skill:0', value: 'arcana' },
+				{ key: 'skill:0', value: 'investigation' }
+			]),
+			equipmentChoices: JSON.stringify([
+				{ key: 'equipment:0', value: 'quarterstaff' },
+				{ key: 'equipment:1', value: 'explorers-pack' },
+				{ key: 'equipment:2', value: 'prayer-book' }
 			]),
 			...overrides
 		})

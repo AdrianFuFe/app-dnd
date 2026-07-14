@@ -17,6 +17,13 @@ export type GameMechanic =
 	| { type: 'darkvision'; range: number }
 	| { type: 'language'; mode: 'fixed'; language: string }
 	| { type: 'choose_language'; count: number }
+	| {
+			type: 'choose_spell';
+			count: number;
+			classSlug: string;
+			maxLevel: number;
+			preparationMode?: 'prepared' | 'known';
+	  }
 	| { type: 'proficiency'; proficiencyType: ProficiencyType; value: string }
 	| {
 			type: 'choose_proficiency';

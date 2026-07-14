@@ -28,6 +28,7 @@ type ExistingCharacterProfile = Pick<
 	| 'initiative'
 	| 'speed'
 	| 'hitDice'
+	| 'spellItems'
 > & {
 	guidedOrigin?: boolean;
 };
@@ -53,6 +54,7 @@ export function deriveManualCharacterContentProfile(
 	];
 	const manualOverrides = [
 		...summarizeFreeformRowOverrides(input.attackItems, input.spellItems, input.featItems, input.inventoryItems),
+		...summarizeGuidedSpellDiffOverrides(input.spellItems, context.existingCharacter),
 		...summarizeCombatDiffOverrides(input, context.existingCharacter)
 	];
 	const derivedProfile = deriveCharacterContentProfile({
@@ -291,4 +293,30 @@ function summarizeCombatDiffOverrides(
 	}
 
 	return manualOverrides;
+}
+
+function summarizeGuidedSpellDiffOverrides(
+	spellItems: CharacterSpellItem[],
+	existingCharacter?: ExistingCharacterProfile
+) {
+	if (!existingCharacter?.guidedOrigin) {
+		return [];
+	}
+
+	const baselineSpellSignature = createLinkedSpellSignature(existingCharacter.spellItems);
+	const currentSpellSignature = createLinkedSpellSignature(spellItems);
+
+	if (baselineSpellSignature === currentSpellSignature) {
+		return [];
+	}
+
+	return [createCharacterManualOverride('guided_spell_items')];
+}
+
+function createLinkedSpellSignature(spellItems: CharacterSpellItem[]) {
+	return spellItems
+		.filter((item) => item.spellId)
+		.map((item) => `${item.spellId}:${item.isPrepared ? 'prepared' : 'unprepared'}`)
+		.sort()
+		.join('|');
 }

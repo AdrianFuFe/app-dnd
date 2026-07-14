@@ -150,7 +150,7 @@ export const actions: Actions = {
 			);
 			const contentProfileResult = deriveManualCharacterContentProfile(
 				{
-				...parsed.data,
+					...parsed.data,
 					rulesetCode: existingCharacter.rulesetCode,
 					contentMode: existingCharacter.contentMode,
 					attackItems,

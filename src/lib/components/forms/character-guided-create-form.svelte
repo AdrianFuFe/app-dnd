@@ -42,6 +42,7 @@
 
 	let formValues = $state(createGuidedCharacterFormValues(createDefaultGuidedCharacterInput()));
 	let abilityChoices = $state<GuidedChoiceEntry[]>([]);
+	let spellChoices = $state<GuidedChoiceEntry[]>([]);
 	let languageChoices = $state<GuidedChoiceEntry[]>([]);
 	let proficiencyChoices = $state<GuidedChoiceEntry[]>([]);
 	let equipmentChoices = $state<GuidedChoiceEntry[]>([]);
@@ -49,6 +50,7 @@
 	$effect(() => {
 		formValues = { ...values };
 		abilityChoices = parseChoiceEntries(values.abilityChoices);
+		spellChoices = parseChoiceEntries(values.spellChoices);
 		languageChoices = parseChoiceEntries(values.languageChoices);
 		proficiencyChoices = parseChoiceEntries(values.proficiencyChoices);
 		equipmentChoices = parseChoiceEntries(values.equipmentChoices);
@@ -132,6 +134,7 @@
 
 	function resetChoiceEntries() {
 		abilityChoices = [];
+		spellChoices = [];
 		languageChoices = [];
 		proficiencyChoices = [];
 		equipmentChoices = [];
@@ -163,6 +166,7 @@
 				wisdom: Number(formValues.wisdom || '0'),
 				charisma: Number(formValues.charisma || '0'),
 				abilityChoices,
+				spellChoices,
 				languageChoices,
 				proficiencyChoices,
 				equipmentChoices
@@ -195,6 +199,7 @@
 				wisdom: Number(formValues.wisdom || '10'),
 				charisma: Number(formValues.charisma || '10'),
 				abilityChoices,
+				spellChoices,
 				languageChoices,
 				proficiencyChoices,
 				equipmentChoices
@@ -219,6 +224,16 @@
 			if (remaining > 0) {
 				lines.push(
 					`Choose ${remaining} more ${remaining === 1 ? 'ability bonus' : 'ability bonuses'} for ${choice.key}.`
+				);
+			}
+		}
+
+		for (const choice of choiceResolution.spellChoices) {
+			const remaining = choice.count - choice.selected.length;
+
+			if (remaining > 0) {
+				lines.push(
+					`Choose ${remaining} more ${remaining === 1 ? 'spell' : 'spells'} for ${choice.key}.`
 				);
 			}
 		}
@@ -262,13 +277,15 @@
 	}
 
 	function removeChoiceValue(
-		group: 'ability' | 'language' | 'proficiency' | 'equipment',
+		group: 'ability' | 'spell' | 'language' | 'proficiency' | 'equipment',
 		key: string,
 		value: string
 	) {
 		const source =
 			group === 'ability'
 				? abilityChoices
+				: group === 'spell'
+					? spellChoices
 				: group === 'language'
 				? languageChoices
 				: group === 'proficiency'
@@ -278,6 +295,8 @@
 
 		if (group === 'ability') {
 			abilityChoices = nextItems;
+		} else if (group === 'spell') {
+			spellChoices = nextItems;
 		} else if (group === 'language') {
 			languageChoices = nextItems;
 		} else if (group === 'proficiency') {
@@ -288,7 +307,7 @@
 	}
 
 	function toggleChoice(
-		group: 'ability' | 'language' | 'proficiency' | 'equipment',
+		group: 'ability' | 'spell' | 'language' | 'proficiency' | 'equipment',
 		key: string,
 		value: string,
 		maxCount: number,
@@ -297,6 +316,8 @@
 		const source =
 			group === 'ability'
 				? abilityChoices
+				: group === 'spell'
+					? spellChoices
 				: group === 'language'
 				? languageChoices
 				: group === 'proficiency'
@@ -312,6 +333,8 @@
 		if (isSelected) {
 			if (group === 'ability') {
 				abilityChoices = nextBase;
+			} else if (group === 'spell') {
+				spellChoices = nextBase;
 			} else if (group === 'language') {
 				languageChoices = nextBase;
 			} else if (group === 'proficiency') {
@@ -331,6 +354,8 @@
 
 		if (group === 'ability') {
 			abilityChoices = nextItems;
+		} else if (group === 'spell') {
+			spellChoices = nextItems;
 		} else if (group === 'language') {
 			languageChoices = nextItems;
 		} else if (group === 'proficiency') {
@@ -341,13 +366,15 @@
 	}
 
 	function isChoiceSelected(
-		group: 'ability' | 'language' | 'proficiency' | 'equipment',
+		group: 'ability' | 'spell' | 'language' | 'proficiency' | 'equipment',
 		key: string,
 		value: string
 	): boolean {
 		const source =
 			group === 'ability'
 				? abilityChoices
+				: group === 'spell'
+					? spellChoices
 				: group === 'language'
 				? languageChoices
 				: group === 'proficiency'
@@ -357,12 +384,16 @@
 	}
 
 	function guidedChoiceCardTestId(
-		group: 'ability' | 'language' | 'proficiency' | 'equipment',
+		group: 'ability' | 'spell' | 'language' | 'proficiency' | 'equipment',
 		key: string,
 		proficiencyType?: string
 	): string {
 		if (group === 'ability') {
 			return `guided-ability-choice-${key}`;
+		}
+
+		if (group === 'spell') {
+			return `guided-spell-choice-${key}`;
 		}
 
 		if (group === 'language') {
@@ -409,6 +440,10 @@
 			return allowed
 				? `Choose ${mechanic.count} ability score ${mechanic.count === 1 ? 'bonus' : 'bonuses'} (+${mechanic.value}) from ${allowed}`
 				: `Choose ${mechanic.count} ability score ${mechanic.count === 1 ? 'bonus' : 'bonuses'} (+${mechanic.value})`;
+		}
+
+		if (mechanic.type === 'choose_spell') {
+			return `Choose ${mechanic.count} ${mechanic.maxLevel === 0 ? 'cantrip' : `spell${mechanic.count === 1 ? '' : 's'}`} from ${humanizeGuidedChoiceValue(mechanic.classSlug)} (level ${mechanic.maxLevel} or lower)`;
 		}
 
 		if (mechanic.type === 'speed') {
@@ -564,6 +599,7 @@
 
 <form method="POST" action="?/guided" class="space-y-6">
 	<input type="hidden" name="abilityChoices" value={choiceEntriesFieldValue(abilityChoices)} />
+	<input type="hidden" name="spellChoices" value={choiceEntriesFieldValue(spellChoices)} />
 	<input type="hidden" name="languageChoices" value={choiceEntriesFieldValue(languageChoices)} />
 	<input
 		type="hidden"
@@ -896,7 +932,7 @@
 		</div>
 	</section>
 
-	{#if choiceResolution && (choiceResolution.abilityChoices.length || choiceResolution.languageChoices.length || choiceResolution.proficiencyChoices.length || choiceResolution.equipmentChoices.length)}
+	{#if choiceResolution && (choiceResolution.abilityChoices.length || choiceResolution.spellChoices.length || choiceResolution.languageChoices.length || choiceResolution.proficiencyChoices.length || choiceResolution.equipmentChoices.length)}
 		<section
 			class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm"
 			data-testid="guided-choices-section"
@@ -975,6 +1011,68 @@
 											class="rounded-full border border-amber-400 bg-white px-3 py-1 text-xs font-medium text-amber-900 transition hover:border-amber-500"
 											data-testid={`guided-invalid-choice-clear-${choice.key}-${invalidValue}`}
 											onclick={() => removeChoiceValue('ability', choice.key, invalidValue)}
+										>
+											Remove {humanizeGuidedChoiceValue(invalidValue)}
+										</button>
+									{/each}
+								</div>
+							</div>
+						{/if}
+					</div>
+				{/each}
+
+				{#each choiceResolution.spellChoices as choice (choice.key)}
+					<div
+						class="rounded-2xl border border-stone-200 bg-stone-50 p-4"
+						data-testid={guidedChoiceCardTestId('spell', choice.key)}
+					>
+						<div class="flex items-center justify-between gap-3">
+							<p class="text-sm font-semibold text-stone-900">
+								Required spell choice
+							</p>
+							<p class="text-xs uppercase tracking-[0.15em] text-stone-500">
+								{getGuidedChoiceValidSelectedValues(spellChoices, choice.key, choiceOptionSlugs(choice.options))
+									.length}/{choice.count} chosen
+							</p>
+						</div>
+						<p class="mt-2 text-sm text-stone-600">
+							Choose {choice.count} {choice.maxLevel === 0 ? (choice.count === 1 ? 'cantrip' : 'cantrips') : (choice.count === 1 ? 'spell' : 'spells')}
+							from {humanizeGuidedChoiceValue(choice.classSlug)} up to level {choice.maxLevel}.
+						</p>
+						<div class="mt-3 flex flex-wrap gap-2">
+							{#each choice.options as option (option.slug)}
+								<button
+									type="button"
+									data-testid={guidedChoiceOptionTestId(choice.key, option.slug)}
+									class="rounded-full border px-3 py-1 text-sm transition {isChoiceSelected('spell', choice.key, option.slug)
+										? 'border-emerald-300 bg-emerald-100 text-emerald-900'
+										: 'border-stone-300 bg-white text-stone-700 hover:border-stone-400'}"
+									onclick={() =>
+										toggleChoice(
+											'spell',
+											choice.key,
+											option.slug,
+											choice.count,
+											choiceOptionSlugs(choice.options)
+										)}
+								>
+									{option.name}
+								</button>
+							{/each}
+						</div>
+						{#if getGuidedChoiceInvalidSelectedValues(spellChoices, choice.key, choiceOptionSlugs(choice.options)).length > 0}
+							<div
+								class="mt-3 rounded-2xl border border-amber-300 bg-amber-100/70 px-3 py-3 text-sm text-amber-950"
+								data-testid={`guided-invalid-choice-${choice.key}`}
+							>
+								<p class="font-medium">Some submitted picks are no longer valid for this choice.</p>
+								<div class="mt-2 flex flex-wrap gap-2">
+									{#each getGuidedChoiceInvalidSelectedValues(spellChoices, choice.key, choiceOptionSlugs(choice.options)) as invalidValue (invalidValue)}
+										<button
+											type="button"
+											class="rounded-full border border-amber-400 bg-white px-3 py-1 text-xs font-medium text-amber-900 transition hover:border-amber-500"
+											data-testid={`guided-invalid-choice-clear-${choice.key}-${invalidValue}`}
+											onclick={() => removeChoiceValue('spell', choice.key, invalidValue)}
 										>
 											Remove {humanizeGuidedChoiceValue(invalidValue)}
 										</button>
@@ -1162,9 +1260,10 @@
 				{/each}
 			</div>
 
-			{#if firstError('abilityChoices') || firstError('languageChoices') || firstError('proficiencyChoices') || firstError('equipmentChoices')}
+			{#if firstError('abilityChoices') || firstError('spellChoices') || firstError('languageChoices') || firstError('proficiencyChoices') || firstError('equipmentChoices')}
 				<p class="mt-4 text-sm text-red-700">
 					{firstError('abilityChoices') ??
+						firstError('spellChoices') ??
 						firstError('languageChoices') ??
 						firstError('proficiencyChoices') ??
 						firstError('equipmentChoices')}

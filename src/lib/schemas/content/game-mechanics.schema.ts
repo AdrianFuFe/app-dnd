@@ -49,6 +49,13 @@ export const gameMechanicSchema = z.discriminatedUnion('type', [
 		type: z.literal('choose_language'),
 		count: positiveSelectionCountSchema
 	}),
+	z.object({
+		type: z.literal('choose_spell'),
+		count: positiveSelectionCountSchema,
+		classSlug: slugSchema,
+		maxLevel: z.number().int().min(0).max(9),
+		preparationMode: z.enum(['prepared', 'known']).optional()
+	}),
 	z
 		.object({
 			type: z.literal('proficiency'),

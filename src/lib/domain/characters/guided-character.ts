@@ -112,8 +112,19 @@ export type GuidedAbilityChoicePoint = {
 	value: number;
 };
 
+export type GuidedSpellChoicePoint = {
+	key: string;
+	count: number;
+	options: SpellCatalogEntry[];
+	selected: string[];
+	preparationMode: 'prepared' | 'known';
+	maxLevel: number;
+	classSlug: string;
+};
+
 export type GuidedChoiceResolution = {
 	abilityChoices: GuidedAbilityChoicePoint[];
+	spellChoices: GuidedSpellChoicePoint[];
 	languageChoices: GuidedLanguageChoicePoint[];
 	proficiencyChoices: GuidedProficiencyChoicePoint[];
 	equipmentChoices: GuidedEquipmentChoicePoint[];
@@ -190,7 +201,8 @@ export function deriveGuidedCharacterDraft(
 		{
 			classEquipment: characterClass.startingEquipment,
 			backgroundEquipment: background.startingEquipment,
-			equipmentCatalog: catalog.equipmentCatalog
+			equipmentCatalog: catalog.equipmentCatalog,
+			spellCatalog: catalog.spellCatalog
 		},
 		input,
 		true
@@ -225,6 +237,7 @@ export function deriveGuidedCharacterDraft(
 	const combatStats = derivedCombatStats;
 	const hitDice = `1d${characterClass.hitDie}`;
 	const grantedSpellItems = deriveGrantedSpellItems(
+		choiceResolution,
 		characterClass,
 		subclass,
 		catalog.spellCatalog
@@ -320,7 +333,8 @@ export function inspectGuidedCharacterChoices(
 		{
 			classEquipment: characterClass.startingEquipment,
 			backgroundEquipment: background.startingEquipment,
-			equipmentCatalog: catalog.equipmentCatalog
+			equipmentCatalog: catalog.equipmentCatalog,
+			spellCatalog: catalog.spellCatalog
 		},
 		input,
 		false
@@ -343,6 +357,7 @@ export function createDefaultGuidedCharacterInput(): CharacterGuidedInput {
 		wisdom: 10,
 		charisma: 10,
 		abilityChoices: [],
+		spellChoices: [],
 		languageChoices: [],
 		proficiencyChoices: [],
 		equipmentChoices: []
@@ -367,6 +382,7 @@ export function createGuidedCharacterFormValues(
 		wisdom: toFormString(source.wisdom),
 		charisma: toFormString(source.charisma),
 		abilityChoices: toStructuredFormString(source.abilityChoices),
+		spellChoices: toStructuredFormString(source.spellChoices),
 		languageChoices: toStructuredFormString(source.languageChoices),
 		proficiencyChoices: toStructuredFormString(source.proficiencyChoices),
 		equipmentChoices: toStructuredFormString(source.equipmentChoices)
@@ -497,39 +513,73 @@ function deriveSpeed(baseSpeed: number | null, mechanics: GameMechanic[]): numbe
 }
 
 function deriveGrantedSpellItems(
+	choiceResolution: GuidedChoiceResolution,
 	characterClass: GuidedCharacterClassOption,
 	subclass: GuidedCharacterSubclassOption | undefined,
 	spellCatalog: SpellCatalogEntry[]
 ): CharacterSpellItem[] {
-	const spellIds = new Set<string>();
+	const spellSelections = new Map<string, { spell: SpellCatalogEntry; isPrepared: boolean }>();
 
 	for (const mechanic of characterClass.mechanics) {
 		if (mechanic.type === 'spell_grant') {
-			addGrantedSpellIfAllowed(spellIds, mechanic.spellId, spellCatalog, GUIDED_CHARACTER_LEVEL);
+			addGrantedSpellIfAllowed(
+				spellSelections,
+				mechanic.spellId,
+				spellCatalog,
+				GUIDED_CHARACTER_LEVEL,
+				true
+			);
 		}
 	}
 
 	for (const mechanic of subclass?.mechanics ?? []) {
 		if (mechanic.type === 'spell_grant') {
-			addGrantedSpellIfAllowed(spellIds, mechanic.spellId, spellCatalog, GUIDED_CHARACTER_LEVEL);
+			addGrantedSpellIfAllowed(
+				spellSelections,
+				mechanic.spellId,
+				spellCatalog,
+				GUIDED_CHARACTER_LEVEL,
+				true
+			);
 		}
 	}
 
 	for (const group of subclass?.grantedSpellsByLevel ?? []) {
 		if (group.level <= GUIDED_CHARACTER_LEVEL) {
 			for (const spellSlug of group.spellSlugs) {
-				spellIds.add(spellSlug);
+				addGrantedSpellIfAllowed(
+					spellSelections,
+					spellSlug,
+					spellCatalog,
+					GUIDED_CHARACTER_LEVEL,
+					true
+				);
 			}
 		}
 	}
 
-	return [...spellIds]
-		.map((spellSlug) => spellCatalog.find((entry) => entry.slug === spellSlug))
-		.filter((entry): entry is SpellCatalogEntry => Boolean(entry))
+	for (const choice of choiceResolution.spellChoices) {
+		for (const selectedSlug of choice.selected) {
+			const spell = choice.options.find((entry) => entry.slug === selectedSlug);
+
+			if (spell) {
+				const existing = spellSelections.get(spell.slug);
+				spellSelections.set(spell.slug, {
+					spell,
+					isPrepared: existing?.isPrepared || choice.preparationMode === 'prepared'
+				});
+			}
+		}
+	}
+
+	return [...spellSelections.values()]
+		.map((entry) => entry)
 		.sort((left, right) =>
-			left.level === right.level ? left.name.localeCompare(right.name) : left.level - right.level
+			left.spell.level === right.spell.level
+				? left.spell.name.localeCompare(right.spell.name)
+				: left.spell.level - right.spell.level
 		)
-		.map((spell) => ({
+		.map(({ spell, isPrepared }) => ({
 			spellId: spell.id,
 			name: spell.name,
 			level: spell.level,
@@ -539,20 +589,21 @@ function deriveGrantedSpellItems(
 			components: spell.components ?? undefined,
 			duration: spell.duration ?? undefined,
 			description: spell.description ?? spell.summary ?? undefined,
-			isPrepared: true
+			isPrepared
 		}));
 }
 
 function addGrantedSpellIfAllowed(
-	spellIds: Set<string>,
+	spellSelections: Map<string, { spell: SpellCatalogEntry; isPrepared: boolean }>,
 	spellSlug: string,
 	spellCatalog: SpellCatalogEntry[],
-	maxSpellLevel: number
+	maxSpellLevel: number,
+	isPrepared: boolean
 ) {
 	const spell = spellCatalog.find((entry) => entry.slug === spellSlug);
 
 	if (spell && spell.level <= maxSpellLevel) {
-		spellIds.add(spellSlug);
+		spellSelections.set(spellSlug, { spell, isPrepared });
 	}
 }
 
@@ -563,11 +614,13 @@ function resolveChoiceSelections(
 		classEquipment: GuidedEquipmentEntry[];
 		backgroundEquipment: GuidedEquipmentEntry[];
 		equipmentCatalog: EquipmentCatalogEntry[];
+		spellCatalog: SpellCatalogEntry[];
 	},
 	input: CharacterGuidedInput,
 	strict: boolean
 ): GuidedChoiceResolution {
 	const abilityChoices: GuidedAbilityChoicePoint[] = [];
+	const spellChoices: GuidedSpellChoicePoint[] = [];
 	const languageChoices: GuidedLanguageChoicePoint[] = [];
 	const proficiencyChoices: GuidedProficiencyChoicePoint[] = [];
 	const equipmentChoices: GuidedEquipmentChoicePoint[] = [];
@@ -598,6 +651,38 @@ function resolveChoiceSelections(
 				options,
 				selected,
 				value: mechanic.value
+			});
+			continue;
+		}
+
+		if (mechanic.type === 'choose_spell') {
+			const key = `spell:${spellChoices.length}`;
+			const options = selectSpellChoiceOptions(
+				equipmentContext.spellCatalog,
+				mechanic.classSlug,
+				mechanic.maxLevel
+			);
+			const selected = input.spellChoices
+				.filter((choice) => choice.key === key)
+				.map((choice) => choice.value);
+
+			if (strict) {
+				validateSelectionCount(
+					selected,
+					mechanic.count,
+					'spell choice',
+					selected.every((value) => options.some((entry) => entry.slug === value))
+				);
+			}
+
+			spellChoices.push({
+				key,
+				count: mechanic.count,
+				options,
+				selected,
+				preparationMode: mechanic.preparationMode ?? 'prepared',
+				maxLevel: mechanic.maxLevel,
+				classSlug: mechanic.classSlug
 			});
 			continue;
 		}
@@ -684,6 +769,7 @@ function resolveChoiceSelections(
 
 	return {
 		abilityChoices,
+		spellChoices,
 		languageChoices,
 		proficiencyChoices,
 		equipmentChoices
@@ -829,6 +915,16 @@ function selectProficiencyVocabularyOptions(
 	return source.filter((entry) => allowedSlugs.includes(entry.slug));
 }
 
+function selectSpellChoiceOptions(
+	spellCatalog: SpellCatalogEntry[],
+	classSlug: string,
+	maxLevel: number
+) {
+	return spellCatalog.filter(
+		(entry) => entry.level <= maxLevel && entry.classSlugs.includes(classSlug)
+	);
+}
+
 function summarizeGrantedFeatureLines(mechanics: GameMechanic[]): string[] {
 	const lines: string[] = [];
 
@@ -895,6 +991,18 @@ function summarizeResolvedChoiceLines(
 		);
 	}
 
+	for (const choice of choiceResolution.spellChoices) {
+		if (choice.selected.length === 0) {
+			continue;
+		}
+
+		lines.push(
+			`Chosen spells: ${choice.selected
+				.map((slug) => choice.options.find((entry) => entry.slug === slug)?.name ?? humanizeToken(slug))
+				.join(', ')}`
+		);
+	}
+
 	for (const choice of choiceResolution.languageChoices) {
 		if (choice.selected.length === 0) {
 			continue;
@@ -942,6 +1050,16 @@ function summarizePendingChoiceLines(choiceResolution: GuidedChoiceResolution): 
 		if (remaining > 0) {
 			lines.push(
 				`Choose ${remaining} more ${remaining === 1 ? 'ability bonus' : 'ability bonuses'} for ${humanizeToken(choice.key)}.`
+			);
+		}
+	}
+
+	for (const choice of choiceResolution.spellChoices) {
+		const remaining = choice.count - choice.selected.length;
+
+		if (remaining > 0) {
+			lines.push(
+				`Choose ${remaining} more ${remaining === 1 ? 'spell' : 'spells'} for ${humanizeToken(choice.key)}.`
 			);
 		}
 	}

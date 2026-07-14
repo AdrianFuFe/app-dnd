@@ -612,6 +612,164 @@ describe('deriveGuidedCharacterDraft', () => {
 		});
 		expect(draft.preview.customizationReasonLines).toEqual([]);
 	});
+
+	it('derives chosen spell picks into spell items for guided cantrip choices', () => {
+		const spellChoiceCatalog: GuidedCharacterCatalog = {
+			...catalog,
+			subspeciesOptions: [
+				{
+					...catalog.subspeciesOptions[0],
+					mechanics: [
+						{ type: 'ability_bonus', ability: 'intelligence', value: 1 },
+						{
+							type: 'choose_spell',
+							count: 1,
+							classSlug: 'mago',
+							maxLevel: 0,
+							preparationMode: 'known'
+						},
+						{ type: 'choose_language', count: 1 }
+					]
+				}
+			],
+			spellCatalog: [
+				...catalog.spellCatalog,
+				{
+					id: 'spell-4',
+					slug: 'light',
+					name: 'Light',
+					level: 0,
+					school: 'evocation',
+					castingTime: '1 action',
+					range: 'Touch',
+					components: 'V, M',
+					duration: '1 hour',
+					classSlugs: ['mago'],
+					summary: 'Object shines with light.',
+					description: 'An object emits bright light.',
+					concentration: false,
+					ritual: false
+				},
+				{
+					id: 'spell-5',
+					slug: 'mage-hand',
+					name: 'Mage Hand',
+					level: 0,
+					school: 'conjuration',
+					castingTime: '1 action',
+					range: '30 feet',
+					components: 'V, S',
+					duration: '1 minute',
+					classSlugs: ['mago'],
+					summary: 'Spectral hand.',
+					description: 'A spectral hand appears.',
+					concentration: false,
+					ritual: false
+				}
+			]
+		};
+
+		const draft = deriveGuidedCharacterDraft(spellChoiceCatalog, {
+			...createDefaultGuidedCharacterInput(),
+			speciesId: 'species-1',
+			subspeciesId: 'subspecies-1',
+			classId: 'class-1',
+			subclassId: 'subclass-1',
+			backgroundId: 'background-1',
+			abilityChoices: [{ key: 'ability:0', value: 'intelligence' }],
+			spellChoices: [{ key: 'spell:0', value: 'light' }],
+			languageChoices: [
+				{ key: 'language:0', value: 'draconico' },
+				{ key: 'language:1', value: 'comun' },
+				{ key: 'language:1', value: 'gigante' }
+			],
+			proficiencyChoices: [
+				{ key: 'skill:0', value: 'history' },
+				{ key: 'skill:0', value: 'insight' }
+			],
+			equipmentChoices: [
+				{ key: 'equipment:0', value: 'mace' },
+				{ key: 'equipment:1', value: 'prayer-book' }
+			]
+		});
+
+		expect(draft.character.spellItems.map((entry) => entry.name)).toEqual([
+			'Light',
+			'Bless',
+			'Cure Wounds'
+		]);
+		expect(draft.character.spellItems.find((entry) => entry.name === 'Light')?.isPrepared).toBe(
+			false
+		);
+		expect(draft.preview.resolvedChoiceLines).toContain('Chosen spells: Light');
+	});
+
+	it('rejects invalid guided spell picks that do not belong to the required spell choice', () => {
+		const spellChoiceCatalog: GuidedCharacterCatalog = {
+			...catalog,
+			subspeciesOptions: [
+				{
+					...catalog.subspeciesOptions[0],
+					mechanics: [
+						{ type: 'ability_bonus', ability: 'intelligence', value: 1 },
+						{
+							type: 'choose_spell',
+							count: 1,
+							classSlug: 'mago',
+							maxLevel: 0,
+							preparationMode: 'known'
+						},
+						{ type: 'choose_language', count: 1 }
+					]
+				}
+			],
+			spellCatalog: [
+				...catalog.spellCatalog,
+				{
+					id: 'spell-4',
+					slug: 'light',
+					name: 'Light',
+					level: 0,
+					school: 'evocation',
+					castingTime: '1 action',
+					range: 'Touch',
+					components: 'V, M',
+					duration: '1 hour',
+					classSlugs: ['mago'],
+					summary: 'Object shines with light.',
+					description: 'An object emits bright light.',
+					concentration: false,
+					ritual: false
+				}
+			]
+		};
+
+		expect(() =>
+			deriveGuidedCharacterDraft(spellChoiceCatalog, {
+				...createDefaultGuidedCharacterInput(),
+				speciesId: 'species-1',
+				subspeciesId: 'subspecies-1',
+				classId: 'class-1',
+				subclassId: 'subclass-1',
+				backgroundId: 'background-1',
+				abilityChoices: [{ key: 'ability:0', value: 'intelligence' }],
+				spellChoices: [{ key: 'spell:0', value: 'bless' }],
+				languageChoices: [
+					{ key: 'language:0', value: 'draconico' },
+					{ key: 'language:1', value: 'comun' },
+					{ key: 'language:1', value: 'gigante' }
+				],
+				proficiencyChoices: [
+					{ key: 'skill:0', value: 'history' },
+					{ key: 'skill:0', value: 'insight' }
+				],
+				equipmentChoices: [
+					{ key: 'equipment:0', value: 'mace' },
+					{ key: 'equipment:1', value: 'prayer-book' }
+				]
+			})
+		).toThrow('Please choose only valid options for each spell choice.');
+	});
 });
 
 describe('guided choice recovery helpers', () => {

@@ -94,7 +94,18 @@ const baseInput: CharacterCreateInput = {
 	speed: 30,
 	hitDice: '1d8',
 	attackItems: [],
-	spellItems: [],
+	spellItems: [
+		{
+			spellId: 'spell-guided-1',
+			name: 'Mage Hand',
+			isPrepared: true
+		},
+		{
+			spellId: 'spell-guided-2',
+			name: 'Shield',
+			isPrepared: false
+		}
+	],
 	featItems: [],
 	inventoryItems: [],
 	noteItems: []
@@ -156,7 +167,8 @@ describe('deriveManualCharacterContentProfile', () => {
 				armorClass: 10,
 				initiative: 0,
 				speed: 30,
-				hitDice: '1d8'
+				hitDice: '1d8',
+				spellItems: baseInput.spellItems
 			}
 		});
 
@@ -183,6 +195,7 @@ describe('deriveManualCharacterContentProfile', () => {
 					initiative: 0,
 					speed: 30,
 					hitDice: '1d8',
+					spellItems: baseInput.spellItems,
 					guidedOrigin: true
 				}
 			}
@@ -209,11 +222,98 @@ describe('deriveManualCharacterContentProfile', () => {
 				initiative: 0,
 				speed: 30,
 				hitDice: '1d8',
+				spellItems: baseInput.spellItems,
 				guidedOrigin: true
 			}
 		});
 
 		expect(result.profile.contentMode).toBe('custom');
 		expect(result.reasonLines).toEqual(['Guided baseline diverged on an earlier manual edit']);
+	});
+
+	it('marks guided-origin drafts as custom when linked spell choices change', () => {
+		const result = deriveManualCharacterContentProfile(
+			{
+				...baseInput,
+				spellItems: [
+					{
+						spellId: 'spell-guided-1',
+						name: 'Mage Hand',
+						isPrepared: true
+					},
+					{
+						spellId: 'spell-guided-3',
+						name: 'Magic Missile',
+						isPrepared: false
+					}
+				]
+			},
+			{
+				guidedCatalog,
+				spellCatalog,
+				featCatalog,
+				existingCharacter: {
+					contentMode: 'canon',
+					maxHp: 8,
+					currentHp: 8,
+					temporaryHp: 0,
+					armorClass: 10,
+					initiative: 0,
+					speed: 30,
+					hitDice: '1d8',
+					spellItems: baseInput.spellItems,
+					guidedOrigin: true
+				}
+			}
+		);
+
+		expect(result.profile.contentMode).toBe('custom');
+		expect(result.reasonLines).toEqual([
+			'Guided baseline diverged after manual edits',
+			'Manual override: Guided Spell Items'
+		]);
+	});
+
+	it('marks guided-origin drafts as custom when linked spell preparation changes', () => {
+		const result = deriveManualCharacterContentProfile(
+			{
+				...baseInput,
+				spellItems: [
+					{
+						spellId: 'spell-guided-1',
+						name: 'Mage Hand',
+						isPrepared: false
+					},
+					{
+						spellId: 'spell-guided-2',
+						name: 'Shield',
+						isPrepared: false
+					}
+				]
+			},
+			{
+				guidedCatalog,
+				spellCatalog,
+				featCatalog,
+				existingCharacter: {
+					contentMode: 'canon',
+					maxHp: 8,
+					currentHp: 8,
+					temporaryHp: 0,
+					armorClass: 10,
+					initiative: 0,
+					speed: 30,
+					hitDice: '1d8',
+					spellItems: baseInput.spellItems,
+					guidedOrigin: true
+				}
+			}
+		);
+
+		expect(result.profile.contentMode).toBe('custom');
+		expect(result.reasonLines).toEqual([
+			'Guided baseline diverged after manual edits',
+			'Manual override: Guided Spell Items'
+		]);
 	});
 });

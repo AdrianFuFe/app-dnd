@@ -63,6 +63,7 @@ export const characterGuidedInputSchema = z.object({
 	wisdom: baseAbilityScoreSchema,
 	charisma: baseAbilityScoreSchema,
 	abilityChoices: guidedChoiceEntriesSchema.default([]),
+	spellChoices: guidedChoiceEntriesSchema.default([]),
 	languageChoices: guidedChoiceEntriesSchema.default([]),
 	proficiencyChoices: guidedChoiceEntriesSchema.default([]),
 	equipmentChoices: guidedChoiceEntriesSchema.default([])

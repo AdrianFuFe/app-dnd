@@ -184,6 +184,20 @@
 					]
 				},
 				{ "type": "spellcasting", "ability": "intelligence" },
+				{
+					"type": "choose_spell",
+					"count": 3,
+					"classSlug": "mago",
+					"maxLevel": 0,
+					"preparationMode": "known"
+				},
+				{
+					"type": "choose_spell",
+					"count": 6,
+					"classSlug": "mago",
+					"maxLevel": 1,
+					"preparationMode": "known"
+				},
 				{ "type": "feature", "featureId": "spellcasting" },
 				{ "type": "feature", "featureId": "arcane-recovery" },
 				{ "type": "feature", "featureId": "arcane-tradition" }
@@ -476,6 +490,13 @@
 					]
 				},
 				{ "type": "spellcasting", "ability": "charisma" },
+				{
+					"type": "choose_spell",
+					"count": 2,
+					"classSlug": "bardo",
+					"maxLevel": 0,
+					"preparationMode": "known"
+				},
 				{ "type": "feature", "featureId": "spellcasting" },
 				{ "type": "feature", "featureId": "bardic-inspiration" },
 				{ "type": "feature", "featureId": "jack-of-all-trades" },
@@ -538,6 +559,13 @@
 				},
 				{ "type": "language", "mode": "fixed", "language": "druidico" },
 				{ "type": "spellcasting", "ability": "wisdom" },
+				{
+					"type": "choose_spell",
+					"count": 2,
+					"classSlug": "druida",
+					"maxLevel": 0,
+					"preparationMode": "known"
+				},
 				{ "type": "feature", "featureId": "druidic" },
 				{ "type": "feature", "featureId": "spellcasting" },
 				{ "type": "feature", "featureId": "wild-shape" },
