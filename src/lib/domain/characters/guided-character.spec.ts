@@ -24,7 +24,9 @@ const catalog: GuidedCharacterCatalog = {
 				{ type: 'ability_bonus', ability: 'dexterity', value: 2 },
 				{ type: 'language', mode: 'fixed', language: 'comun' },
 				{ type: 'language', mode: 'fixed', language: 'elfico' },
-				{ type: 'proficiency', proficiencyType: 'skill', value: 'perception' }
+				{ type: 'proficiency', proficiencyType: 'skill', value: 'perception' },
+				{ type: 'darkvision', range: 60 },
+				{ type: 'resistance', damageType: 'poison' }
 			]
 		}
 	],
@@ -39,6 +41,12 @@ const catalog: GuidedCharacterCatalog = {
 			contentMode: 'canon',
 			mechanics: [
 				{ type: 'ability_bonus', ability: 'intelligence', value: 1 },
+				{
+					type: 'choose_ability_bonus',
+					count: 1,
+					value: 1,
+					allowed: ['intelligence', 'wisdom']
+				},
 				{ type: 'choose_language', count: 1 }
 			]
 		}
@@ -59,6 +67,7 @@ const catalog: GuidedCharacterCatalog = {
 			mechanics: [
 				{ type: 'proficiency', proficiencyType: 'saving_throw', value: 'wisdom' },
 				{ type: 'proficiency', proficiencyType: 'saving_throw', value: 'charisma' },
+				{ type: 'spellcasting', ability: 'wisdom' },
 				{
 					type: 'choose_proficiency',
 					proficiencyType: 'skill',
@@ -80,7 +89,9 @@ const catalog: GuidedCharacterCatalog = {
 			startsAtLevel: 1,
 			mechanics: [
 				{ type: 'proficiency', proficiencyType: 'armor', value: 'heavy-armor' },
-				{ type: 'spell_grant', spellId: 'revivify' }
+				{ type: 'spell_grant', spellId: 'revivify' },
+				{ type: 'feature', featureId: 'disciple-of-life' },
+				{ type: 'note', text: 'Gain heavy armor training.' }
 			],
 			grantedSpellsByLevel: [
 				{ level: 1, spellSlugs: ['bless', 'cure-wounds'] },
@@ -102,6 +113,7 @@ const catalog: GuidedCharacterCatalog = {
 			],
 			mechanics: [
 				{ type: 'proficiency', proficiencyType: 'skill', value: 'arcana' },
+				{ type: 'resource', name: 'Research lead', maxFormula: '1', resetOn: 'long_rest' },
 				{ type: 'choose_language', count: 2 }
 			]
 		}
@@ -255,7 +267,14 @@ const catalog: GuidedCharacterCatalog = {
 		}
 	],
 	vocabularies: {
-		abilities: [],
+		abilities: [
+			{ slug: 'strength', name: 'Strength' },
+			{ slug: 'dexterity', name: 'Dexterity' },
+			{ slug: 'constitution', name: 'Constitution' },
+			{ slug: 'intelligence', name: 'Intelligence' },
+			{ slug: 'wisdom', name: 'Wisdom' },
+			{ slug: 'charisma', name: 'Charisma' }
+		],
 		languages: [
 			{ slug: 'comun', name: 'Comun' },
 			{ slug: 'elfico', name: 'Elfico' },
@@ -287,6 +306,7 @@ describe('deriveGuidedCharacterDraft', () => {
 			backgroundId: 'background-1',
 			constitution: 14,
 			dexterity: 12,
+			abilityChoices: [{ key: 'ability:0', value: 'intelligence' }],
 			languageChoices: [
 				{ key: 'language:0', value: 'draconico' },
 				{ key: 'language:1', value: 'comun' },
@@ -311,7 +331,7 @@ describe('deriveGuidedCharacterDraft', () => {
 		expect(draft.character.className).toBe('Cleric');
 		expect(draft.character.background).toBe('Sage');
 		expect(draft.character.dexterity).toBe(14);
-		expect(draft.character.intelligence).toBe(11);
+		expect(draft.character.intelligence).toBe(12);
 		expect(draft.character.maxHp).toBe(10);
 		expect(draft.character.currentHp).toBe(10);
 		expect(draft.character.armorClass).toBe(12);
@@ -322,6 +342,7 @@ describe('deriveGuidedCharacterDraft', () => {
 			'Cure Wounds'
 		]);
 		expect(draft.preview.resolvedChoiceLines).toEqual([
+			'Chosen ability bonuses: Intelligence (+1)',
 			'Chosen languages: Draconico',
 			'Chosen languages: Comun, Gigante',
 			'Chosen Skill proficiencies: History, Insight',
@@ -354,12 +375,12 @@ describe('deriveGuidedCharacterDraft', () => {
 			{
 				title: 'Guided build grants',
 				content:
-					'Language: Comun\nLanguage: Elfico\nSkill proficiency: Perception\nSaving Throw proficiency: Wisdom\nSaving Throw proficiency: Charisma\nArmor proficiency: Heavy Armor\nSkill proficiency: Arcana'
+					'Language: Comun\nLanguage: Elfico\nSkill proficiency: Perception\nDarkvision: 60 ft.\nResistance: Poison\nSaving Throw proficiency: Wisdom\nSaving Throw proficiency: Charisma\nSpellcasting ability: Wisdom\nArmor proficiency: Heavy Armor\nFeature: Disciple Of Life\nNote: Gain heavy armor training.\nSkill proficiency: Arcana\nResource: Research lead (1, Long Rest)'
 			},
 			{
 				title: 'Guided build choices',
 				content:
-					'Chosen languages: Draconico\nChosen languages: Comun, Gigante\nChosen Skill proficiencies: History, Insight\nChosen equipment: Mace\nChosen equipment: Prayer Book'
+					'Chosen ability bonuses: Intelligence (+1)\nChosen languages: Draconico\nChosen languages: Comun, Gigante\nChosen Skill proficiencies: History, Insight\nChosen equipment: Mace\nChosen equipment: Prayer Book'
 			}
 		]);
 	});
@@ -373,6 +394,7 @@ describe('deriveGuidedCharacterDraft', () => {
 				classId: 'class-1',
 				subclassId: 'subclass-1',
 				backgroundId: 'background-1',
+				abilityChoices: [{ key: 'ability:0', value: 'intelligence' }],
 				languageChoices: [{ key: 'language:0', value: 'draconico' }],
 				proficiencyChoices: [
 					{ key: 'skill:0', value: 'history' },
@@ -395,6 +417,10 @@ describe('deriveGuidedCharacterDraft', () => {
 				classId: 'class-1',
 				subclassId: 'subclass-1',
 				backgroundId: 'background-1',
+				abilityChoices: [
+					{ key: 'ability:0', value: 'intelligence' },
+					{ key: 'ability:0', value: 'intelligence' }
+				],
 				languageChoices: [
 					{ key: 'language:0', value: 'draconico' },
 					{ key: 'language:1', value: 'comun' },
@@ -409,7 +435,7 @@ describe('deriveGuidedCharacterDraft', () => {
 					{ key: 'equipment:1', value: 'prayer-book' }
 				]
 			})
-		).toThrow('Please avoid duplicate picks in each language choice.');
+		).toThrow('Please avoid duplicate picks in each ability bonus choice.');
 	});
 
 	it('rejects guided picks that exceed the allowed number of choices', () => {
@@ -421,6 +447,10 @@ describe('deriveGuidedCharacterDraft', () => {
 				classId: 'class-1',
 				subclassId: 'subclass-1',
 				backgroundId: 'background-1',
+				abilityChoices: [
+					{ key: 'ability:0', value: 'intelligence' },
+					{ key: 'ability:0', value: 'wisdom' }
+				],
 				languageChoices: [
 					{ key: 'language:0', value: 'draconico' },
 					{ key: 'language:0', value: 'gigante' },
@@ -436,7 +466,7 @@ describe('deriveGuidedCharacterDraft', () => {
 					{ key: 'equipment:1', value: 'prayer-book' }
 				]
 			})
-		).toThrow('Please keep each language choice within the allowed number of picks.');
+		).toThrow('Please keep each ability bonus choice within the allowed number of picks.');
 	});
 
 	it('rejects dependent selections that do not match', () => {
@@ -448,6 +478,7 @@ describe('deriveGuidedCharacterDraft', () => {
 				classId: 'class-1',
 				subclassId: 'subclass-1',
 				backgroundId: 'background-1',
+				abilityChoices: [{ key: 'ability:0', value: 'wisdom' }],
 				languageChoices: [
 					{ key: 'language:0', value: 'draconico' },
 					{ key: 'language:1', value: 'comun' },
@@ -481,6 +512,25 @@ describe('deriveGuidedCharacterDraft', () => {
 		).toThrow('Please choose a valid subspecies for the selected species.');
 	});
 
+	it('rejects subclasses that do not start at level 1', () => {
+		expect(() =>
+			deriveGuidedCharacterDraft(
+				{
+					...catalog,
+					subclassOptions: [{ ...catalog.subclassOptions[0], startsAtLevel: 3 }]
+				},
+				{
+					...createDefaultGuidedCharacterInput(),
+					speciesId: 'species-1',
+					subspeciesId: 'subspecies-1',
+					classId: 'class-1',
+					subclassId: 'subclass-1',
+					backgroundId: 'background-1'
+				}
+			)
+		).toThrow('Please choose a subclass that is available at level 1.');
+	});
+
 	it('marks the character as custom when a linked guided entity is custom for the same ruleset', () => {
 		const draft = deriveGuidedCharacterDraft(
 			{
@@ -494,6 +544,7 @@ describe('deriveGuidedCharacterDraft', () => {
 				classId: 'class-1',
 				subclassId: 'subclass-1',
 				backgroundId: 'background-1',
+				abilityChoices: [{ key: 'ability:0', value: 'intelligence' }],
 				languageChoices: [
 					{ key: 'language:0', value: 'draconico' },
 					{ key: 'language:1', value: 'comun' },
@@ -526,6 +577,7 @@ describe('deriveGuidedCharacterDraft', () => {
 			classId: 'class-1',
 			subclassId: 'subclass-1',
 			backgroundId: 'background-1',
+			abilityChoices: [{ key: 'ability:0', value: 'intelligence' }],
 			constitution: 14,
 			dexterity: 12,
 			languageChoices: [

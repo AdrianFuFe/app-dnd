@@ -104,7 +104,16 @@ export type GuidedProficiencyChoicePoint = {
 	selected: string[];
 };
 
+export type GuidedAbilityChoicePoint = {
+	key: string;
+	count: number;
+	options: RulesVocabularyEntry[];
+	selected: string[];
+	value: number;
+};
+
 export type GuidedChoiceResolution = {
+	abilityChoices: GuidedAbilityChoicePoint[];
 	languageChoices: GuidedLanguageChoicePoint[];
 	proficiencyChoices: GuidedProficiencyChoicePoint[];
 	equipmentChoices: GuidedEquipmentChoicePoint[];
@@ -175,8 +184,19 @@ export function deriveGuidedCharacterDraft(
 		wisdom: input.wisdom,
 		charisma: input.charisma
 	};
+	const choiceResolution = resolveChoiceSelections(
+		selectedMechanics,
+		catalog.vocabularies,
+		{
+			classEquipment: characterClass.startingEquipment,
+			backgroundEquipment: background.startingEquipment,
+			equipmentCatalog: catalog.equipmentCatalog
+		},
+		input,
+		true
+	);
 
-	const abilityBonuses = summarizeAbilityBonuses(selectedMechanics);
+	const abilityBonuses = summarizeAbilityBonuses(selectedMechanics, choiceResolution);
 	const abilityScores = applyAbilityBonuses(baseAbilityScores, abilityBonuses);
 	const dexterityModifier = calculateAbilityModifier(abilityScores.dexterity);
 	const constitutionModifier = calculateAbilityModifier(abilityScores.constitution);
@@ -208,17 +228,6 @@ export function deriveGuidedCharacterDraft(
 		characterClass,
 		subclass,
 		catalog.spellCatalog
-	);
-	const choiceResolution = resolveChoiceSelections(
-		selectedMechanics,
-		catalog.vocabularies,
-		{
-			classEquipment: characterClass.startingEquipment,
-			backgroundEquipment: background.startingEquipment,
-			equipmentCatalog: catalog.equipmentCatalog
-		},
-		input,
-		true
 	);
 	const grantedFeatureLines = summarizeGrantedFeatureLines(selectedMechanics);
 	const resolvedChoiceLines = summarizeResolvedChoiceLines(
@@ -333,6 +342,7 @@ export function createDefaultGuidedCharacterInput(): CharacterGuidedInput {
 		intelligence: 10,
 		wisdom: 10,
 		charisma: 10,
+		abilityChoices: [],
 		languageChoices: [],
 		proficiencyChoices: [],
 		equipmentChoices: []
@@ -356,6 +366,7 @@ export function createGuidedCharacterFormValues(
 		intelligence: toFormString(source.intelligence),
 		wisdom: toFormString(source.wisdom),
 		charisma: toFormString(source.charisma),
+		abilityChoices: toStructuredFormString(source.abilityChoices),
 		languageChoices: toStructuredFormString(source.languageChoices),
 		proficiencyChoices: toStructuredFormString(source.proficiencyChoices),
 		equipmentChoices: toStructuredFormString(source.equipmentChoices)
@@ -425,18 +436,32 @@ function findOptionalOption<T extends { id: string }>(
 	return option;
 }
 
-function summarizeAbilityBonuses(mechanics: GameMechanic[]) {
+function summarizeAbilityBonuses(
+	mechanics: GameMechanic[],
+	choiceResolution?: GuidedChoiceResolution
+) {
 	const abilityBonuses: Array<{ ability: Ability; value: number }> = [];
 
 	for (const mechanic of mechanics) {
-		if (mechanic.type !== 'ability_bonus') {
-			continue;
+		if (mechanic.type === 'ability_bonus') {
+			abilityBonuses.push({
+				ability: mechanic.ability,
+				value: mechanic.value
+			});
 		}
+	}
 
-		abilityBonuses.push({
-			ability: mechanic.ability,
-			value: mechanic.value
-		});
+	for (const choice of choiceResolution?.abilityChoices ?? []) {
+		for (const selectedAbility of choice.selected) {
+			if (!isAbility(selectedAbility)) {
+				continue;
+			}
+
+			abilityBonuses.push({
+				ability: selectedAbility,
+				value: choice.value
+			});
+		}
 	}
 
 	return abilityBonuses;
@@ -542,11 +567,41 @@ function resolveChoiceSelections(
 	input: CharacterGuidedInput,
 	strict: boolean
 ): GuidedChoiceResolution {
+	const abilityChoices: GuidedAbilityChoicePoint[] = [];
 	const languageChoices: GuidedLanguageChoicePoint[] = [];
 	const proficiencyChoices: GuidedProficiencyChoicePoint[] = [];
 	const equipmentChoices: GuidedEquipmentChoicePoint[] = [];
 
 	for (const mechanic of mechanics) {
+		if (mechanic.type === 'choose_ability_bonus') {
+			const key = `ability:${abilityChoices.length}`;
+			const options =
+				mechanic.allowed && mechanic.allowed.length > 0
+					? vocabularies.abilities.filter((entry) => mechanic.allowed?.includes(entry.slug as Ability))
+					: vocabularies.abilities;
+			const selected = input.abilityChoices
+				.filter((choice) => choice.key === key)
+				.map((choice) => choice.value);
+
+			if (strict) {
+				validateSelectionCount(
+					selected,
+					mechanic.count,
+					'ability bonus choice',
+					selected.every((value) => options.some((entry) => entry.slug === value))
+				);
+			}
+
+			abilityChoices.push({
+				key,
+				count: mechanic.count,
+				options,
+				selected,
+				value: mechanic.value
+			});
+			continue;
+		}
+
 		if (mechanic.type === 'choose_language') {
 			const key = `language:${languageChoices.length}`;
 			const selected = input.languageChoices.filter((choice) => choice.key === key).map((choice) => choice.value);
@@ -628,6 +683,7 @@ function resolveChoiceSelections(
 	}
 
 	return {
+		abilityChoices,
 		languageChoices,
 		proficiencyChoices,
 		equipmentChoices
@@ -655,6 +711,16 @@ function resolveGuidedSelections(catalog: GuidedCharacterCatalog, input: Charact
 
 	if (subclass && subclass.classSlug !== characterClass.slug) {
 		throw new Error('Please choose a valid subclass for the selected class.');
+	}
+
+	if (
+		subclass &&
+		typeof subclass.startsAtLevel === 'number' &&
+		subclass.startsAtLevel > GUIDED_CHARACTER_LEVEL
+	) {
+		throw new Error(
+			`Please choose a subclass that is available at level ${GUIDED_CHARACTER_LEVEL}.`
+		);
 	}
 
 	return {
@@ -767,24 +833,50 @@ function summarizeGrantedFeatureLines(mechanics: GameMechanic[]): string[] {
 	const lines: string[] = [];
 
 	for (const mechanic of mechanics) {
-		if (
-			mechanic.type === 'language' &&
-			!lines.includes(`Language: ${humanizeToken(mechanic.language)}`)
-		) {
-			lines.push(`Language: ${humanizeToken(mechanic.language)}`);
-			continue;
-		}
+		const line = summarizeGrantedFeatureLine(mechanic);
 
-		if (mechanic.type === 'proficiency') {
-			const line = `${humanizeToken(mechanic.proficiencyType)} proficiency: ${humanizeToken(mechanic.value)}`;
-
-			if (!lines.includes(line)) {
-				lines.push(line);
-			}
+		if (line && !lines.includes(line)) {
+			lines.push(line);
 		}
 	}
 
 	return lines;
+}
+
+function summarizeGrantedFeatureLine(mechanic: GameMechanic): string | null {
+	if (mechanic.type === 'language') {
+		return `Language: ${humanizeToken(mechanic.language)}`;
+	}
+
+	if (mechanic.type === 'proficiency') {
+		return `${humanizeToken(mechanic.proficiencyType)} proficiency: ${humanizeToken(mechanic.value)}`;
+	}
+
+	if (mechanic.type === 'darkvision') {
+		return `Darkvision: ${mechanic.range} ft.`;
+	}
+
+	if (mechanic.type === 'resistance') {
+		return `Resistance: ${humanizeToken(mechanic.damageType)}`;
+	}
+
+	if (mechanic.type === 'spellcasting') {
+		return `Spellcasting ability: ${humanizeToken(mechanic.ability)}`;
+	}
+
+	if (mechanic.type === 'feature') {
+		return `Feature: ${humanizeToken(mechanic.featureId)}`;
+	}
+
+	if (mechanic.type === 'resource') {
+		return `Resource: ${mechanic.name} (${mechanic.maxFormula}, ${humanizeToken(mechanic.resetOn)})`;
+	}
+
+	if (mechanic.type === 'note') {
+		return `Note: ${mechanic.text}`;
+	}
+
+	return null;
 }
 
 function summarizeResolvedChoiceLines(
@@ -792,6 +884,16 @@ function summarizeResolvedChoiceLines(
 	equipmentCatalog: EquipmentCatalogEntry[]
 ): string[] {
 	const lines: string[] = [];
+
+	for (const choice of choiceResolution.abilityChoices) {
+		if (choice.selected.length === 0) {
+			continue;
+		}
+
+		lines.push(
+			`Chosen ability bonuses: ${choice.selected.map(humanizeToken).join(', ')} (+${choice.value})`
+		);
+	}
 
 	for (const choice of choiceResolution.languageChoices) {
 		if (choice.selected.length === 0) {
@@ -833,6 +935,16 @@ function summarizeResolvedChoiceLines(
 
 function summarizePendingChoiceLines(choiceResolution: GuidedChoiceResolution): string[] {
 	const lines: string[] = [];
+
+	for (const choice of choiceResolution.abilityChoices) {
+		const remaining = choice.count - choice.selected.length;
+
+		if (remaining > 0) {
+			lines.push(
+				`Choose ${remaining} more ${remaining === 1 ? 'ability bonus' : 'ability bonuses'} for ${humanizeToken(choice.key)}.`
+			);
+		}
+	}
 
 	for (const choice of choiceResolution.languageChoices) {
 		const remaining = choice.count - choice.selected.length;
@@ -894,6 +1006,17 @@ function createGuidedNoteItems(
 	}
 
 	return noteItems;
+}
+
+function isAbility(value: string): value is Ability {
+	return (
+		value === 'strength' ||
+		value === 'dexterity' ||
+		value === 'constitution' ||
+		value === 'intelligence' ||
+		value === 'wisdom' ||
+		value === 'charisma'
+	);
 }
 
 function deriveInventoryItems(

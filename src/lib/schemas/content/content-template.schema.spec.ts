@@ -79,7 +79,7 @@ describe('content templates', () => {
 		const elf = expectItemBySlug(parsed.items, 'elfo');
 		const human = expectItemBySlug(parsed.items, 'humano');
 
-		expect(parsed.items).toHaveLength(2);
+		expect(parsed.items).toHaveLength(4);
 		expect(elf.languages[0]).toEqual({ type: 'fixed', language: 'comun' });
 		expect(elf.subspeciesSlugs).toEqual(['high-elf', 'wood-elf']);
 		expect(human.mechanics).toContainEqual({ type: 'choose_language', count: 1 });
@@ -92,7 +92,7 @@ describe('content templates', () => {
 		const highElf = expectItemBySlug(parsed.items, 'high-elf');
 		const woodElf = expectItemBySlug(parsed.items, 'wood-elf');
 
-		expect(parsed.items).toHaveLength(2);
+		expect(parsed.items).toHaveLength(6);
 		expect(highElf.speciesSlug).toBe('elfo');
 		expect(woodElf.speciesSlug).toBe('elfo');
 	});
@@ -105,7 +105,7 @@ describe('content templates', () => {
 		const cleric = expectItemBySlug(parsed.items, 'clerigo');
 		const wizard = expectItemBySlug(parsed.items, 'mago');
 
-		expect(parsed.items).toHaveLength(3);
+		expect(parsed.items).toHaveLength(8);
 		expect(fighter.startingEquipment[0]).toEqual({ type: 'item', id: 'chain-mail' });
 		expect(cleric.spellcastingAbility).toBe('wisdom');
 		expect(cleric.mechanics).toContainEqual({
@@ -123,7 +123,7 @@ describe('content templates', () => {
 		const acolyte = expectItemBySlug(parsed.items, 'acolyte');
 		const soldier = expectItemBySlug(parsed.items, 'soldier');
 
-		expect(parsed.items).toHaveLength(2);
+		expect(parsed.items).toHaveLength(4);
 		expect(acolyte.languages[0]).toEqual({ type: 'choice', count: 2, scope: 'any' });
 		expect(acolyte.equipment[0]).toEqual({ type: 'item', id: 'holy-symbol' });
 		expect(soldier.toolProficiencies).toContain('vehicles-land');
@@ -140,7 +140,7 @@ describe('content templates', () => {
 		const scrying = expectItemBySlug(parsed.items, 'scrying');
 		const raiseDead = expectItemBySlug(parsed.items, 'raise-dead');
 
-		expect(parsed.items).toHaveLength(31);
+		expect(parsed.items).toHaveLength(71);
 		expect(command.classSlugs).toContain('clerigo');
 		expect(identify.classSlugs).toContain('mago');
 		expect(bless.classSlugs).toContain('clerigo');
@@ -179,7 +179,7 @@ describe('content templates', () => {
 		const anySimpleWeapon = expectItemBySlug(parsed.items, 'any-simple-weapon');
 		const greataxe = expectItemBySlug(parsed.items, 'greataxe');
 
-		expect(parsed.items).toHaveLength(33);
+		expect(parsed.items).toHaveLength(54);
 		expect(anySimpleWeapon.category).toBe('choice-bundle');
 		expect(greataxe.damageType).toBe('slashing');
 	});
@@ -193,7 +193,7 @@ describe('content templates', () => {
 		const schoolOfEvocation = expectItemBySlug(parsed.items, 'school-of-evocation');
 		const champion = expectItemBySlug(parsed.items, 'champion');
 
-		expect(parsed.items).toHaveLength(4);
+		expect(parsed.items).toHaveLength(9);
 		expect(knowledgeDomain.grantedSpellsByLevel[0]?.spellSlugs).toEqual([
 			'command',
 			'identify'

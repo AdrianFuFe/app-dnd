@@ -185,6 +185,42 @@ describe('guided character create flow with E2E mock', () => {
 			}
 		});
 	});
+
+	it('returns a guided form error when the submitted subclass is not available at level 1', async () => {
+		resetE2EMockState();
+
+		const supabase = createE2EMockSupabaseClient();
+		const session = getE2EMockSession();
+		const catalog = await listGuidedCharacterCatalog(supabase);
+		const fighterClassId = catalog.classOptions.find((entry) => entry.slug === 'guerrero')?.id;
+		const subclassId = catalog.subclassOptions.find(
+			(entry) => entry.classSlug === 'guerrero' && entry.startsAtLevel === 3
+		)?.id;
+
+		if (!fighterClassId || !subclassId) {
+			return;
+		}
+
+		const result = await createActions.guided?.({
+			locals: { session, supabase },
+			request: createGuidedRequest(catalog, {
+				classId: fighterClassId,
+				subclassId
+			})
+		} as never);
+
+		expect(result).toMatchObject({
+			status: 400,
+			data: {
+				guidedFormError: 'Please choose a subclass that is available at level 1.',
+				guidedFieldErrors: {},
+				guidedValues: expect.objectContaining({
+					name: 'Seren Dawnwatch',
+					subclassId
+				})
+			}
+		});
+	});
 });
 
 function createGuidedRequest(

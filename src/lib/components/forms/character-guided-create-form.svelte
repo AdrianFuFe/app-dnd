@@ -41,12 +41,14 @@
 	] as const;
 
 	let formValues = $state(createGuidedCharacterFormValues(createDefaultGuidedCharacterInput()));
+	let abilityChoices = $state<GuidedChoiceEntry[]>([]);
 	let languageChoices = $state<GuidedChoiceEntry[]>([]);
 	let proficiencyChoices = $state<GuidedChoiceEntry[]>([]);
 	let equipmentChoices = $state<GuidedChoiceEntry[]>([]);
 
 	$effect(() => {
 		formValues = { ...values };
+		abilityChoices = parseChoiceEntries(values.abilityChoices);
 		languageChoices = parseChoiceEntries(values.languageChoices);
 		proficiencyChoices = parseChoiceEntries(values.proficiencyChoices);
 		equipmentChoices = parseChoiceEntries(values.equipmentChoices);
@@ -129,6 +131,7 @@
 	}
 
 	function resetChoiceEntries() {
+		abilityChoices = [];
 		languageChoices = [];
 		proficiencyChoices = [];
 		equipmentChoices = [];
@@ -159,6 +162,7 @@
 				intelligence: Number(formValues.intelligence || '0'),
 				wisdom: Number(formValues.wisdom || '0'),
 				charisma: Number(formValues.charisma || '0'),
+				abilityChoices,
 				languageChoices,
 				proficiencyChoices,
 				equipmentChoices
@@ -190,6 +194,7 @@
 				intelligence: Number(formValues.intelligence || '10'),
 				wisdom: Number(formValues.wisdom || '10'),
 				charisma: Number(formValues.charisma || '10'),
+				abilityChoices,
 				languageChoices,
 				proficiencyChoices,
 				equipmentChoices
@@ -207,6 +212,16 @@
 		}
 
 		const lines: string[] = [];
+
+		for (const choice of choiceResolution.abilityChoices) {
+			const remaining = choice.count - choice.selected.length;
+
+			if (remaining > 0) {
+				lines.push(
+					`Choose ${remaining} more ${remaining === 1 ? 'ability bonus' : 'ability bonuses'} for ${choice.key}.`
+				);
+			}
+		}
 
 		for (const choice of choiceResolution.languageChoices) {
 			const remaining = choice.count - choice.selected.length;
@@ -247,19 +262,23 @@
 	}
 
 	function removeChoiceValue(
-		group: 'language' | 'proficiency' | 'equipment',
+		group: 'ability' | 'language' | 'proficiency' | 'equipment',
 		key: string,
 		value: string
 	) {
 		const source =
-			group === 'language'
+			group === 'ability'
+				? abilityChoices
+				: group === 'language'
 				? languageChoices
 				: group === 'proficiency'
 					? proficiencyChoices
 					: equipmentChoices;
 		const nextItems = source.filter((entry) => !(entry.key === key && entry.value === value));
 
-		if (group === 'language') {
+		if (group === 'ability') {
+			abilityChoices = nextItems;
+		} else if (group === 'language') {
 			languageChoices = nextItems;
 		} else if (group === 'proficiency') {
 			proficiencyChoices = nextItems;
@@ -269,14 +288,16 @@
 	}
 
 	function toggleChoice(
-		group: 'language' | 'proficiency' | 'equipment',
+		group: 'ability' | 'language' | 'proficiency' | 'equipment',
 		key: string,
 		value: string,
 		maxCount: number,
 		allowedValues: string[]
 	) {
 		const source =
-			group === 'language'
+			group === 'ability'
+				? abilityChoices
+				: group === 'language'
 				? languageChoices
 				: group === 'proficiency'
 					? proficiencyChoices
@@ -289,7 +310,9 @@
 		);
 
 		if (isSelected) {
-			if (group === 'language') {
+			if (group === 'ability') {
+				abilityChoices = nextBase;
+			} else if (group === 'language') {
 				languageChoices = nextBase;
 			} else if (group === 'proficiency') {
 				proficiencyChoices = nextBase;
@@ -306,7 +329,9 @@
 
 		const nextItems = [...nextBase, { key, value }];
 
-		if (group === 'language') {
+		if (group === 'ability') {
+			abilityChoices = nextItems;
+		} else if (group === 'language') {
 			languageChoices = nextItems;
 		} else if (group === 'proficiency') {
 			proficiencyChoices = nextItems;
@@ -316,12 +341,14 @@
 	}
 
 	function isChoiceSelected(
-		group: 'language' | 'proficiency' | 'equipment',
+		group: 'ability' | 'language' | 'proficiency' | 'equipment',
 		key: string,
 		value: string
 	): boolean {
 		const source =
-			group === 'language'
+			group === 'ability'
+				? abilityChoices
+				: group === 'language'
 				? languageChoices
 				: group === 'proficiency'
 					? proficiencyChoices
@@ -330,10 +357,14 @@
 	}
 
 	function guidedChoiceCardTestId(
-		group: 'language' | 'proficiency' | 'equipment',
+		group: 'ability' | 'language' | 'proficiency' | 'equipment',
 		key: string,
 		proficiencyType?: string
 	): string {
+		if (group === 'ability') {
+			return `guided-ability-choice-${key}`;
+		}
+
 		if (group === 'language') {
 			return `guided-language-choice-${key}`;
 		}
@@ -497,6 +528,7 @@
 
 		for (const mechanic of selectedGuidedMechanics()) {
 			if (
+				mechanic.type !== 'ability_bonus' &&
 				mechanic.type !== 'language' &&
 				mechanic.type !== 'proficiency' &&
 				mechanic.type !== 'spell_grant'
@@ -531,6 +563,7 @@
 </script>
 
 <form method="POST" action="?/guided" class="space-y-6">
+	<input type="hidden" name="abilityChoices" value={choiceEntriesFieldValue(abilityChoices)} />
 	<input type="hidden" name="languageChoices" value={choiceEntriesFieldValue(languageChoices)} />
 	<input
 		type="hidden"
@@ -863,7 +896,7 @@
 		</div>
 	</section>
 
-	{#if choiceResolution && (choiceResolution.languageChoices.length || choiceResolution.proficiencyChoices.length || choiceResolution.equipmentChoices.length)}
+	{#if choiceResolution && (choiceResolution.abilityChoices.length || choiceResolution.languageChoices.length || choiceResolution.proficiencyChoices.length || choiceResolution.equipmentChoices.length)}
 		<section
 			class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm"
 			data-testid="guided-choices-section"
@@ -890,6 +923,68 @@
 			{/if}
 
 			<div class="mt-5 space-y-5">
+				{#each choiceResolution.abilityChoices as choice (choice.key)}
+					<div
+						class="rounded-2xl border border-stone-200 bg-stone-50 p-4"
+						data-testid={guidedChoiceCardTestId('ability', choice.key)}
+					>
+						<div class="flex items-center justify-between gap-3">
+							<p class="text-sm font-semibold text-stone-900">
+								Required ability bonus choice
+							</p>
+							<p class="text-xs uppercase tracking-[0.15em] text-stone-500">
+								{getGuidedChoiceValidSelectedValues(abilityChoices, choice.key, choiceOptionSlugs(choice.options))
+									.length}/{choice.count} chosen
+							</p>
+						</div>
+						<p class="mt-2 text-sm text-stone-600">
+							Choose {choice.count} ability {choice.count === 1 ? 'score' : 'scores'} to gain
+							+{choice.value}.
+						</p>
+						<div class="mt-3 flex flex-wrap gap-2">
+							{#each choice.options as option (option.slug)}
+								<button
+									type="button"
+									data-testid={guidedChoiceOptionTestId(choice.key, option.slug)}
+									class="rounded-full border px-3 py-1 text-sm transition {isChoiceSelected('ability', choice.key, option.slug)
+										? 'border-emerald-300 bg-emerald-100 text-emerald-900'
+										: 'border-stone-300 bg-white text-stone-700 hover:border-stone-400'}"
+									onclick={() =>
+										toggleChoice(
+											'ability',
+											choice.key,
+											option.slug,
+											choice.count,
+											choiceOptionSlugs(choice.options)
+										)}
+								>
+									{option.name}
+								</button>
+							{/each}
+						</div>
+						{#if getGuidedChoiceInvalidSelectedValues(abilityChoices, choice.key, choiceOptionSlugs(choice.options)).length > 0}
+							<div
+								class="mt-3 rounded-2xl border border-amber-300 bg-amber-100/70 px-3 py-3 text-sm text-amber-950"
+								data-testid={`guided-invalid-choice-${choice.key}`}
+							>
+								<p class="font-medium">Some submitted picks are no longer valid for this choice.</p>
+								<div class="mt-2 flex flex-wrap gap-2">
+									{#each getGuidedChoiceInvalidSelectedValues(abilityChoices, choice.key, choiceOptionSlugs(choice.options)) as invalidValue (invalidValue)}
+										<button
+											type="button"
+											class="rounded-full border border-amber-400 bg-white px-3 py-1 text-xs font-medium text-amber-900 transition hover:border-amber-500"
+											data-testid={`guided-invalid-choice-clear-${choice.key}-${invalidValue}`}
+											onclick={() => removeChoiceValue('ability', choice.key, invalidValue)}
+										>
+											Remove {humanizeGuidedChoiceValue(invalidValue)}
+										</button>
+									{/each}
+								</div>
+							</div>
+						{/if}
+					</div>
+				{/each}
+
 				{#each choiceResolution.languageChoices as choice (choice.key)}
 					<div
 						class="rounded-2xl border border-stone-200 bg-stone-50 p-4"
@@ -1067,9 +1162,10 @@
 				{/each}
 			</div>
 
-			{#if firstError('languageChoices') || firstError('proficiencyChoices') || firstError('equipmentChoices')}
+			{#if firstError('abilityChoices') || firstError('languageChoices') || firstError('proficiencyChoices') || firstError('equipmentChoices')}
 				<p class="mt-4 text-sm text-red-700">
-					{firstError('languageChoices') ??
+					{firstError('abilityChoices') ??
+						firstError('languageChoices') ??
 						firstError('proficiencyChoices') ??
 						firstError('equipmentChoices')}
 				</p>
