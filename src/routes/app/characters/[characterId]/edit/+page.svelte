@@ -52,6 +52,17 @@
 				<p class="mt-2 max-w-3xl text-sm leading-6 text-violet-900">
 					{data.currentEditState.statusSummary}
 				</p>
+				{#if data.currentEditState.guidedDivergedSections.length > 0}
+					<div class="mt-3 flex flex-wrap gap-2">
+						{#each data.currentEditState.guidedDivergedSections as section}
+							<span
+								class="rounded-full border border-amber-300 bg-white px-3 py-1 text-xs font-medium uppercase tracking-[0.15em] text-amber-900"
+							>
+								{section} diverged
+							</span>
+						{/each}
+					</div>
+				{/if}
 				{#if data.currentEditState.reasonLines.length > 0}
 					<ul class="mt-3 space-y-2 text-sm text-violet-900">
 						{#each data.currentEditState.reasonLines as line}
@@ -193,6 +204,7 @@
 		guidedNoteAdoptHref={data.guidedNoteAdoptHref}
 		guidedInventoryPreviewItems={data.guidedInventoryPreviewItems}
 		guidedNotePreviewItems={data.guidedNotePreviewItems}
+		guidedBaseline={data.guidedBaseline}
 		values={hasManualFormState() ? (form?.values ?? data.values) : data.values}
 		errors={form?.fieldErrors ?? {}}
 		formError={form?.formError}

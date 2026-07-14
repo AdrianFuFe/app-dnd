@@ -42,10 +42,17 @@ describe('guided character edit flow with E2E mock', () => {
 		).resolves.toMatchObject({
 			characterName: 'Seren Dawnwatch',
 			guidedHandoff: true,
+			guidedBaseline: expect.objectContaining({
+				attackItems: expect.any(Array),
+				spellItems: expect.any(Array),
+				inventoryItems: expect.any(Array),
+				noteItems: expect.any(Array)
+			}),
 			currentEditState: {
 				contentMode: 'canon',
 				statusSummary: 'This draft is still aligned with the canonical guided baseline.',
-				reasonLines: []
+				reasonLines: [],
+				guidedDivergedSections: []
 			},
 			guidedOriginSummary: {
 				lineageSummary: 'Humano',
@@ -107,7 +114,8 @@ describe('guided character edit flow with E2E mock', () => {
 			currentEditState: {
 				contentMode: 'canon',
 				statusSummary: 'This draft is still aligned with the canonical guided baseline.',
-				reasonLines: []
+				reasonLines: [],
+				guidedDivergedSections: []
 			},
 			guidedOriginSummary: {
 				lineageSummary: 'Elfo / High Elf',
@@ -222,8 +230,88 @@ describe('guided character edit flow with E2E mock', () => {
 				reasonLines: [
 					'Guided baseline diverged after manual edits',
 					'Manual override: Armor Class'
-				]
+				],
+				guidedDivergedSections: []
 			}
+		});
+	});
+
+	it('preserves guided detail summary from baseline even if guided notes are removed later', async () => {
+		resetE2EMockState();
+
+		const supabase = createE2EMockSupabaseClient();
+		const session = getE2EMockSession();
+		const catalog = await listGuidedCharacterCatalog(supabase);
+
+		let redirectLocation = '';
+
+		try {
+			await createActions.guided?.({
+				locals: { session, supabase },
+				request: createGuidedRequest(catalog)
+			} as never);
+		} catch (redirect) {
+			expect(redirect).toMatchObject({ status: 303 });
+			redirectLocation = (redirect as { location: string }).location;
+		}
+
+		const redirectedUrl = new URL(`http://localhost${redirectLocation}`);
+		const characterId = redirectedUrl.pathname.split('/').at(-1) ?? '';
+		const loadedDetail = await characterDetailLoad({
+			locals: { session, supabase },
+			params: { characterId },
+			url: redirectedUrl
+		} as never);
+
+		if (!loadedDetail || !('character' in loadedDetail)) {
+			throw new Error('Expected the guided character detail page to load.');
+		}
+
+		const detail = loadedDetail;
+
+		try {
+			await editActions.default?.({
+				locals: { session, supabase },
+				params: { characterId },
+				request: createGuidedEditRequestWithoutGuidedNotes(detail.character),
+				url: new URL(`http://localhost/app/characters/${characterId}/edit?guided=1`)
+			} as never);
+		} catch (redirect) {
+			expect(redirect).toMatchObject({ status: 303 });
+		}
+
+		await expect(
+			characterDetailLoad({
+				locals: { session, supabase },
+				params: { characterId },
+				url: new URL(`http://localhost/app/characters/${characterId}?guided=1`)
+			} as never)
+		).resolves.toMatchObject({
+			guidedHandoff: true,
+			guidedOriginSummary: {
+				lineageSummary: 'Humano',
+				classSummary: 'Clerigo / Life Domain',
+				backgroundSummary: 'Acolyte',
+				grantLines: expect.arrayContaining([
+					'Language: Comun',
+					'Saving Throw proficiency: Wisdom'
+				]),
+				choiceLines: expect.arrayContaining([
+					'Chosen equipment: Mace',
+					'Chosen Skill proficiencies: History, Insight'
+				])
+			},
+			character: expect.objectContaining({
+				contentMode: 'custom',
+				noteItems: expect.arrayContaining([
+					expect.objectContaining({ title: 'Travel reminder' })
+				]),
+				contentProfileMetadata: expect.objectContaining({
+					guidedBaseline: expect.objectContaining({
+						noteItems: expect.any(Array)
+					})
+				})
+			})
 		});
 	});
 
@@ -755,6 +843,60 @@ function createBrokenGuidedAdoptionEditRequest() {
 			featItems: JSON.stringify([]),
 			inventoryItems: JSON.stringify([]),
 			noteItems: JSON.stringify([]),
+			attacks: '',
+			spells: '',
+			notes: ''
+		})
+	});
+}
+
+function createGuidedEditRequestWithoutGuidedNotes(character: {
+	name: string;
+	speciesId?: string;
+	subspeciesId?: string;
+	classId?: string;
+	subclassId?: string;
+	backgroundId?: string;
+	story?: string;
+	attackItems: unknown[];
+	spellItems: unknown[];
+	featItems: unknown[];
+	inventoryItems: unknown[];
+}) {
+	return new Request('http://localhost/app/characters/char-e2e-2/edit', {
+		method: 'POST',
+		body: new URLSearchParams({
+			name: character.name,
+			speciesId: character.speciesId ?? '',
+			subspeciesId: character.subspeciesId ?? '',
+			classId: character.classId ?? '',
+			subclassId: character.subclassId ?? '',
+			level: '1',
+			backgroundId: character.backgroundId ?? '',
+			story: character.story ?? '',
+			strength: '12',
+			dexterity: '10',
+			constitution: '14',
+			intelligence: '11',
+			wisdom: '15',
+			charisma: '13',
+			maxHp: '9',
+			currentHp: '9',
+			temporaryHp: '0',
+			armorClass: '11',
+			initiative: '0',
+			speed: '30',
+			hitDice: '1d8',
+			attackItems: JSON.stringify(character.attackItems),
+			spellItems: JSON.stringify(character.spellItems),
+			featItems: JSON.stringify(character.featItems),
+			inventoryItems: JSON.stringify(character.inventoryItems),
+			noteItems: JSON.stringify([
+				{
+					title: 'Travel reminder',
+					content: 'Replace the default guided notes with a shorter field note.'
+				}
+			]),
 			attacks: '',
 			spells: '',
 			notes: ''

@@ -2,10 +2,21 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
+	import type { CharacterCreateFormValues } from '$lib/domain/characters/character-form';
 	import {
-		type CharacterCreateFormValues
-	} from '$lib/domain/characters/character-form';
-	import { extractChosenGuidedSpellNames } from '$lib/domain/characters/guided-origin-summary';
+		extractGuidedEquipmentNamesFromNotes,
+		guidedBaselineAttacksAreAligned,
+		guidedBaselineEquipmentNames as getGuidedBaselineEquipmentNames,
+		guidedBaselineIncludesAttack,
+		guidedBaselineIncludesInventoryItem,
+		guidedBaselineIncludesNote,
+		guidedBaselineIncludesSpell,
+		guidedBaselineInventoryIsAligned,
+		guidedBaselineNotesAreAligned,
+		guidedBaselineSpellsAreAligned,
+		noteBaselineSignature,
+		normalizeGuidedBaselineName,
+	} from '$lib/domain/characters/guided-baseline';
 	import {
 		formatMechanicSummaryLines,
 		hasMechanicSummary
@@ -19,7 +30,11 @@
 		FeatCatalogEntry,
 		SpellCatalogEntry
 	} from '$lib/types/content/expanded-content-catalog';
-	import type { CharacterInventoryItem, CharacterNoteItem } from '$lib/types/domain/character';
+	import type {
+		CharacterGuidedBaselineSnapshot,
+		CharacterInventoryItem,
+		CharacterNoteItem
+	} from '$lib/types/domain/character';
 
 	type CharacterFieldErrors = Partial<Record<keyof CharacterCreateFormValues, string[]>>;
 	type CharacterCancelHref = '/app/characters' | `/app/characters/${string}`;
@@ -133,6 +148,7 @@
 		guidedNoteAdoptHref = null,
 		guidedInventoryPreviewItems = [],
 		guidedNotePreviewItems = [],
+		guidedBaseline = null,
 		values,
 		errors = {},
 		formError,
@@ -152,6 +168,7 @@
 		guidedNoteAdoptHref?: string | null;
 		guidedInventoryPreviewItems?: CharacterInventoryItem[];
 		guidedNotePreviewItems?: CharacterNoteItem[];
+		guidedBaseline?: CharacterGuidedBaselineSnapshot | null;
 		values: CharacterCreateFormValues;
 		errors?: CharacterFieldErrors;
 		formError?: string;
@@ -333,53 +350,59 @@
 			return true;
 		}
 
+		if (guidedBaseline) {
+			return true;
+		}
+
 		return guidedOriginNoteItems().some(
 			(item) => item.title === 'Guided build grants' || item.title === 'Guided build choices'
 		);
 	}
 
+	function toGuidedInventoryPreviewFormItem(item: CharacterInventoryItem): InventoryFormItem {
+		return {
+			equipmentId: item.equipmentId ?? '',
+			name: item.name,
+			quantity: String(item.quantity),
+			description: item.description ?? '',
+			weight: item.weight !== undefined ? String(item.weight) : '',
+			value: item.value ?? '',
+			isEquipped: item.isEquipped
+		};
+	}
+
+	function toGuidedNotePreviewFormItem(item: CharacterNoteItem): NoteFormItem {
+		return {
+			title: item.title,
+			content: item.content
+		};
+	}
+
+	function guidedBaselineInventoryItems(): InventoryFormItem[] {
+		return guidedBaseline?.inventoryItems.map(toGuidedInventoryPreviewFormItem) ?? [];
+	}
+
+	function guidedBaselineNoteItems(): NoteFormItem[] {
+		return guidedBaseline?.noteItems.map(toGuidedNotePreviewFormItem) ?? [];
+	}
+
 	function guidedBaselineEquipmentNames(): Set<string> {
-		const names = new Set<string>();
-
-		for (const item of guidedOriginNoteItems()) {
-			for (const rawLine of item.content.split('\n')) {
-				const line = rawLine.trim();
-
-				if (line.startsWith('Chosen equipment: ')) {
-					for (const part of line.slice('Chosen equipment: '.length).split(',')) {
-						const normalized = normalizeGuidedRowName(part);
-						if (normalized) {
-							names.add(normalized);
-						}
-					}
-				}
-
-				if (line.startsWith('Starting equipment: ')) {
-					const content = line.slice('Starting equipment: '.length).trim();
-
-					if (content.startsWith('Choose 1: ')) {
-						for (const part of content.slice('Choose 1: '.length).split(',')) {
-							const normalized = normalizeGuidedRowName(part);
-							if (normalized) {
-								names.add(normalized);
-							}
-						}
-						continue;
-					}
-
-					const withoutQuantity = content.replace(/^\d+x\s+/i, '').trim();
-					const normalized = normalizeGuidedRowName(withoutQuantity);
-					if (normalized) {
-						names.add(normalized);
-					}
-				}
-			}
+		if (guidedBaseline) {
+			return getGuidedBaselineEquipmentNames(guidedBaseline);
 		}
 
-		return names;
+		return extractGuidedEquipmentNamesFromNotes(guidedOriginNoteItems());
 	}
 
 	function guidedBaselineAttackCatalogIds(): Set<string> {
+		if (guidedBaseline) {
+			return new Set(
+				guidedBaseline.attackItems
+					.map((item) => item.equipmentId ?? '')
+					.filter((id) => id.length > 0)
+			);
+		}
+
 		const ids = new Set<string>();
 
 		for (const equipment of equipmentCatalog) {
@@ -397,18 +420,18 @@
 	}
 
 	function guidedBaselineSpellCatalogIds(): Set<string> {
+		if (guidedBaseline) {
+			return new Set(
+				guidedBaseline.spellItems
+					.map((item) => item.spellId ?? '')
+					.filter((id) => id.length > 0)
+			);
+		}
+
 		return new Set(
 			selectedSpellGrantGroups(formValues.classId, formValues.subclassId)
 				.flatMap((group) => group.entries)
 				.map((entry) => entry.id)
-		);
-	}
-
-	function guidedChosenSpellNames(): Set<string> {
-		return new Set(
-			extractChosenGuidedSpellNames(guidedOriginNoteItems()).map((name) =>
-				normalizeGuidedRowName(name)
-			)
 		);
 	}
 
@@ -429,6 +452,10 @@
 			}));
 		}
 
+		if (guidedBaseline) {
+			return guidedBaselineInventoryItems();
+		}
+
 		return parseInventoryItems(values.inventoryItems);
 	}
 
@@ -438,6 +465,10 @@
 				title: item.title,
 				content: item.content
 			}));
+		}
+
+		if (guidedBaseline) {
+			return guidedBaselineNoteItems();
 		}
 
 		return guidedOriginNoteItems();
@@ -466,10 +497,14 @@
 	}
 
 	function normalizeGuidedRowName(value: string): string {
-		return value.trim().toLowerCase();
+		return normalizeGuidedBaselineName(value);
 	}
 
 	function inventoryItemLooksGuidedBaseline(item: InventoryFormItem): boolean {
+		if (guidedBaseline) {
+			return guidedBaselineIncludesInventoryItem(guidedBaseline, item);
+		}
+
 		if (selectedInventoryEquipmentCatalogId(item)) {
 			return true;
 		}
@@ -479,6 +514,10 @@
 	}
 
 	function attackItemLooksGuidedBaseline(item: AttackFormItem): boolean {
+		if (guidedBaseline) {
+			return guidedBaselineIncludesAttack(guidedBaseline, item);
+		}
+
 		const selectedCatalogId = selectedAttackEquipmentCatalogId(item);
 		if (selectedCatalogId && guidedBaselineAttackCatalogIds().has(selectedCatalogId)) {
 			return true;
@@ -489,20 +528,26 @@
 	}
 
 	function spellItemLooksGuidedBaseline(item: SpellFormItem): boolean {
+		if (guidedBaseline) {
+			return guidedBaselineIncludesSpell(guidedBaseline, item);
+		}
+
 		const selectedCatalogId = selectedSpellCatalogId(item);
 		if (selectedCatalogId && guidedBaselineSpellCatalogIds().has(selectedCatalogId)) {
 			return true;
 		}
 
-		const normalizedName = normalizeGuidedRowName(item.name);
-		return normalizedName.length > 0 && guidedChosenSpellNames().has(normalizedName);
+		return false;
 	}
 
 	function noteItemLooksGuidedBaseline(item: NoteFormItem): boolean {
+		if (guidedBaseline) {
+			return guidedBaselineIncludesNote(guidedBaseline, item);
+		}
+
+		const signature = noteBaselineSignature(item);
 		return guidedNoteFallbackItems().some(
-			(baselineItem) =>
-				baselineItem.title.trim() === item.title.trim() &&
-				baselineItem.content.trim() === item.content.trim()
+			(baselineItem) => noteBaselineSignature(baselineItem) === signature
 		);
 	}
 
@@ -521,6 +566,10 @@
 			return false;
 		}
 
+		if (guidedBaseline) {
+			return !guidedBaselineAttacksAreAligned(attackItems, guidedBaseline);
+		}
+
 		const baselineCount = guidedBaselineAttackCatalogIds().size;
 
 		if (attackItems.length !== baselineCount) {
@@ -535,7 +584,11 @@
 			return false;
 		}
 
-		const baselineCount = guidedBaselineSpellCatalogIds().size + guidedChosenSpellNames().size;
+		if (guidedBaseline) {
+			return !guidedBaselineSpellsAreAligned(spellItems, guidedBaseline);
+		}
+
+		const baselineCount = guidedBaselineSpellCatalogIds().size;
 
 		if (spellItems.length !== baselineCount) {
 			return true;
@@ -553,6 +606,10 @@
 			return false;
 		}
 
+		if (guidedBaseline) {
+			return !guidedBaselineInventoryIsAligned(inventoryItems, guidedBaseline);
+		}
+
 		return inventoryItems.some((item) => !inventoryItemLooksGuidedBaseline(item));
 	}
 
@@ -563,6 +620,10 @@
 
 		if (shouldShowGuidedNotePreview()) {
 			return false;
+		}
+
+		if (guidedBaseline) {
+			return !guidedBaselineNotesAreAligned(noteItems, guidedBaseline);
 		}
 
 		if (noteItems.length !== guidedNoteFallbackItems().length) {

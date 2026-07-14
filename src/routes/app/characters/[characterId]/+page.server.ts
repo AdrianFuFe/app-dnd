@@ -2,6 +2,7 @@ import { error, fail, isRedirect, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { listExpandedContentCatalog } from '$lib/server/repositories/catalog';
 import { deleteCharacter, getCharacterForUser } from '$lib/server/repositories/characters';
+import { extractGuidedBaselineChangedSections } from '$lib/domain/characters/manual-character-content-profile';
 import {
 	deriveGuidedSpellOriginSummary,
 	GUIDED_BUILD_CHOICES_TITLE,
@@ -31,6 +32,7 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 	return {
 		character,
 		equipmentCatalog: expandedContentCatalog.equipment,
+		customPathSummary: summarizeCustomPathState(character),
 		createdName: url.searchParams.get('created'),
 		guidedHandoff:
 			url.searchParams.get('guided') === '1' || isGuidedCharacterOrigin(character.noteItems),
@@ -38,6 +40,21 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 		updatedName: url.searchParams.get('updated')
 	};
 };
+
+function summarizeCustomPathState(character: {
+	contentMode: string;
+	contentProfileMetadata?: {
+		reasonLines?: string[];
+	};
+}) {
+	const reasonLines = character.contentProfileMetadata?.reasonLines ?? [];
+
+	return {
+		contentMode: character.contentMode,
+		reasonLines,
+		guidedDivergedSections: extractGuidedBaselineChangedSections(reasonLines)
+	};
+}
 
 export const actions: Actions = {
 	delete: async ({ locals, params, request, url }) => {
@@ -111,18 +128,28 @@ function summarizeGuidedCharacterOrigin(character: {
 	contentMode: string;
 	noteItems: Array<{ title: string; content: string }>;
 	spellItems: Array<{ name: string; isPrepared: boolean }>;
+	contentProfileMetadata?: {
+		guidedBaseline?: {
+			noteItems: Array<{ title: string; content: string }>;
+			spellItems: Array<{ name: string; isPrepared: boolean }>;
+		};
+	};
 }) {
-	if (!isGuidedCharacterOrigin(character.noteItems)) {
+	const guidedBaseline = character.contentProfileMetadata?.guidedBaseline;
+	const originNoteItems = guidedBaseline?.noteItems ?? character.noteItems;
+	const originSpellItems = guidedBaseline?.spellItems ?? character.spellItems;
+
+	if (!isGuidedCharacterOrigin(originNoteItems)) {
 		return null;
 	}
 
-	const grantsNote = character.noteItems.find((note) => note.title === GUIDED_BUILD_GRANTS_TITLE);
-	const choicesNote = character.noteItems.find((note) => note.title === GUIDED_BUILD_CHOICES_TITLE);
+	const grantsNote = originNoteItems.find((note) => note.title === GUIDED_BUILD_GRANTS_TITLE);
+	const choicesNote = originNoteItems.find((note) => note.title === GUIDED_BUILD_CHOICES_TITLE);
 	const lineageParts = [character.race, character.subrace].filter(Boolean);
 	const classParts = [character.className, character.subclass].filter(Boolean);
 	const spellOriginSummary = deriveGuidedSpellOriginSummary(
-		character.noteItems,
-		character.spellItems.map((spell) => ({
+		originNoteItems,
+		originSpellItems.map((spell) => ({
 			name: spell.name,
 			isPrepared: spell.isPrepared
 		}))

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { actions as createActions } from './new/+page.server';
+import { load as newCharacterLoad } from './new/+page.server';
 import { load as characterDetailLoad } from './[characterId]/+page.server';
 import { listGuidedCharacterCatalog } from '$lib/server/repositories/catalog';
 import {
@@ -9,6 +10,30 @@ import {
 } from '$lib/server/e2e/mock-app';
 
 describe('guided character create flow with E2E mock', () => {
+	it('loads the guided creation page with handoff preview guidance', async () => {
+		resetE2EMockState();
+
+		const supabase = createE2EMockSupabaseClient();
+
+		await expect(
+			newCharacterLoad({
+				locals: { supabase, session: null }
+			} as never)
+		).resolves.toMatchObject({
+			guidedHandoffPreview: {
+				canonicalSections: expect.arrayContaining([
+					'Species, subspecies, class, subclass, and background path'
+				]),
+				editableSections: expect.arrayContaining([
+					'Attacks, spells, inventory, and notes can later be edited in the full character editor'
+				]),
+				adoptableSections: expect.arrayContaining([
+					'Guided equipment can be adopted into editable inventory rows during handoff'
+				])
+			}
+		});
+	});
+
 	it('creates a guided draft and loads the redirected detail page with handoff state', async () => {
 		resetE2EMockState();
 

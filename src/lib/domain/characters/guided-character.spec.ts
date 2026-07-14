@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	createGuidedCharacterHandoffPreview,
 	createDefaultGuidedCharacterInput,
 	deriveGuidedCharacterDraft,
 	getGuidedChoiceInvalidSelectedValues,
@@ -773,6 +774,23 @@ describe('deriveGuidedCharacterDraft', () => {
 });
 
 describe('guided choice recovery helpers', () => {
+	it('describes the guided handoff between canonical baseline and later edits', () => {
+		expect(createGuidedCharacterHandoffPreview()).toEqual({
+			canonicalSections: expect.arrayContaining([
+				'Species, subspecies, class, subclass, and background path',
+				'Auto-granted attacks, spells, inventory, and guided notes saved as the original rules snapshot'
+			]),
+			editableSections: expect.arrayContaining([
+				'Attacks, spells, inventory, and notes can later be edited in the full character editor',
+				'Any manual divergence is tracked against the saved guided baseline'
+			]),
+			adoptableSections: expect.arrayContaining([
+				'Guided equipment can be adopted into editable inventory rows during handoff',
+				'Guided note summaries can be adopted into editable note rows during handoff'
+			])
+		});
+	});
+
 	it('splits selected values into valid and invalid entries for a choice group', () => {
 		const items = [
 			{ key: 'equipment:3', value: 'priests-pack' },

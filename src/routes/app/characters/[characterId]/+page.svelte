@@ -6,12 +6,17 @@
 	import { onMount } from 'svelte';
 	import { calculateAbilityModifier } from '$lib/domain/ability-modifier';
 	import {
-		deriveGuidedSpellOriginSummary,
-		GUIDED_BUILD_CHOICES_TITLE,
-		GUIDED_BUILD_GRANTS_TITLE,
 		isGuidedCharacterOrigin,
-		splitGuidedNoteLines
 	} from '$lib/domain/characters/guided-origin-summary';
+	import {
+		extractGuidedEquipmentNamesFromNotes,
+		guidedBaselineEquipmentNames as getGuidedBaselineEquipmentNames,
+		guidedBaselineIncludesAttack,
+		guidedBaselineIncludesInventoryItem,
+		guidedBaselineIncludesNote,
+		guidedBaselineIncludesSpell,
+		normalizeGuidedBaselineName,
+	} from '$lib/domain/characters/guided-baseline';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -66,99 +71,62 @@
 	}
 
 	function normalizeGuidedRowName(value: string): string {
-		return value.trim().toLowerCase();
+		return normalizeGuidedBaselineName(value);
+	}
+
+	function guidedBaselineSnapshot() {
+		return data.character.contentProfileMetadata?.guidedBaseline ?? null;
 	}
 
 	function guidedBaselineEquipmentNames(): Set<string> {
-		const names = new Set<string>();
-
-		for (const item of data.character.noteItems) {
-			for (const rawLine of item.content.split('\n')) {
-				const line = rawLine.trim();
-
-				if (line.startsWith('Chosen equipment: ')) {
-					for (const part of line.slice('Chosen equipment: '.length).split(',')) {
-						const normalized = normalizeGuidedRowName(part);
-						if (normalized) {
-							names.add(normalized);
-						}
-					}
-				}
-
-				if (line.startsWith('Starting equipment: ')) {
-					const content = line.slice('Starting equipment: '.length).trim();
-
-					if (content.startsWith('Choose 1: ')) {
-						for (const part of content.slice('Choose 1: '.length).split(',')) {
-							const normalized = normalizeGuidedRowName(part);
-							if (normalized) {
-								names.add(normalized);
-							}
-						}
-						continue;
-					}
-
-					const withoutQuantity = content.replace(/^\d+x\s+/i, '').trim();
-					const normalized = normalizeGuidedRowName(withoutQuantity);
-					if (normalized) {
-						names.add(normalized);
-					}
-				}
-			}
+		const guidedBaseline = guidedBaselineSnapshot();
+		if (guidedBaseline) {
+			return getGuidedBaselineEquipmentNames(guidedBaseline);
 		}
 
-		return names;
+		return extractGuidedEquipmentNamesFromNotes(data.character.noteItems);
 	}
 
-	function inventoryItemLooksGuidedBaseline(item: PageData['character']['inventoryItems'][number]): boolean {
-		if (item.equipmentId) {
-			const normalizedName = normalizeGuidedRowName(item.name);
-			return normalizedName.length > 0 && guidedBaselineEquipmentNames().has(normalizedName);
+	function attackItemLooksGuidedBaseline(item: PageData['character']['attackItems'][number]): boolean {
+		const guidedBaseline = guidedBaselineSnapshot();
+		if (guidedBaseline) {
+			return guidedBaselineIncludesAttack(guidedBaseline, item);
 		}
 
 		const normalizedName = normalizeGuidedRowName(item.name);
 		return normalizedName.length > 0 && guidedBaselineEquipmentNames().has(normalizedName);
 	}
 
+	function inventoryItemLooksGuidedBaseline(item: PageData['character']['inventoryItems'][number]): boolean {
+		const guidedBaseline = guidedBaselineSnapshot();
+		if (guidedBaseline) {
+			return guidedBaselineIncludesInventoryItem(guidedBaseline, item);
+		}
+
+		const normalizedName = normalizeGuidedRowName(item.name);
+		return normalizedName.length > 0 && guidedBaselineEquipmentNames().has(normalizedName);
+	}
+
+	function spellItemLooksGuidedBaseline(item: PageData['character']['spellItems'][number]): boolean {
+		const guidedBaseline = guidedBaselineSnapshot();
+		if (guidedBaseline) {
+			return guidedBaselineIncludesSpell(guidedBaseline, item);
+		}
+
+		return false;
+	}
+
 	function noteItemLooksGuidedBaseline(note: PageData['character']['noteItems'][number]): boolean {
-		return (
-			note.title === GUIDED_BUILD_GRANTS_TITLE ||
-			note.title === GUIDED_BUILD_CHOICES_TITLE
-		);
+		const guidedBaseline = guidedBaselineSnapshot();
+		if (guidedBaseline) {
+			return guidedBaselineIncludesNote(guidedBaseline, note);
+		}
+
+		return isGuidedCharacterOrigin([note]);
 	}
 
 	function deriveGuidedDetailSummary() {
-		const grantsNote = data.character.noteItems.find(
-			(note) => note.title === GUIDED_BUILD_GRANTS_TITLE
-		);
-		const choicesNote = data.character.noteItems.find(
-			(note) => note.title === GUIDED_BUILD_CHOICES_TITLE
-		);
-		const lineageParts = [data.character.race, data.character.subrace].filter(Boolean);
-		const classParts = [data.character.className, data.character.subclass].filter(Boolean);
-		const spellOriginSummary = deriveGuidedSpellOriginSummary(
-			data.character.noteItems,
-			data.character.spellItems
-		);
-
-		if (!grantsNote && !choicesNote) {
-			return data.guidedOriginSummary ?? null;
-		}
-
-		return {
-			lineageSummary: lineageParts.join(' / '),
-			classSummary: classParts.join(' / '),
-			backgroundSummary: data.character.background ?? '',
-			statusSummary:
-				data.character.contentMode === 'canon'
-					? 'Still on the canonical guided path.'
-					: 'This draft has diverged from the canonical guided path.',
-			grantLines: splitGuidedNoteLines(grantsNote?.content),
-			choiceLines: splitGuidedNoteLines(choicesNote?.content),
-			grantedSpellNames: spellOriginSummary.grantedSpellNames,
-			chosenSpellNames: spellOriginSummary.chosenSpellNames,
-			preparedSpellNames: spellOriginSummary.preparedSpellNames
-		};
+		return data.guidedOriginSummary ?? null;
 	}
 
 	function isDeleteReady(): boolean {
@@ -191,7 +159,9 @@
 	);
 
 	const guidedOriginNotes = $derived(
-		isGuidedCharacterOrigin(data.character.noteItems)
+		isGuidedCharacterOrigin(
+			data.character.contentProfileMetadata?.guidedBaseline?.noteItems ?? data.character.noteItems
+		)
 	);
 
 	const guidedHandoffVisible = $derived(
@@ -442,7 +412,7 @@
 			</div>
 		{/if}
 
-		{#if data.character.contentMode === 'custom' && data.character.contentProfileMetadata?.reasonLines.length}
+		{#if data.character.contentMode === 'custom' && data.customPathSummary.reasonLines.length}
 			<div class="mt-4 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-4">
 				<p class="text-sm font-semibold text-violet-950">Custom path reasons</p>
 				<p class="mt-2 max-w-2xl text-sm leading-6 text-violet-900">
@@ -454,8 +424,19 @@
 						changes below.
 					{/if}
 				</p>
+				{#if data.customPathSummary.guidedDivergedSections.length > 0}
+					<div class="mt-3 flex flex-wrap gap-2">
+						{#each data.customPathSummary.guidedDivergedSections as section}
+							<span
+								class="rounded-full border border-amber-300 bg-white px-3 py-1 text-xs font-medium uppercase tracking-[0.15em] text-amber-900"
+							>
+								{section} diverged
+							</span>
+						{/each}
+					</div>
+				{/if}
 				<ul class="mt-3 space-y-2 text-sm text-violet-900">
-					{#each data.character.contentProfileMetadata.reasonLines as line}
+					{#each data.customPathSummary.reasonLines as line}
 						<li>{line}</li>
 					{/each}
 				</ul>
@@ -675,6 +656,13 @@
 										<p class="text-base font-semibold text-stone-900">
 											{attack.name}
 										</p>
+										{#if attackItemLooksGuidedBaseline(attack)}
+											<span
+												class="rounded-full border border-sky-300 bg-white px-2 py-1 text-xs font-medium uppercase tracking-[0.16em] text-sky-800"
+											>
+												Guided baseline
+											</span>
+										{/if}
 										{#if attack.equipmentId}
 											<span
 												class="rounded-full bg-sky-100 px-2 py-1 text-xs font-medium uppercase tracking-[0.16em] text-sky-800"
@@ -730,6 +718,13 @@
 											<p class="text-base font-semibold text-stone-900">
 												{spell.name}
 											</p>
+											{#if spellItemLooksGuidedBaseline(spell)}
+												<span
+													class="rounded-full border border-sky-300 bg-white px-2 py-1 text-xs font-medium uppercase tracking-[0.16em] text-sky-800"
+												>
+													Guided baseline
+												</span>
+											{/if}
 											{#if spell.isPrepared}
 												<span
 													class="rounded-full bg-stone-900 px-2 py-1 text-xs font-medium uppercase tracking-[0.16em] text-white"

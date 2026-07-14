@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { deriveManualCharacterContentProfile } from './manual-character-content-profile';
+import {
+	deriveManualCharacterContentProfile,
+	extractGuidedBaselineChangedSections
+} from './manual-character-content-profile';
 import type { GuidedCharacterCatalog } from './guided-character';
 import type {
 	FeatCatalogEntry,
@@ -270,7 +273,7 @@ describe('deriveManualCharacterContentProfile', () => {
 		expect(result.profile.contentMode).toBe('custom');
 		expect(result.reasonLines).toEqual([
 			'Guided baseline diverged after manual edits',
-			'Manual override: Guided Spell Items'
+			'Guided baseline changed: Spells'
 		]);
 	});
 
@@ -313,7 +316,158 @@ describe('deriveManualCharacterContentProfile', () => {
 		expect(result.profile.contentMode).toBe('custom');
 		expect(result.reasonLines).toEqual([
 			'Guided baseline diverged after manual edits',
-			'Manual override: Guided Spell Items'
+			'Guided baseline changed: Spells'
 		]);
+	});
+
+	it('marks guided-origin drafts as custom when persisted baseline attacks diverge', () => {
+		const result = deriveManualCharacterContentProfile(
+			{
+				...baseInput,
+				attackItems: [{ equipmentId: 'weapon-2', name: 'Warhammer', damage: '1d8' }],
+				inventoryItems: [{ equipmentId: 'weapon-1', name: 'Mace', quantity: 1, isEquipped: true }],
+				noteItems: [{ title: 'Guided build grants', content: 'Language: Comun' }]
+			},
+			{
+				guidedCatalog,
+				spellCatalog,
+				featCatalog,
+				existingCharacter: {
+					contentMode: 'canon',
+					maxHp: 8,
+					currentHp: 8,
+					temporaryHp: 0,
+					armorClass: 10,
+					initiative: 0,
+					speed: 30,
+					hitDice: '1d8',
+					attackItems: [{ equipmentId: 'weapon-1', name: 'Mace', damage: '1d6' }],
+					spellItems: baseInput.spellItems,
+					inventoryItems: [{ equipmentId: 'weapon-1', name: 'Mace', quantity: 1, isEquipped: true }],
+					noteItems: [{ title: 'Guided build grants', content: 'Language: Comun' }],
+					guidedOrigin: true,
+					contentProfileMetadata: {
+						guidedBaseline: {
+							attackItems: [{ equipmentId: 'weapon-1', name: 'Mace', damage: '1d6' }],
+							spellItems: baseInput.spellItems,
+							inventoryItems: [{ equipmentId: 'weapon-1', name: 'Mace', quantity: 1, isEquipped: true }],
+							noteItems: [{ title: 'Guided build grants', content: 'Language: Comun' }]
+						}
+					}
+				}
+			}
+		);
+
+		expect(result.profile.contentMode).toBe('custom');
+		expect(result.reasonLines).toEqual([
+			'Guided baseline diverged after manual edits',
+			'Guided baseline changed: Attacks'
+		]);
+	});
+
+	it('marks guided-origin drafts as custom when persisted baseline notes diverge', () => {
+		const result = deriveManualCharacterContentProfile(
+			{
+				...baseInput,
+				noteItems: [{ title: 'Travel reminder', content: 'Keep the relic hidden.' }]
+			},
+			{
+				guidedCatalog,
+				spellCatalog,
+				featCatalog,
+				existingCharacter: {
+					contentMode: 'canon',
+					maxHp: 8,
+					currentHp: 8,
+					temporaryHp: 0,
+					armorClass: 10,
+					initiative: 0,
+					speed: 30,
+					hitDice: '1d8',
+					attackItems: [],
+					spellItems: baseInput.spellItems,
+					inventoryItems: [],
+					noteItems: [{ title: 'Guided build grants', content: 'Language: Comun' }],
+					guidedOrigin: true,
+					contentProfileMetadata: {
+						guidedBaseline: {
+							attackItems: [],
+							spellItems: baseInput.spellItems,
+							inventoryItems: [],
+							noteItems: [{ title: 'Guided build grants', content: 'Language: Comun' }]
+						}
+					}
+				}
+			}
+		);
+
+		expect(result.profile.contentMode).toBe('custom');
+		expect(result.reasonLines).toEqual([
+			'Guided baseline diverged after manual edits',
+			'Guided baseline changed: Notes'
+		]);
+	});
+
+	it('groups multiple guided baseline divergences into one summary line', () => {
+		const result = deriveManualCharacterContentProfile(
+			{
+				...baseInput,
+				attackItems: [{ equipmentId: 'weapon-2', name: 'Warhammer', damage: '1d8' }],
+				inventoryItems: [{ equipmentId: 'weapon-2', name: 'Warhammer', quantity: 1, isEquipped: true }],
+				noteItems: [{ title: 'Travel reminder', content: 'Keep the relic hidden.' }]
+			},
+			{
+				guidedCatalog,
+				spellCatalog,
+				featCatalog,
+				existingCharacter: {
+					contentMode: 'canon',
+					maxHp: 8,
+					currentHp: 8,
+					temporaryHp: 0,
+					armorClass: 10,
+					initiative: 0,
+					speed: 30,
+					hitDice: '1d8',
+					attackItems: [{ equipmentId: 'weapon-1', name: 'Mace', damage: '1d6' }],
+					spellItems: baseInput.spellItems,
+					inventoryItems: [{ equipmentId: 'weapon-1', name: 'Mace', quantity: 1, isEquipped: true }],
+					noteItems: [{ title: 'Guided build grants', content: 'Language: Comun' }],
+					guidedOrigin: true,
+					contentProfileMetadata: {
+						guidedBaseline: {
+							attackItems: [{ equipmentId: 'weapon-1', name: 'Mace', damage: '1d6' }],
+							spellItems: baseInput.spellItems,
+							inventoryItems: [{ equipmentId: 'weapon-1', name: 'Mace', quantity: 1, isEquipped: true }],
+							noteItems: [{ title: 'Guided build grants', content: 'Language: Comun' }]
+						}
+					}
+				}
+			}
+		);
+
+		expect(result.profile.contentMode).toBe('custom');
+		expect(result.reasonLines).toEqual([
+			'Guided baseline diverged after manual edits',
+			'Guided baseline changed: Attacks, Inventory, Notes'
+		]);
+	});
+
+	it('extracts guided baseline sections from both grouped and legacy reason lines', () => {
+		expect(
+			extractGuidedBaselineChangedSections([
+				'Guided baseline diverged after manual edits',
+				'Guided baseline changed: Attacks, Inventory, Notes',
+				'Manual override: Armor Class'
+			])
+		).toEqual(['Attacks', 'Inventory', 'Notes']);
+
+		expect(
+			extractGuidedBaselineChangedSections([
+				'Manual override: Guided Spell Items',
+				'Manual override: Guided Note Items',
+				'Manual override: Armor Class'
+			])
+		).toEqual(['Spells', 'Notes']);
 	});
 });

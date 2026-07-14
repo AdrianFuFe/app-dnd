@@ -7,6 +7,7 @@ import {
 } from '$lib/domain/characters/character-form';
 import {
 	createDefaultGuidedCharacterInput,
+	createGuidedCharacterHandoffPreview,
 	createGuidedCharacterFormValues,
 	deriveGuidedCharacterDraft
 } from '$lib/domain/characters/guided-character';
@@ -87,6 +88,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	return {
 		values: createCharacterFormValuesFromInput(createDefaultCharacterInput()),
 		guidedValues: createGuidedCharacterFormValues(createDefaultGuidedCharacterInput()),
+		guidedHandoffPreview: createGuidedCharacterHandoffPreview(),
 		catalog,
 		guidedCatalog,
 		featCatalog: expandedContentCatalog.feats,

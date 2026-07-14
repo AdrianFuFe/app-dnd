@@ -4,7 +4,10 @@ import {
 	createCharacterFormValues,
 	createCharacterFormValuesFromInput
 } from '$lib/domain/characters/character-form';
-import { deriveManualCharacterContentProfile } from '$lib/domain/characters/manual-character-content-profile';
+import {
+	deriveManualCharacterContentProfile,
+	extractGuidedBaselineChangedSections
+} from '$lib/domain/characters/manual-character-content-profile';
 import {
 	deriveGuidedSpellOriginSummary,
 	GUIDED_BUILD_CHOICES_TITLE,
@@ -64,6 +67,7 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 		})}#notes`,
 		guidedInventoryPreviewItems: character.inventoryItems,
 		guidedNotePreviewItems: character.noteItems,
+		guidedBaseline: character.contentProfileMetadata?.guidedBaseline ?? null,
 		guidedOriginSummary: summarizeGuidedCharacterOrigin(character),
 		currentEditState: summarizeCurrentEditState(character),
 		values: createCharacterFormValuesFromInput(character),
@@ -378,6 +382,7 @@ function summarizeCurrentEditState(character: {
 	};
 }) {
 	const reasonLines = character.contentProfileMetadata?.reasonLines ?? [];
+	const guidedDivergedSections = extractGuidedBaselineChangedSections(reasonLines);
 
 	return {
 		contentMode: character.contentMode,
@@ -385,7 +390,8 @@ function summarizeCurrentEditState(character: {
 			character.contentMode === 'canon'
 				? 'This draft is still aligned with the canonical guided baseline.'
 				: 'This draft currently lives on a custom path for the same ruleset.',
-		reasonLines
+		reasonLines,
+		guidedDivergedSections
 	};
 }
 

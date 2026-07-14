@@ -52,6 +52,51 @@
 		</p>
 	</section>
 
+	<section class="rounded-3xl border border-emerald-200 bg-emerald-50/60 p-6 shadow-sm">
+		<div class="space-y-2">
+			<p class="text-sm font-medium uppercase tracking-[0.2em] text-emerald-700">
+				Guided handoff
+			</p>
+			<h2 class="text-2xl font-semibold text-emerald-950">
+				What this guided save locks in, and what stays flexible later
+			</h2>
+			<p class="max-w-3xl text-sm leading-7 text-emerald-900">
+				When you save here, the app stores a canonical level-1 baseline and also keeps a
+				separate handoff path into the full editor. That makes later edits safer because we
+				can compare manual changes against the original guided snapshot.
+			</p>
+		</div>
+
+		<div class="mt-5 grid gap-4 xl:grid-cols-3">
+			<div class="rounded-2xl border border-emerald-200 bg-white p-4">
+				<p class="text-sm font-semibold text-emerald-950">Saved as canonical baseline</p>
+				<ul class="mt-3 space-y-2 text-sm leading-6 text-emerald-900">
+					{#each data.guidedHandoffPreview.canonicalSections as line}
+						<li>{line}</li>
+					{/each}
+				</ul>
+			</div>
+
+			<div class="rounded-2xl border border-stone-200 bg-white p-4">
+				<p class="text-sm font-semibold text-stone-900">Editable after handoff</p>
+				<ul class="mt-3 space-y-2 text-sm leading-6 text-stone-700">
+					{#each data.guidedHandoffPreview.editableSections as line}
+						<li>{line}</li>
+					{/each}
+				</ul>
+			</div>
+
+			<div class="rounded-2xl border border-amber-200 bg-white p-4">
+				<p class="text-sm font-semibold text-amber-950">Optional adoption in the full editor</p>
+				<ul class="mt-3 space-y-2 text-sm leading-6 text-amber-900">
+					{#each data.guidedHandoffPreview.adoptableSections as line}
+						<li>{line}</li>
+					{/each}
+				</ul>
+			</div>
+		</div>
+	</section>
+
 	<CharacterGuidedCreateForm
 		catalog={data.guidedCatalog}
 		values={form?.guidedValues ?? data.guidedValues}

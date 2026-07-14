@@ -3,13 +3,21 @@ import type {
 	CharacterSpellItem,
 	CharacterFeatItem,
 	CharacterAttackItem,
-	CharacterInventoryItem
+	CharacterInventoryItem,
+	CharacterNoteItem,
+	CharacterGuidedBaselineSnapshot
 } from '$lib/types/domain/character';
 import type {
 	FeatCatalogEntry,
 	SpellCatalogEntry
 } from '$lib/types/content/expanded-content-catalog';
 import type { GuidedCharacterCatalog } from './guided-character';
+import {
+	guidedBaselineAttacksAreAligned,
+	guidedBaselineInventoryIsAligned,
+	guidedBaselineNotesAreAligned,
+	guidedBaselineSpellsAreAligned
+} from './guided-baseline';
 import {
 	createCharacterManualOverride,
 	deriveCharacterContentProfile,
@@ -18,8 +26,9 @@ import {
 	type CharacterLinkedContentSelection
 } from './character-content-profile';
 
-type ExistingCharacterProfile = Pick<
-	CharacterCreateInput,
+type ExistingCharacterProfile = Partial<
+	Pick<
+		CharacterCreateInput,
 	| 'contentMode'
 	| 'maxHp'
 	| 'currentHp'
@@ -28,14 +37,35 @@ type ExistingCharacterProfile = Pick<
 	| 'initiative'
 	| 'speed'
 	| 'hitDice'
+	| 'attackItems'
 	| 'spellItems'
+	| 'inventoryItems'
+	| 'noteItems'
+	>
 > & {
 	guidedOrigin?: boolean;
+	contentProfileMetadata?: {
+		guidedBaseline?: CharacterGuidedBaselineSnapshot;
+	};
 };
 
 export type ManualCharacterContentProfileResult = {
 	profile: CharacterContentProfile;
 	reasonLines: string[];
+};
+
+const guidedBaselineOverrideLabels: Record<string, string> = {
+	guided_attack_items: 'Attacks',
+	guided_spell_items: 'Spells',
+	guided_inventory_items: 'Inventory',
+	guided_note_items: 'Notes'
+};
+const guidedBaselineChangedPrefix = 'Guided baseline changed: ';
+const legacyGuidedOverridePrefixes: Record<string, string> = {
+	'Manual override: Guided Attack Items': 'Attacks',
+	'Manual override: Guided Spell Items': 'Spells',
+	'Manual override: Guided Inventory Items': 'Inventory',
+	'Manual override: Guided Note Items': 'Notes'
 };
 
 export function deriveManualCharacterContentProfile(
@@ -54,7 +84,15 @@ export function deriveManualCharacterContentProfile(
 	];
 	const manualOverrides = [
 		...summarizeFreeformRowOverrides(input.attackItems, input.spellItems, input.featItems, input.inventoryItems),
-		...summarizeGuidedSpellDiffOverrides(input.spellItems, context.existingCharacter),
+		...summarizeGuidedBaselineDiffOverrides(
+			{
+				attackItems: input.attackItems,
+				spellItems: input.spellItems,
+				inventoryItems: input.inventoryItems,
+				noteItems: input.noteItems
+			},
+			context.existingCharacter
+		),
 		...summarizeCombatDiffOverrides(input, context.existingCharacter)
 	];
 	const derivedProfile = deriveCharacterContentProfile({
@@ -86,7 +124,7 @@ export function deriveManualCharacterContentProfile(
 		};
 	}
 
-	const reasonLines = summarizeCharacterCustomizationReasons(derivedProfile.customizationReasons);
+	const reasonLines = summarizeManualCharacterReasonLines(derivedProfile.customizationReasons);
 
 	if (derivedProfile.contentMode === 'custom' && context.existingCharacter?.guidedOrigin) {
 		return {
@@ -99,6 +137,59 @@ export function deriveManualCharacterContentProfile(
 		profile: derivedProfile,
 		reasonLines
 	};
+}
+
+function summarizeManualCharacterReasonLines(
+	reasons: CharacterContentProfile['customizationReasons']
+): string[] {
+	const guidedBaselineSections: string[] = [];
+	const remainingReasons = [];
+
+	for (const reason of reasons) {
+		if (
+			reason.type === 'manual-override' &&
+			Object.hasOwn(guidedBaselineOverrideLabels, reason.field)
+		) {
+			guidedBaselineSections.push(guidedBaselineOverrideLabels[reason.field]);
+			continue;
+		}
+
+		remainingReasons.push(reason);
+	}
+
+	const summarized = summarizeCharacterCustomizationReasons(remainingReasons);
+
+	if (guidedBaselineSections.length === 0) {
+		return summarized;
+	}
+
+	const dedupedSections = [...new Set(guidedBaselineSections)];
+	const groupedGuidedReason = `Guided baseline changed: ${dedupedSections.join(', ')}`;
+
+	return [groupedGuidedReason, ...summarized];
+}
+
+export function extractGuidedBaselineChangedSections(reasonLines: string[]): string[] {
+	const sections: string[] = [];
+
+	for (const line of reasonLines) {
+		if (line.startsWith(guidedBaselineChangedPrefix)) {
+			for (const section of line.slice(guidedBaselineChangedPrefix.length).split(',')) {
+				const trimmed = section.trim();
+				if (trimmed.length > 0) {
+					sections.push(trimmed);
+				}
+			}
+			continue;
+		}
+
+		const legacySection = legacyGuidedOverridePrefixes[line];
+		if (legacySection) {
+			sections.push(legacySection);
+		}
+	}
+
+	return [...new Set(sections)];
 }
 
 function summarizeLinkedIdentitySelections(
@@ -295,16 +386,44 @@ function summarizeCombatDiffOverrides(
 	return manualOverrides;
 }
 
-function summarizeGuidedSpellDiffOverrides(
-	spellItems: CharacterSpellItem[],
+function summarizeGuidedBaselineDiffOverrides(
+	current: {
+		attackItems: CharacterAttackItem[];
+		spellItems: CharacterSpellItem[];
+		inventoryItems: CharacterInventoryItem[];
+		noteItems: CharacterNoteItem[];
+	},
 	existingCharacter?: ExistingCharacterProfile
 ) {
 	if (!existingCharacter?.guidedOrigin) {
 		return [];
 	}
 
-	const baselineSpellSignature = createLinkedSpellSignature(existingCharacter.spellItems);
-	const currentSpellSignature = createLinkedSpellSignature(spellItems);
+	const guidedBaseline = existingCharacter.contentProfileMetadata?.guidedBaseline;
+	if (guidedBaseline) {
+		const manualOverrides: Array<{ field: string }> = [];
+
+		if (!guidedBaselineAttacksAreAligned(current.attackItems, guidedBaseline)) {
+			manualOverrides.push(createCharacterManualOverride('guided_attack_items'));
+		}
+
+		if (!guidedBaselineSpellsAreAligned(current.spellItems, guidedBaseline)) {
+			manualOverrides.push(createCharacterManualOverride('guided_spell_items'));
+		}
+
+		if (!guidedBaselineInventoryIsAligned(current.inventoryItems, guidedBaseline)) {
+			manualOverrides.push(createCharacterManualOverride('guided_inventory_items'));
+		}
+
+		if (!guidedBaselineNotesAreAligned(current.noteItems, guidedBaseline)) {
+			manualOverrides.push(createCharacterManualOverride('guided_note_items'));
+		}
+
+		return manualOverrides;
+	}
+
+	const baselineSpellSignature = createLinkedSpellSignature(existingCharacter.spellItems ?? []);
+	const currentSpellSignature = createLinkedSpellSignature(current.spellItems);
 
 	if (baselineSpellSignature === currentSpellSignature) {
 		return [];

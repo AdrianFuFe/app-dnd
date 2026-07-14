@@ -172,6 +172,12 @@ export type GuidedCharacterDraft = {
 	preview: GuidedCharacterPreview;
 };
 
+export type GuidedCharacterHandoffPreview = {
+	canonicalSections: string[];
+	editableSections: string[];
+	adoptableSections: string[];
+};
+
 export type GuidedChoiceEntry = {
 	key: string;
 	value: string;
@@ -386,6 +392,25 @@ export function createGuidedCharacterFormValues(
 		languageChoices: toStructuredFormString(source.languageChoices),
 		proficiencyChoices: toStructuredFormString(source.proficiencyChoices),
 		equipmentChoices: toStructuredFormString(source.equipmentChoices)
+	};
+}
+
+export function createGuidedCharacterHandoffPreview(): GuidedCharacterHandoffPreview {
+	return {
+		canonicalSections: [
+			'Species, subspecies, class, subclass, and background path',
+			'Level 1 derived combat baseline such as hit points, armor class, initiative, speed, and hit dice',
+			'Auto-granted attacks, spells, inventory, and guided notes saved as the original rules snapshot'
+		],
+		editableSections: [
+			'Attacks, spells, inventory, and notes can later be edited in the full character editor',
+			'Current combat values can be adjusted later without losing the original guided snapshot',
+			'Any manual divergence is tracked against the saved guided baseline'
+		],
+		adoptableSections: [
+			'Guided equipment can be adopted into editable inventory rows during handoff',
+			'Guided note summaries can be adopted into editable note rows during handoff'
+		]
 	};
 }
 
