@@ -150,6 +150,18 @@ export const actions: Actions = {
 					{
 						reasonLines: guidedDraft.preview.customizationReasonLines,
 						guidedBaseline: createCharacterGuidedBaselineSnapshot({
+							identity: {
+								speciesId: guidedDraft.character.speciesId,
+								subspeciesId: guidedDraft.character.subspeciesId,
+								classId: guidedDraft.character.classId,
+								subclassId: guidedDraft.character.subclassId,
+								backgroundId: guidedDraft.character.backgroundId,
+								race: guidedDraft.character.race,
+								subrace: guidedDraft.character.subrace,
+								className: guidedDraft.character.className,
+								subclass: guidedDraft.character.subclass,
+								background: guidedDraft.character.background
+							},
 							attackItems: guidedDraft.character.attackItems,
 							spellItems,
 							inventoryItems: guidedDraft.character.inventoryItems,

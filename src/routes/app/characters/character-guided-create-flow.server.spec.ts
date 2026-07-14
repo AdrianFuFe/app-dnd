@@ -91,6 +91,12 @@ describe('guided character create flow with E2E mock', () => {
 				background: 'Acolyte',
 				contentProfileMetadata: expect.objectContaining({
 					guidedBaseline: expect.objectContaining({
+						identity: expect.objectContaining({
+							race: 'Humano',
+							className: 'Clerigo',
+							subclass: 'Life Domain',
+							background: 'Acolyte'
+						}),
 						attackItems: expect.any(Array),
 						spellItems: expect.any(Array),
 						inventoryItems: expect.any(Array),
@@ -152,7 +158,17 @@ describe('guided character create flow with E2E mock', () => {
 				name: 'Aeris Vale',
 				contentMode: 'canon',
 				className: 'Mago',
-				subrace: 'High Elf'
+				subrace: 'High Elf',
+				contentProfileMetadata: expect.objectContaining({
+					guidedBaseline: expect.objectContaining({
+						identity: expect.objectContaining({
+							race: 'Elfo',
+							subrace: 'High Elf',
+							className: 'Mago',
+							background: 'Acolyte'
+						})
+					})
+				})
 			})
 		});
 	});

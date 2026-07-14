@@ -89,7 +89,21 @@ export type CharacterNoteItem = {
 	content: string;
 };
 
+export type CharacterGuidedBaselineIdentitySnapshot = {
+	speciesId?: string;
+	subspeciesId?: string;
+	classId?: string;
+	subclassId?: string;
+	backgroundId?: string;
+	race?: string;
+	subrace?: string;
+	className?: string;
+	subclass?: string;
+	background?: string;
+};
+
 export type CharacterGuidedBaselineSnapshot = {
+	identity?: CharacterGuidedBaselineIdentitySnapshot;
 	attackItems: CharacterAttackItem[];
 	spellItems: CharacterSpellItem[];
 	inventoryItems: CharacterInventoryItem[];

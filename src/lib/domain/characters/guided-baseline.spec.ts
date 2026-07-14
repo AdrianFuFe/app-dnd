@@ -103,6 +103,12 @@ describe('guided-baseline', () => {
 
 	it('detects alignment and inclusion against a persisted baseline snapshot', () => {
 		const baseline = createCharacterGuidedBaselineSnapshot({
+			identity: {
+				race: 'Humano',
+				className: 'Clerigo',
+				subclass: 'Life Domain',
+				background: 'Acolyte'
+			},
 			attackItems: [
 				{ equipmentId: 'mace', name: 'Mace', attackBonus: '+4', damage: '1d6' }
 			],
@@ -148,6 +154,12 @@ describe('guided-baseline', () => {
 				isEquipped: true
 			})
 		).toBe(true);
+		expect(baseline.identity).toEqual({
+			race: 'Humano',
+			className: 'Clerigo',
+			subclass: 'Life Domain',
+			background: 'Acolyte'
+		});
 	});
 
 	it('extracts equipment names from notes and from baseline inventory', () => {

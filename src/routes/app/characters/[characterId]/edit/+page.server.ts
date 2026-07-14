@@ -9,11 +9,8 @@ import {
 	extractGuidedBaselineChangedSections
 } from '$lib/domain/characters/manual-character-content-profile';
 import {
-	deriveGuidedSpellOriginSummary,
-	GUIDED_BUILD_CHOICES_TITLE,
-	GUIDED_BUILD_GRANTS_TITLE,
 	isGuidedCharacterOrigin,
-	splitGuidedNoteLines
+	summarizeGuidedCharacterOrigin
 } from '$lib/domain/characters/guided-origin-summary';
 import { characterCreateInputSchema } from '$lib/schemas/characters/character.schema';
 import {
@@ -84,39 +81,60 @@ function restoreCharacterCatalogSelectionsFromNames(
 	character: Parameters<typeof createCharacterFormValuesFromInput>[0],
 	catalog: Awaited<ReturnType<typeof listCharacterCreationCatalog>>
 ) {
+	const baselineIdentity = character.contentProfileMetadata?.guidedBaseline?.identity;
 	const species =
 		character.speciesId && character.speciesId.length > 0
 			? catalog.speciesOptions.find((option) => option.id === character.speciesId)
-			: character.race
-				? catalog.speciesOptions.find((option) => option.name === character.race)
+			: baselineIdentity?.speciesId
+				? catalog.speciesOptions.find((option) => option.id === baselineIdentity.speciesId)
+				: character.race || baselineIdentity?.race
+					? catalog.speciesOptions.find(
+							(option) => option.name === (character.race || baselineIdentity?.race)
+						)
 				: undefined;
 	const subspecies =
 		character.subspeciesId && character.subspeciesId.length > 0
 			? catalog.subspeciesOptions.find((option) => option.id === character.subspeciesId)
-			: character.subrace && species
+			: baselineIdentity?.subspeciesId
+				? catalog.subspeciesOptions.find((option) => option.id === baselineIdentity.subspeciesId)
+				: (character.subrace || baselineIdentity?.subrace) && species
 				? catalog.subspeciesOptions.find(
-						(option) => option.name === character.subrace && option.speciesSlug === species.slug
+						(option) =>
+							option.name === (character.subrace || baselineIdentity?.subrace) &&
+							option.speciesSlug === species.slug
 					)
 				: undefined;
 	const characterClass =
 		character.classId && character.classId.length > 0
 			? catalog.classOptions.find((option) => option.id === character.classId)
-			: character.className
-				? catalog.classOptions.find((option) => option.name === character.className)
+			: baselineIdentity?.classId
+				? catalog.classOptions.find((option) => option.id === baselineIdentity.classId)
+				: character.className || baselineIdentity?.className
+					? catalog.classOptions.find(
+							(option) => option.name === (character.className || baselineIdentity?.className)
+						)
 				: undefined;
 	const subclass =
 		character.subclassId && character.subclassId.length > 0
 			? catalog.subclassOptions.find((option) => option.id === character.subclassId)
-			: character.subclass && characterClass
+			: baselineIdentity?.subclassId
+				? catalog.subclassOptions.find((option) => option.id === baselineIdentity.subclassId)
+				: (character.subclass || baselineIdentity?.subclass) && characterClass
 				? catalog.subclassOptions.find(
-						(option) => option.name === character.subclass && option.classSlug === characterClass.slug
+						(option) =>
+							option.name === (character.subclass || baselineIdentity?.subclass) &&
+							option.classSlug === characterClass.slug
 					)
 				: undefined;
 	const background =
 		character.backgroundId && character.backgroundId.length > 0
 			? catalog.backgroundOptions.find((option) => option.id === character.backgroundId)
-			: character.background
-				? catalog.backgroundOptions.find((option) => option.name === character.background)
+			: baselineIdentity?.backgroundId
+				? catalog.backgroundOptions.find((option) => option.id === baselineIdentity.backgroundId)
+				: character.background || baselineIdentity?.background
+					? catalog.backgroundOptions.find(
+							(option) => option.name === (character.background || baselineIdentity?.background)
+						)
 				: undefined;
 
 	return {
@@ -382,48 +400,6 @@ function normalizeGuidedAdoptionFormData(
 	}
 
 	return normalized;
-}
-
-function summarizeGuidedCharacterOrigin(character: {
-	race?: string;
-	subrace?: string;
-	className?: string;
-	subclass?: string;
-	background?: string;
-	contentMode: string;
-	noteItems: Array<{ title: string; content: string }>;
-	spellItems: Array<{ name: string; isPrepared: boolean }>;
-}) {
-	if (!isGuidedCharacterOrigin(character.noteItems)) {
-		return null;
-	}
-
-	const grantsNote = character.noteItems.find((note) => note.title === GUIDED_BUILD_GRANTS_TITLE);
-	const choicesNote = character.noteItems.find((note) => note.title === GUIDED_BUILD_CHOICES_TITLE);
-	const lineageParts = [character.race, character.subrace].filter(Boolean);
-	const classParts = [character.className, character.subclass].filter(Boolean);
-	const spellOriginSummary = deriveGuidedSpellOriginSummary(
-		character.noteItems,
-		character.spellItems.map((spell) => ({
-			name: spell.name,
-			isPrepared: spell.isPrepared
-		}))
-	);
-
-	return {
-		lineageSummary: lineageParts.join(' / '),
-		classSummary: classParts.join(' / '),
-		backgroundSummary: character.background ?? '',
-		statusSummary:
-			character.contentMode === 'canon'
-				? 'Still on the canonical guided path.'
-				: 'This draft has diverged from the canonical guided path.',
-		grantLines: splitGuidedNoteLines(grantsNote?.content),
-		choiceLines: splitGuidedNoteLines(choicesNote?.content),
-		grantedSpellNames: spellOriginSummary.grantedSpellNames,
-		chosenSpellNames: spellOriginSummary.chosenSpellNames,
-		preparedSpellNames: spellOriginSummary.preparedSpellNames
-	};
 }
 
 function summarizeCurrentEditState(character: {

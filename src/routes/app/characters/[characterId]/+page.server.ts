@@ -4,11 +4,8 @@ import { listExpandedContentCatalog } from '$lib/server/repositories/catalog';
 import { deleteCharacter, getCharacterForUser } from '$lib/server/repositories/characters';
 import { extractGuidedBaselineChangedSections } from '$lib/domain/characters/manual-character-content-profile';
 import {
-	deriveGuidedSpellOriginSummary,
-	GUIDED_BUILD_CHOICES_TITLE,
-	GUIDED_BUILD_GRANTS_TITLE,
 	isGuidedCharacterOrigin,
-	splitGuidedNoteLines
+	summarizeGuidedCharacterOrigin
 } from '$lib/domain/characters/guided-origin-summary';
 
 export const load: PageServerLoad = async ({ locals, params, url }) => {
@@ -118,55 +115,3 @@ export const actions: Actions = {
 		}
 	}
 };
-
-function summarizeGuidedCharacterOrigin(character: {
-	race?: string;
-	subrace?: string;
-	className?: string;
-	subclass?: string;
-	background?: string;
-	contentMode: string;
-	noteItems: Array<{ title: string; content: string }>;
-	spellItems: Array<{ name: string; isPrepared: boolean }>;
-	contentProfileMetadata?: {
-		guidedBaseline?: {
-			noteItems: Array<{ title: string; content: string }>;
-			spellItems: Array<{ name: string; isPrepared: boolean }>;
-		};
-	};
-}) {
-	const guidedBaseline = character.contentProfileMetadata?.guidedBaseline;
-	const originNoteItems = guidedBaseline?.noteItems ?? character.noteItems;
-	const originSpellItems = guidedBaseline?.spellItems ?? character.spellItems;
-
-	if (!isGuidedCharacterOrigin(originNoteItems)) {
-		return null;
-	}
-
-	const grantsNote = originNoteItems.find((note) => note.title === GUIDED_BUILD_GRANTS_TITLE);
-	const choicesNote = originNoteItems.find((note) => note.title === GUIDED_BUILD_CHOICES_TITLE);
-	const lineageParts = [character.race, character.subrace].filter(Boolean);
-	const classParts = [character.className, character.subclass].filter(Boolean);
-	const spellOriginSummary = deriveGuidedSpellOriginSummary(
-		originNoteItems,
-		originSpellItems.map((spell) => ({
-			name: spell.name,
-			isPrepared: spell.isPrepared
-		}))
-	);
-
-	return {
-		lineageSummary: lineageParts.join(' / '),
-		classSummary: classParts.join(' / '),
-		backgroundSummary: character.background ?? '',
-		statusSummary:
-			character.contentMode === 'canon'
-				? 'Still on the canonical guided path.'
-				: 'This draft has diverged from the canonical guided path.',
-		grantLines: splitGuidedNoteLines(grantsNote?.content),
-		choiceLines: splitGuidedNoteLines(choicesNote?.content),
-		grantedSpellNames: spellOriginSummary.grantedSpellNames,
-		chosenSpellNames: spellOriginSummary.chosenSpellNames,
-		preparedSpellNames: spellOriginSummary.preparedSpellNames
-	};
-}

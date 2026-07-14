@@ -1,5 +1,6 @@
 import type {
 	CharacterAttackItem,
+	CharacterGuidedBaselineIdentitySnapshot,
 	CharacterGuidedBaselineSnapshot,
 	CharacterInventoryItem,
 	CharacterNoteItem,
@@ -45,12 +46,14 @@ type NoteLike = {
 };
 
 export function createCharacterGuidedBaselineSnapshot(input: {
+	identity?: CharacterGuidedBaselineIdentitySnapshot;
 	attackItems: CharacterAttackItem[];
 	spellItems: CharacterSpellItem[];
 	inventoryItems: CharacterInventoryItem[];
 	noteItems: CharacterNoteItem[];
 }): CharacterGuidedBaselineSnapshot {
 	return {
+		identity: input.identity ? { ...input.identity } : undefined,
 		attackItems: input.attackItems.map((item) => ({ ...item })),
 		spellItems: input.spellItems.map((item) => ({ ...item })),
 		inventoryItems: input.inventoryItems.map((item) => ({ ...item })),

@@ -1,4 +1,8 @@
-import type { CharacterNoteItem, CharacterSpellItem } from '$lib/types/domain/character';
+import type {
+	CharacterGuidedBaselineSnapshot,
+	CharacterNoteItem,
+	CharacterSpellItem
+} from '$lib/types/domain/character';
 
 export const GUIDED_BUILD_GRANTS_TITLE = 'Guided build grants';
 export const GUIDED_BUILD_CHOICES_TITLE = 'Guided build choices';
@@ -6,6 +10,18 @@ export const GUIDED_FOLLOW_UP_CHOICES_TITLE = 'Guided follow-up choices';
 const GUIDED_CHOSEN_SPELLS_PREFIX = 'Chosen spells: ';
 
 export type GuidedSpellOriginSummary = {
+	grantedSpellNames: string[];
+	chosenSpellNames: string[];
+	preparedSpellNames: string[];
+};
+
+export type GuidedOriginSummary = {
+	lineageSummary: string;
+	classSummary: string;
+	backgroundSummary: string;
+	statusSummary: string;
+	grantLines: string[];
+	choiceLines: string[];
 	grantedSpellNames: string[];
 	chosenSpellNames: string[];
 	preparedSpellNames: string[];
@@ -52,6 +68,61 @@ export function deriveGuidedSpellOriginSummary(
 		grantedSpellNames,
 		chosenSpellNames,
 		preparedSpellNames
+	};
+}
+
+export function summarizeGuidedCharacterOrigin(character: {
+	race?: string;
+	subrace?: string;
+	className?: string;
+	subclass?: string;
+	background?: string;
+	contentMode: string;
+	noteItems: Array<{ title: string; content: string }>;
+	spellItems: Array<{ name: string; isPrepared: boolean }>;
+	contentProfileMetadata?: {
+		guidedBaseline?: Pick<CharacterGuidedBaselineSnapshot, 'identity' | 'noteItems' | 'spellItems'>;
+	};
+}): GuidedOriginSummary | null {
+	const guidedBaseline = character.contentProfileMetadata?.guidedBaseline;
+	const originNoteItems = guidedBaseline?.noteItems ?? character.noteItems;
+	const originSpellItems = guidedBaseline?.spellItems ?? character.spellItems;
+
+	if (!isGuidedCharacterOrigin(originNoteItems)) {
+		return null;
+	}
+
+	const grantsNote = originNoteItems.find((note) => note.title === GUIDED_BUILD_GRANTS_TITLE);
+	const choicesNote = originNoteItems.find((note) => note.title === GUIDED_BUILD_CHOICES_TITLE);
+	const identity = guidedBaseline?.identity;
+	const lineageParts = [character.race, character.subrace].some(Boolean)
+		? [character.race, character.subrace].filter(Boolean)
+		: [identity?.race, identity?.subrace].filter(Boolean);
+	const classParts = [character.className, character.subclass].some(Boolean)
+		? [character.className, character.subclass].filter(Boolean)
+		: [identity?.className, identity?.subclass].filter(Boolean);
+	const backgroundSummary = character.background || identity?.background || '';
+	const spellOriginSummary = deriveGuidedSpellOriginSummary(
+		originNoteItems,
+		originSpellItems.map((spell) => ({
+			name: spell.name,
+			isPrepared: spell.isPrepared
+		}))
+	);
+
+	return {
+		lineageSummary: lineageParts.join(' / '),
+		classSummary: classParts.join(' / '),
+		backgroundSummary,
+		statusSummary:
+			character.contentMode === 'canon'
+				? 'Still on the canonical guided path.'
+				: 'This draft has diverged from the canonical guided path.',
+		grantLines: splitGuidedNoteLines(grantsNote?.content),
+		choiceLines: splitGuidedNoteLines(choicesNote?.content),
+		grantedSpellNames: spellOriginSummary.grantedSpellNames,
+		chosenSpellNames: spellOriginSummary.chosenSpellNames,
+		preparedSpellNames: spellOriginSummary.preparedSpellNames
 	};
 }
 

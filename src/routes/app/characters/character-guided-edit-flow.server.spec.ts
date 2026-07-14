@@ -7,7 +7,8 @@ import { listGuidedCharacterCatalog } from '$lib/server/repositories/catalog';
 import {
 	createE2EMockSupabaseClient,
 	getE2EMockSession,
-	resetE2EMockState
+	resetE2EMockState,
+	updateE2ECharacterForUser
 } from '$lib/server/e2e/mock-app';
 
 describe('guided character edit flow with E2E mock', () => {
@@ -311,6 +312,73 @@ describe('guided character edit flow with E2E mock', () => {
 						noteItems: expect.any(Array)
 					})
 				})
+			})
+		});
+	});
+
+	it('restores guided lineage and class summaries from baseline identity when current labels are blank', async () => {
+		resetE2EMockState();
+
+		const supabase = createE2EMockSupabaseClient();
+		const session = getE2EMockSession();
+		const catalog = await listGuidedCharacterCatalog(supabase);
+
+		let redirectLocation = '';
+
+		try {
+			await createActions.guided?.({
+				locals: { session, supabase },
+				request: createGuidedRequest(catalog)
+			} as never);
+		} catch (redirect) {
+			expect(redirect).toMatchObject({ status: 303 });
+			redirectLocation = (redirect as { location: string }).location;
+		}
+
+		const redirectedUrl = new URL(`http://localhost${redirectLocation}`);
+		const characterId = redirectedUrl.pathname.split('/').at(-1) ?? '';
+		const guidedCharacter = updateE2ECharacterForUser(session.user.id, characterId, {
+			...(await loadGuidedCharacterDetail(session.user.id, supabase, characterId)),
+			race: undefined,
+			subrace: undefined,
+			className: undefined,
+			subclass: undefined,
+			background: undefined
+		});
+
+		expect(guidedCharacter).toBeTruthy();
+
+		await expect(
+			characterDetailLoad({
+				locals: { session, supabase },
+				params: { characterId },
+				url: new URL(`http://localhost/app/characters/${characterId}?guided=1`)
+			} as never)
+		).resolves.toMatchObject({
+			guidedOriginSummary: {
+				lineageSummary: 'Humano',
+				classSummary: 'Clerigo / Life Domain',
+				backgroundSummary: 'Acolyte'
+			}
+		});
+
+		await expect(
+			characterEditLoad({
+				locals: { session, supabase },
+				params: { characterId },
+				url: new URL(`http://localhost/app/characters/${characterId}/edit?guided=1`)
+			} as never)
+		).resolves.toMatchObject({
+			guidedOriginSummary: {
+				lineageSummary: 'Humano',
+				classSummary: 'Clerigo / Life Domain',
+				backgroundSummary: 'Acolyte'
+			},
+			values: expect.objectContaining({
+				speciesId: expect.any(String),
+				classId: expect.any(String),
+				subclassId: expect.any(String),
+				backgroundId: expect.any(String)
 			})
 		});
 	});
@@ -902,4 +970,22 @@ function createGuidedEditRequestWithoutGuidedNotes(character: {
 			notes: ''
 		})
 	});
+}
+
+async function loadGuidedCharacterDetail(
+	userId: string,
+	supabase: ReturnType<typeof createE2EMockSupabaseClient>,
+	characterId: string
+) {
+	const loadedDetail = await characterDetailLoad({
+		locals: { session: getE2EMockSession(), supabase },
+		params: { characterId },
+		url: new URL(`http://localhost/app/characters/${characterId}?guided=1`)
+	} as never);
+
+	if (!loadedDetail || !('character' in loadedDetail)) {
+		throw new Error(`Expected guided character ${characterId} to load for user ${userId}.`);
+	}
+
+	return loadedDetail.character;
 }
