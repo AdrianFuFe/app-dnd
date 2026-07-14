@@ -70,13 +70,64 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 		guidedBaseline: character.contentProfileMetadata?.guidedBaseline ?? null,
 		guidedOriginSummary: summarizeGuidedCharacterOrigin(character),
 		currentEditState: summarizeCurrentEditState(character),
-		values: createCharacterFormValuesFromInput(character),
+		values: createCharacterFormValuesFromInput(
+			restoreCharacterCatalogSelectionsFromNames(character, catalog)
+		),
 		catalog,
 		featCatalog: expandedContentCatalog.feats,
 		spellCatalog: expandedContentCatalog.spells,
 		equipmentCatalog: expandedContentCatalog.equipment
 	};
 };
+
+function restoreCharacterCatalogSelectionsFromNames(
+	character: Parameters<typeof createCharacterFormValuesFromInput>[0],
+	catalog: Awaited<ReturnType<typeof listCharacterCreationCatalog>>
+) {
+	const species =
+		character.speciesId && character.speciesId.length > 0
+			? catalog.speciesOptions.find((option) => option.id === character.speciesId)
+			: character.race
+				? catalog.speciesOptions.find((option) => option.name === character.race)
+				: undefined;
+	const subspecies =
+		character.subspeciesId && character.subspeciesId.length > 0
+			? catalog.subspeciesOptions.find((option) => option.id === character.subspeciesId)
+			: character.subrace && species
+				? catalog.subspeciesOptions.find(
+						(option) => option.name === character.subrace && option.speciesSlug === species.slug
+					)
+				: undefined;
+	const characterClass =
+		character.classId && character.classId.length > 0
+			? catalog.classOptions.find((option) => option.id === character.classId)
+			: character.className
+				? catalog.classOptions.find((option) => option.name === character.className)
+				: undefined;
+	const subclass =
+		character.subclassId && character.subclassId.length > 0
+			? catalog.subclassOptions.find((option) => option.id === character.subclassId)
+			: character.subclass && characterClass
+				? catalog.subclassOptions.find(
+						(option) => option.name === character.subclass && option.classSlug === characterClass.slug
+					)
+				: undefined;
+	const background =
+		character.backgroundId && character.backgroundId.length > 0
+			? catalog.backgroundOptions.find((option) => option.id === character.backgroundId)
+			: character.background
+				? catalog.backgroundOptions.find((option) => option.name === character.background)
+				: undefined;
+
+	return {
+		...character,
+		speciesId: species?.id ?? character.speciesId,
+		subspeciesId: subspecies?.id ?? character.subspeciesId,
+		classId: characterClass?.id ?? character.classId,
+		subclassId: subclass?.id ?? character.subclassId,
+		backgroundId: background?.id ?? character.backgroundId
+	};
+}
 
 export const actions: Actions = {
 	default: async ({ locals, params, request, url }) => {

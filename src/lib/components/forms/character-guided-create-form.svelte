@@ -689,7 +689,7 @@
 				<select
 					class="block w-full rounded-lg border-stone-300"
 					name="speciesId"
-					value={formValues.speciesId}
+					bind:value={formValues.speciesId}
 					onchange={handleSpeciesChange}
 				>
 					<option value="">Choose species</option>
@@ -707,7 +707,7 @@
 				<select
 					class="block w-full rounded-lg border-stone-300"
 					name="subspeciesId"
-					value={formValues.subspeciesId}
+					bind:value={formValues.subspeciesId}
 					onchange={(event) => {
 						formValues = {
 							...formValues,
@@ -775,7 +775,7 @@
 				<select
 					class="block w-full rounded-lg border-stone-300"
 					name="classId"
-					value={formValues.classId}
+					bind:value={formValues.classId}
 					onchange={handleClassChange}
 				>
 					<option value="">Choose class</option>
@@ -793,7 +793,7 @@
 				<select
 					class="block w-full rounded-lg border-stone-300"
 					name="subclassId"
-					value={formValues.subclassId}
+					bind:value={formValues.subclassId}
 					onchange={(event) => {
 						formValues = {
 							...formValues,
@@ -861,7 +861,7 @@
 				<select
 					class="block w-full rounded-lg border-stone-300"
 					name="backgroundId"
-					value={formValues.backgroundId}
+					bind:value={formValues.backgroundId}
 					onchange={(event) => {
 						formValues = {
 							...formValues,

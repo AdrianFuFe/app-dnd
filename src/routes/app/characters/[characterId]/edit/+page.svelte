@@ -2,11 +2,11 @@
 	import CharacterCreateForm from '$lib/components/forms/character-create-form.svelte';
 	import type { PageData, ActionData } from './$types';
 
-	let { data, form }: { data: PageData; form: ActionData } = $props();
+let { data, form }: { data: PageData; form: ActionData } = $props();
 
-	function hasManualFormState(): boolean {
-		return Boolean(form?.formError) || Object.keys(form?.fieldErrors ?? {}).length > 0;
-	}
+function hasManualFormState(): boolean {
+	return Boolean(form?.formError) || Object.keys(form?.fieldErrors ?? {}).length > 0;
+}
 </script>
 
 <svelte:head>
@@ -22,8 +22,11 @@
 			structured notes, and structured inventory flow used during creation, now anchored to
 			this saved draft.
 		</p>
-		{#if data.guidedHandoff}
-			<div class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
+		{#if data.guidedHandoff || data.guidedBaseline || data.guidedOriginSummary}
+			<div
+				class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4"
+				data-testid="guided-edit-handoff"
+			>
 				<p class="text-sm font-semibold text-amber-950">Guided-to-custom handoff</p>
 				<p class="mt-2 max-w-3xl text-sm leading-6 text-amber-900">
 					This character came from the guided creator. This editor is the next step for
@@ -197,7 +200,7 @@
 		equipmentCatalog={data.equipmentCatalog}
 		featCatalog={data.featCatalog}
 		spellCatalog={data.spellCatalog}
-		guidedOrigin={data.guidedHandoff}
+		guidedOrigin={Boolean(data.guidedHandoff || data.guidedBaseline || data.guidedOriginSummary)}
 		guidedInventoryAdopted={data.guidedInventoryAdopted}
 		guidedInventoryAdoptHref={data.guidedInventoryAdoptHref}
 		guidedNoteAdopted={data.guidedNoteAdopted}
@@ -205,6 +208,8 @@
 		guidedInventoryPreviewItems={data.guidedInventoryPreviewItems}
 		guidedNotePreviewItems={data.guidedNotePreviewItems}
 		guidedBaseline={data.guidedBaseline}
+		guidedEditState={data.currentEditState}
+		guidedOriginSummary={data.guidedOriginSummary}
 		values={hasManualFormState() ? (form?.values ?? data.values) : data.values}
 		errors={form?.fieldErrors ?? {}}
 		formError={form?.formError}

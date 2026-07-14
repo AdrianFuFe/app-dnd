@@ -96,6 +96,23 @@
 		label: string;
 		status: 'aligned' | 'diverged';
 	};
+	type GuidedEditStateSummary = {
+		contentMode: string;
+		statusSummary: string;
+		reasonLines: string[];
+		guidedDivergedSections: string[];
+	};
+	type GuidedOriginSummary = {
+		lineageSummary: string;
+		classSummary: string;
+		backgroundSummary: string;
+		statusSummary: string;
+		grantLines: string[];
+		choiceLines: string[];
+		grantedSpellNames: string[];
+		chosenSpellNames: string[];
+		preparedSpellNames: string[];
+	};
 
 	function createEditableFormValues(values: CharacterCreateFormValues) {
 		return {
@@ -149,6 +166,8 @@
 		guidedInventoryPreviewItems = [],
 		guidedNotePreviewItems = [],
 		guidedBaseline = null,
+		guidedEditState = null,
+		guidedOriginSummary = null,
 		values,
 		errors = {},
 		formError,
@@ -169,6 +188,8 @@
 		guidedInventoryPreviewItems?: CharacterInventoryItem[];
 		guidedNotePreviewItems?: CharacterNoteItem[];
 		guidedBaseline?: CharacterGuidedBaselineSnapshot | null;
+		guidedEditState?: GuidedEditStateSummary | null;
+		guidedOriginSummary?: GuidedOriginSummary | null;
 		values: CharacterCreateFormValues;
 		errors?: CharacterFieldErrors;
 		formError?: string;
@@ -343,6 +364,13 @@
 
 	function firstError(field: keyof CharacterCreateFormValues): string | undefined {
 		return errors[field]?.[0];
+	}
+
+	function updateFormValue(field: keyof CharacterCreateFormValues, value: string) {
+		formValues = {
+			...formValues,
+			[field]: value
+		};
 	}
 
 	function hasGuidedOriginNotes(): boolean {
@@ -1549,6 +1577,133 @@
 		<input type="hidden" name="contentMode" value="canon" />
 	</section>
 
+	{#if guidedOrigin}
+		<section
+			class="rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm"
+			data-testid="guided-edit-handoff"
+		>
+			<p class="text-sm font-semibold text-amber-950">Guided-to-custom handoff</p>
+			<p class="mt-2 max-w-3xl text-sm leading-6 text-amber-900">
+				This character came from the guided creator. This editor is the next step for deeper
+				control over attacks, spells, inventory, and other structured fields.
+			</p>
+			<p class="mt-2 max-w-3xl text-sm leading-6 text-amber-900">
+				Changes here can intentionally move the draft beyond the canonical guided baseline
+				while keeping the same ruleset.
+			</p>
+		</section>
+
+		{#if guidedEditState}
+			<section
+				class="rounded-3xl border border-violet-200 bg-violet-50 p-6 shadow-sm"
+				data-testid="guided-current-edit-state"
+			>
+				<div class="flex flex-wrap items-center gap-3">
+					<p class="text-sm font-semibold text-violet-950">Current edit state</p>
+					<span
+						class="rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-[0.15em] {guidedEditState.contentMode === 'canon'
+							? 'border-emerald-300 bg-emerald-100 text-emerald-900'
+							: 'border-violet-300 bg-white text-violet-900'}"
+					>
+						{guidedEditState.contentMode}
+					</span>
+				</div>
+				<p class="mt-2 max-w-3xl text-sm leading-6 text-violet-900">
+					{guidedEditState.statusSummary}
+				</p>
+				{#if guidedEditState.guidedDivergedSections.length > 0}
+					<div class="mt-3 flex flex-wrap gap-2">
+						{#each guidedEditState.guidedDivergedSections as section}
+							<span
+								class="rounded-full border border-amber-300 bg-white px-3 py-1 text-xs font-medium uppercase tracking-[0.15em] text-amber-900"
+							>
+								{section} diverged
+							</span>
+						{/each}
+					</div>
+				{/if}
+				{#if guidedEditState.reasonLines.length > 0}
+					<ul class="mt-3 space-y-2 text-sm text-violet-900">
+						{#each guidedEditState.reasonLines as line}
+							<li>{line}</li>
+						{/each}
+					</ul>
+				{/if}
+			</section>
+		{/if}
+
+		{#if guidedOriginSummary}
+			<section
+				class="rounded-3xl border border-sky-200 bg-sky-50 p-6 shadow-sm"
+				data-testid="guided-origin-summary"
+			>
+				<p class="text-sm font-semibold text-sky-950">Guided origin snapshot</p>
+				<p class="mt-2 max-w-3xl text-sm leading-6 text-sky-900">
+					{guidedOriginSummary.statusSummary}
+				</p>
+
+				<div class="mt-4 grid gap-3 md:grid-cols-3">
+					<div class="rounded-2xl border border-sky-200 bg-white px-4 py-3">
+						<p class="text-xs font-medium uppercase tracking-[0.15em] text-sky-700">
+							Lineage path
+						</p>
+						<p class="mt-2 text-sm font-semibold text-sky-950">
+							{guidedOriginSummary.lineageSummary || 'Not recorded'}
+						</p>
+					</div>
+					<div class="rounded-2xl border border-sky-200 bg-white px-4 py-3">
+						<p class="text-xs font-medium uppercase tracking-[0.15em] text-sky-700">
+							Class path
+						</p>
+						<p class="mt-2 text-sm font-semibold text-sky-950">
+							{guidedOriginSummary.classSummary || 'Not recorded'}
+						</p>
+					</div>
+					<div class="rounded-2xl border border-sky-200 bg-white px-4 py-3">
+						<p class="text-xs font-medium uppercase tracking-[0.15em] text-sky-700">
+							Background
+						</p>
+						<p class="mt-2 text-sm font-semibold text-sky-950">
+							{guidedOriginSummary.backgroundSummary || 'Not recorded'}
+						</p>
+					</div>
+				</div>
+
+				<div class="mt-4 grid gap-4 xl:grid-cols-2">
+					<div class="rounded-2xl border border-sky-200 bg-white px-4 py-4">
+						<p class="text-sm font-semibold text-sky-950">Auto-applied during guided creation</p>
+						{#if guidedOriginSummary.grantLines.length === 0}
+							<p class="mt-2 text-sm leading-6 text-sky-900">
+								No preserved guided grants were found on this draft.
+							</p>
+						{:else}
+							<ul class="mt-3 space-y-2 text-sm text-sky-900">
+								{#each guidedOriginSummary.grantLines as line}
+									<li>{line}</li>
+								{/each}
+							</ul>
+						{/if}
+					</div>
+
+					<div class="rounded-2xl border border-sky-200 bg-white px-4 py-4">
+						<p class="text-sm font-semibold text-sky-950">Chosen during guided creation</p>
+						{#if guidedOriginSummary.choiceLines.length === 0}
+							<p class="mt-2 text-sm leading-6 text-sky-900">
+								No preserved guided choices were found on this draft.
+							</p>
+						{:else}
+							<ul class="mt-3 space-y-2 text-sm text-sky-900">
+								{#each guidedOriginSummary.choiceLines as line}
+									<li>{line}</li>
+								{/each}
+							</ul>
+						{/if}
+					</div>
+				</div>
+			</section>
+		{/if}
+	{/if}
+
 	<section id="identity" class="scroll-mt-24 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
 		<div class="space-y-1">
 			<h2 class="text-xl font-semibold text-stone-900">Identity</h2>
@@ -1578,7 +1733,7 @@
 				<select
 					class="block w-full rounded-lg border-stone-300"
 					name="speciesId"
-					value={formValues.speciesId}
+					bind:value={formValues.speciesId}
 					onchange={handleSpeciesChange}
 				>
 					<option value="">Select a species</option>
@@ -1605,7 +1760,7 @@
 				<select
 					class="block w-full rounded-lg border-stone-300"
 					name="subspeciesId"
-					value={formValues.subspeciesId}
+					bind:value={formValues.subspeciesId}
 					onchange={(event) => {
 						formValues = {
 							...formValues,
@@ -1641,7 +1796,7 @@
 				<select
 					class="block w-full rounded-lg border-stone-300"
 					name="classId"
-					value={formValues.classId}
+					bind:value={formValues.classId}
 					onchange={handleClassChange}
 				>
 					<option value="">Select a class</option>
@@ -1668,7 +1823,7 @@
 				<select
 					class="block w-full rounded-lg border-stone-300"
 					name="subclassId"
-					value={formValues.subclassId}
+					bind:value={formValues.subclassId}
 					onchange={(event) => {
 						formValues = {
 							...formValues,
@@ -1720,7 +1875,7 @@
 				<select
 					class="block w-full rounded-lg border-stone-300"
 					name="backgroundId"
-					value={formValues.backgroundId}
+					bind:value={formValues.backgroundId}
 					onchange={(event) => {
 						formValues = {
 							...formValues,
@@ -1767,23 +1922,101 @@
 		</div>
 
 		<div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-			{#each abilityFields as field (field.name)}
-				<label class="block">
-					<span class="mb-1 block text-sm font-medium text-stone-700">{field.label}</span>
-					<input
-						class="block w-full rounded-lg border-stone-300"
-						type="number"
-						name={field.name}
-						required
-						min="1"
-						max="30"
-						bind:value={formValues[field.name]}
-					/>
-					{#if firstError(field.name)}
-						<p class="mt-1 text-sm text-red-700">{firstError(field.name)}</p>
-					{/if}
-				</label>
-			{/each}
+			<label class="block">
+				<span class="mb-1 block text-sm font-medium text-stone-700">Strength</span>
+				<input
+					class="block w-full rounded-lg border-stone-300"
+					type="number"
+					name="strength"
+					required
+					min="1"
+					max="30"
+					bind:value={formValues.strength}
+				/>
+				{#if firstError('strength')}
+					<p class="mt-1 text-sm text-red-700">{firstError('strength')}</p>
+				{/if}
+			</label>
+
+			<label class="block">
+				<span class="mb-1 block text-sm font-medium text-stone-700">Dexterity</span>
+				<input
+					class="block w-full rounded-lg border-stone-300"
+					type="number"
+					name="dexterity"
+					required
+					min="1"
+					max="30"
+					bind:value={formValues.dexterity}
+				/>
+				{#if firstError('dexterity')}
+					<p class="mt-1 text-sm text-red-700">{firstError('dexterity')}</p>
+				{/if}
+			</label>
+
+			<label class="block">
+				<span class="mb-1 block text-sm font-medium text-stone-700">Constitution</span>
+				<input
+					class="block w-full rounded-lg border-stone-300"
+					type="number"
+					name="constitution"
+					required
+					min="1"
+					max="30"
+					bind:value={formValues.constitution}
+				/>
+				{#if firstError('constitution')}
+					<p class="mt-1 text-sm text-red-700">{firstError('constitution')}</p>
+				{/if}
+			</label>
+
+			<label class="block">
+				<span class="mb-1 block text-sm font-medium text-stone-700">Intelligence</span>
+				<input
+					class="block w-full rounded-lg border-stone-300"
+					type="number"
+					name="intelligence"
+					required
+					min="1"
+					max="30"
+					bind:value={formValues.intelligence}
+				/>
+				{#if firstError('intelligence')}
+					<p class="mt-1 text-sm text-red-700">{firstError('intelligence')}</p>
+				{/if}
+			</label>
+
+			<label class="block">
+				<span class="mb-1 block text-sm font-medium text-stone-700">Wisdom</span>
+				<input
+					class="block w-full rounded-lg border-stone-300"
+					type="number"
+					name="wisdom"
+					required
+					min="1"
+					max="30"
+					bind:value={formValues.wisdom}
+				/>
+				{#if firstError('wisdom')}
+					<p class="mt-1 text-sm text-red-700">{firstError('wisdom')}</p>
+				{/if}
+			</label>
+
+			<label class="block">
+				<span class="mb-1 block text-sm font-medium text-stone-700">Charisma</span>
+				<input
+					class="block w-full rounded-lg border-stone-300"
+					type="number"
+					name="charisma"
+					required
+					min="1"
+					max="30"
+					bind:value={formValues.charisma}
+				/>
+				{#if firstError('charisma')}
+					<p class="mt-1 text-sm text-red-700">{firstError('charisma')}</p>
+				{/if}
+			</label>
 		</div>
 	</section>
 
@@ -1799,22 +2032,94 @@
 		</div>
 
 		<div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-			{#each combatFields as field (field.name)}
-				<label class="block">
-					<span class="mb-1 block text-sm font-medium text-stone-700">{field.label}</span>
-					<input
-						class="block w-full rounded-lg border-stone-300"
-						type="number"
-						name={field.name}
-						required
-						min={'min' in field ? field.min : undefined}
-						bind:value={formValues[field.name]}
-					/>
-					{#if firstError(field.name)}
-						<p class="mt-1 text-sm text-red-700">{firstError(field.name)}</p>
-					{/if}
-				</label>
-			{/each}
+			<label class="block">
+				<span class="mb-1 block text-sm font-medium text-stone-700">Max HP</span>
+				<input
+					class="block w-full rounded-lg border-stone-300"
+					type="number"
+					name="maxHp"
+					required
+					min="1"
+					bind:value={formValues.maxHp}
+				/>
+				{#if firstError('maxHp')}
+					<p class="mt-1 text-sm text-red-700">{firstError('maxHp')}</p>
+				{/if}
+			</label>
+
+			<label class="block">
+				<span class="mb-1 block text-sm font-medium text-stone-700">Current HP</span>
+				<input
+					class="block w-full rounded-lg border-stone-300"
+					type="number"
+					name="currentHp"
+					required
+					min="0"
+					bind:value={formValues.currentHp}
+				/>
+				{#if firstError('currentHp')}
+					<p class="mt-1 text-sm text-red-700">{firstError('currentHp')}</p>
+				{/if}
+			</label>
+
+			<label class="block">
+				<span class="mb-1 block text-sm font-medium text-stone-700">Temporary HP</span>
+				<input
+					class="block w-full rounded-lg border-stone-300"
+					type="number"
+					name="temporaryHp"
+					required
+					min="0"
+					bind:value={formValues.temporaryHp}
+				/>
+				{#if firstError('temporaryHp')}
+					<p class="mt-1 text-sm text-red-700">{firstError('temporaryHp')}</p>
+				{/if}
+			</label>
+
+			<label class="block">
+				<span class="mb-1 block text-sm font-medium text-stone-700">Armor Class</span>
+				<input
+					class="block w-full rounded-lg border-stone-300"
+					type="number"
+					name="armorClass"
+					required
+					min="0"
+					bind:value={formValues.armorClass}
+				/>
+				{#if firstError('armorClass')}
+					<p class="mt-1 text-sm text-red-700">{firstError('armorClass')}</p>
+				{/if}
+			</label>
+
+			<label class="block">
+				<span class="mb-1 block text-sm font-medium text-stone-700">Initiative</span>
+				<input
+					class="block w-full rounded-lg border-stone-300"
+					type="number"
+					name="initiative"
+					required
+					bind:value={formValues.initiative}
+				/>
+				{#if firstError('initiative')}
+					<p class="mt-1 text-sm text-red-700">{firstError('initiative')}</p>
+				{/if}
+			</label>
+
+			<label class="block">
+				<span class="mb-1 block text-sm font-medium text-stone-700">Speed</span>
+				<input
+					class="block w-full rounded-lg border-stone-300"
+					type="number"
+					name="speed"
+					required
+					min="0"
+					bind:value={formValues.speed}
+				/>
+				{#if firstError('speed')}
+					<p class="mt-1 text-sm text-red-700">{firstError('speed')}</p>
+				{/if}
+			</label>
 
 			<label class="block">
 				<span class="mb-1 block text-sm font-medium text-stone-700">Hit Dice</span>

@@ -52,7 +52,10 @@
 		</p>
 	</section>
 
-	<section class="rounded-3xl border border-emerald-200 bg-emerald-50/60 p-6 shadow-sm">
+	<section
+		class="rounded-3xl border border-emerald-200 bg-emerald-50/60 p-6 shadow-sm"
+		data-testid="guided-handoff-preview"
+	>
 		<div class="space-y-2">
 			<p class="text-sm font-medium uppercase tracking-[0.2em] text-emerald-700">
 				Guided handoff

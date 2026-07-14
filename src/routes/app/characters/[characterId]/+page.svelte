@@ -413,7 +413,10 @@
 		{/if}
 
 		{#if data.character.contentMode === 'custom' && data.customPathSummary.reasonLines.length}
-			<div class="mt-4 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-4">
+			<div
+				class="mt-4 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-4"
+				data-testid="custom-path-summary"
+			>
 				<p class="text-sm font-semibold text-violet-950">Custom path reasons</p>
 				<p class="mt-2 max-w-2xl text-sm leading-6 text-violet-900">
 					{#if guidedOriginNotes}

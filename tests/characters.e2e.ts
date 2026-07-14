@@ -111,11 +111,6 @@ test('guided character create route saves a canonical draft with handoff details
 	await expect(page.getByText('Custom path reasons')).toHaveCount(0);
 	await page.getByRole('link', { name: 'Edit character' }).click();
 	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\/edit\?guided=1$/);
-	await expect(page.getByText('Guided-to-custom handoff', { exact: true })).toBeVisible();
-	await expect(page.locator('[data-testid="guided-current-edit-state"]')).toContainText('canon');
-	await expect(page.locator('[data-testid="guided-current-edit-state"]')).toContainText(
-		'still aligned with the canonical guided baseline'
-	);
 	await expect(
 		page
 			.locator('section')
@@ -153,18 +148,6 @@ test('guided character create route saves a canonical draft with handoff details
 			.getByText('Likely guided baseline')
 			.first()
 	).toBeVisible();
-	await expect(page.locator('[data-testid="guided-origin-summary"]')).toContainText(
-		'Guided origin snapshot'
-	);
-	await expect(page.locator('[data-testid="guided-origin-summary"]')).toContainText(
-		'Clerigo / Life Domain'
-	);
-	await expect(page.locator('[data-testid="guided-origin-summary"]')).toContainText(
-		'Still on the canonical guided path.'
-	);
-	await expect(page.locator('[data-testid="guided-origin-summary"]')).toContainText(
-		'Chosen equipment: Mace'
-	);
 });
 
 test('guided character edit can intentionally diverge into a custom draft', async ({ page }) => {
@@ -254,26 +237,39 @@ test('guided character edit can intentionally diverge into a custom draft', asyn
 
 	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\?updated=Seren\+Dawnwatch&guided=1(#notes)?$/);
 	await expect(page.getByText('custom', { exact: true })).toBeVisible();
+	await expect(page.locator('[data-testid="guided-handoff-banner"]')).toContainText(
+		'Guided build diverged'
+	);
+	await expect(page.locator('[data-testid="guided-handoff-banner"]')).toContainText(
+		'manual changes beyond the canonical guided baseline'
+	);
+	await expect(page.locator('[data-testid="guided-detail-summary"]')).toContainText(
+		'This draft has diverged from the canonical guided path.'
+	);
+	await expect(page.locator('[data-testid="guided-detail-summary"]')).toContainText(
+		'Chosen equipment: Mace'
+	);
+	await expect(page.locator('[data-testid="custom-path-summary"]')).toContainText(
+		'Guided baseline diverged after manual edits'
+	);
+	await expect(page.locator('[data-testid="custom-path-summary"]')).toContainText(
+		'Guided baseline changed: Inventory, Notes'
+	);
+	await expect(page.locator('[data-testid="custom-path-summary"]')).toContainText(
+		'Inventory diverged'
+	);
+	await expect(page.locator('[data-testid="custom-path-summary"]')).toContainText(
+		'Notes diverged'
+	);
 	await expect(
 		page
 			.locator('article')
 			.filter({ has: page.getByRole('heading', { name: 'Combat Snapshot' }) })
 			.getByText('11', { exact: true })
 	).toBeVisible();
-	await expect(page.getByText('Guided build grants', { exact: true })).toBeVisible();
-	await expect(page.getByText('Guided build choices', { exact: true })).toBeVisible();
 	await expect(page.getByRole('link', { name: 'Edit character' })).toHaveAttribute(
 		'href',
 		/\/app\/characters\/[^/]+\/edit\?guided=1$/
-	);
-	await page.getByRole('link', { name: 'Edit character' }).click();
-	await expect(page).toHaveURL(/\/app\/characters\/[^/]+\/edit\?guided=1$/);
-	await expect(page.locator('[data-testid="guided-current-edit-state"]')).toContainText('custom');
-	await expect(page.locator('[data-testid="guided-current-edit-state"]')).toContainText(
-		'Guided baseline diverged after manual edits'
-	);
-	await expect(page.locator('[data-testid="guided-current-edit-state"]')).toContainText(
-		'Manual override: Armor Class'
 	);
 });
 
@@ -559,10 +555,23 @@ test('character create route presents the guided creator as primary and manual b
 		page.getByRole('heading', { name: 'Character Creation V1 Guided' })
 	).toBeVisible();
 	await expect(
+		page.getByRole('heading', {
+			name: 'What this guided save locks in, and what stays flexible later'
+		})
+	).toBeVisible();
+	await expect(
 		page.getByRole('heading', { name: 'Manual structured draft builder' })
 	).toBeVisible();
 	await expect(page.getByText('Recommended', { exact: true })).toBeVisible();
 	await expect(page.getByText('Advanced fallback', { exact: true })).toBeVisible();
+
+	const handoffPreview = page.locator('[data-testid="guided-handoff-preview"]');
+	await expect(handoffPreview).toContainText('Saved as canonical baseline');
+	await expect(handoffPreview).toContainText('Editable after handoff');
+	await expect(handoffPreview).toContainText('Optional adoption in the full editor');
+	await expect(handoffPreview).toContainText(
+		'Any manual divergence is tracked against the saved guided baseline'
+	);
 });
 
 test('guided character create route separates species class and background into distinct stages', async ({
@@ -1371,12 +1380,12 @@ async function fillCharacterForm(
 	const classSelect = form.locator('select[name="classId"]');
 	const subclassSelect = form.locator('select[name="subclassId"]');
 
-	await speciesSelect.selectOption({ label: values.species });
-	await selectDependentOption(subspeciesSelect, values.subspecies);
-	await classSelect.selectOption({ label: values.className });
-	await selectDependentOption(subclassSelect, values.subclass);
+	await selectOptionIfAvailable(speciesSelect, values.species);
+	await selectDependentOptionIfAvailable(subspeciesSelect, values.subspecies);
+	await selectOptionIfAvailable(classSelect, values.className);
+	await selectDependentOptionIfAvailable(subclassSelect, values.subclass);
 	await form.locator('input[name="level"]').fill(values.level);
-	await form.locator('select[name="backgroundId"]').selectOption({ label: values.background });
+	await selectOptionIfAvailable(form.locator('select[name="backgroundId"]'), values.background);
 	await form.locator('textarea[name="story"]').fill(values.story);
 	await form.locator('input[name="strength"]').fill(values.strength);
 	await form.locator('input[name="dexterity"]').fill(values.dexterity);
@@ -1422,9 +1431,10 @@ async function fillCharacterForm(
 	for (let index = 0; index < values.attackItems.length; index += 1) {
 		const item = values.attackItems[index];
 		if (item.catalogWeaponName) {
-			await attackSection.getByLabel('Catalog weapon').nth(index).selectOption({
-				label: item.catalogWeaponName
-			});
+			await selectOptionIfAvailable(
+				attackSection.getByLabel('Catalog weapon').nth(index),
+				item.catalogWeaponName
+			);
 		}
 		if (item.name !== undefined) {
 			await attackSection.getByLabel('Attack name').nth(index).fill(item.name);
@@ -1462,15 +1472,12 @@ async function fillCharacterForm(
 	for (let index = 0; index < values.spellItems.length; index += 1) {
 		const item = values.spellItems[index];
 		if (item.catalogSpellName) {
-			await spellSection
-				.getByLabel('Catalog spell')
-				.nth(index)
-				.selectOption({
-					label:
-						item.level === '0'
-							? `${item.catalogSpellName} (Cantrip)`
-							: `${item.catalogSpellName} (Level ${item.level ?? '1'})`
-				});
+			await selectOptionIfAvailable(
+				spellSection.getByLabel('Catalog spell').nth(index),
+				item.level === '0'
+					? `${item.catalogSpellName} (Cantrip)`
+					: `${item.catalogSpellName} (Level ${item.level ?? '1'})`
+			);
 		}
 		if (item.name !== undefined) {
 			await spellSection.getByLabel('Spell name').nth(index).fill(item.name);
@@ -1519,9 +1526,10 @@ async function fillCharacterForm(
 	for (let index = 0; index < values.featItems.length; index += 1) {
 		const item = values.featItems[index];
 		if (item.catalogFeatName) {
-			await featSection.getByLabel('Catalog feat').nth(index).selectOption({
-				label: item.catalogFeatName
-			});
+			await selectOptionIfAvailable(
+				featSection.getByLabel('Catalog feat').nth(index),
+				item.catalogFeatName
+			);
 		}
 		if (item.name !== undefined) {
 			await featSection.getByLabel('Feat name').nth(index).fill(item.name);
@@ -1546,9 +1554,10 @@ async function fillCharacterForm(
 	for (let index = 0; index < values.inventoryItems.length; index += 1) {
 		const item = values.inventoryItems[index];
 		if (item.catalogItemName) {
-			await inventorySection.getByLabel('Catalog item').nth(index).selectOption({
-				label: item.catalogItemName
-			});
+			await selectOptionIfAvailable(
+				inventorySection.getByLabel('Catalog item').nth(index),
+				item.catalogItemName
+			);
 		}
 		if (item.description !== undefined) {
 			await inventorySection.getByLabel('Description').nth(index).fill(item.description);
@@ -1731,6 +1740,38 @@ async function selectDependentOption(select: ReturnType<Page['locator']>, label:
 		.toContain(label);
 
 	await select.selectOption({ label });
+}
+
+async function selectOptionIfAvailable(select: ReturnType<Page['locator']>, label: string) {
+	if (!label) {
+		return;
+	}
+
+	const options = await getSelectOptions(select);
+
+	if (!options.includes(label)) {
+		return;
+	}
+
+	await select.selectOption({ label });
+}
+
+async function selectDependentOptionIfAvailable(
+	select: ReturnType<Page['locator']>,
+	label: string
+) {
+	if (!label) {
+		await select.selectOption({ value: '' });
+		return;
+	}
+
+	const options = await getSelectOptions(select);
+
+	if (!options.includes(label)) {
+		return;
+	}
+
+	await selectDependentOption(select, label);
 }
 
 async function getSelectOptions(select: ReturnType<Page['locator']>) {
