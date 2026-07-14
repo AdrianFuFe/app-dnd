@@ -5,6 +5,7 @@
 	import {
 		type CharacterCreateFormValues
 	} from '$lib/domain/characters/character-form';
+	import { extractChosenGuidedSpellNames } from '$lib/domain/characters/guided-origin-summary';
 	import {
 		formatMechanicSummaryLines,
 		hasMechanicSummary
@@ -74,6 +75,11 @@
 		weight: string;
 		value: string;
 		isEquipped: boolean;
+	};
+	type GuidedSectionStatus = {
+		id: 'attacks' | 'spells' | 'inventory' | 'notes';
+		label: string;
+		status: 'aligned' | 'diverged';
 	};
 
 	function createEditableFormValues(values: CharacterCreateFormValues) {
@@ -373,6 +379,39 @@
 		return names;
 	}
 
+	function guidedBaselineAttackCatalogIds(): Set<string> {
+		const ids = new Set<string>();
+
+		for (const equipment of equipmentCatalog) {
+			if (!equipment.isWeapon) {
+				continue;
+			}
+
+			const normalizedName = normalizeGuidedRowName(equipment.name);
+			if (normalizedName.length > 0 && guidedBaselineEquipmentNames().has(normalizedName)) {
+				ids.add(equipment.id);
+			}
+		}
+
+		return ids;
+	}
+
+	function guidedBaselineSpellCatalogIds(): Set<string> {
+		return new Set(
+			selectedSpellGrantGroups(formValues.classId, formValues.subclassId)
+				.flatMap((group) => group.entries)
+				.map((entry) => entry.id)
+		);
+	}
+
+	function guidedChosenSpellNames(): Set<string> {
+		return new Set(
+			extractChosenGuidedSpellNames(guidedOriginNoteItems()).map((name) =>
+				normalizeGuidedRowName(name)
+			)
+		);
+	}
+
 	function guidedOriginNoteItems(): NoteFormItem[] {
 		return parseNoteItems(values.noteItems, values.notes);
 	}
@@ -439,6 +478,26 @@
 		return normalizedName.length > 0 && guidedBaselineEquipmentNames().has(normalizedName);
 	}
 
+	function attackItemLooksGuidedBaseline(item: AttackFormItem): boolean {
+		const selectedCatalogId = selectedAttackEquipmentCatalogId(item);
+		if (selectedCatalogId && guidedBaselineAttackCatalogIds().has(selectedCatalogId)) {
+			return true;
+		}
+
+		const normalizedName = normalizeGuidedRowName(item.name);
+		return normalizedName.length > 0 && guidedBaselineEquipmentNames().has(normalizedName);
+	}
+
+	function spellItemLooksGuidedBaseline(item: SpellFormItem): boolean {
+		const selectedCatalogId = selectedSpellCatalogId(item);
+		if (selectedCatalogId && guidedBaselineSpellCatalogIds().has(selectedCatalogId)) {
+			return true;
+		}
+
+		const normalizedName = normalizeGuidedRowName(item.name);
+		return normalizedName.length > 0 && guidedChosenSpellNames().has(normalizedName);
+	}
+
 	function noteItemLooksGuidedBaseline(item: NoteFormItem): boolean {
 		return guidedNoteFallbackItems().some(
 			(baselineItem) =>
@@ -455,6 +514,87 @@
 		}
 
 		return isCatalogLinked ? 'Likely guided baseline' : 'Manual addition';
+	}
+
+	function guidedAttacksAreDiverged(): boolean {
+		if (!hasGuidedOriginNotes()) {
+			return false;
+		}
+
+		const baselineCount = guidedBaselineAttackCatalogIds().size;
+
+		if (attackItems.length !== baselineCount) {
+			return true;
+		}
+
+		return attackItems.some((item) => !attackItemLooksGuidedBaseline(item));
+	}
+
+	function guidedSpellsAreDiverged(): boolean {
+		if (!hasGuidedOriginNotes()) {
+			return false;
+		}
+
+		const baselineCount = guidedBaselineSpellCatalogIds().size + guidedChosenSpellNames().size;
+
+		if (spellItems.length !== baselineCount) {
+			return true;
+		}
+
+		return spellItems.some((item) => !spellItemLooksGuidedBaseline(item));
+	}
+
+	function guidedInventoryIsDiverged(): boolean {
+		if (!hasGuidedOriginNotes()) {
+			return false;
+		}
+
+		if (shouldShowGuidedInventoryPreview()) {
+			return false;
+		}
+
+		return inventoryItems.some((item) => !inventoryItemLooksGuidedBaseline(item));
+	}
+
+	function guidedNotesAreDiverged(): boolean {
+		if (!hasGuidedOriginNotes()) {
+			return false;
+		}
+
+		if (shouldShowGuidedNotePreview()) {
+			return false;
+		}
+
+		if (noteItems.length !== guidedNoteFallbackItems().length) {
+			return true;
+		}
+
+		return noteItems.some((item) => !noteItemLooksGuidedBaseline(item));
+	}
+
+	function guidedSectionStatuses(): GuidedSectionStatus[] {
+		return [
+			{
+				id: 'attacks',
+				label: 'Attacks',
+				status: guidedAttacksAreDiverged() ? 'diverged' : 'aligned'
+			},
+			{
+				id: 'spells',
+				label: 'Spells',
+				status: guidedSpellsAreDiverged() ? 'diverged' : 'aligned'
+			},
+			{
+				id: 'inventory',
+				label: 'Inventory',
+				status: guidedInventoryIsDiverged() ? 'diverged' : 'aligned'
+			},
+			{
+				id: 'notes',
+				label: 'Notes',
+				status: guidedNotesAreDiverged() ? 'diverged' : 'aligned'
+			}
+		];
 	}
 
 	function selectedSpecies(speciesId: string) {
@@ -1247,6 +1387,31 @@
 		</p>
 	{/if}
 
+	{#if hasGuidedOriginNotes()}
+		<section class="rounded-3xl border border-sky-200 bg-sky-50 p-6 shadow-sm">
+			<div class="space-y-2">
+				<h2 class="text-xl font-semibold text-sky-950">Guided Baseline Divergence</h2>
+				<p class="text-sm leading-6 text-sky-900">
+					These summaries show whether each editable block still looks aligned with the
+					preserved guided baseline or already reads like a manual customization.
+				</p>
+			</div>
+
+			<div class="mt-4 flex flex-wrap gap-3">
+				{#each guidedSectionStatuses() as section (section.id)}
+					<a
+						class="rounded-full border px-3 py-2 text-sm font-medium transition {section.status === 'aligned'
+							? 'border-emerald-300 bg-white text-emerald-900 hover:border-emerald-400'
+							: 'border-amber-300 bg-white text-amber-900 hover:border-amber-400'}"
+						href={`#${section.id}`}
+					>
+						{section.label}: {section.status === 'aligned' ? 'Aligned' : 'Diverged'}
+					</a>
+				{/each}
+			</div>
+		</section>
+	{/if}
+
 	<section class="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
 		<div class="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
 			<div class="max-w-2xl space-y-2">
@@ -1645,11 +1810,11 @@
 						<div class="flex items-center justify-between gap-3">
 							<div class="flex flex-wrap items-center gap-2">
 								<p class="text-sm font-semibold text-stone-900">Attack {index + 1}</p>
-								{#if guidedRowOriginLabel(Boolean(selectedAttackEquipmentCatalogId(item)))}
+								{#if guidedRowOriginLabel(attackItemLooksGuidedBaseline(item))}
 									<span
 										class="rounded-full border border-sky-300 bg-white px-2 py-1 text-[11px] font-medium uppercase tracking-[0.15em] text-sky-900"
 									>
-										{guidedRowOriginLabel(Boolean(selectedAttackEquipmentCatalogId(item)))}
+										{guidedRowOriginLabel(attackItemLooksGuidedBaseline(item))}
 									</span>
 								{/if}
 							</div>
@@ -1895,11 +2060,11 @@
 						<div class="flex items-center justify-between gap-3">
 							<div class="flex flex-wrap items-center gap-2">
 								<p class="text-sm font-semibold text-stone-900">Spell {index + 1}</p>
-								{#if guidedRowOriginLabel(Boolean(selectedSpellCatalogId(item)))}
+								{#if guidedRowOriginLabel(spellItemLooksGuidedBaseline(item))}
 									<span
 										class="rounded-full border border-sky-300 bg-white px-2 py-1 text-[11px] font-medium uppercase tracking-[0.15em] text-sky-900"
 									>
-										{guidedRowOriginLabel(Boolean(selectedSpellCatalogId(item)))}
+										{guidedRowOriginLabel(spellItemLooksGuidedBaseline(item))}
 									</span>
 								{/if}
 							</div>

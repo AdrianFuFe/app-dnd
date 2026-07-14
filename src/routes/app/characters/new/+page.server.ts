@@ -10,6 +10,7 @@ import {
 	createGuidedCharacterFormValues,
 	deriveGuidedCharacterDraft
 } from '$lib/domain/characters/guided-character';
+import { createCharacterGuidedBaselineSnapshot } from '$lib/domain/characters/guided-baseline';
 import { deriveManualCharacterContentProfile } from '$lib/domain/characters/manual-character-content-profile';
 import { characterCreateInputSchema } from '$lib/schemas/characters/character.schema';
 import { characterGuidedInputSchema } from '$lib/schemas/characters/character-guided.schema';
@@ -144,9 +145,15 @@ export const actions: Actions = {
 				...catalogSelection,
 				spellItems,
 				contentProfileMetadata:
-					guidedDraft.preview.customizationReasonLines.length > 0
-						? { reasonLines: guidedDraft.preview.customizationReasonLines }
-						: undefined
+					{
+						reasonLines: guidedDraft.preview.customizationReasonLines,
+						guidedBaseline: createCharacterGuidedBaselineSnapshot({
+							attackItems: guidedDraft.character.attackItems,
+							spellItems,
+							inventoryItems: guidedDraft.character.inventoryItems,
+							noteItems: guidedDraft.character.noteItems
+						})
+					}
 			});
 			throw redirect(
 				303,

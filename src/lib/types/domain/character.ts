@@ -89,8 +89,16 @@ export type CharacterNoteItem = {
 	content: string;
 };
 
+export type CharacterGuidedBaselineSnapshot = {
+	attackItems: CharacterAttackItem[];
+	spellItems: CharacterSpellItem[];
+	inventoryItems: CharacterInventoryItem[];
+	noteItems: CharacterNoteItem[];
+};
+
 export type CharacterContentProfileMetadata = {
 	reasonLines: string[];
+	guidedBaseline?: CharacterGuidedBaselineSnapshot;
 };
 
 export type CharacterTextSections = {

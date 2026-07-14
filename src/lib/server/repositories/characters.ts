@@ -14,6 +14,7 @@ import type {
 	CharacterContentProfileMetadata,
 	CharacterCreateInput,
 	CharacterFeatItem,
+	CharacterGuidedBaselineSnapshot,
 	CharacterInventoryItem,
 	CharacterNoteItem,
 	CharacterSpellItem
@@ -238,7 +239,7 @@ export async function getCharacterForUser(
 		supabase.from('character_notes').select('title, content').eq('character_id', characterId),
 		supabase
 			.from('character_content_profiles')
-			.select('reason_lines')
+			.select('reason_lines, guided_baseline')
 			.eq('character_id', characterId)
 			.maybeSingle()
 	]);
@@ -669,7 +670,10 @@ async function insertCharacterContentProfileMetadata(
 	characterId: string,
 	metadata?: CharacterContentProfileMetadata
 ) {
-	if (!metadata || metadata.reasonLines.length === 0) {
+	if (
+		!metadata ||
+		(metadata.reasonLines.length === 0 && metadata.guidedBaseline === undefined)
+	) {
 		return { error: null };
 	}
 
@@ -836,7 +840,11 @@ async function replaceCharacterContentProfileMetadata(
 		.delete()
 		.eq('character_id', characterId);
 
-	if (deleteResult.error || !metadata || metadata.reasonLines.length === 0) {
+	if (
+		deleteResult.error ||
+		!metadata ||
+		(metadata.reasonLines.length === 0 && metadata.guidedBaseline === undefined)
+	) {
 		return deleteResult;
 	}
 
@@ -913,7 +921,8 @@ function toCharacterContentProfileInsert(
 ): CharacterContentProfileInsert {
 	return {
 		character_id: characterId,
-		reason_lines: metadata.reasonLines
+		reason_lines: metadata.reasonLines,
+		guided_baseline: metadata.guidedBaseline ?? null
 	};
 }
 
@@ -1052,15 +1061,157 @@ function splitLegacyAttackEntries(value: string): string[] {
 }
 
 function extractCharacterContentProfileMetadata(
-	row: Pick<CharacterContentProfileRow, 'reason_lines'> | null
+	row: Pick<CharacterContentProfileRow, 'reason_lines' | 'guided_baseline'> | null
 ): CharacterContentProfileMetadata | undefined {
 	if (!row || !Array.isArray(row.reason_lines)) {
 		return undefined;
 	}
 
-	return row.reason_lines.every((line) => typeof line === 'string')
-		? { reasonLines: row.reason_lines }
-		: undefined;
+	if (!row.reason_lines.every((line) => typeof line === 'string')) {
+		return undefined;
+	}
+
+	const guidedBaseline = extractCharacterGuidedBaseline(row.guided_baseline);
+
+	return {
+		reasonLines: row.reason_lines,
+		...(guidedBaseline ? { guidedBaseline } : {})
+	};
+}
+
+function extractCharacterGuidedBaseline(
+	value: unknown
+): CharacterGuidedBaselineSnapshot | undefined {
+	if (!value || typeof value !== 'object' || Array.isArray(value)) {
+		return undefined;
+	}
+
+	const guidedBaseline = value as {
+		attackItems?: unknown;
+		spellItems?: unknown;
+		inventoryItems?: unknown;
+		noteItems?: unknown;
+	};
+
+	if (
+		!Array.isArray(guidedBaseline.attackItems) ||
+		!Array.isArray(guidedBaseline.spellItems) ||
+		!Array.isArray(guidedBaseline.inventoryItems) ||
+		!Array.isArray(guidedBaseline.noteItems)
+	) {
+		return undefined;
+	}
+
+	return {
+		attackItems: guidedBaseline.attackItems.flatMap((item) =>
+			typeof item === 'object' && item !== null && 'name' in item && typeof item.name === 'string'
+				? [
+						{
+							equipmentId:
+								'equipmentId' in item && typeof item.equipmentId === 'string'
+									? item.equipmentId
+									: undefined,
+							name: item.name,
+							attackBonus:
+								'attackBonus' in item && typeof item.attackBonus === 'string'
+									? item.attackBonus
+									: undefined,
+							damage:
+								'damage' in item && typeof item.damage === 'string' ? item.damage : undefined,
+							damageType:
+								'damageType' in item && typeof item.damageType === 'string'
+									? item.damageType
+									: undefined,
+							range:
+								'range' in item && typeof item.range === 'string' ? item.range : undefined,
+							description:
+								'description' in item && typeof item.description === 'string'
+									? item.description
+									: undefined
+						}
+					]
+				: []
+		),
+		spellItems: guidedBaseline.spellItems.flatMap((item) =>
+			typeof item === 'object' &&
+			item !== null &&
+			'name' in item &&
+			typeof item.name === 'string' &&
+			'isPrepared' in item &&
+			typeof item.isPrepared === 'boolean'
+				? [
+						{
+							spellId:
+								'spellId' in item && typeof item.spellId === 'string' ? item.spellId : undefined,
+							name: item.name,
+							level:
+								'level' in item && typeof item.level === 'number' ? item.level : undefined,
+							school:
+								'school' in item && typeof item.school === 'string' ? item.school : undefined,
+							castingTime:
+								'castingTime' in item && typeof item.castingTime === 'string'
+									? item.castingTime
+									: undefined,
+							range:
+								'range' in item && typeof item.range === 'string' ? item.range : undefined,
+							components:
+								'components' in item && typeof item.components === 'string'
+									? item.components
+									: undefined,
+							duration:
+								'duration' in item && typeof item.duration === 'string'
+									? item.duration
+									: undefined,
+							description:
+								'description' in item && typeof item.description === 'string'
+									? item.description
+									: undefined,
+							isPrepared: item.isPrepared
+						}
+					]
+				: []
+		),
+		inventoryItems: guidedBaseline.inventoryItems.flatMap((item) =>
+			typeof item === 'object' &&
+			item !== null &&
+			'name' in item &&
+			typeof item.name === 'string' &&
+			'quantity' in item &&
+			typeof item.quantity === 'number' &&
+			'isEquipped' in item &&
+			typeof item.isEquipped === 'boolean'
+				? [
+						{
+							equipmentId:
+								'equipmentId' in item && typeof item.equipmentId === 'string'
+									? item.equipmentId
+									: undefined,
+							name: item.name,
+							quantity: item.quantity,
+							description:
+								'description' in item && typeof item.description === 'string'
+									? item.description
+									: undefined,
+							weight:
+								'weight' in item && typeof item.weight === 'number' ? item.weight : undefined,
+							value:
+								'value' in item && typeof item.value === 'string' ? item.value : undefined,
+							isEquipped: item.isEquipped
+						}
+					]
+				: []
+		),
+		noteItems: guidedBaseline.noteItems.flatMap((item) =>
+			typeof item === 'object' &&
+			item !== null &&
+			'title' in item &&
+			typeof item.title === 'string' &&
+			'content' in item &&
+			typeof item.content === 'string'
+				? [{ title: item.title, content: item.content }]
+				: []
+		)
+	};
 }
 
 function mapAttackRow(

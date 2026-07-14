@@ -5,6 +5,13 @@ import {
 	createCharacterFormValuesFromInput
 } from '$lib/domain/characters/character-form';
 import { deriveManualCharacterContentProfile } from '$lib/domain/characters/manual-character-content-profile';
+import {
+	deriveGuidedSpellOriginSummary,
+	GUIDED_BUILD_CHOICES_TITLE,
+	GUIDED_BUILD_GRANTS_TITLE,
+	isGuidedCharacterOrigin,
+	splitGuidedNoteLines
+} from '$lib/domain/characters/guided-origin-summary';
 import { characterCreateInputSchema } from '$lib/schemas/characters/character.schema';
 import {
 	listCharacterCreationCatalog,
@@ -178,8 +185,12 @@ export const actions: Actions = {
 					rulesetCode: contentProfileResult.profile.rulesetCode,
 					contentMode: contentProfileResult.profile.contentMode,
 					contentProfileMetadata:
-						contentProfileResult.reasonLines.length > 0
-							? { reasonLines: contentProfileResult.reasonLines }
+						contentProfileResult.reasonLines.length > 0 ||
+						existingCharacter.contentProfileMetadata?.guidedBaseline
+							? {
+									reasonLines: contentProfileResult.reasonLines,
+									guidedBaseline: existingCharacter.contentProfileMetadata?.guidedBaseline
+								}
 							: undefined,
 					speciesId: catalogSelection.speciesId,
 					race: catalogSelection.race,
@@ -318,12 +329,6 @@ function normalizeGuidedAdoptionFormData(
 	return normalized;
 }
 
-function isGuidedCharacterOrigin(noteItems: Array<{ title: string }>): boolean {
-	return noteItems.some(
-		(note) => note.title === 'Guided build grants' || note.title === 'Guided build choices'
-	);
-}
-
 function summarizeGuidedCharacterOrigin(character: {
 	race?: string;
 	subrace?: string;
@@ -332,15 +337,23 @@ function summarizeGuidedCharacterOrigin(character: {
 	background?: string;
 	contentMode: string;
 	noteItems: Array<{ title: string; content: string }>;
+	spellItems: Array<{ name: string; isPrepared: boolean }>;
 }) {
 	if (!isGuidedCharacterOrigin(character.noteItems)) {
 		return null;
 	}
 
-	const grantsNote = character.noteItems.find((note) => note.title === 'Guided build grants');
-	const choicesNote = character.noteItems.find((note) => note.title === 'Guided build choices');
+	const grantsNote = character.noteItems.find((note) => note.title === GUIDED_BUILD_GRANTS_TITLE);
+	const choicesNote = character.noteItems.find((note) => note.title === GUIDED_BUILD_CHOICES_TITLE);
 	const lineageParts = [character.race, character.subrace].filter(Boolean);
 	const classParts = [character.className, character.subclass].filter(Boolean);
+	const spellOriginSummary = deriveGuidedSpellOriginSummary(
+		character.noteItems,
+		character.spellItems.map((spell) => ({
+			name: spell.name,
+			isPrepared: spell.isPrepared
+		}))
+	);
 
 	return {
 		lineageSummary: lineageParts.join(' / '),
@@ -351,19 +364,11 @@ function summarizeGuidedCharacterOrigin(character: {
 				? 'Still on the canonical guided path.'
 				: 'This draft has diverged from the canonical guided path.',
 		grantLines: splitGuidedNoteLines(grantsNote?.content),
-		choiceLines: splitGuidedNoteLines(choicesNote?.content)
+		choiceLines: splitGuidedNoteLines(choicesNote?.content),
+		grantedSpellNames: spellOriginSummary.grantedSpellNames,
+		chosenSpellNames: spellOriginSummary.chosenSpellNames,
+		preparedSpellNames: spellOriginSummary.preparedSpellNames
 	};
-}
-
-function splitGuidedNoteLines(value: string | undefined): string[] {
-	if (!value) {
-		return [];
-	}
-
-	return value
-		.split('\n')
-		.map((line) => line.trim())
-		.filter((line) => line.length > 0);
 }
 
 function summarizeCurrentEditState(character: {

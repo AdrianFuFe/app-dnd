@@ -63,7 +63,15 @@ describe('guided character create flow with E2E mock', () => {
 				name: 'Seren Dawnwatch',
 				contentMode: 'canon',
 				className: 'Clerigo',
-				background: 'Acolyte'
+				background: 'Acolyte',
+				contentProfileMetadata: expect.objectContaining({
+					guidedBaseline: expect.objectContaining({
+						attackItems: expect.any(Array),
+						spellItems: expect.any(Array),
+						inventoryItems: expect.any(Array),
+						noteItems: expect.any(Array)
+					})
+				})
 			})
 		});
 	});

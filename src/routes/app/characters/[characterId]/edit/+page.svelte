@@ -129,6 +129,53 @@
 							{/if}
 						</div>
 					</div>
+
+					<div class="mt-4 grid gap-4 xl:grid-cols-3">
+						<div class="rounded-2xl border border-sky-200 bg-white px-4 py-4">
+							<p class="text-sm font-semibold text-sky-950">Granted spells</p>
+							{#if data.guidedOriginSummary.grantedSpellNames.length === 0}
+								<p class="mt-2 text-sm leading-6 text-sky-900">
+									No guided granted spells were preserved on this draft.
+								</p>
+							{:else}
+								<ul class="mt-3 space-y-2 text-sm text-sky-900">
+									{#each data.guidedOriginSummary.grantedSpellNames as spellName}
+										<li>{spellName}</li>
+									{/each}
+								</ul>
+							{/if}
+						</div>
+
+						<div class="rounded-2xl border border-sky-200 bg-white px-4 py-4">
+							<p class="text-sm font-semibold text-sky-950">Chosen spells</p>
+							{#if data.guidedOriginSummary.chosenSpellNames.length === 0}
+								<p class="mt-2 text-sm leading-6 text-sky-900">
+									No guided spell choices were preserved on this draft.
+								</p>
+							{:else}
+								<ul class="mt-3 space-y-2 text-sm text-sky-900">
+									{#each data.guidedOriginSummary.chosenSpellNames as spellName}
+										<li>{spellName}</li>
+									{/each}
+								</ul>
+							{/if}
+						</div>
+
+						<div class="rounded-2xl border border-sky-200 bg-white px-4 py-4">
+							<p class="text-sm font-semibold text-sky-950">Prepared now</p>
+							{#if data.guidedOriginSummary.preparedSpellNames.length === 0}
+								<p class="mt-2 text-sm leading-6 text-sky-900">
+									No spells are currently marked as prepared.
+								</p>
+							{:else}
+								<ul class="mt-3 space-y-2 text-sm text-sky-900">
+									{#each data.guidedOriginSummary.preparedSpellNames as spellName}
+										<li>{spellName}</li>
+									{/each}
+								</ul>
+							{/if}
+						</div>
+					</div>
 				</div>
 			{/if}
 		{/if}

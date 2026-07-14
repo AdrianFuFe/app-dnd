@@ -419,7 +419,13 @@ describe('createCharacter', () => {
 			inventoryItems: [],
 			noteItems: [{ title: 'Goals', content: 'Protect the archive.' }],
 			contentProfileMetadata: {
-				reasonLines: ['Manual override: Armor Class']
+				reasonLines: ['Manual override: Armor Class'],
+				guidedBaseline: {
+					attackItems: [{ equipmentId: 'weapon-1', name: 'Mace' }],
+					spellItems: [{ spellId: 'spell-1', name: 'Bless', isPrepared: true }],
+					inventoryItems: [{ equipmentId: 'gear-1', name: 'Shield', quantity: 1, isEquipped: true }],
+					noteItems: [{ title: 'Guided build grants', content: 'Language: Comun' }]
+				}
 			}
 		});
 
@@ -432,7 +438,13 @@ describe('createCharacter', () => {
 		expect(contentProfilesInsert).toHaveBeenCalledWith(
 			expect.objectContaining({
 				character_id: 'char-1',
-				reason_lines: ['Manual override: Armor Class']
+				reason_lines: ['Manual override: Armor Class'],
+				guided_baseline: expect.objectContaining({
+					attackItems: expect.any(Array),
+					spellItems: expect.any(Array),
+					inventoryItems: expect.any(Array),
+					noteItems: expect.any(Array)
+				})
 			})
 		);
 	});
@@ -1198,7 +1210,15 @@ describe('getCharacterForUser', () => {
 						eq: vi.fn().mockReturnValue({
 							maybeSingle: vi.fn().mockResolvedValue({
 								data: {
-									reason_lines: ['Manual override: Armor Class']
+									reason_lines: ['Manual override: Armor Class'],
+									guided_baseline: {
+										attackItems: [{ equipmentId: 'weapon-1', name: 'Mace' }],
+										spellItems: [{ spellId: 'spell-1', name: 'Bless', isPrepared: true }],
+										inventoryItems: [
+											{ equipmentId: 'gear-1', name: 'Shield', quantity: 1, isEquipped: true }
+										],
+										noteItems: [{ title: 'Guided build grants', content: 'Language: Comun' }]
+									}
 								},
 								error: null
 							})
@@ -1213,7 +1233,13 @@ describe('getCharacterForUser', () => {
 		const character = await getCharacterForUser({ from } as never, 'user-1', 'char-1');
 
 		expect(character?.contentProfileMetadata).toEqual({
-			reasonLines: ['Manual override: Armor Class']
+			reasonLines: ['Manual override: Armor Class'],
+			guidedBaseline: {
+				attackItems: [{ equipmentId: 'weapon-1', name: 'Mace' }],
+				spellItems: [{ spellId: 'spell-1', name: 'Bless', isPrepared: true }],
+				inventoryItems: [{ equipmentId: 'gear-1', name: 'Shield', quantity: 1, isEquipped: true }],
+				noteItems: [{ title: 'Guided build grants', content: 'Language: Comun' }]
+			}
 		});
 		expect(character?.noteItems).toEqual([
 			{

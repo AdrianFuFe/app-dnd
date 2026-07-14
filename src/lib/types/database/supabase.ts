@@ -158,18 +158,21 @@ export interface Database {
 				Row: {
 					character_id: string;
 					reason_lines: JsonValue;
+					guided_baseline: JsonValue | null;
 					created_at: string;
 					updated_at: string;
 				};
 				Insert: {
 					character_id: string;
 					reason_lines?: JsonValue;
+					guided_baseline?: JsonValue | null;
 					created_at?: string;
 					updated_at?: string;
 				};
 				Update: {
 					character_id?: string;
 					reason_lines?: JsonValue;
+					guided_baseline?: JsonValue | null;
 					created_at?: string;
 					updated_at?: string;
 				};

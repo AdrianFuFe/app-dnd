@@ -10,6 +10,7 @@ Apply the SQL files in this order:
 6. `006_ruleset_and_editorial_fields.sql`
 7. `007_editorial_rls_alignment.sql`
 8. `008_character_content_profiles.sql`
+9. `009_character_guided_baselines.sql`
 
 ## Notes
 
@@ -25,6 +26,8 @@ Apply the SQL files in this order:
   workflow is enforced closer to the data layer.
 - `008_character_content_profiles.sql` adds a dedicated per-character store for guided or
   manual custom-profile reason lines.
+- `009_character_guided_baselines.sql` extends that store with structured guided-baseline
+  metadata so future edits can compare against the original guided snapshot directly.
 
 ## Editorial model notes
 

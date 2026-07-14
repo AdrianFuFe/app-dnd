@@ -5,6 +5,13 @@
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import { calculateAbilityModifier } from '$lib/domain/ability-modifier';
+	import {
+		deriveGuidedSpellOriginSummary,
+		GUIDED_BUILD_CHOICES_TITLE,
+		GUIDED_BUILD_GRANTS_TITLE,
+		isGuidedCharacterOrigin,
+		splitGuidedNoteLines
+	} from '$lib/domain/characters/guided-origin-summary';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -56,17 +63,6 @@
 
 	function formatRuleset(value: string): string {
 		return value === 'dnd-2014-srd' ? 'DnD 2014 SRD' : value;
-	}
-
-	function splitGuidedNoteLines(value: string | undefined): string[] {
-		if (!value) {
-			return [];
-		}
-
-		return value
-			.split('\n')
-			.map((line) => line.trim())
-			.filter((line) => line.length > 0);
 	}
 
 	function normalizeGuidedRowName(value: string): string {
@@ -126,16 +122,24 @@
 
 	function noteItemLooksGuidedBaseline(note: PageData['character']['noteItems'][number]): boolean {
 		return (
-			note.title === 'Guided build grants' ||
-			note.title === 'Guided build choices'
+			note.title === GUIDED_BUILD_GRANTS_TITLE ||
+			note.title === GUIDED_BUILD_CHOICES_TITLE
 		);
 	}
 
 	function deriveGuidedDetailSummary() {
-		const grantsNote = data.character.noteItems.find((note) => note.title === 'Guided build grants');
-		const choicesNote = data.character.noteItems.find((note) => note.title === 'Guided build choices');
+		const grantsNote = data.character.noteItems.find(
+			(note) => note.title === GUIDED_BUILD_GRANTS_TITLE
+		);
+		const choicesNote = data.character.noteItems.find(
+			(note) => note.title === GUIDED_BUILD_CHOICES_TITLE
+		);
 		const lineageParts = [data.character.race, data.character.subrace].filter(Boolean);
 		const classParts = [data.character.className, data.character.subclass].filter(Boolean);
+		const spellOriginSummary = deriveGuidedSpellOriginSummary(
+			data.character.noteItems,
+			data.character.spellItems
+		);
 
 		if (!grantsNote && !choicesNote) {
 			return data.guidedOriginSummary ?? null;
@@ -150,7 +154,10 @@
 					? 'Still on the canonical guided path.'
 					: 'This draft has diverged from the canonical guided path.',
 			grantLines: splitGuidedNoteLines(grantsNote?.content),
-			choiceLines: splitGuidedNoteLines(choicesNote?.content)
+			choiceLines: splitGuidedNoteLines(choicesNote?.content),
+			grantedSpellNames: spellOriginSummary.grantedSpellNames,
+			chosenSpellNames: spellOriginSummary.chosenSpellNames,
+			preparedSpellNames: spellOriginSummary.preparedSpellNames
 		};
 	}
 
@@ -184,9 +191,7 @@
 	);
 
 	const guidedOriginNotes = $derived(
-		data.character.noteItems.some(
-			(note) => note.title === 'Guided build grants' || note.title === 'Guided build choices'
-		)
+		isGuidedCharacterOrigin(data.character.noteItems)
 	);
 
 	const guidedHandoffVisible = $derived(
@@ -382,6 +387,53 @@
 							<ul class="mt-3 space-y-2 text-sm text-sky-900">
 								{#each guidedDetailSummary.choiceLines as line}
 									<li>{line}</li>
+								{/each}
+							</ul>
+						{/if}
+					</div>
+				</div>
+
+				<div class="mt-4 grid gap-4 xl:grid-cols-3">
+					<div class="rounded-2xl border border-sky-200 bg-white px-4 py-4">
+						<p class="text-sm font-semibold text-sky-950">Granted spells</p>
+						{#if guidedDetailSummary.grantedSpellNames.length === 0}
+							<p class="mt-2 text-sm leading-6 text-sky-900">
+								No guided granted spells were preserved on this draft.
+							</p>
+						{:else}
+							<ul class="mt-3 space-y-2 text-sm text-sky-900">
+								{#each guidedDetailSummary.grantedSpellNames as spellName}
+									<li>{spellName}</li>
+								{/each}
+							</ul>
+						{/if}
+					</div>
+
+					<div class="rounded-2xl border border-sky-200 bg-white px-4 py-4">
+						<p class="text-sm font-semibold text-sky-950">Chosen spells</p>
+						{#if guidedDetailSummary.chosenSpellNames.length === 0}
+							<p class="mt-2 text-sm leading-6 text-sky-900">
+								No guided spell choices were preserved on this draft.
+							</p>
+						{:else}
+							<ul class="mt-3 space-y-2 text-sm text-sky-900">
+								{#each guidedDetailSummary.chosenSpellNames as spellName}
+									<li>{spellName}</li>
+								{/each}
+							</ul>
+						{/if}
+					</div>
+
+					<div class="rounded-2xl border border-sky-200 bg-white px-4 py-4">
+						<p class="text-sm font-semibold text-sky-950">Prepared now</p>
+						{#if guidedDetailSummary.preparedSpellNames.length === 0}
+							<p class="mt-2 text-sm leading-6 text-sky-900">
+								No spells are currently marked as prepared.
+							</p>
+						{:else}
+							<ul class="mt-3 space-y-2 text-sm text-sky-900">
+								{#each guidedDetailSummary.preparedSpellNames as spellName}
+									<li>{spellName}</li>
 								{/each}
 							</ul>
 						{/if}

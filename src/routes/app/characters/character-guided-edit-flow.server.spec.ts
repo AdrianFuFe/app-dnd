@@ -198,7 +198,13 @@ describe('guided character edit flow with E2E mock', () => {
 					reasonLines: [
 						'Guided baseline diverged after manual edits',
 						'Manual override: Armor Class'
-					]
+					],
+					guidedBaseline: expect.objectContaining({
+						attackItems: expect.any(Array),
+						spellItems: expect.any(Array),
+						inventoryItems: expect.any(Array),
+						noteItems: expect.any(Array)
+					})
 				}
 			})
 		});
